@@ -1,6 +1,7 @@
 # ADR-0017 · PolyForm Noncommercial 1.0.0
 
-**Status:** **Provisional** — awaiting Noah's word on Q-01 · **Date:** 2026-07-27
+**Status:** **Accepted** · **Date:** 2026-07-27 · **Confirmed by Noah 2026-07-27**
+("Doctrinal intent is correct")
 
 ## Decision
 
@@ -52,13 +53,11 @@ Doctrine's answer rather than the brief's.
   institutions, and charities regardless of funding — worth knowing, given where
   this app will actually be used.
 
-## If Noah says AGPL
+## Resolution
 
-Then: swap `LICENSE.md`, note the exception in the hub's Doctrine §8 app list
-(this would be the first repo diverging from the family standard), supersede this
-ADR with ADR-0020 rather than editing it, and update
-[`data-constitution.md`](../data-constitution.md). It stays honest either way —
-AGPL *is* open source and may be called so.
+Asked and answered, 2026-07-27. Noah: *"Doctrinal intent is correct."* The brief's
+AGPL line is superseded by Doctrine §8; the family standard holds and this repo
+does not diverge from it.
 
 ## What would overturn it
 

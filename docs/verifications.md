@@ -20,6 +20,39 @@ a dated resolution beneath it.
 | `INCONCLUSIVE` | A check was attempted and returned nothing usable. The attempt is recorded so it isn't repeated blindly. |
 | `NEEDS NOAH'S HANDS` | Cannot be checked from a session by any means. Requires real hardware or a real account. |
 | `NOT RUN` | Deliberately deferred, with the reason and the trigger for running it. |
+| `WITHDRAWN` | No longer relevant — scope changed. The row stays so the consideration is on record. |
+
+---
+
+## V-00 · iPadOS storage behaviour — **the reference platform**
+**Status: NEEDS NOAH'S HANDS** · requires a real device · **highest-value open check**
+
+> **Promoted 2026-07-27.** This was V-07, filed as a nice-to-know whose failure "costs
+> nothing". That is no longer true. Noah's decision that this is a **personal-iPad app**
+> makes iPadOS the *only* platform in scope, so these two behaviours now govern the
+> single environment the app is built for. The original row is preserved below as V-07;
+> this is the one that matters.
+
+Two claims from the brief, both needing confirmation on the current iOS/iPadOS release:
+
+1. IndexedDB is isolated **per home-screen icon** — two icons for the same origin do
+   not share a store.
+2. Storage persistence still requires **notification permission** to have been granted.
+
+**What to check, in order:**
+1. Install to the Home Screen from Safari. Does `navigator.storage.persist()` resolve
+   `true` after notification permission is granted?
+2. Does `navigator.storage.persisted()` **still** report `true` the next morning?
+3. If two icons are created for the same origin, do they see the same data?
+
+Step 2 is the one that matters. A `true` on day one that silently reverts is worse than
+a `false`, because the app would be promising durability it does not have — and on this
+platform there is no folder mirror underneath to catch it
+([ADR-0003](adr/0003-folder-mirror.md) does not exist on iPadOS).
+
+**Consequence if persistence cannot be relied on:** the export/import path in
+[ADR-0004](adr/0004-ios-path.md) is not a convenience, it is the durability story, and
+the app must be honest about that rather than implying the store is safe.
 
 ---
 
@@ -32,11 +65,13 @@ Chromium desktop only — Chrome / Edge / Opera 86+. Firefox does not implement
 *harmful* standards position against the local-disk pickers. Safari ships the
 Origin Private File System only, and skips the disk pickers entirely.
 
-**Consequence:** the brief's assumption holds unchanged. The folder mirror is a
-feature-detected Chromium-desktop enhancement, and the iOS/Safari path
-(manual export/import via Files) is not a fallback — it is the *primary* path for
-those platforms. Per the brief: never advertise the folder feature where it does
-not exist. → [ADR-0003](adr/0003-folder-mirror.md), [ADR-0004](adr/0004-ios-path.md)
+**Consequence, revised 2026-07-27:** the support matrix is unchanged, but what it
+*means* changed when iPadOS became the reference platform. **The folder mirror cannot
+exist on the platform this app is actually for.** It is a Chromium-desktop-only
+convenience for a secondary environment, not the sync story. Manual export/import via
+Files is the sync story ([ADR-0004](adr/0004-ios-path.md)). Per the brief: never
+advertise the folder feature where it does not exist — which on the reference platform
+means never mentioning it at all. → [ADR-0003](adr/0003-folder-mirror.md)
 
 ## V-02 · Cloudflare Workers AI free tier
 **Status: VERIFIED** · 2026-07-27 · web search of Cloudflare pricing/blog and
@@ -118,37 +153,42 @@ Check at deploy time from a normal network. Note that a qualified subdomain is
 expected regardless — see Q-02.
 
 ## V-06 · GFE Edge policy — PWA install and persistent storage
-**Status: NEEDS NOAH'S HANDS** · cannot be probed from any session
+**Status: WITHDRAWN** · 2026-07-27 · out of scope by owner's decision
 
-Whether the owner's government machine permits (a) installing a PWA and
-(b) granting persistent storage under managed Edge policy.
+Originally: whether the owner's government machine permits installing a PWA and
+granting persistent storage under managed Edge policy. It was recorded as gating the
+work half.
 
-**This gates the work half** — Track portfolio, staff-call lens, suspense dates.
-If persistence is denied, the work vault cannot be trusted on that machine and
-the design needs a different answer there, not a warning label.
+**Withdrawn because the app is not for that machine.** Noah, 2026-07-27: *"Not intended
+or designed for GFE. Personal iPad only is my personal intent."* There is nothing to
+check, because there is no supported configuration to check it in.
 
-**What to check, in order:**
-1. Does `https://<deployed-url>` offer an install prompt in Edge?
-2. After install, does `navigator.storage.persist()` resolve `true`?
-3. Does `navigator.storage.persisted()` still report `true` the next morning?
+**Kept rather than deleted**, so that a future reader finds the question already
+considered and closed instead of raising it again as an oversight.
 
-Step 3 is the one that matters. A `true` on day one that silently reverts is
-worse than a `false`.
+> **One thing deliberately not claimed.** Noah expects managed-device storage policy
+> would block the app anyway if someone tried. That is a reasonable expectation and it
+> is **unverified** — no session can test it and no one has. It is recorded here as his
+> expectation and **nothing in the design relies on it as a control**. The scope
+> statement in [`data-constitution.md`](data-constitution.md) does that work. An
+> unverified technical guess is not a safeguard, and treating it as one would be exactly
+> the false-confidence failure Doctrine §5 names.
 
-## V-07 · Current-iOS storage behaviour
-**Status: NEEDS NOAH'S HANDS** · requires a real device
+## V-07 · Current-iOS storage behaviour — *superseded framing*
+**Status: SUPERSEDED by [V-00](#v-00--ipados-storage-behaviour--the-reference-platform)** · 2026-07-27
 
-Two claims from the brief, both needing confirmation on the current iOS release:
-1. IndexedDB is isolated **per home-screen icon** — two icons for the same origin
-   do not share a store.
-2. Storage persistence still requires **notification permission** to have been
-   granted.
+Original row, preserved because the reasoning it contained was wrong in a way worth
+keeping visible:
 
-**Consequence if both are false: none.** The design already assumes the
-pessimistic case — T0 requests notification permission for badge *and*
-persistence before any push mechanism exists, and the iOS path never assumes a
-second icon shares data. A negative answer costs nothing; a positive answer
-confirms the T0 sequencing was right. → [ADR-0004](adr/0004-ios-path.md), [ADR-0007](adr/0007-notification-tiers.md)
+> *"Consequence if both are false: none.* The design already assumes the pessimistic
+> case — T0 requests notification permission for badge *and* persistence before any
+> push mechanism exists, and the iOS path never assumes a second icon shares data. A
+> negative answer costs nothing."
+
+That was true **while iPadOS was one platform among several**. Once it became the only
+platform in scope, "costs nothing" stopped being accurate — the same failure now has no
+desktop mirror underneath it. Re-filed as **V-00**, at the top, as the highest-value
+outstanding check. → [ADR-0004](adr/0004-ios-path.md), [ADR-0007](adr/0007-notification-tiers.md)
 
 ## V-08 · Competitive pass on the five claimed differentiators
 **Status: NOT RUN** · deliberately deferred

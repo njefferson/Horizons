@@ -48,9 +48,14 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0014](0014-demand-free-types.md) | Menu items and pebbles cannot carry clocks | Accepted |
 | [0015](0015-ai-never-blocks.md) | Every assisted flow has a working offline rung | Accepted |
 | [0016](0016-gtd-marks-and-original-content.md) | Never use the GTD® marks; all trigger-list content original | Accepted |
-| [0017](0017-licensing.md) | PolyForm Noncommercial 1.0.0 | **Provisional** — see Q-01 |
-| [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Provisional** — see Q-02 |
+| [0017](0017-licensing.md) | PolyForm Noncommercial 1.0.0 | Accepted |
+| [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Superseded pending** — a rename is coming (Q-02) |
 | [0019](0019-v1-freeze.md) | v1 scope frozen; the dogfood gate defines done | Accepted |
 
-**Provisional** means: decided well enough to build on, and explicitly awaiting
-the owner's word. It is not the same as Accepted, and it is not the same as open.
+**Provisional** means: decided well enough to build on, and explicitly awaiting the
+owner's word. It is not the same as Accepted, and it is not the same as open.
+
+**Superseded pending** means the decision is known to be changing but the replacement
+does not exist yet — here, Noah has settled that the app needs a new name but has not
+named it. The record stays accurate about its own obsolescence rather than quietly
+describing a decision that no longer holds.

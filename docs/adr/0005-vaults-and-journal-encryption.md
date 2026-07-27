@@ -17,10 +17,15 @@ covering its exports as well as its store.
 
 ## Why
 
-The work/personal split is not cosmetic. The work vault will hold suspenses, OPR
-names, and status content from a government workplace; the personal vault holds
-aspirations and bothers. Mixing them means every export, every screen share, and
-every glance at the app in a meeting leaks across a boundary that matters.
+The work/personal split is not cosmetic. The work vault holds suspenses, OPR
+names, and status content; the personal vault holds aspirations and bothers.
+Mixing them means every export, every screen share, and every glance at the app in
+a meeting leaks across a boundary that matters.
+
+**It is a convenience boundary, not a policy one** (Q-03, answered 2026-07-27). The
+app does not police what goes into a vault — that is the user's judgement, as with any
+personal app. What the split guarantees is that the boundary *holds* once drawn:
+separate exports, refused cross-references, distinct person records.
 
 **Person nodes are vault-scoped because a name is not the same fact in both
 places.** A colleague who is also a friend has two relationships, two sets of
@@ -48,8 +53,6 @@ be complete is the first moment.
   journal is gone**, and this must be said plainly before the passphrase is set,
   not buried in a help page.
 - The journal is v1.5. This ADR binds its release, not its schedule.
-- Q-03 in [`NOTES.md`](../../NOTES.md) — the work-vault content policy — is
-  **open and owner-supplied**, and is blocking before real work data is entered.
 
 ## What would overturn it
 

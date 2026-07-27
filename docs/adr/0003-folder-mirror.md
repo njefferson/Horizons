@@ -1,6 +1,15 @@
 # ADR-0003 · Optional folder mirror, per-device shards, Chromium desktop only
 
-**Status:** Accepted · **Date:** 2026-07-27
+**Status:** Accepted · **Date:** 2026-07-27 · **Scope narrowed 2026-07-27**
+
+> **This is a secondary-platform convenience, not the sync story.** When Noah settled
+> that this is a personal-iPad app, the folder mirror stopped being available on the
+> reference platform — Safari has no disk picker (V-01), so on iPadOS **this feature
+> does not exist**. Sync and recovery are [ADR-0004](0004-ios-path.md).
+>
+> The ADR is kept in full because a personal desktop remains plausible — Noah ruled out
+> government equipment, not desktops — and the design below is sound where the API
+> exists. But nothing may be built on the assumption that a user has it.
 
 ## Decision
 
@@ -50,10 +59,18 @@ OPFS with no disk picker.
 - A shard that is present but unreadable is **never** treated as zero events.
   *A success response carrying nothing is not an answer — it is a question.*
 - The feature is invisible on Safari and Firefox. No greyed-out button, no
-  "upgrade your browser" — it simply is not there.
+  "upgrade your browser" — it simply is not there. **On the reference platform this
+  means it is never mentioned**, including in help text and onboarding.
+- **No feature may depend on the mirror being present.** It cannot be the answer to
+  "how does data survive?", because on iPadOS there is no mirror to answer with. That
+  question belongs to [ADR-0004](0004-ios-path.md) and to
+  [ADR-0006](0006-backups-and-import.md).
+- Build priority follows scope: this is **after** the export/import path is complete
+  and proven, not alongside it.
 
 ## What would overturn it
 
-Safari shipping the disk pickers (it would extend, not replace, this design), or
-evidence that real sync services mangle `.jsonl` appends in practice — in which
-case the answer is a different file format, not multi-writer.
+Safari shipping the disk pickers — which would *promote* this rather than replace it,
+and would be a genuine improvement to the reference platform's story. Or evidence that
+real sync services mangle `.jsonl` appends in practice, in which case the answer is a
+different file format, not multi-writer.

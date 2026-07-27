@@ -1,6 +1,13 @@
 # ADR-0018 · Repo slug `Horizons`; Pages subdomain qualified
 
-**Status:** **Provisional** — awaiting Noah's word on Q-02 · **Date:** 2026-07-27
+**Status:** **Superseded pending** — Noah 2026-07-27: *"This app needs a new name."*
+The replacement (ADR-0020) is written when the name exists. · **Date:** 2026-07-27
+
+> **Outcome:** option 1 below — keep both names and differentiate on the hub — was
+> **not** taken. Noah chose to rename this app. The reasoning below is kept because it
+> is why the rename is happening, and because the closing observation still holds and
+> is what makes the rename cheap: **nothing in the schema, the event vocabulary, or the
+> file formats encodes the product name.**
 
 ## Decision
 

@@ -165,27 +165,42 @@ what was suggested.
 
 ---
 
+## What this is not
+
+**Horizons is a personal app.** It is not designed for, tested on, or approved for
+government-furnished equipment, and **nothing in it is a control for classified,
+controlled, or otherwise restricted information.**
+
+It has no accreditation, no security categorisation, and no assurance process behind
+it. It was built by one person for their own use and shared because it might help
+someone else.
+
+> Some managed devices would likely refuse to grant a web app persistent storage, which
+> would get in the way of using it there. **That is an expectation, not a tested
+> control, and this document does not rely on it.** Nobody has verified it, and an
+> unverified technical guess is not a safeguard — see
+> [V-06](verifications.md) for why it is written down but not leaned on. The scope
+> statement above is the actual answer.
+
 ## The work vault
 
-> **⚠ This section is awaiting Noah's words.**
->
-> Open question **Q-03** in [`NOTES.md`](../NOTES.md). The policy line governing
-> what the work vault may and may not contain — given that it will be used on
-> government-furnished equipment — **is the owner's to write, and no session will
-> invent it.** Guessing here would produce a plausible-sounding rule that has no
-> authority behind it, which is worse than an obvious gap.
->
-> **Blocking before real work data is entered**, not before the app is built.
+The vault split is a **convenience for keeping content separate**, not a policy
+boundary. Work and personal material tend to want different exports, different
+audiences, and different moments — so the app makes that easy.
 
-What the design already guarantees, independent of that line:
+**What goes in it is the user's judgement**, exactly as with any other personal app on
+any other personal device. Horizons does not inspect, classify, or police what you
+write, and it could not do so meaningfully if it tried.
 
-- The work vault is **separate at the schema level**, and cross-vault references
-  are refused by the write gate rather than discouraged by convention.
-- It exports separately, so a work export cannot carry personal content.
+What the design does guarantee:
+
+- The work vault is **separate at the schema level**, and cross-vault references are
+  refused by the write gate rather than discouraged by convention.
+- It **exports separately**, so a work export cannot carry personal content — the
+  boundary holds where it matters most, at the moment data leaves.
 - People in the work vault are distinct records from the same humans elsewhere.
-- Whether persistent storage is even available on managed government equipment is
-  **V-06 in [`verifications.md`](verifications.md) — unverified, and it gates the
-  work half.** It requires real hardware to answer.
+- Nothing in it goes anywhere without the network consent described above, and by
+  default nothing goes anywhere at all.
 
 ---
 

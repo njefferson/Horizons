@@ -1,10 +1,17 @@
-# ADR-0004 · iOS gets manual export/import, not a degraded folder mirror
+# ADR-0004 · Export/import via Files is the sync and durability story
 
-**Status:** Accepted · **Date:** 2026-07-27
+**Status:** Accepted · **Date:** 2026-07-27 · **Promoted 2026-07-27**
+
+> **This is now the primary path, not the iOS path.** Noah settled that this is a
+> personal-iPad app, which makes iPadOS the reference platform — and there is no folder
+> mirror there ([ADR-0003](0003-folder-mirror.md), V-01). Everything below was written
+> as the graceful answer for a secondary platform. **It is the answer.** It carries the
+> full weight of "how does my data survive", and it should be built and tested first,
+> not last.
 
 ## Decision
 
-On iOS the sync story is **manual export/import via the Files app**, presented as
+The sync story is **manual export/import via the Files app**, presented as
 a first-class path rather than as a missing feature.
 
 When the app launches to an **empty or stale store**, it shows **one prominent
@@ -42,11 +49,17 @@ wrong copy.
   used less often.
 - Feature detection must be genuine capability detection, never user-agent
   sniffing.
-- **Per V-07 this rests on unconfirmed platform behaviour** (per-home-screen-icon
-  IndexedDB isolation). The design assumes the pessimistic case, so a negative
-  answer costs nothing — but the row stays open until Noah checks it on a real device.
+- **The export cadence has to be good enough to be the only mechanism.** A path that
+  is one of two can afford friction; a path that is the only one cannot. Exporting must
+  be quick, obvious, and hard to forget — and if it is forgotten, the app should say so
+  plainly rather than let the user assume they are covered.
+- **This rests on unconfirmed platform behaviour — see [V-00](../verifications.md).**
+  If storage persistence cannot be relied on on iPadOS, this path is not a convenience,
+  it is the *durability story*, and the app must say so rather than implying the local
+  store is safe. That row was downgraded as harmless when there were other platforms;
+  it is now the highest-value open check in the repo.
 
 ## What would overturn it
 
-Safari shipping the File System Access disk pickers. Even then this path stays —
-it would gain the mirror, not lose the Restore action.
+Safari shipping the File System Access disk pickers. Even then this path stays — it
+would gain a mirror alongside, and would not lose the Restore action.

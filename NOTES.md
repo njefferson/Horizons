@@ -138,18 +138,36 @@ finished.
 Owner input needed. Recorded rather than guessed. **Nothing below has been
 decided by a session.**
 
-| # | Question | Blocking? | Default in effect |
+### Open
+
+| # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-01 | **Licence: brief says AGPL, Doctrine §8 says PolyForm Noncommercial.** §8's stated intent is "may not sell it or use it commercially"; AGPL permits commercial use, so it does not deliver that intent. | No — changeable free until first release | PolyForm NC 1.0.0 (Doctrine wins). See [ADR-0017](docs/adr/0017-licensing.md) |
-| Q-02 | **Name collision with the sibling app.** The hub already ships *Clear Horizons* (astro planner). *Horizons* and *Clear Horizons* side by side will read as two versions of one app. | No | Keep repo slug `Horizons`, ship display name "Horizons", take a qualified Pages subdomain. See [ADR-0018](docs/adr/0018-name-and-slug.md) |
-| Q-03 | **Work-vault policy line.** What the work vault may and may not contain, given the GFE context. The brief says this line is the owner's to supply. | **Yes, before any work data is entered** | None — [`docs/data-constitution.md`](docs/data-constitution.md) ships with the line marked as awaiting Noah's words |
-| Q-04 | Pages subdomain string (depends on Q-02) and the four §10 metadata values | Yes, before deploy | Listed for confirmation at bootstrap handover |
-| Q-05 | Terminology skin for the work vault — which workplace aliases (Suspense↔Deadline, OPR↔Owner) ship as the default skin | No | Neutral vocabulary; skin is opt-in |
+| Q-02 | **The app needs a new name.** Noah, 2026-07-27. The *Clear Horizons* collision is one reason; the decision is broader than that. | Blocks Q-04 and the hub link. **Does not block building** — nothing in the schema, event vocabulary, or file formats encodes the product name. | Awaiting a name. Then ADR-0020 supersedes [ADR-0018](docs/adr/0018-name-and-slug.md) |
+| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Downstream of Q-02 — deferred by Noah until the name is settled |
+
+### Closed
+
+| # | Question | Answer |
+|---|---|---|
+| Q-01 | Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial | **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted. |
+| Q-03 | Work-vault policy line, given the GFE context | **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27. |
+| Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
 
 ---
 
 ## Project facts
 
+- **Reference platform: a personal iPad**, installed to the Home Screen from Safari
+  (Noah, 2026-07-27). Every budget is measured there and every surface is designed for
+  it first. Desktop is secondary.
+- **This is a personal app and is not for government-furnished equipment.** Not
+  designed for it, not tested on it, not a control for restricted information. Stated
+  plainly in [`docs/data-constitution.md`](docs/data-constitution.md).
+- **The folder mirror does not exist on the reference platform** — Safari has no disk
+  picker. Export/import via Files carries the whole sync and durability story
+  ([ADR-0004](docs/adr/0004-ios-path.md)), which is why it is built in Phase 0.
+- **Name is changing** (Q-02). Until it does, `Horizons` is the working name and the
+  repo slug.
 - **Repo:** `njefferson/Horizons`. Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages. Project not yet created. Subdomain pending Q-02/Q-04.
@@ -160,12 +178,16 @@ decided by a session.**
   Horizons' About linking back to the shared `/accessibility` statement.
 - **Repo metadata:** unset. §10 confirm loop not yet run. **Horizons is not
   "set up" until it has.**
-- **Doctrine governed-apps list:** the hub's `DOCTRINE.md:8` does not yet name
-  Horizons. Needs a one-line hub edit.
 - **Code:** none. This repo is documentation only as of 2026-07-27.
 
 ### Log
 
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
-  run and recorded. v1 frozen. Event vocabulary defined. 18 ADRs written. The
+  run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-27** — Noah answered all six open questions. Q-01, Q-03, Q-05 closed;
+  Q-02 reopened as a rename. **Platform corrected: iPadOS is the reference platform,
+  not a fallback** — the folder mirror demoted to a desktop convenience, export/import
+  promoted to the durability story and moved into Phase 0, capture budget re-pinned to
+  the iPad. V-06 (GFE) withdrawn as out of scope; V-07 promoted to **V-00** as the
+  highest-value open check. Added to the hub's governed-apps list.

@@ -9,10 +9,20 @@ Not what is most interesting to build, and not what demos best.
 
 ---
 
-## 1 · Stack
+## 1 · Stack and reference platform
 
 Static PWA, no build step where avoidable — the family standard, and it survives
 abandonment ([`data-constitution.md`](data-constitution.md)).
+
+> **The reference platform is a personal iPad**, installed to the Home Screen from
+> Safari (Noah, 2026-07-27). Every budget is measured there, every surface is designed
+> for touch at that size first, and **the folder mirror does not exist there** — so
+> export/import via Files carries the whole sync and durability story
+> ([ADR-0004](adr/0004-ios-path.md)). Desktop is a secondary environment that may gain
+> the mirror; nothing may depend on it.
+>
+> This is a personal app. It is **not for government-furnished equipment** — see
+> [`data-constitution.md`](data-constitution.md).
 
 | | |
 |---|---|
@@ -71,6 +81,9 @@ comparison.
 4. **Write gate** — every `Silent? yes` event and its cure, in-transaction.
 5. **Snapshot + tail** — startup path. Measure cold start from here on.
 6. **Export / import** — import seeds fresh. Restore-from-log-alone test.
+   **On the reference platform this is the entire durability story**, so it is built
+   here in Phase 0, not deferred — including the Restore-on-empty action
+   ([ADR-0004](adr/0004-ios-path.md)).
 7. **Vaults** — required on every event; cross-vault refusal in the gate.
 
 **Phase 0 exit criteria — all four, or it is not done:**
@@ -87,8 +100,9 @@ Capture before anything that displays it. An app that captures and does nothing
 else is already useful to the gate; the reverse is not true.
 
 8. Dump surface — zero-chrome, one line per card, per-keystroke drafts.
-9. Write path measured **cold, < 2 s**, on the slowest target device, keyboard
-   path included. This is a test, not an aspiration.
+9. Write path measured **cold, < 2 s, on the iPad** — the reference platform, not a
+   desktop. Keyboard path included. This is a test, not an aspiration: a budget met on
+   a laptop and missed on the actual device was never enforced.
 10. `/capture?text=` endpoint — visible confirm, undo, and **only** able to
     create one unclarified inbox item. It can set no clock, route nothing,
     complete nothing, delete nothing ([ADR-0008](adr/0008-capture-endpoints.md)).
@@ -129,12 +143,18 @@ The first point the app is worth opening in the morning.
 28. **Replan cards** — auto-conversion on a passed clock, context assembled,
     three forward options, capped on the surface
     ([ADR-0012](adr/0012-no-past-bucket.md)).
-29. T0 — permission, badge, glance surfaces.
-30. T1 — `.ics` with `RRULE`/`VALARM`. **Tests pin a non-UTC timezone.**
+29. T0 — permission, badge, glance surfaces. On iPadOS this is also what storage
+    persistence is reported to depend on ([V-00](verifications.md)), so it is not
+    optional polish.
+30. T1 — `.ics` with `RRULE`/`VALARM`. **This is the notification path**, not a stepping
+    stone to T2: it is the only mechanism that fires when the app is closed on the
+    reference platform. **Tests pin a non-UTC timezone.**
 
 ### Phase 6 — The work half
 
-Where the gate is actually won or lost. Without this the desk paper stays.
+Where the gate is actually won or lost. Without this the desk paper stays. Runs on the
+personal iPad like everything else — there is no separate work-machine configuration
+to build or verify.
 
 31. `project` extended attributes — OPR, stakeholders, suspense list, decision log.
 32. `role: Execute | Track`. **Track emits no next actions** — Waiting-Fors and
@@ -157,10 +177,11 @@ Where the gate is actually won or lost. Without this the desk paper stays.
 40. Session close screen — a win and a green gauge (peak-end).
 41. Accessibility pass against every binding in
     [`ACCESSIBILITY.md`](../ACCESSIBILITY.md), both themes.
-42. Cold-start and capture-budget measurement on real hardware.
-43. **V-06 checked on the GFE machine** — if persistence fails there, the work
-    half needs a different answer on that machine, and that is a design problem
-    to solve before the gate starts, not during it.
+42. Cold-start and capture-budget measurement **on the iPad**.
+43. **[V-00](verifications.md) checked** — Home Screen install, `persist()` true, and
+    still true the next morning. If persistence cannot be relied on, export/import is
+    the durability story and the app must **say so** rather than implying the local
+    store is safe. Settle this before the gate starts, not during it.
 
 Then the thirty days begin.
 
@@ -233,10 +254,10 @@ and not a field to fill at every bump.
 
 | | |
 |---|---|
-| **Q-03 — work-vault policy line** | Owner-supplied. Blocking before real work data is entered, not before building. |
-| **Q-04 — Pages subdomain + §10 metadata** | Blocking on deploy. |
-| **V-06 — GFE persistence** | Needs real hardware. Gates the work half; check before Phase 6, not after. |
-| **UI approach** | Decide at build start against the §4 constraints above. |
+| **Q-02 — the name** | A new name is wanted. Nothing in the schema, vocabulary, or formats encodes it, so this is copy, not a refactor. Does not block Phase 0. |
+| **Q-04 — Pages subdomain + §10 metadata** | Blocking on deploy. Downstream of the name. |
+| **V-00 — iPadOS persistence** | Needs the real device. Highest-value open check; settle before Phase 8. |
+| **UI approach** | Decide at build start against the §4 constraints above. Touch-first at iPad size. |
 | **Journal key derivation** | Argon2id vs PBKDF2 and its parameters. Record as an ADR when chosen (v1.5 — [ADR-0005](adr/0005-vaults-and-journal-encryption.md)). |
 | **"Stale store" definition** | For the iOS Restore prompt. Must not fire on a device simply used less often ([ADR-0004](adr/0004-ios-path.md)). |
 | **Module offer trigger** | What earns the next module offer. Needs dogfooding, not a guess, and must not become a nag. |
