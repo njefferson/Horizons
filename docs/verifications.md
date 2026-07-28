@@ -398,6 +398,41 @@ works, the *deploy* still has not run.
 
 ---
 
+## V-11 · Reading this repo's metadata from a session — **you cannot**
+**Status: PROVEN** · 2026-07-28
+
+**What happened.** Two sessions running told Noah the `indexed` topic still needed fixing.
+He had already fixed it, before the first of those reports. The report was not a guess — it
+was quoted from an API response, which is what made it convincing and what made it wrong.
+
+**The instrument.** GitHub's **search API is a cached index, not a read of current state.**
+The tell was in the same payload both times and neither read it:
+
+```
+updated_at: 2026-07-28T15:31:07Z    ← frozen, across four subsequent pushes and his edit
+topics:     [... "indexed" ...]      ← stale
+```
+
+A repository's `updated_at` moves on pushes. Four pushes went by and it did not move. The
+response was a snapshot of a moment hours earlier, presented with no indication that it was.
+
+**The other instrument is blocked.** `api.github.com/repos/njefferson/Quietkeep` returns
+**403** through this environment's proxy — the same CONNECT policy denial proven in
+[V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven) and V-04.
+
+**Therefore:** a session **cannot** verify this repo's description, website, topics, or
+social preview. Doctrine §10 says list the values and ask Noah to confirm each. **His
+confirmation is the verification.** There is no second opinion available, and the thing
+being treated as one was a cache.
+
+> **The error worth remembering is not the stale read — it is what the stale read was used
+> for.** "Read back from the API, not assumed" was reported as a *stronger* check than the
+> owner's word. It was a weaker one, and it was used to contradict him about his own repo,
+> twice. When the only available witness is the owner, the job is to ask clearly and then
+> believe the answer.
+
+---
+
 ## Standing note on instruments
 
 Two lessons from sibling apps apply to every future row here:
@@ -412,3 +447,10 @@ Two lessons from sibling apps apply to every future row here:
   CI failed on all four runs while every session reported the same tests passing,
   because the local invocation and the CI invocation took different paths. If a
   workflow is going to be *cited* as verification, its run has to be opened.
+- **A cached index answering instantly is not a current read.** V-11: a search
+  API returned a topic list hours out of date, with its own stale `updated_at`
+  sitting in the same response. This is V-04's confident-empty-result in a new
+  costume — the failure is trusting an instrument's *fluency* instead of asking
+  what it actually measures and when it last measured it.
+- **When the only witness is the owner, ask clearly and believe the answer.**
+  V-11 again: a weaker instrument was used to contradict him about his own repo.

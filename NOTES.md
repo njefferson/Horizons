@@ -162,7 +162,6 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-09 | **The four §10 repo-metadata values** | Yes, before any public release | Description ✅, website ✅, topics ✅ (read back from the API, not assumed). **The social preview now exists** — `public/brand/social-preview.png`, 1280×640, 677 KB — but uploading it is a GitHub-UI step the session token cannot do, so it is owed on Noah's hands. **One typo still open:** the topic reads `indexed`; the store is IndexedDB, so it wants `indexeddb`. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
@@ -186,6 +185,7 @@ That error cost the Perennial round.
 | Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
 | Q-08 | How "Wynts" is pronounced | **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad. |
 | Q-02 | The app's name | **Quietkeep.** Noah 2026-07-28: *"I like quietkeep and there is nothing on the App Store that I see near it."* Cleared through all five checks — [ADR-0024](docs/adr/0024-name-quietkeep.md), [V-04](docs/verifications.md). |
+| Q-09 | The four §10 repo-metadata values | **All four set, by Noah, 2026-07-28.** Description, website, topics (he corrected `indexeddb` himself), and the **social preview uploaded**. Per §10 the repo is now *set up* — and his confirmation **is** the verification: a session cannot read this repo's live metadata at all ([V-11](docs/verifications.md)). |
 | Q-04 | Pages subdomain string | **`quietkeep.pages.dev`** — Noah confirmed it clean on his device, 2026-07-28. Production comes off `main`; `staging` gets `staging.quietkeep.pages.dev`, which turns the Doctrine §7 gate into a URL he can open on the iPad. The metadata half of this question is now **Q-09**, because it is a different kind of answer and was hiding behind the subdomain. |
 
 ---
@@ -221,10 +221,11 @@ That error cost the Perennial round.
   is a deployed page to visit — adding a dead link to the live hub is a site
   regression, not progress. Doctrine §13.6 closes when it lands, together with
   the app's About linking back to the shared `/accessibility` statement.
-- **Repo metadata:** description, website and topics are **set** (Noah, 2026-07-28; read
-  back from the API and confirmed, per §10 — not assumed from the fact that he was asked).
-  The social preview is **not**, and one topic is a typo. **Quietkeep is not "set up" until
-  both are done** — see Q-09.
+- **Repo metadata: all four §10 values are set** — description, website, topics, social
+  preview (Noah, 2026-07-28). **Quietkeep's repo is "set up"**, and this is the first time
+  that can be said without a caveat. His confirmation is the verification and there is no
+  other: a session cannot read this repo's live metadata — the search API serves a stale
+  cached index and the direct API 403s through the proxy ([V-11](docs/verifications.md)).
 - **Brand:** the mark is `public/brand/icon.svg` — drawn, not generated, because an icon is
   geometry and 48px legibility has to be measured rather than hoped for
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
@@ -239,6 +240,20 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **The repo metadata is finished, and I was wrong about it twice.** Noah
+  set all four §10 values and uploaded the social preview. I twice reported the `indexed`
+  topic as still broken, quoting an API response — **he had fixed it before the first
+  report.** The GitHub *search* API is a cached index, and its own stale `updated_at` was
+  sitting in the same payload, frozen across four pushes, unread both times. The direct API
+  403s through the proxy, so a session cannot read this repo's live metadata at all: §10
+  confirmation is Noah's word and there is no second opinion. Recorded as
+  [V-11](docs/verifications.md) — the error worth keeping is that "read back from the API"
+  was reported as *stronger* than the owner's word when it was weaker.
+- **2026-07-28** — **No spiral, and the mark came out of the dark.** A spiral is loss of
+  control and anxiety-laden; it is now a flat product rule beside no red walls and no
+  streaks. The palette inverted rather than paled — the three-step ladder needs ~9:1 of
+  range, so lightening the field meant darkening the wall. It measures better than what it
+  replaced and fixed a grayscale collapse at 32–48px nobody had caught.
 - **2026-07-28** — **Quietkeep has a face.** Five candidates came back from image
   generation; the background that won is the one that says the epigraph — things set down,
   one small light — and the one that lost did so because it reads as an orbital diagram,

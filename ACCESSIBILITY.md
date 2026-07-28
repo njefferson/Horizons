@@ -150,12 +150,12 @@ eventually mean "you failed" in the UI.
 the field stay separated with hue removed — the same pass condition B-01 sets for
 every pressure surface, applied to the identity so the two cannot drift apart.
 
-**Proven in CI, not just locally.** Spine run 7 (`fac16df`) was watched green with
-every ratio identical to the local run, on the first palette; the palette above
-supersedes it and its run is watched the same way. Per
-[V-10](docs/verifications.md), a gate nobody has watched pass is a file. CI
-installed **chromium build v1194**, the revision `playwright-core` 1.56.0 pins to
-— the matched pair held on a machine that is not this sandbox.
+**Proven in CI, not just locally.** Spine **run 9** (`4f03e9a`) — the palette above —
+watched green, with every ratio identical to the local run: `8.92:1`, `6.48:1`,
+`8.50:1`, `8.45:1`, `7.34:1`. Run 7 was watched the same way on the superseded
+palette. Per [V-10](docs/verifications.md), a gate nobody has watched pass is a
+file. CI installs **chromium build v1194**, the revision `playwright-core` 1.56.0
+pins to — the matched pair holds on a machine that is not this sandbox.
 
 ---
 
