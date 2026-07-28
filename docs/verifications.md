@@ -484,61 +484,50 @@ is not needed.
 
 ---
 
-## V-12 · The deployed site would not load on the iPad — **RESOLVED, cause not proven**
-**Status: WORKING** · 2026-07-28 · cause probable, not confirmed
+## V-12 · The deployed site would not load, then did — **RESOLVED**
+**Status: WORKING** · 2026-07-28
 
 CI published successfully and Safari could not reach the result — then could.
 
-| URL | Source | Noah's iPad | From a session |
-|---|---|---|---|
-| `staging.quietkeep.pages.dev` | branch alias | "connection was lost" | 403 — gateway, tells us nothing |
-| `2020c8fe.quietkeep.pages.dev` | deployment hash | same | 403 — same |
-| `quietkeep.pages.dev` | production, after the promote | **loads, and the app runs** | 403 — same |
+| URL | What it is | Result on Noah's iPad |
+|---|---|---|
+| `staging.quietkeep.pages.dev` | branch alias of a **preview** deployment | "connection was lost" |
+| `2020c8fe.quietkeep.pages.dev` | hash URL of the **same preview** deployment | same |
+| `quietkeep.pages.dev` | **production**, after the promote | **loads, and the app runs** |
 
-**Two things changed between the failures and the success, and only one of them can be
-credited:**
+**One variable changed: the project gained its first production deployment.** Same device,
+same network throughout — confirmed by Noah, and it was never mine to assume otherwise.
 
-1. The promote gave the project its **first production deployment**.
-2. The successful session is **on LTE** — visible in the device's own status bar in the
-   screenshots.
+That makes a coherent explanation available without inventing anything. **Both failing URLs
+were preview deployments** — the hash URL and its branch alias are two names for one
+preview build — and the Pages project had **no production deployment at all**, because it
+was created with `--production-branch=main` while `main` still had no `public/`. The apex
+worked as soon as production existed. Every observation fits; nothing else changed.
 
-**The second is the likelier cause and it was not tested deliberately.** Two *different*
-DNS records failing (alias and hash) already argued against a Cloudflare-side fault, and a
-network-level block on `pages.dev` explains all three failures at once. **This row does not
-claim the promote fixed it**, because that would be crediting a change that happened to
-precede the outcome — the exact shape of reasoning V-04 and V-11 were both about.
+> **A correction, and it matters more than the finding.** This row previously read that the
+> likelier cause was the device being on LTE rather than Wi-Fi. **Noah was on LTE for every
+> one of those tests.** I inferred a network change from a status-bar icon in a screenshot,
+> promoted the inference to "likelier cause", and wrote it into a permanent record as
+> reasoning. It was a guess about someone else's setup, presented as an analysis — the same
+> failure as [V-11](#v-11--reading-this-repos-metadata-from-a-session--you-cannot)'s cached
+> index and the empty `RAW_TOKEN`, in a third costume. **An instrument I did not consult
+> him about is not evidence, and a screenshot is an instrument.**
+>
+> It also had a cost beyond being wrong: it argued *against* the explanation that actually
+> fits, and it called the promote "probably unnecessary" when the promote is the one thing
+> that plausibly fixed it.
 
-**What would settle it, cheaply, if it recurs:** open `quietkeep.pages.dev` on the Wi-Fi
-network that failed. If it fails there and works on LTE, it is that network's DNS or a
-content blocker, and nothing about the deploy needs changing.
-
-**Consequence, recorded:** [`main` was promoted to troubleshoot this](../NOTES.md), and the
-troubleshooting value of that promote is now doubtful. The promote stands — the on-device
-pass has since happened, so it is retroactively a fair state — but it was probably not
-necessary.
-
-**What the two failures already rule out.** The hash URL and the alias are different DNS
-records; both failing means it is **not** a branch-alias provisioning problem, which was
-the first theory. Whatever this is, it is upstream of which name points at the deployment.
+**The check that would confirm it, if anyone wants certainty:** open
+`staging.quietkeep.pages.dev` now. Preview aliases should work now that a production
+deployment exists. If it does, the explanation above is confirmed; if it still fails,
+preview deployments on this project are broken and that is a real bug to chase.
 
 **Proven, not assumed:** all three hosts are unreachable from a session — `CONNECT tunnel
 failed, 403`, identical for each, which is [V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven)'s
-policy denial and says nothing about whether the site is up. **A session cannot diagnose
-this row.**
+policy denial and says nothing about whether a site is up. **A session cannot diagnose this
+row**, which is exactly why the temptation to fill the gap with inference was so strong and
+so wrong.
 
-**The one check that splits it**, and it is Noah's to run: open
-**`noahjefferson.pages.dev`** — the hub, same platform, same account, different project —
-on the same device and network.
-
-- Hub loads, Quietkeep does not → Cloudflare-side, this project. The production deploy that
-  followed the promote is the candidate fix.
-- Hub also fails → not the project at all. Something between that iPad and `pages.dev`:
-  DNS filtering, a content blocker, a VPN, or the network's resolver. Cellular with Wi-Fi
-  off confirms it in seconds.
-
-**Consequence while this is open:** [V-00](#v-00--ipados-storage-behaviour--the-reference-platform)
-is blocked again, for a new reason. The storage panel exists and is deployed; it cannot be
-opened. The oldest check in the repo is one working URL away.
 
 ---
 

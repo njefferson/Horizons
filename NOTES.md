@@ -216,12 +216,12 @@ That error cost the Perennial round.
   **`CLOUDFLARE_API_KEY`** (the workflow accepts either that or `CLOUDFLARE_API_TOKEN` and
   logs which name it found). `main` → `quietkeep.pages.dev`, `staging` →
   `staging.quietkeep.pages.dev`. Both have deployed successfully from CI.
-- **`main` was promoted to troubleshoot, and the on-device pass followed rather than
-  preceded it** (Noah, 2026-07-28: *"Promote to main to troubleshoot"*). At the time
-  nothing would load on his iPad, so the §7 pass could not happen first. It has since
-  happened — he ran the app at `quietkeep.pages.dev`, captured, **force-quit, reopened, and
-  the data was still there**. So `main` is in a fair state now; it got there in the wrong
-  order, and that is written down rather than tidied away.
+- **`main` was promoted to troubleshoot, and it worked** (Noah, 2026-07-28: *"Promote to
+  main to troubleshoot"*). Nothing would load on his iPad at the time, so the §7 pass could
+  not happen first. The promote gave the Pages project its **first production deployment**,
+  the apex URL came up, and the pass then happened on the real device — captured,
+  force-quit, reopened, data intact. `main` reached a fair state in the wrong order, which
+  is recorded rather than tidied away, but the promote was the right call and it was his.
 - **Normal flow resumes:** `staging` branches off `main` for future development, promoted
   on Noah's word (Doctrine §7). `main` is the baseline.
 - **Hub wiring:** the app is **not yet** linked from

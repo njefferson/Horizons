@@ -20,7 +20,11 @@
 
 <header class="bar">
   <h1 class="wordmark">Quietkeep</h1>
-  <button id="open-diagnostics" type="button" class="ghost">Storage</button>
+  <!-- Always available, never a badge or a nag. The label is for screen readers
+       and the tooltip; the glyph is what is seen. -->
+  <button id="open-about" type="button" class="ghost info"
+          aria-label="About Quietkeep, storage, and what's new"
+          title="About Quietkeep">i</button>
 </header>
 
 <main>
@@ -54,16 +58,43 @@
      <a href="https://noahjefferson.pages.dev/accessibility">Accessibility</a></p>
 </footer>
 
-<dialog id="diagnostics" aria-labelledby="diag-title">
-  <h2 id="diag-title">Storage on this device</h2>
-  <p class="diag-lead">
-    Whether the browser has promised to keep your data. This is a real question
-    on iPadOS and the answer is reported exactly as measured.
+<dialog id="about" aria-labelledby="about-title">
+  <h2 id="about-title">Quietkeep <span id="version" class="version"></span></h2>
+
+  <!-- Shown only on the first run. Everything below it is always here. -->
+  <div id="about-intro" class="intro" hidden>
+    <p><strong>Quietkeep holds what you put down, and brings it back.</strong>
+       You do not have to remember to look.</p>
+    <p>There is one thing worth setting up now: ask this browser to <em>keep</em>
+       your writing rather than treat it as disposable.</p>
+    <p class="intro-aside">You will also see a prompt about notifications. That
+       is how the two are linked on iPad — <strong>Quietkeep never sends
+       any.</strong></p>
+    <p class="intro-aside">You can skip this and do it later. It is always under
+       the <strong>i</strong> at the top.</p>
+  </div>
+
+  <h3 class="about-section">Storage on this device</h3>
+  <dl id="storage-body"></dl>
+  <div class="about-actions">
+    <button id="storage-ask" type="button" hidden>Keep my data on this device</button>
+  </div>
+
+  <h3 class="about-section">What&rsquo;s new</h3>
+  <div id="patch-notes"></div>
+
+  <h3 class="about-section">What this is</h3>
+  <p class="about-p">
+    A free planner that keeps everything on your device. No accounts, no
+    telemetry, and no server holding your writing — because there is no server.
   </p>
-  <dl id="diag-body"></dl>
-  <div class="diag-actions">
-    <button id="diag-ask" type="button" hidden>Ask for persistent storage</button>
-    <button id="diag-close" type="button" class="ghost">Close</button>
+  <p class="about-p">
+    <a href="https://noahjefferson.pages.dev/accessibility">Accessibility statement</a> ·
+    <a href="https://github.com/njefferson/Quietkeep">Source and licence</a>
+  </p>
+
+  <div class="about-actions">
+    <button id="about-close" type="button" class="ghost">Close</button>
   </div>
 </dialog>
 

@@ -11,7 +11,7 @@
 import { openSession, captureEvent, type Session } from './session.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
-import { mountDiagnostics } from './diagnostics.ts';
+import { mountAbout } from './about.ts';
 
 const now = () => Date.now();
 
@@ -106,7 +106,9 @@ async function main(): Promise<void> {
     }
   });
 
-  mountDiagnostics(session);
+  // Opens itself on a first run — a new user has no way to know that storage
+  // needs asking for — and never uninvited after that.
+  await mountAbout(session);
 
   // The store is open, state is folded, and the surface reflects it. Marked on
   // the document so the headless walk waits for the app rather than for `load`,
