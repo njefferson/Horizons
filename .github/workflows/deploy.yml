@@ -83,8 +83,16 @@ jobs:
           if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
-            echo "ready=false" >> "$GITHUB_OUTPUT"
-            echo "Cloudflare secrets not configured — skipping deploy."
+            # HARD FAIL, not a skip. Skipping is the right answer when there is
+            # no site to publish — that is the guard above. Once public/index.html
+            # exists, "I could not publish it" is a broken deploy, and a green run
+            # that shipped nothing is the exact failure this repo keeps finding
+            # (V-10). Say which secret is missing; never name its value.
+            echo "::error::public/index.html exists but the deploy cannot run."
+            [ -z "$TOKEN" ]   && echo "::error::CLOUDFLARE_API_TOKEN is empty or unset."
+            [ -z "$ACCOUNT" ] && echo "::error::CLOUDFLARE_ACCOUNT_ID is empty or unset."
+            echo "Set them at Settings → Secrets and variables → Actions → Repository secrets."
+            exit 1
           fi
           # Doctrine §16.4: the cleaned values go to the job environment, never to
           # step outputs. Outputs persist in the run's stored output and are

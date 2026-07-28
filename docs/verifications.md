@@ -407,6 +407,26 @@ works, the *deploy* still has not run.
 **Every gate in this repo has now been watched green:** Spine runs 5, 6 and 7; Deploy runs
 1, 2 and 3; and the brand gate on its first CI run, with ratios identical to local.
 
+**And watching the runs immediately earned its keep.** Deploy run 7 (`68199ac`) — the
+first push with a real `public/index.html` — reported **success and published nothing.**
+The runner's own env block says why:
+
+```
+RAW_TOKEN:                    ← empty
+RAW_ACCOUNT: ***              ← present
+Cloudflare secrets not configured — skipping deploy.
+```
+
+`CLOUDFLARE_ACCOUNT_ID` is set; **`CLOUDFLARE_API_TOKEN` is not** (or is stored under a
+different name). Two separate things went wrong and only one of them is Noah's:
+
+1. **The secret is missing.** Needs his hands — Settings → Secrets and variables →
+   Actions. The name must be exactly `CLOUDFLARE_API_TOKEN`.
+2. **The workflow called that success**, which is mine. The skip-quietly behaviour was
+   correct while there was no site to publish; the moment `public/index.html` existed it
+   became a green run that shipped nothing — the very shape V-10 is about. It is now a
+   **hard failure** that names the missing secret (never its value).
+
 ---
 
 ## V-11 · Reading this repo's metadata from a session — **you cannot**
