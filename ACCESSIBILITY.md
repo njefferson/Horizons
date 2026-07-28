@@ -29,8 +29,11 @@ redundant channels**, of which hue is the least important:
 | **Text** | Every item states its own status in words ("ready again", "ready in 3 days"). |
 
 Hue may reinforce, never carry. **A grayscale render of any pressure surface
-must remain fully readable** — this is a CI check over rendered screenshots, not
-a designer's judgement.
+must remain fully readable.** No pressure surface exists yet (Phase 0/1 ship
+capture and a flat list), so there is nothing to render — but when the first one
+lands, a grayscale screenshot check lands in the same commit, per B-08's rule.
+Until then this is a design commitment, **not** a running gate, and it is named
+as such rather than claimed as one.
 
 **No red walls.** Rising pressure never terminates in an alarm colour, because
 there is no failure state to alarm about (product law 5). The gradient runs
@@ -38,9 +41,11 @@ toward *emphasis*, not toward *danger*.
 
 ### B-02 · The coverage gauge
 Reads as text first — "everything returns · 0 silent". The number is the
-information; any colour is decoration. It is a `<button>` (it expands to show
-each item's return date), so it is keyboard-reachable and announces its expanded
-state. Never a bare `<div>` with a click handler.
+information; any colour is decoration. **Today it is a static `<p>`** that reports
+the count; when it gains the expand-to-show-return-dates behaviour it becomes a
+real `<button>` with `aria-expanded`, never a bare `<div>` with a click handler.
+The interactive form is a design commitment for when the behaviour exists, not a
+description of the current element.
 
 ### B-03 · Capacity, heat, and magnitude
 Three places use small ordinal scales: capacity (low / steady / sharp / unsure),
@@ -51,14 +56,18 @@ filter-chip pattern is used — **strike-through is banned for off-states**, it
 reads as deleted.
 
 ### B-04 · Sizing
-No fixed size may ignore the space available (Doctrine §4, LESSONS.md §6). Every
-panel, card, and sheet measures the space **at the moment it opens** — never a
-constant, never a value captured at startup. **A floor must never exceed the
-space available.** Content that cannot fit scrolls inside itself. Type is sized
-in `rem` so the user's *text-size* preference is honoured, not only page zoom.
+No fixed size may ignore the space available (Doctrine §4, LESSONS.md §6). Type is
+sized in `rem` so the user's *text-size* preference is honoured, not only page
+zoom, and content that cannot fit scrolls inside its own container rather than
+the page. Both are **enforced today**: `tools/a11y.mjs` asserts zero page
+overflow (and zero dialog overflow) at 320px with 200% text, in both themes.
 
-Gate viewports include small-phone-at-200%-text. The 320px/240px place-card
-failure in a sibling app is the reason this is a gate and not an intention.
+**A floor must never exceed the space available.** The stronger form — every
+panel *measuring* the space at the moment it opens, rather than trusting CSS —
+is a design commitment for the surfaces that will need it (the sheets and
+overlays of later phases); nothing in Phase 1 measures at runtime, and this does
+not claim otherwise. The 320px/240px place-card failure in a sibling app is why
+the viewport check is a gate and not an intention.
 
 ### B-05 · Motion
 Reduced-motion is honoured throughout. The pressure gradient, the gauge, and the
@@ -66,16 +75,19 @@ replan card all have static presentations. No animation is load-bearing for
 meaning.
 
 ### B-06 · Interaction and focus
-Keyboard always. `:focus-visible` rings are never removed. Touch targets ≥44px.
-Real `<dialog>` and `<button>` elements. Zoom never locked. The 2-second capture
-budget applies to the keyboard path too — capture must be reachable without a
-pointer.
+Keyboard always. `:focus-visible` rings are never removed — the gate Tab-navigates
+to every control and measures the ring's style, width and contrast. Touch targets
+≥44px tall and ≥24px wide, checked in every rendered state. Real `<dialog>` and
+`<button>` elements. Zoom never locked. The 2-second capture budget applies to the
+keyboard path too — capture must be reachable without a pointer.
 
 ### B-07 · Modes
 Dump · Review · Work (and Rest) are modes, and Doctrine §3 requires a mode
-announce itself with a standing indicator and an obvious exit. The current mode
-is in a live region so a screen-reader user learns of a mode change without
-hunting for it.
+announce itself with a standing indicator and an obvious exit, with the current
+mode in a live region so a screen-reader user learns of a change without hunting
+for it. **No mode exists yet** — Phase 1 is capture only. This is the binding for
+when they arrive; the one live region shipped today (`#status`) reports capture
+confirmations, not mode.
 
 ### B-08 · The contrast gate
 Contrast is **computed, never eyeballed** — a CI check that exits non-zero on any
@@ -96,9 +108,11 @@ selector registry (a selector that stops matching FAILS — silently skipping wh
 a check cannot find is how gates rot), contrast computed against the resolved
 ancestor background in both themes, axe 4.10.2 per state, target sizes, and
 B-04's hardest viewport, 320px at 200% text, where the page may not scroll
-sideways. Proven to bite both ways before being trusted (§6): a broken
-`--ink-soft` produced 16 failures and exit 1, and the axe half caught **F-01**
-on its first run.
+sideways. Proven to bite both ways before being trusted (§6): a broken `--ink-soft`
+produced failures and exit 1, and against the adversarial attack that fooled its
+first version (rings/placeholder/targets removed) it produced 23 failures — see
+F-02. **Watched green in CI**, per V-10's rule that a gate nobody has watched
+pass is a file; the observed run is recorded in NOTES.md's log.
 
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and

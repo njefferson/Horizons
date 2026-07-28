@@ -11,7 +11,7 @@
 // its (i) panel, so the notes a user reads and the notes in the repo cannot say
 // different things.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, readdirSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { RELEASES, CURRENT } from '../src/ui/changelog.ts';
@@ -83,6 +83,28 @@ for (let i = 0; i < RELEASES.length - 1; i++) {
 for (const r of RELEASES) {
   if (r.notes.length === 0) fail(`${r.triplet} has no notes — a release the user cannot read about is not documented`);
   if ('name' in r) fail(`${r.triplet} carries a name. Releases do not have names (§7).`);
+}
+
+// --- domain-vocabulary survival (the "horizons" check the docs claim exists) ---
+// A careless global rename of the product could silently delete law 4's own
+// statement. This asserts the domain terms are still present. Cheap, and it
+// makes true a claim NOTES.md had been making without a gate behind it (audit).
+const DOMAIN_TERMS = ['higher horizons', 'horizon-integrity'];
+const scanDirs = ['docs', 'src'];
+const walk = (dir) => {
+  const out = [];
+  for (const name of readdirSync(join(ROOT, dir), { withFileTypes: true })) {
+    if (name.name === 'node_modules') continue;
+    const rel = `${dir}/${name.name}`;
+    if (name.isDirectory()) out.push(...walk(rel));
+    else if (/\.(md|ts)$/.test(name.name)) out.push(rel);
+  }
+  return out;
+};
+console.log('\nDomain vocabulary (law 4)');
+const corpus = scanDirs.flatMap(walk).map((f) => readFileSync(join(ROOT, f), 'utf8')).join('\n').toLowerCase();
+for (const term of DOMAIN_TERMS) {
+  (corpus.includes(term) ? pass : fail)(`"${term}" survives — a rename did not delete law 4's own vocabulary`);
 }
 
 // --- write or verify -------------------------------------------------------

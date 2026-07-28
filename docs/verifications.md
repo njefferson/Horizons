@@ -21,6 +21,12 @@ a dated resolution beneath it.
 | `NEEDS NOAH'S HANDS` | Cannot be checked from a session by any means. Requires real hardware or a real account. |
 | `NOT RUN` | Deliberately deferred, with the reason and the trigger for running it. |
 | `WITHDRAWN` | No longer relevant — scope changed. The row stays so the consideration is on record. |
+| `WORKING` | An observed behaviour is now correct; recorded when the cause is understood well enough to name but the row is about a fixed symptom, not a standing invariant. |
+| `PROVEN` | A one-off fact was demonstrated (e.g. a network limit), with the demonstration named. |
+
+A row may carry a compound status line (e.g. `STEP 1 ANSWERED · step 2 pending`)
+where a single word would hide which half is done. When it does, the halves are
+named explicitly rather than averaged into one label.
 
 ---
 
@@ -161,7 +167,13 @@ EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
 ## V-04 · Name availability — **the app is Quietkeep**
-**Status: VERIFIED** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
+**Status: PARTIAL** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
+
+PARTIAL, not VERIFIED, and the audit was right to catch the earlier label: every check a
+session or Noah's device could run has run and come back clean — the App Store search and
+`quietkeep.pages.dev`, 2026-07-28 — but the USPTO knockout is deliberately **not run** (see
+below), and by this file's own status table a question with a leg deferred-with-a-reason is
+PARTIAL, not VERIFIED. The name is safe to build on; it is not certified.
 
 Every check a session could run has run, and **both checks that only Noah's device could
 run came back from him** — the App Store search and `quietkeep.pages.dev`, on 2026-07-28.
@@ -456,8 +468,13 @@ and held the brand assets, and the guard still skipped, because it tests for
 observed rather than reasoned about. Note what it does and does not prove: the *guard*
 works, the *deploy* still has not run.
 
-**Every gate in this repo has now been watched green:** Spine runs 5, 6 and 7; Deploy runs
-1, 2 and 3; and the brand gate on its first CI run, with ratios identical to local.
+**Every gate has been watched green at least once, and each new gate is watched on the run
+that introduces it** — this is a standing practice, not a fixed list, precisely because the
+gate set keeps growing (it is now typecheck, tests, changelog, build, smoke, a11y, brand and
+banned-vocabulary). Naming a frozen roster here would go stale the next time a gate is added,
+which is what the audit found the old sentence doing. The rule is: the run for the commit
+that adds or changes a gate is opened before the next claim of green, and the observed run is
+recorded in that gate's own row or in NOTES.md's log.
 
 **And watching the runs immediately earned its keep.** Deploy run 7 (`68199ac`) — the
 first push with a real `public/index.html` — reported **success and published nothing.**
@@ -582,8 +599,8 @@ Two lessons from sibling apps apply to every future row here:
 
 - **A success response carrying nothing is not an answer — it is a question.**
   An HTTP 200 with an empty body, or a search returning no hits, is not evidence
-  of absence. V-04 is exactly this shape and is labelled UNVERIFIED for exactly
-  this reason.
+  of absence. This is the shape that made the early Perennial searches read as
+  clean when the name was taken; V-04 now carries its evidence explicitly.
 - **When a result looks absurd, suspect the instrument first.** V-05's 403 is the
   instrument, not the answer.
 - **Running the command is not the same as watching the gate.** V-10: the spine's

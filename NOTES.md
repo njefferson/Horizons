@@ -6,7 +6,7 @@
 >
 > `Horizons` is now the **repo slug only**, until the GitHub rename. It also survives
 > permanently as *domain* vocabulary — *higher horizons* (law 4) and the
-> *horizon-integrity engine* keep the word, and a CI check asserts they were not lost to a
+> *horizon-integrity engine* keep the word, and `changelog:check` asserts they were not lost to a
 > rename.
 >
 > **The check order that produced it**, kept because it transfers — cheapest and
@@ -16,9 +16,6 @@
 > Steps 1 and 2 are free and instant, and were being run last or not at all. The full
 > record of what was tried is the [graveyard](docs/adr/0020-name-perennial.md) — a trail of
 > where the search went, not a proof that nothing else was left.
->
-> "Horizons" also survives as **domain vocabulary** — product law 4's *higher horizons*
-> and the *horizon-integrity engine* are planning terminology, not branding.
 
 The repo source of truth. **Read this first, every session** (Doctrine §12).
 Thesis, invariants, frozen scope, open questions, Project facts. Settled
@@ -162,8 +159,8 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
-| Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
+| Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (in `noahjefferson/public/index.html`, two places — the tile and its data entry). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
+| Q-07 | **The hub undersells the astro app.** the hub tile reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
 **Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
 App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
@@ -205,11 +202,13 @@ That error cost the Perennial round.
   `njefferson/Quietkeep` as of 2026-07-28. The licence's Required Notice URL moved with the
   slug in the same commit, which is the condition [ADR-0017](docs/adr/0017-licensing.md)
   set. `Horizons` survives only as *domain* vocabulary — *higher horizons* (law 4) and the
-  *horizon-integrity engine* — and a check asserts it was not lost to a rename.
+  *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` and `staging` are identical at `f1092e8`** (fast-forward, no merge). See the
-  note under Deploy: this was **not** a §7 pass.
+- **`main` is at `f1092e8`** (the troubleshooting promote). **`staging` is ahead** by the
+  0.2.x work — the ⓘ panel, export, the write-path and network fixes, the a11y gate, and the
+  adversarial-audit fixes — none of it promoted. `main` serves 0.1.0 at `quietkeep.pages.dev`;
+  `staging` serves the current app. Promotion is Noah's call (Doctrine §7).
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
@@ -239,9 +238,10 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** the Phase 0 spine plus **Phase 1's shell and Dump surface**, on both branches.
-  `public/index.html` exists, so the deploy no longer skips — `staging` →
-  `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`.
+- **Code:** the Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export are on
+  `staging` (0.2.3). `main` still carries only the 0.1.0 shell. `public/index.html` exists on
+  both, so neither deploy skips — `staging` → `staging.quietkeep.pages.dev`, `main` →
+  `quietkeep.pages.dev` (serving 0.1.0 until a promote).
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
   committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).

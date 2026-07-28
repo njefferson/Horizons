@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Phase 0 spine: append-only log, fold, write gate, snapshot, export/import. No UI.",
+  "description": "Quietkeep \u2014 a free, local-first, event-sourced planner. Static PWA, no accounts, no server.",
   "license": "SEE LICENSE IN LICENSE.md",
   "engines": {
     "node": ">=22"

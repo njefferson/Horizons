@@ -221,6 +221,14 @@ reproduction case. Voluntary, shown in full before it leaves, never automatic.
 
 ## 5 · CI gates
 
+> **Status, 2026-07-28.** Live in `spine.yml`: typecheck, tests, the changelog/
+> triplet gate, build, the headless smoke walk, the rendered-app a11y gate, the
+> brand gate, and the banned-vocabulary grep. **Not yet built** (named here as
+> the commitment, not as a running gate): grayscale legibility (no pressure
+> surface exists to render), the closed-event-list check, and the write-gate-
+> bypass import check. Those land with the code that makes them meaningful. This
+> block used to read as if all seven already ran — the audit corrected it.
+
 Each exits non-zero. A gate that warns is not a gate.
 
 1. **Contrast** — computed over every declared fg/bg pair, both themes. **New

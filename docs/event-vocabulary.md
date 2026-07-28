@@ -23,14 +23,17 @@ state" that could disagree with the log.
   node:    NodeId | null,     // the node it concerns, if any
   at:      ISO8601,           // wall clock on the writing device
   device:  DeviceId,
-  seq:     integer,           // per-device monotonic, gap-free
+  seq:     integer,           // per-device monotonic; gap-free over OFFERED events (ADR-0027)
   payload: object             // shape is fixed per kind
 }
 ```
 
-**Stamping.** `(at, device, seq)` together. `seq` is per-device and gap-free, so
-a shard can prove it is complete; `at` is wall clock and therefore *untrusted for
-ordering across devices* — it is a user-facing timestamp, not a clock.
+**Stamping.** `(at, device, seq)` together. `seq` is per-device monotonic and
+gap-free **over offered events**; a gate cure deliberately shares its cause's seq
+and a derived id, so a shard proves completeness over offered events while cures
+are verifiable by derivation (ADR-0027). `at` is wall clock and therefore
+*untrusted for ordering across devices* — a user-facing timestamp, not a clock.
+Ties on `(at, device, seq)` break by id, so ordering is total.
 
 **Conflict resolution: per-field last-writer-wins.** Two devices editing
 different fields of one node both win. Two devices editing the *same* field
@@ -89,11 +92,11 @@ inspect and either complete or refuse. See [ADR-0011](adr/0011-no-silent-nodes-g
 | `node.created` | `nodeKind, title, parent?, provenance` | **yes — gated** |
 | `node.kind.changed` | `from, to` | **yes — gated** (an `action` demoted to `aspiration` loses its clock) |
 | `node.field.set` | `field, value` — exactly one field | no |
-| `node.parented` | `parent, priorParent?` | no |
+| `node.parented` | `parent, priorParent?` | **yes — gated** (re-homing under an unclocked parent orphans the node) |
 | `node.unparented` | `priorParent` | **yes — gated** |
-| `node.trashed` | `reason?` | no — trash is an explicit end, not a silence |
+| `node.trashed` | `reason?` | **yes — gated** — trashing a parent must not orphan its children (ADR-0011) |
 | `node.untrashed` | — | **yes — gated** |
-| `node.merged` | `into` | no |
+| `node.merged` | `into` | **yes — gated** — merge target must exist and live, or children go silent |
 
 `node.trashed` is reversible and is *not* an archive: it records "I decided this
 is not a thing", which is a decision. Law 3 forbids a bucket for things that
