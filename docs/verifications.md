@@ -118,11 +118,33 @@ in the security/integration sector, a different class.
 cleared, and this row will not say otherwise. Web search can eliminate a name; it
 cannot clear one.
 
-**Explicitly still unchecked, and owed before any public release copy:**
-- USPTO knockout, classes **9** and **42** — needs an interactive session
-- Apple App Store and Google Play **direct** searches
-- `perennial.pages.dev`
-- Domains
+**Why a session cannot finish this — proven 2026-07-28, not assumed.** A session can
+*search* but cannot *query*. Web search returns what people have written about; the
+authoritative registers are the USPTO database and the store indexes. Both were probed
+directly:
+
+| Attempt | Result |
+|---|---|
+| `itunes.apple.com/search` (Apple's public search API), raw request | **403** — gateway CONNECT policy denial |
+| `tmsearch.uspto.gov` ×2 and `developer.uspto.gov`, raw request | **403** — same |
+| Same URLs via the fetch tool, in case it routed differently | **403** — same |
+
+The environment's network gateway allows a fixed host list; these are outside it. This is
+an environment restriction, not a capability gap, and it is the same cause as V-05's
+inconclusive `pages.dev` probe. **Recorded because Doctrine §6 permits handing over a
+manual step only after proving it impossible from this side — which had been asserted
+before it was tested.**
+
+**Owed, on Noah's device, in priority order:**
+1. **Apple App Store and Google Play direct searches** — the check most likely to matter.
+   A same-category name clash is the realistic failure mode; *Hyperfocus 2* is exactly
+   what this catches and web search only found by luck.
+2. **`perennial.pages.dev`** — ten seconds, and it settles Q-04.
+3. **USPTO knockout, classes 9 and 42** — *lowest priority, and arguably skippable.*
+   Trademark protects against confusion **in commerce**; this app is free, noncommercial,
+   and licensed against being sold. A live PERENNIAL mark on unrelated goods does not
+   reach it. The narrow real risk — another planner or productivity app of the same name
+   — is what step 1 catches.
 
 → [ADR-0020](adr/0020-name-perennial.md), which is Provisional for exactly this reason.
 
