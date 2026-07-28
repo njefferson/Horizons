@@ -205,10 +205,11 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `f1092e8`** (the troubleshooting promote). **`staging` is ahead** by the
-  0.2.x work — the ⓘ panel, export, the write-path and network fixes, the a11y gate, and the
-  adversarial-audit fixes — none of it promoted. `main` serves 0.1.0 at `quietkeep.pages.dev`;
-  `staging` serves the current app. Promotion is Noah's call (Doctrine §7).
+- **`main` is at `0.2.4` (`265c9f0`), promoted 2026-07-28** — Noah's explicit "Promote and
+  continue", onto a fully green staging (spine run 25, all 8 gates). This is a real §7 pass,
+  unlike the earlier troubleshooting fast-forward. `quietkeep.pages.dev` now serves the
+  current app: capture, the ⓘ panel, export, and every audit fix. `staging` and `main` are
+  level; new work branches from `staging` again.
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
@@ -238,10 +239,9 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** the Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export are on
-  `staging` (0.2.3). `main` still carries only the 0.1.0 shell. `public/index.html` exists on
-  both, so neither deploy skips — `staging` → `staging.quietkeep.pages.dev`, `main` →
-  `quietkeep.pages.dev` (serving 0.1.0 until a promote).
+- **Code:** Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export, at 0.2.4 on
+  both branches. `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`,
+  both live and current.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
   committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).
