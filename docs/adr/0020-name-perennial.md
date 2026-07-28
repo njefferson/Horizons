@@ -79,11 +79,53 @@ themselves design constraints.
 | **Tideline** | Three companies: consulting, real estate, technology services. |
 | **Gimbal** | Gimbal by Infillion — a **location-tracking** adtech platform, plus App Store apps. Wrong in every sense for a no-telemetry app. |
 | **Isochrone** | Standard GIS term with a dozen products (Mapbox's Isochrone API, Smappen, an app on Play). |
-| **Escapement** | Survived every check — npm free, no App Store app, no product. **Runner-up.** Rejected only in favour of Wynts: it drags "escape" behind it and its metaphor, while accurate, describes the mechanism rather than the promise. Worth remembering if Wynts ever falls. |
+| **Escapement** | Survived every check — npm free, no App Store app, no product — and survived the say-it-aloud check too. **Not chosen.** It drags "escape" behind it, which Noah ruled out as escape-adjacent, and its metaphor describes the mechanism rather than the promise. A survivor of a closed search, not a runner-up to a live name. |
 | **Perennial** | Withdrawn 2026-07-28. **Perennial Labs, Inc.** (DeFi protocol) is serving `perennial.pages.dev`; **Perennial Systems** (web dev/fintech) and **Perennial Software** (security) also hold it. Not a trademark problem for a free app — a findability one. Fourth Perennial in software = invisible. |
 
+
+### The 2026-07-28 round — the search that ended in Quietkeep
+
+Noah's candidates and mine, worked through in one sitting. Recorded at the same standard
+as the rows above: **this is a trail, not a proof that nothing is left.** Several of these
+are good names that lost to a better one, and they are written down so they can be
+reconsidered rather than re-discovered.
+
+*The military-vocabulary bar in the voice rules applies to what a **session** proposes.
+Where Noah proposed a term himself, it was checked on its merits and killed on other
+grounds or not at all.*
+
+| Candidate | Cause of death |
+|---|---|
+| **Sherpa** | An ethnic group used as a word for a porter. Also heavily occupied in software (Sherpa the assistant app, Sherpa Digital Media, several logistics products). |
+| **Mission board** | Two words, generic, and unsearchable — every nonprofit and church uses the phrase. |
+| **Legend** | The map sense is right; the register is not. Occupied everywhere (Legend the note app, Legend the trading platform), and "you're a legend" makes it a compliment the app pays the user. |
+| **Filter** | Collides with the app's own filtering surfaces, and is the least ownable word in software. |
+| **Context** | Same trap. Also now swallowed whole by LLM vocabulary — context window, context length. |
+| **Question log** | Descriptive of one v1 surface, not the product. A feature name wearing a product name's clothes. |
+| **Chief of staff** | The workplace register the app exists to be a relief from. Three words, and it makes the app the boss's office. |
+| **All things considered** | NPR's flagship programme since 1971. |
+| **Orbital / Orbitals** | Orbital Insight, Orbital Sciences, Orbital Materials, an App Store game. Class 9 is dense with it. |
+| **Naowat** | The joke ("now what?") does not survive being read cold — it reads as a foreign loanword of unclear origin, and the spelling has to be explained every time. |
+| **Quest log** | Noah's own suggestion, so the vocabulary bar did not apply. Killed on register instead: it is game UI, and a planner that calls a life a quest log makes the user a player character. Also literally the name of the panel in a dozen games. |
+| **Cooldown**, **Respawn**, **Loadout**, **Checkpoint**, **Minimap** | The same seam, tried properly. All are load-bearing game vocabulary with products already on them (Respawn Entertainment; Loadout the game; Checkpoint the security firm and Check Point Software). *Cooldown* additionally reads as a rest timer imposed on the user — the opposite of law 8. |
+| **Base camp** | **Basecamp** is project-management software. The single most occupied name in the category. |
+| **Trailhead** | **Salesforce Trailhead.** Enormous, and in the adjacent business-software world. |
+| **Hearth** | Hearth (home-services SaaS), Hearth Display (a family-calendar tablet — same category), plus several marks. |
+| **Bothy**, **Croft**, **Holt** | Scots/northern English shelter words. **Bothy** is the strongest image — an unlocked hut kept stocked for whoever arrives — but it is unreadable to an American audience and unpronounceable on sight. **Croft** and **Holt** survived their checks; passed over as too opaque. |
+| **Anchorage** | A city of 290,000. Unrecoverable in search. |
+| **Roost** | Roost (several products, including a photography one), and "come home to roost" is a phrase about consequences catching up — precisely the shame reading the app forbids. |
+| **Bracken** | Bracken is an invasive weed that chokes what it grows over. Exactly wrong. |
+| **Breezeway** | Breezeway is hospitality-operations software. Also a specifically American architectural term few outside the US read instantly. |
+| **Porch** | **Porch Group** is a publicly traded home-services company (NASDAQ: PRCH). The image was right — a place between outside and inside where things are set down — and the name is entirely unavailable. |
+| **Kettle** | Kettle (reinsurance ML), Kettle the design tool, and in British English a kettle is a household appliance first and only. The glacial-kettle sense reaches almost nobody. |
+| **Stillpoint** | Stillpoint Spaces, Stillpoint Lodge, several therapy practices — and the therapy adjacency is itself disqualifying under the no-diagnosis-flavour rule. |
+| **Handhold** | Reads as **hand-holding** — condescension, and the exact thing the app promises not to do. |
+| **Mudroom**, **Cleat** | Both survived their checks. **Mudroom** — the room where you drop what you carried in before entering the house — is close to the thesis; passed over as domestic-American and slightly comic. **Cleat** is clean and short; passed over as too nautical/athletic to carry the whole product. |
+
 **The pattern, worth keeping:** single evocative words in class 9 are effectively
-exhausted. What survives is compounds, coinages, and slightly-odd words.
+exhausted. What survives is compounds, coinages, and slightly-odd words. Wynts tested the
+coinage branch and died on sound; **Quietkeep** is the compound branch, and it cleared —
+see [ADR-0024](0024-name-quietkeep.md).
 
 ## Consequences
 

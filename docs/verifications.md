@@ -107,10 +107,37 @@ search did not resolve it.
 EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
-## V-04 · Name availability — **the app has no name**
-**Status: OPEN** · Wynts withdrawn 2026-07-28 → [ADR-0023](adr/0023-name-wynts-withdrawn.md)
+## V-04 · Name availability — **the app is Quietkeep**
+**Status: PARTIAL** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
 
-### The order to check a candidate in
+PARTIAL, not VERIFIED: the session's own checks are complete and the App Store check came
+back from Noah, but `quietkeep.pages.dev` has not been tested and no USPTO knockout has
+been run. Neither is reachable from a session ([V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven)).
+
+### What was run against Quietkeep
+
+| # | Check | Instrument | Result |
+|---|---|---|---|
+| 1 | Said out loud | said, and said in a sentence | KWY-ət-keep. One spelling, one pronunciation. No homophone, no biting rhyme, nothing one letter away. |
+| 2 | This repo's own spec | `grep` — **authoritative** | Clear. "quiet" only in prose, "keep" only in ordinary usage. No surface, node kind, event noun, or law is named either. |
+| 3 | Unscoped name + software | web search | Nothing named Quietkeep. Nearest: SoftwareKeep (retailer), Quiet Mind Software, quiet.app, Quiet Modem Project. |
+| 4 | npm + GitHub | direct registry query — **authoritative** | `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name. |
+| 5 | **App Store** | **Noah's own device, 2026-07-28** | *"there is nothing on the App Store that I see near it."* **Answered.** |
+| — | `quietkeep.pages.dev` | Noah's device | **Not yet run.** Q-04. |
+| — | USPTO classes 9 and 42 | Noah's device | **Not yet run.** Lowest priority — see the reasoning below. |
+
+**Known and accepted, recorded rather than omitted:** **Quietstart: AI Day Planner**
+(Google Play) shares the first syllable in the same category — not a collision, but where a
+half-remembered name could land. **Quiet, Inc.** holds marks on the bare word *QUIET*; a
+compound is not that word, and confusion-in-commerce does not reach a free app licensed
+against being sold.
+
+> **Step 5 came back.** This is the first handed-over check in the naming sequence that
+> Noah ran and reported, rather than one a session asserted was impossible. The rule in
+> Doctrine §6 — hand over a manual step only after proving it impossible from this side —
+> is what made it a real check instead of a shrug.
+
+### The order to check a candidate in — **the standing method**
 
 Cheapest and most-likely-to-kill first. Steps 1 and 2 are free and instant; they were
 being run last, or not at all.
@@ -125,7 +152,9 @@ being run last, or not at all.
 4. **npm and GitHub** — authoritative and reachable from a session.
 5. **App Store / USPTO** — Noah's device; blocked from here, proven in V-05.
 
-### What was run against Wynts, and why it was not enough
+### The Wynts round — what was run, and why it was not enough
+
+*Kept because the method is the transferable part.*
 
 | Check | Instrument | Result |
 |---|---|---|
@@ -164,8 +193,10 @@ shape already documented below in V-09. A single properly-scoped query —
 **Standing rule for every future candidate:** the unscoped *name + software* query runs
 **first**, before any category query and before the name is shown to Noah at all.
 
-### What a session can and cannot do here — proven 2026-07-28, not assumed A session can
-*search* but cannot *query*. Web search returns what people have written about; the
+### What a session can and cannot do here — proven 2026-07-28, not assumed
+
+A session can *search* but cannot *query*. Web search returns what people have written
+about a name; the
 authoritative registers are the USPTO database and the store indexes. Both were probed
 directly:
 

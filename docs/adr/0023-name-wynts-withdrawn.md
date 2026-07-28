@@ -1,7 +1,11 @@
 # ADR-0023 · Wynts withdrawn — it sounds like "wince"
 
-**Status:** Accepted · **Date:** 2026-07-28
+**Status:** **Superseded by [ADR-0024](0024-name-quietkeep.md)** — the name is Quietkeep
+2026-07-28 · **Date:** 2026-07-28
 **Supersedes:** [ADR-0022](0022-name-wynts.md)
+
+> The withdrawal stands and the check order this record established is now the standing
+> method — [ADR-0024](0024-name-quietkeep.md) was cleared against it, step by step.
 
 ## Decision
 

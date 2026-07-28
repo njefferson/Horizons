@@ -54,12 +54,19 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0020](0020-name-perennial.md) | The name is Perennial — **and the candidate graveyard, which is still current** | **Superseded by [0021](0021-name-reopened.md)** |
 | [0021](0021-name-reopened.md) | Perennial withdrawn; the name is reopened | **Superseded by [0022](0022-name-wynts.md)** |
 | [0022](0022-name-wynts.md) | The name is Wynts — what you need to see | **Superseded by [0023](0023-name-wynts-withdrawn.md)** |
-| [0023](0023-name-wynts-withdrawn.md) | Wynts withdrawn — it sounds like "wince" | Accepted |
+| [0023](0023-name-wynts-withdrawn.md) | Wynts withdrawn — it sounds like "wince"; the check order | **Superseded by [0024](0024-name-quietkeep.md)** |
+| [0024](0024-name-quietkeep.md) | **The name is Quietkeep** | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.
 
-**Superseded pending** means the decision is known to be changing but the replacement
-does not exist yet — here, Noah has settled that the app needs a new name but has not
-named it. The record stays accurate about its own obsolescence rather than quietly
-describing a decision that no longer holds.
+**Superseded pending** means the decision is known to be changing but the replacement does
+not exist yet. The naming chain used it between [0021](0021-name-reopened.md) and
+[0024](0024-name-quietkeep.md), when it was settled that the name had to change before any
+replacement existed. **No record is in that state now.** It is documented because the
+situation recurs, and a record that stays accurate about its own obsolescence is better
+than one quietly describing a decision that no longer holds.
+
+**The naming chain reads 0018 → 0020 → 0021 → 0022 → 0023 → 0024**, and every step stays.
+[0020](0020-name-perennial.md) also carries the **candidate graveyard**, which remains
+current and authoritative regardless of that record's superseded status.

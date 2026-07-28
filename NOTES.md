@@ -1,15 +1,21 @@
-# NOTES.md — the planner (unnamed)
+# NOTES.md — Quietkeep
 
-> **The app has no name.** `Horizons` throughout this repo is the **repo slug and a legacy
-> label** — rejected in [ADR-0018](docs/adr/0018-name-and-slug.md). Perennial, then Wynts,
-> were adopted and withdrawn ([ADR-0021](docs/adr/0021-name-reopened.md),
-> [ADR-0023](docs/adr/0023-name-wynts-withdrawn.md)). Twenty-four candidates and every
-> cause of death are in the [graveyard](docs/adr/0020-name-perennial.md).
+> **The app is Quietkeep.** *"Out of sight. Never out of mind."* /
+> *"It holds the rest, so you can rest."* — Noah, 2026-07-28,
+> [ADR-0024](docs/adr/0024-name-quietkeep.md). Q-02 is closed.
 >
-> **Check a candidate in this order** — cheapest and most-likely-to-kill first:
+> `Horizons` is now the **repo slug only**, until the GitHub rename. It also survives
+> permanently as *domain* vocabulary — *higher horizons* (law 4) and the
+> *horizon-integrity engine* keep the word, and a CI check asserts they were not lost to a
+> rename.
+>
+> **The check order that produced it**, kept because it transfers — cheapest and
+> most-likely-to-kill first:
 > **1. say it aloud** · 2. grep this repo's spec · 3. unscoped name+software search ·
 > 4. npm and GitHub · 5. App Store / USPTO on Noah's device.
-> Steps 1 and 2 are free and instant, and were being run last or not at all.
+> Steps 1 and 2 are free and instant, and were being run last or not at all. The full
+> record of what was tried is the [graveyard](docs/adr/0020-name-perennial.md) — a trail of
+> where the search went, not a proof that nothing else was left.
 >
 > "Horizons" also survives as **domain vocabulary** — product law 4's *higher horizons*
 > and the *horizon-integrity engine* are planning terminology, not branding.
@@ -156,14 +162,14 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Blocked on Q-02. `pages.dev` is unreachable from a session ([V-05](docs/verifications.md)), so the subdomain is a device check whatever the name turns out to be. |
-| Q-02 | **The app has no name.** Wynts withdrawn 2026-07-28 — it sounds like *wince*, which its own voice rules forbid. | Blocks Q-04 and the hub link. **Does not block building** — nothing in the schema, event vocabulary, or file formats encodes the name. | Open. *Escapement* is the only candidate that has passed every check including the new say-it-aloud one; recorded as runner-up in the graveyard. |
+| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | **Unblocked** — the subdomain to test is `quietkeep.pages.dev`. Ten seconds on Noah's device; unreachable from a session ([V-05](docs/verifications.md)). The four §10 values will be drafted for his confirmation in the next session that touches deploy. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
-**Still owed on Noah's device, for whatever name lands:** the App Store search, and a
-USPTO knockout in classes 9 and 42 if he wants one. Both are blocked from a session — proven, not
-assumed.
+**Still owed on Noah's device:** `quietkeep.pages.dev`, and a USPTO knockout in classes 9
+and 42 if he wants one — lowest priority, arguably skippable for a free noncommercial app.
+Both are blocked from a session — proven, not assumed. **The App Store check is done:**
+Noah ran it himself, 2026-07-28.
 
 **Standing rule on names** ([V-04](docs/verifications.md)): ask *"is this name taken in
 software?"*, unscoped, **before** anything else and before showing Noah a candidate. Asking
@@ -178,6 +184,7 @@ That error cost the Perennial round.
 | Q-03 | Work-vault policy line, given the GFE context | **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27. |
 | Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
 | Q-08 | How "Wynts" is pronounced | **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad. |
+| Q-02 | The app's name | **Quietkeep.** Noah 2026-07-28: *"I like quietkeep and there is nothing on the App Store that I see near it."* Cleared through all five checks — [ADR-0024](docs/adr/0024-name-quietkeep.md), [V-04](docs/verifications.md). |
 
 ---
 
@@ -192,8 +199,9 @@ That error cost the Perennial round.
 - **The folder mirror does not exist on the reference platform** — Safari has no disk
   picker. Export/import via Files carries the whole sync and durability story
   ([ADR-0004](docs/adr/0004-ios-path.md)), which is why it is built in Phase 0.
-- **No name yet** (Q-02). Repo slug is `Horizons`; the licence's Required Notice URL
-  follows the slug and moves only when Noah renames the repo on GitHub.
+- **The app is Quietkeep** ([ADR-0024](docs/adr/0024-name-quietkeep.md)). The repo slug is
+  still `Horizons` until Noah renames it on GitHub; the licence's Required Notice URL
+  follows the slug and moves in that same commit, not before, or it aims at a 404.
 - **Phase 0 (the spine) is built and on `staging`** — log, fold, write gate, snapshot,
   export/import, 14 tests, all four exit criteria met. **`main` is docs-only and behind,
   awaiting Noah's explicit "promote"** (Doctrine §7).
@@ -205,15 +213,22 @@ That error cost the Perennial round.
   is a deployed page to visit — adding a dead link to the live hub is a site
   regression, not progress. Doctrine §13.6 closes when it lands, together with
   the app's About linking back to the shared `/accessibility` statement.
-- **Repo metadata:** unset. §10 confirm loop not yet run. **The app is not
-  "set up" until it has** — and it needs a name first.
-- **Code:** none. This repo is documentation only as of 2026-07-27.
+- **Repo metadata:** unset. §10 confirm loop not yet run — no longer blocked by the name,
+  so the four values can be drafted for Noah's confirmation. **The app is not "set up"
+  until every one of them is confirmed.**
+- **Code:** the Phase 0 spine, on `staging` (see above). `main` is documentation only.
 
 ### Log
 
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **The app is Quietkeep.** Noah chose it and ran the App Store check on
+  his own device. It cleared all five checks in the order ADR-0023 established, starting
+  with saying it out loud. Q-02 closed after four names and thirty-odd further candidates;
+  Q-04 unblocked to `quietkeep.pages.dev`. The round's candidates and their causes of death
+  are appended to the graveyard — it is the trail the search took, and it stays open for
+  reconsideration rather than closed as exhausted.
 - **2026-07-28** — Named **Wynts**, then withdrew it the same day: it sounds like *wince*,
   which the app's own shame-free voice rules forbid. Every check run against it was a
   REGISTRY check; none said the word out loud. Saying it aloud is now check #1. The name
