@@ -9,8 +9,10 @@
 // is not a convention to remember — `tools/changelog.mjs` asserts it, and
 // CHANGELOG.md is generated from this array so the two cannot drift.
 //
-// A release NAME is earned and Noah gives it unprompted (§7). Never invent one,
-// never ship a placeholder, and do not ask at every bump.
+// **Releases do not have names** (§7, Noah 2026-07-28). No monikers, no
+// codenames, no name field — there is deliberately nowhere here to put one,
+// because a slot that exists is a slot that generates the question. A release is
+// its triplet and what it did for the person using the app.
 
 export type ReleaseKind = 'VERSION' | 'CAPABILITY' | 'ITERATION';
 
@@ -20,14 +22,22 @@ export interface Release {
   kind: ReleaseKind;
   /** ISO date. */
   date: string;
-  /** Earned, never invented. Absent until Noah says so. */
-  name?: string;
   /** What changed for the person using it. One idea per line (B-09). */
   notes: string[];
 }
 
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
+  {
+    triplet: '0.2.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-28',
+    notes: [
+      'There is an ⓘ in the corner now. It holds these notes, the storage answer, and what Quietkeep is — and it introduces itself once, the first time you open the app.',
+      'You can export a copy of everything to a file, whenever you like. It is plain text you can read without us, and it is yours.',
+      'Every export is recorded in your own log, so your history also remembers when a copy left.',
+    ],
+  },
   {
     triplet: '0.1.0',
     kind: 'CAPABILITY',

@@ -55,9 +55,14 @@ export function fromJsonl(jsonl: string): AppEvent[] {
 }
 
 /** Filename carries vault, timestamp and encryption status, so a folder of
- *  backups is legible without opening them (data-constitution). */
+ *  backups is legible without opening them (data-constitution).
+ *
+ *  The prefix is the product name — a backup found years later should say what
+ *  it came from. The `format` field inside the file stays `planner-log`: that
+ *  is a data-format identifier, and changing it would orphan every export
+ *  already written for zero benefit. */
 export const exportFilename = (scope: string, at: string, encrypted: boolean): string =>
-  `planner-${scope}-${at.replace(/[:.]/g, '-')}${encrypted ? '-encrypted' : ''}.json`;
+  `quietkeep-${scope}-${at.replace(/[:.]/g, '-')}${encrypted ? '-encrypted' : ''}.json`;
 
 export async function exportAll(store: LogStore, at: string, scope = 'all'): Promise<ExportFile> {
   const events = await store.all();

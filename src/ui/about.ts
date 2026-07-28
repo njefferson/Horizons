@@ -13,6 +13,8 @@
 // someone has seen a dialog is not part of their history.
 
 import { requestPersistence } from '../ids.ts';
+import { exportAll, exportFilename } from '../portability.ts';
+import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
 
@@ -55,17 +57,17 @@ export async function mountAbout(session: Session): Promise<void> {
   const intro = document.querySelector<HTMLElement>('#about-intro');
   const body = document.querySelector<HTMLElement>('#storage-body');
   const ask = document.querySelector<HTMLButtonElement>('#storage-ask');
+  const exp = document.querySelector<HTMLButtonElement>('#export');
   const notes = document.querySelector<HTMLElement>('#patch-notes');
   const version = document.querySelector<HTMLElement>('#version');
-  if (!dialog || !open || !intro || !body || !ask || !notes || !version) return;
+  if (!dialog || !open || !intro || !body || !ask || !exp || !notes || !version) return;
 
-  version.textContent = `${CURRENT.triplet}${CURRENT.name ? ` "${CURRENT.name}"` : ''}`;
+  version.textContent = CURRENT.triplet;
 
   // --- patch notes ---------------------------------------------------------
   notes.replaceChildren(...RELEASES.flatMap((r) => {
     const h = el('h3', 'note-head');
     h.append(el('span', 'note-triplet', r.triplet));
-    if (r.name) h.append(el('span', 'note-name', `"${r.name}"`));
     h.append(el('span', 'note-kind', r.kind.toLowerCase()));
     const ul = el('ul', 'note-list');
     ul.append(...r.notes.map((n) => el('li', undefined, n)));
@@ -115,7 +117,47 @@ export async function mountAbout(session: Session): Promise<void> {
     }
   });
 
+  // --- export ---------------------------------------------------------------
+  // The way out, on the surface that talks about durability. The record goes to
+  // the log FIRST, so the file carries its own export.written line — the log
+  // explains everything, including that a copy left.
+  exp.addEventListener('click', async () => {
+    exp.disabled = true;
+    try {
+      let at = '';
+      await session.commit((ctx) => {
+        at = ctx.at;
+        return [{
+          id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+          kind: 'export.written', node: null,
+          payload: { at: ctx.at, scope: 'all', encrypted: false },
+        } as AppEvent];
+      });
+      const file = await exportAll(session.store, at);
+      const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportFilename('all', at, false);
+      document.body.append(a);
+      a.click();
+      a.remove();
+      // Long grace: on iPadOS the share sheet holds the URL open while the user
+      // decides where the file goes.
+      setTimeout(() => URL.revokeObjectURL(url), 120_000);
+      void paintStorage();
+    } finally {
+      exp.disabled = false;
+    }
+  });
+
   document.querySelector('#about-close')?.addEventListener('click', () => dialog.close());
+
+  // A programmatic showModal has no opener to hand focus back to, so the return
+  // is explicit — and it goes to capture, because that is what this app is for.
+  dialog.addEventListener('close', () => {
+    document.querySelector<HTMLInputElement>('#capture')?.focus();
+  });
 
   // Open immediately, fill after — a button that stalls while it awaits storage
   // is exactly the kind of gap this app exists to be free of.

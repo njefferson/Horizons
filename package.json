@@ -16,10 +16,12 @@
     "brand:check": "node tools/brand.mjs --check",
     "build": "esbuild src/ui/app.ts --bundle --format=esm --target=es2022 --outfile=public/app.js --sourcemap --log-level=warning",
     "serve": "node tools/serve.mjs",
-    "smoke": "node tools/smoke.mjs"
+    "smoke": "node tools/smoke.mjs",
+    "changelog": "node --experimental-strip-types tools/changelog.mjs",
+    "changelog:check": "node --experimental-strip-types tools/changelog.mjs --check"
   },
-  "//build": "esbuild strips types and bundles src/ui into one ES module. It is the ONLY build step and it does no transpiling down — target es2022 is what the reference platform already runs. See ADR-0026 for why a build exists at all in a family that avoids them.",
-  "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR — see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",
+  "//build": "esbuild strips types and bundles src/ui into one ES module. It is the ONLY build step and it does no transpiling down \u2014 target es2022 is what the reference platform already runs. See ADR-0026 for why a build exists at all in a family that avoids them.",
+  "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR \u2014 see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",
   "dependencies": {
     "dexie": "4.0.11"
   },

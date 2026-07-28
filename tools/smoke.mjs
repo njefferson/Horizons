@@ -11,7 +11,7 @@
 //   node tools/smoke.mjs
 
 import { chromium } from 'playwright-core';
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { serve } from './serve.mjs';
 
 const ROOT = new URL('../public', import.meta.url).pathname;
@@ -39,6 +39,7 @@ try {
     // the moment a real user's evening reads as 3 AM (build-plan §2).
     timezoneId: 'America/Denver',
     locale: 'en-US',
+    acceptDownloads: true,
   });
   const page = await ctx.newPage();
 
@@ -52,6 +53,23 @@ try {
 
   await page.goto(url, { waitUntil: 'load' });
   await ready();
+
+  console.log('\nFirst run — the panel introduces itself once');
+  is(await page.locator('#about').isVisible(), true, 'the (i) panel opens by itself on a fresh store');
+  is(await page.locator('#about-intro').isVisible(), true, 'with the first-run introduction');
+  is((await page.locator('#version').textContent())?.trim(), '0.2.0',
+    'version is the bare triplet — releases do not have names');
+  is(await page.locator('.note-triplet').first().textContent(), '0.2.0',
+    'patch notes lead with the current release');
+  await page.waitForSelector('#storage-body dt');
+  const storageRows = await page.locator('#storage-body dt').allTextContents();
+  is(storageRows.includes('Keeping your data'), true, 'the storage answer is reported');
+  await page.click('#about-close');
+  is(await page.evaluate(() => document.activeElement?.id), 'capture',
+    'closing the panel hands focus to capture');
+  await page.reload({ waitUntil: 'load' });
+  await ready();
+  is(await page.locator('#about').isVisible(), false, 'and it never opens uninvited again');
 
   console.log('\nShell');
   is(await page.title(), 'Quietkeep', 'title');
@@ -94,14 +112,23 @@ try {
   is(await page.locator('.card-title').first().textContent(), '<img src=x onerror="globalThis.__pwned=1">',
     'and shown verbatim');
 
-  console.log('\nDiagnostics (V-00 panel)');
-  await page.click('#open-diagnostics');
-  is(await page.locator('#diagnostics').isVisible(), true, 'dialog opens');
-  await page.waitForSelector('#diag-body dt');
-  const rows = await page.locator('#diag-body dt').allTextContents();
-  is(rows.includes('Persistent right now'), true, 'reports the persistence answer');
-  await page.click('#diag-close');
-  is(await page.locator('#diagnostics').isVisible(), false, 'dialog closes');
+  console.log('\nExport — the way out');
+  await page.click('#open-about');
+  is(await page.locator('#about').isVisible(), true, 'the (i) opens on request');
+  const [download] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#export'),
+  ]);
+  const fname = download.suggestedFilename();
+  is(fname.startsWith('quietkeep-all-') && fname.endsWith('.json'), true,
+    `filename says what it is and when ("${fname}")`);
+  const parsed = JSON.parse(readFileSync(await download.path(), 'utf8'));
+  is(parsed.format, 'planner-log', 'export format field intact');
+  const lineKinds = parsed.logJsonl.split('\n').filter(Boolean).map((l) => JSON.parse(l).kind);
+  is(lineKinds.includes('capture.recorded'), true, 'the file carries the captured thought');
+  is(lineKinds.includes('export.written'), true, 'and its own export.written record — the log explains everything');
+  await page.click('#about-close');
+  is(await page.locator('#about').isVisible(), false, 'dialog closes');
 
   console.log('\nAccessibility basics');
   const targets = await page.evaluate(() => {

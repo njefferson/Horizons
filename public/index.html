@@ -68,8 +68,8 @@
     <p>There is one thing worth setting up now: ask this browser to <em>keep</em>
        your writing rather than treat it as disposable.</p>
     <p class="intro-aside">You will also see a prompt about notifications. That
-       is how the two are linked on iPad — <strong>Quietkeep never sends
-       any.</strong></p>
+       is how the two are linked on iPad — <strong>Quietkeep won&rsquo;t send you
+       any unless you later turn them on.</strong></p>
     <p class="intro-aside">You can skip this and do it later. It is always under
        the <strong>i</strong> at the top.</p>
   </div>
@@ -78,6 +78,9 @@
   <dl id="storage-body"></dl>
   <div class="about-actions">
     <button id="storage-ask" type="button" hidden>Keep my data on this device</button>
+    <!-- The way out (data-constitution): always present, never behind a
+         condition. The file is plain JSON holding the log as JSON Lines. -->
+    <button id="export" type="button" class="ghost">Export a copy</button>
   </div>
 
   <h3 class="about-section">What&rsquo;s new</h3>

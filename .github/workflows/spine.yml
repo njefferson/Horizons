@@ -37,6 +37,11 @@ jobs:
       - name: Brand assets
         run: npm run brand:check
 
+      # Doctrine §7: the changelog's head triplet and the service-worker cache
+      # name bump together. A rule someone has to remember, until it is a check.
+      - name: Changelog and triplet
+        run: npm run changelog:check
+
       # The unit tests prove the spine folds. They cannot prove the bundle
       # loads, that Dexie opens in a browser, or that a captured thought comes
       # back — which is the app's one promise. Only driving the built page does

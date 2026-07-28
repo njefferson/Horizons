@@ -223,10 +223,25 @@ button.ghost {
   padding-inline: 2px;
 }
 
-/* --- diagnostics ---------------------------------------------------------- */
+/* --- the (i) panel -------------------------------------------------------- */
+
+button.info {
+  /* A circle, and a full-size target regardless of how little is inside it. */
+  width: var(--target);
+  padding: 0;
+  border-radius: 50%;
+  font-size: 1.125rem;
+  font-style: italic;
+  font-weight: 600;
+  line-height: 1;
+}
 
 dialog {
-  width: min(30rem, calc(100vw - 2rem));
+  width: min(34rem, calc(100vw - 2rem));
+  /* Never taller than the space available, and it scrolls inside itself rather
+     than pushing content off the screen (B-04). */
+  max-height: min(85vh, calc(100dvh - 2rem));
+  overflow-y: auto;
   padding: 1.25rem;
   color: var(--ink);
   background: var(--surface);
@@ -234,31 +249,78 @@ dialog {
   border-radius: var(--radius);
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.5); }
-dialog h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
-.diag-lead { margin: 0 0 1rem; color: var(--ink-soft); }
+dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 
-#diag-body {
+.version {
+  font-size: 0.875rem;
+  font-weight: 400;
+  color: var(--ink-soft);
+  font-variant-numeric: tabular-nums;
+}
+
+.intro {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.intro p { margin: 0 0 0.6rem; }
+.intro p:last-child { margin-bottom: 0; }
+.intro-aside { color: var(--ink-soft); font-size: 0.9375rem; }
+
+.about-section {
+  margin: 1.5rem 0 0.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+}
+.about-section:first-of-type { margin-top: 0; }
+.about-p { margin: 0 0 0.6rem; color: var(--ink-soft); }
+.about-p a { color: var(--accent); }
+
+#storage-body {
   display: grid;
   grid-template-columns: auto 1fr;
   gap: 0.35rem 1rem;
   margin: 0;
 }
-#diag-body dt { color: var(--ink-soft); }
-#diag-body dd { margin: 0; overflow-wrap: anywhere; }
-.diag-note {
+#storage-body dt { color: var(--ink-soft); }
+#storage-body dd { margin: 0; overflow-wrap: anywhere; }
+.storage-note {
   grid-column: 1 / -1;
-  margin: 1rem 0 0;
+  margin: 0.875rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--line);
   color: var(--warm);
 }
 
-.diag-actions {
+/* Patch notes. Written for the reader, so they are set as prose, not a table. */
+.note-head {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 1rem 0 0.35rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.note-head:first-child { margin-top: 0; }
+.note-triplet { font-variant-numeric: tabular-nums; }
+.note-kind {
+  font-weight: 400;
+  font-size: 0.8125rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.note-list { margin: 0; padding-left: 1.15rem; color: var(--ink-soft); }
+.note-list li { margin-bottom: 0.35rem; }
+
+.about-actions {
   display: flex;
   gap: 0.5rem;
   justify-content: flex-end;
   flex-wrap: wrap;
-  margin-top: 1.25rem;
+  margin-top: 1rem;
 }
 
 /* --- motion ---------------------------------------------------------------

@@ -9,9 +9,12 @@ on willpower. It is built on one promise: **anything you put in comes back to
 you.** Not because you remembered to look, but because the app is structurally
 incapable of letting something go quiet.
 
-> **Status: planning.** No application code exists yet. This repository currently
-> holds the design record — the decisions, the event vocabulary everything folds
-> from, and the reasoning behind both. See [`NOTES.md`](NOTES.md) for where things stand.
+> **Status: early — capture works.** The event-sourced spine and the first
+> surface (capture, with the ⓘ panel and export) are live at
+> **[quietkeep.pages.dev](https://quietkeep.pages.dev)**. Clarify, work mode, and
+> everything after are still to come. The design record — decisions, the event
+> vocabulary everything folds from, and the reasoning — is in this repository.
+> See [`NOTES.md`](NOTES.md) for where things stand.
 
 ## What it is
 
@@ -48,6 +51,7 @@ incapable of letting something go quiet.
 | [`docs/build-plan.md`](docs/build-plan.md) | Architecture and build sequence |
 | [`docs/verifications.md`](docs/verifications.md) | What has been checked, and what only looks checked |
 | [`ACCESSIBILITY.md`](ACCESSIBILITY.md) | Append-only accessibility register |
+| [`CHANGELOG.md`](CHANGELOG.md) | What changed, written for the person using the app. Generated — the app's ⓘ panel shows the same notes |
 
 ## Accessibility
 
