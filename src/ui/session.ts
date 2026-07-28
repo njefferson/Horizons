@@ -95,7 +95,16 @@ export async function openSession(
     // cure sorting immediately after its cause.
     const admitted = admit(offered, state);
 
-    await store.append(admitted);
+    try {
+      await store.append(admitted);
+    } catch (err) {
+      // bulkAdd can land rows AND reject (Dexie BulkError; an aborting tx).
+      // Guessing which half landed would desync live state from the log — the
+      // audit produced exactly that — so on any append failure the log is
+      // re-read and live state rebuilt from what is actually there.
+      state = fold(await store.all());
+      throw err;
+    }
     state = fold(admitted, state);
     return state;
   };

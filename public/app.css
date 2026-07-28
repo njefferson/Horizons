@@ -16,7 +16,7 @@
   --surface: #FFFFFF;
   --ink: #1B2333;
   --ink-soft: #4C5670;
-  --line: #CFCABD;
+  --line: #8E8A7F;   /* 3.45:1 on surface, 3.05:1 on bg — a control boundary is a graphical object (WCAG 1.4.11) */
   --accent: #33425F;
   --warm: #7A4E00;
 
@@ -33,7 +33,7 @@
     --surface: #1E2637;
     --ink: #F2F0EA;
     --ink-soft: #B3BCCE;
-    --line: #3A4560;
+    --line: #6A7896;   /* 3.42:1 on surface, 3.93:1 on bg */
     --accent: #AFC0DC;
     --warm: #F5C978;
   }
@@ -151,6 +151,9 @@ button.ghost {
   min-height: 1.5rem;   /* reserves the line so nothing jumps when it fills */
   margin: 0.25rem 0 0;
   color: var(--ink-soft);
+  /* Error text can contain one unbroken token (a quoted id, a URL); at 320px
+     and 200% text that produced 449px of sideways scroll (audit). */
+  overflow-wrap: anywhere;
 }
 
 /* --- the list ------------------------------------------------------------- */
@@ -250,6 +253,10 @@ dialog {
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.5); }
 dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
+/* At 320px/200% a long unbroken run (the wordmark inside a bold intro clause)
+   pushed the dialog into sideways scroll where the page check could not see it
+   (audit). Every text descendant may break. */
+dialog, dialog * { overflow-wrap: anywhere; }
 
 .version {
   font-size: 0.875rem;
@@ -276,15 +283,26 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 }
 .about-section:first-of-type { margin-top: 0; }
 .about-p { margin: 0 0 0.6rem; color: var(--ink-soft); }
-.about-p a { color: var(--accent); }
+.about-p a {
+  color: var(--accent);
+  /* Real targets, like every other link here (B-06) — the dialog's links
+     measured 186x19 while the audit was looking. */
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding-inline: 2px;
+}
 
 #storage-body {
   display: grid;
-  grid-template-columns: auto 1fr;
+  /* minmax(0, 1fr): a bare 1fr refuses to shrink below content, and at 320px
+     with 200% text the dd column pushed 51px of scroll INSIDE the dialog,
+     where the page-level overflow check could not see it (audit). */
+  grid-template-columns: auto minmax(0, 1fr);
   gap: 0.35rem 1rem;
   margin: 0;
 }
-#storage-body dt { color: var(--ink-soft); }
+#storage-body dt { color: var(--ink-soft); overflow-wrap: anywhere; }
 #storage-body dd { margin: 0; overflow-wrap: anywhere; }
 .storage-note {
   margin: 0.875rem 0 0;
@@ -296,8 +314,9 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 /* Patch notes. Written for the reader, so they are set as prose, not a table. */
 .note-head {
   display: flex;
+  flex-wrap: wrap;            /* the kind tag wraps under the triplet at 320/200 */
   align-items: baseline;
-  gap: 0.5rem;
+  gap: 0.25rem 0.5rem;
   margin: 1rem 0 0.35rem;
   font-size: 0.9375rem;
   font-weight: 600;

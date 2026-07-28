@@ -268,6 +268,10 @@ const UI_PAIRS = [
   ['ink-soft', 'bg', 4.5], ['ink-soft', 'surface', 4.5],
   ['accent', 'bg', 3], ['accent', 'surface', 3],
   ['warm', 'surface', 4.5],
+  // --line draws the border of the text input and ghost buttons — a UI-component
+  // boundary (WCAG 1.4.11), not decoration. Carved out with no floor until the
+  // audit; now held to 3:1 like any graphical object.
+  ['line', 'surface', 3], ['line', 'bg', 3],
 ];
 
 function themeTokens(css, theme) {

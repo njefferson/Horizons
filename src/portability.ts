@@ -14,6 +14,7 @@ import type { AppEvent } from './events.ts';
 import { isKnownKind } from './events.ts';
 import type { LogStore, Snapshot } from './log-store.ts';
 import { fold } from './fold.ts';
+import { silentNodes } from './gate.ts';
 import { serialiseState } from './snapshot.ts';
 
 export interface ExportFile {
@@ -91,11 +92,25 @@ export async function importSeedingFresh(store: LogStore, file: ExportFile): Pro
 
   const events = fromJsonl(file.logJsonl);
 
+  // VALIDATE BEFORE DESTROYING. Import was a second write path around the gate
+  // (audit): a crafted file could seed silent nodes. A log this app produced
+  // cannot contain one, so a file that folds to silence was altered or written
+  // by something else — refuse it while the existing store is still intact,
+  // and name the nodes so the refusal explains itself (Doctrine §5).
+  const candidate = fold(events);
+  const silent = silentNodes(candidate);
+  if (silent.length > 0) {
+    throw new Error(
+      `this file is not a faithful Quietkeep export — ${silent.length} item(s) in it ` +
+      `would be invisible (${silent.slice(0, 5).map(n => n.id).join(', ')}${silent.length > 5 ? ', …' : ''}). ` +
+      'Nothing was imported and your current data is untouched.');
+  }
+
   await store.reset();          // seeds fresh — never merges
   await store.append(events);
 
   // Recompute rather than trusting the file's snapshot.
-  const state = fold(events);
+  const state = candidate;
   await store.putSnapshot({
     upToSeqByDevice: Object.fromEntries(state.seqByDevice),
     state: serialiseState(state),

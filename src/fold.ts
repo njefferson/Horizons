@@ -62,14 +62,42 @@ export function compareOrdering(a: Ordering, b: Ordering): number {
   return a[2] - b[2];
 }
 
-export const compareEvents = (a: AppEvent, b: AppEvent): number =>
-  compareOrdering(orderingOf(a), orderingOf(b));
+export const compareEvents = (a: AppEvent, b: AppEvent): number => {
+  const c = compareOrdering(orderingOf(a), orderingOf(b));
+  if (c !== 0) return c;
+  // Total order, always. Without this final tiebreak, two events with equal
+  // (at, device, seq) — a cure and its cause by design (ADR-0027), or two
+  // sessions sharing one device id by accident — fold in storage order, and
+  // "same log, same state" quietly becomes "same log, same state, usually".
+  // The audit refuted determinism on exactly this. Cure ids derive from their
+  // cause's id, so a cure always sorts immediately after its cause.
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0;
+};
 
-/** True when `next` should overwrite a field last written at `prev`. */
+/** True when `next` may overwrite a field last written at `prev`.
+ *  Ties go to `next`: processing order is total (compareEvents), so on equal
+ *  stamps the later-sorted event — deterministically the cure, whose id sorts
+ *  after its cause's — wins. Strict `<` here made a cure that shares its
+ *  cause's stamp lose to it, which the audit showed silently disables cures
+ *  that touch the same field as their cause. */
 const wins = (prev: Ordering | undefined, next: Ordering): boolean =>
-  prev === undefined || compareOrdering(prev, next) < 0;
+  prev === undefined || compareOrdering(prev, next) <= 0;
 
-function ensureNode(s: State, id: NodeId, vault: VaultId): NodeState {
+/** Assign without prototype traps: `field: "__proto__"` must become an own,
+ *  enumerable, serialisable key — never the object's prototype. The gate also
+ *  refuses those names at the boundary; this is the second lock. */
+const setField = (obj: Record<string, unknown>, key: string, value: unknown): void => {
+  Object.defineProperty(obj, key, { value, writable: true, enumerable: true, configurable: true });
+};
+
+/**
+ * COPY-ON-WRITE. fold never mutates its base: the first touch of a node in
+ * this fold call replaces it with a deep-enough clone. Without this, every
+ * NodeState is shared by reference across folds — the gate's interim folds
+ * wrote into the caller's live state, and a REJECTED commit left the effects
+ * of never-appended events behind (audit finding 1, severe).
+ */
+function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>): NodeState {
   let n = s.nodes.get(id);
   if (!n) {
     n = {
@@ -79,6 +107,19 @@ function ensureNode(s: State, id: NodeId, vault: VaultId): NodeState {
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
+    touched.add(id);
+    return n;
+  }
+  if (!touched.has(id)) {
+    const clone: NodeState = {
+      ...n,
+      clocks: { ...n.clocks },
+      fields: { ...n.fields },
+      stamps: { ...n.stamps },
+    };
+    s.nodes.set(id, clone);
+    touched.add(id);
+    return clone;
   }
   return n;
 }
@@ -101,6 +142,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
   };
 
   const ordered = [...events].sort(compareEvents);
+  const touched = new Set<NodeId>();
 
   for (const e of ordered) {
     const o = orderingOf(e);
@@ -115,7 +157,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         break;
 
       case 'node.created': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.nodeKind; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.title; n.stamps['title'] = o; }
         if (e.payload.parent !== undefined && wins(n.stamps['parent'], o)) {
@@ -124,7 +166,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         break;
       }
       case 'node.kind.changed': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.to; n.stamps['kind'] = o; }
         break;
       }
@@ -134,93 +176,111 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       // silent — caught by the no-silent-nodes property test, which is exactly
       // what it is for.
       case 'capture.recorded': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
         break;
       }
       case 'interrupt.captured': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
         break;
       }
       case 'bother.received': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'bother'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
         break;
       }
       case 'person.created': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'person'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.name; n.stamps['title'] = o; }
         break;
       }
       case 'anchor.defined': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'anchor'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.name; n.stamps['title'] = o; }
         break;
       }
       case 'resume.card.created': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'resume-card'; n.stamps['kind'] = o; }
         break;
       }
       case 'node.field.set': {
         // Exactly one field per event — this is what makes per-field LWW work.
-        const n = ensureNode(s, e.node!, e.vault);
-        const cur = n.fields[e.payload.field];
-        if (wins(cur?.setBy, o)) n.fields[e.payload.field] = { value: e.payload.value, setBy: o };
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const cur = Object.hasOwn(n.fields, e.payload.field) ? n.fields[e.payload.field] : undefined;
+        if (wins(cur?.setBy, o)) setField(n.fields, e.payload.field, { value: e.payload.value, setBy: o });
         break;
       }
       case 'node.parented': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['parent'], o)) { n.parent = e.payload.parent; n.stamps['parent'] = o; }
         break;
       }
       case 'node.unparented': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['parent'], o)) { n.parent = null; n.stamps['parent'] = o; }
         break;
       }
       case 'node.trashed': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['trashed'], o)) { n.trashed = true; n.stamps['trashed'] = o; }
         break;
       }
       case 'node.untrashed': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['trashed'], o)) { n.trashed = false; n.stamps['trashed'] = o; }
         break;
       }
       case 'node.merged': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['mergedInto'], o)) { n.mergedInto = e.payload.into; n.stamps['mergedInto'] = o; }
         break;
       }
 
+      // Clocks carry a TOMBSTONE: set and cleared share one stamped key per
+      // clock kind, so a clear is a fact with an ordering, not a hole. Without
+      // it, fold was non-commutative — a later-folded clock.set with an
+      // earlier ordering resurrected a cleared clock, the gate's incremental
+      // model disagreed with the store's sorted fold, and a gate-approved
+      // sequence read "1 silent" after reload (audit, severe). The fallback to
+      // the clock's own setBy keeps pre-tombstone snapshots folding correctly.
       case 'clock.set': {
-        const n = ensureNode(s, e.node!, e.vault);
-        const cur = n.clocks[e.payload.clockKind];
-        if (wins(cur?.setBy, o)) n.clocks[e.payload.clockKind] = { kind: e.payload.clockKind, at: e.payload.at, setBy: o };
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const key = `clock.${e.payload.clockKind}`;
+        const prev = n.stamps[key] ?? n.clocks[e.payload.clockKind]?.setBy;
+        if (wins(prev, o)) {
+          n.clocks[e.payload.clockKind] = { kind: e.payload.clockKind, at: e.payload.at, setBy: o };
+          setField(n.stamps, key, o);
+        }
         break;
       }
       case 'clock.cleared': {
-        const n = ensureNode(s, e.node!, e.vault);
-        const cur = n.clocks[e.payload.clockKind];
-        if (wins(cur?.setBy, o)) delete n.clocks[e.payload.clockKind];
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const key = `clock.${e.payload.clockKind}`;
+        const prev = n.stamps[key] ?? n.clocks[e.payload.clockKind]?.setBy;
+        if (wins(prev, o)) {
+          delete n.clocks[e.payload.clockKind];
+          setField(n.stamps, key, o);
+        }
         break;
       }
       case 'park.set': {
-        const n = ensureNode(s, e.node!, e.vault);
-        const cur = n.clocks['park'];
-        if (wins(cur?.setBy, o)) n.clocks['park'] = { kind: 'park', at: e.payload.returnAt, setBy: o };
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const prev = n.stamps['clock.park'] ?? n.clocks['park']?.setBy;
+        if (wins(prev, o)) {
+          n.clocks['park'] = { kind: 'park', at: e.payload.returnAt, setBy: o };
+          setField(n.stamps, 'clock.park', o);
+        }
         break;
       }
       case 'upkeep.interval.set': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['interval'], o)) {
           n.intervalDays = e.payload.intervalDays;
           n.comfortWindowDays = e.payload.comfortWindowDays;
@@ -229,23 +289,23 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         break;
       }
       case 'done.marked': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['lastDone'], o)) { n.lastDone = e.payload.at; n.stamps['lastDone'] = o; }
         break;
       }
       case 'done.unmarked': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['lastDone'], o)) { n.lastDone = null; n.stamps['lastDone'] = o; }
         break;
       }
 
       case 'menu.item.added': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = e.payload.category; n.stamps['menu'] = o; }
         break;
       }
       case 'menu.item.promoted': {
-        const n = ensureNode(s, e.node!, e.vault);
+        const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.toKind; n.stamps['kind'] = o; }
         break;

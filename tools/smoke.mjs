@@ -131,7 +131,18 @@ try {
   is(parsed.format, 'planner-log', 'export format field intact');
   const lineKinds = parsed.logJsonl.split('\n').filter(Boolean).map((l) => JSON.parse(l).kind);
   is(lineKinds.includes('capture.recorded'), true, 'the file carries the captured thought');
-  is(lineKinds.includes('export.written'), true, 'and its own export.written record — the log explains everything');
+  // Deliver-then-record: a file is built BEFORE its own export.written is
+  // committed, so the record shows up in the NEXT export — and a failed export
+  // can never leave the log claiming a copy left (audit).
+  is(lineKinds.includes('export.written'), false, 'a file predates its own record (deliver, then record)');
+  const [download2] = await Promise.all([
+    page.waitForEvent('download'),
+    page.click('#export'),
+  ]);
+  const parsed2 = JSON.parse(readFileSync(await download2.path(), 'utf8'));
+  const kinds2 = parsed2.logJsonl.split('\n').filter(Boolean).map((l) => JSON.parse(l).kind);
+  is(kinds2.filter((k) => k === 'export.written').length, 1,
+    'the next export carries the previous export.written — the log explains everything');
   await page.click('#about-close');
   is(await page.locator('#about').isVisible(), false, 'dialog closes');
 

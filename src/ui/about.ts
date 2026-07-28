@@ -121,21 +121,17 @@ export async function mountAbout(session: Session): Promise<void> {
   });
 
   // --- export ---------------------------------------------------------------
-  // The way out, on the surface that talks about durability. The record goes to
-  // the log FIRST, so the file carries its own export.written line — the log
-  // explains everything, including that a copy left.
+  // The way out, on the surface that talks about durability. DELIVER, then
+  // record: the audit found the old order logging export.written before any
+  // file existed, so a failed export left the log asserting a copy left when
+  // none did — and the failure itself was silent. Now the file is built and
+  // handed to the browser first, the event is committed after, and every
+  // failure is said out loud (§5). Each file carries every EARLIER export's
+  // record; its own lands one export later.
   exp.addEventListener('click', async () => {
     exp.disabled = true;
     try {
-      let at = '';
-      await session.commit((ctx) => {
-        at = ctx.at;
-        return [{
-          id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
-          kind: 'export.written', node: null,
-          payload: { at: ctx.at, scope: 'all', encrypted: false },
-        } as AppEvent];
-      });
+      const at = new Date().toISOString();
       const file = await exportAll(session.store, at);
       const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
@@ -148,9 +144,18 @@ export async function mountAbout(session: Session): Promise<void> {
       // Long grace: on iPadOS the share sheet holds the URL open while the user
       // decides where the file goes.
       setTimeout(() => URL.revokeObjectURL(url), 120_000);
-      void paintStorage();
+
+      await session.commit((ctx) => [{
+        id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+        kind: 'export.written', node: null,
+        payload: { at, scope: 'all', encrypted: false },
+      } as AppEvent]);
+      noteOut.textContent = 'Exported. The file is on its way to your Files app or downloads.';
+    } catch (err) {
+      noteOut.textContent = `The export failed — nothing left your device. (${(err as Error).message})`;
     } finally {
       exp.disabled = false;
+      void paintStorage().catch(() => {});
     }
   });
 
@@ -173,9 +178,12 @@ export async function mountAbout(session: Session): Promise<void> {
   open.addEventListener('click', () => show(false));
 
   // --- first run -----------------------------------------------------------
+  // SEEN is written when the introduction is DISMISSED, not when it is shown:
+  // for this audience interruption is the expected case (ADR-0008), and a
+  // crash on first paint must not burn the one-time introduction unread.
   const seen = await session.store.getKv<boolean>(SEEN);
   if (!seen) {
-    await session.store.setKv(SEEN, true);
+    dialog.addEventListener('close', () => { void session.store.setKv(SEEN, true); }, { once: true });
     show(true);
   }
 }

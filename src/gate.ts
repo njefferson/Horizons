@@ -37,20 +37,42 @@ export class GateRejection extends Error {
 const isDemandFree = (k: NodeKind): boolean =>
   (DEMAND_FREE_KINDS as readonly NodeKind[]).includes(k);
 
+/** Follow a merge chain to its living end. Null when the chain leaves the
+ *  known world (missing target), ends in the trash, or loops. */
+function mergeTarget(node: NodeState, state: State): NodeState | null {
+  const seen = new Set<NodeId>([node.id]);
+  let cur: NodeState | undefined = node;
+  while (cur?.mergedInto) {
+    if (seen.has(cur.mergedInto)) return null;             // cycle
+    seen.add(cur.mergedInto);
+    cur = state.nodes.get(cur.mergedInto);
+  }
+  return cur && !cur.trashed ? cur : null;
+}
+
 /** Law 1's four-way test. A node satisfying none of these is SILENT. */
 export function isSilent(node: NodeState, state: State): boolean {
   if (node.trashed) return false;        // an explicit end is a decision, not a silence
-  if (node.mergedInto) return false;
+  if (node.mergedInto) {
+    // Merged means "lives on inside the target" — which is only true if the
+    // target actually lives. The audit merged a node into an id that did not
+    // exist and the old unconditional exemption called it covered; law 1 was
+    // being defined away, not enforced.
+    const target = mergeTarget(node, state);
+    return target ? isSilent(target, state) : true;
+  }
   if (Object.keys(node.clocks).length > 0) return false;   // (b) under a clock
   if (node.onMenu !== null) return false;                  // (c) on the Menu
   if (isDemandFree(node.kind)) return false;               // Menu/pebble kinds are demand-free by construction
   if (node.parent) {                                       // (d) parented to something under a clock
     // Walk the ancestry, guarding against a cycle so a corrupt parent chain
-    // cannot hang the gate.
+    // cannot hang the gate. A trashed or merged-away ancestor confers NOTHING:
+    // a clock in the trash covers nobody (the audit's orphaned-children case).
     const seen = new Set<NodeId>();
     let cur = state.nodes.get(node.parent);
     while (cur && !seen.has(cur.id)) {
       seen.add(cur.id);
+      if (cur.trashed || cur.mergedInto) break;
       if (Object.keys(cur.clocks).length > 0) return false;  // an ancestor is clocked: not silent
       if (!cur.parent) break;
       cur = state.nodes.get(cur.parent);
@@ -58,6 +80,17 @@ export function isSilent(node: NodeState, state: State): boolean {
   }
   return true;
 }
+
+/** Nodes silent in `after` that were not already silent in `before`. The gate
+ *  reasons in DELTAS: a pre-existing silent node (a legacy import, a bug from
+ *  an older build) must be curable, not a wedge that refuses every unrelated
+ *  write forever — which is exactly what the audit showed the absolute check
+ *  doing. */
+const newlySilent = (after: State, before: State): NodeState[] =>
+  silentNodes(after).filter(n => {
+    const prev = before.nodes.get(n.id);
+    return !prev || !isSilent(prev, before);
+  });
 
 /** Every node currently failing law 1. Should ALWAYS be empty. */
 export const silentNodes = (state: State): NodeState[] =>
@@ -111,13 +144,38 @@ export function admit(
       throw new GateRejection('every event belongs to exactly one vault', e);
     }
     if (!Number.isInteger(e.seq) || e.seq < 0) {
-      throw new GateRejection('seq must be a non-negative integer and gap-free per device', e);
+      // Continuity is the SESSION's job (ADR-0027); the gate can only check shape.
+      throw new GateRejection('seq must be a non-negative integer', e);
     }
     if (e.kind === 'node.field.set') {
       const p = e.payload as { field?: unknown };
       if (typeof p.field !== 'string' || !p.field) {
         throw new GateRejection('node.field.set carries exactly one named field', e);
       }
+      if (p.field === '__proto__' || p.field === 'constructor' || p.field === 'prototype') {
+        // A prototype-key field lands in live state but vanishes from every
+        // snapshot and export (audit). fold also defends; refuse at the door.
+        throw new GateRejection(`"${p.field}" is not a usable field name`, e);
+      }
+    }
+
+    const before = fold(out, priorState);
+
+    // A capture/creation aimed at an id that already exists would silently
+    // overwrite its kind and title — the audit turned a project into an action
+    // named "milk". Creation events create; they do not rename.
+    if ((e.kind === 'node.created' || e.kind === 'capture.recorded' ||
+         e.kind === 'interrupt.captured' || e.kind === 'bother.received' ||
+         e.kind === 'person.created') && e.node && before.nodes.has(e.node)) {
+      throw new GateRejection(`node ${e.node} already exists — a creation event cannot land on it`, e);
+    }
+
+    if (e.kind === 'node.merged') {
+      const into = (e.payload as { into?: unknown }).into;
+      const target = typeof into === 'string' ? before.nodes.get(into) : undefined;
+      if (!target) throw new GateRejection('merge target does not exist', e);
+      if (into === e.node) throw new GateRejection('a node cannot merge into itself', e);
+      if (target.trashed) throw new GateRejection('merge target is in the trash', e);
     }
 
     out.push(e);
@@ -145,7 +203,7 @@ export function admit(
     if (!isSilentRisk(e.kind)) continue;
 
     const after = fold(out, priorState);
-    for (const node of silentNodes(after)) {
+    for (const node of newlySilent(after, priorState)) {
       const cure = cureFor(node, e, opts);
       if (!cure) {
         throw new GateRejection(
@@ -156,13 +214,35 @@ export function admit(
     }
   }
 
-  // Belt and braces: the batch as a whole must leave nothing silent.
+  // Belt and braces, in DELTAS: the batch must INTRODUCE no silence. (An
+  // absolute check here wedged the store: one legacy silent node refused every
+  // unrelated write forever — audit, severe.)
   const final = fold(out, priorState);
-  const remaining = silentNodes(final);
-  if (remaining.length > 0) {
+  const anchor: AppEvent = offered[offered.length - 1] ??
+    ({ kind: 'node.created', id: '(empty batch)', vault: '-', at: '', device: '-', seq: 0, node: null, payload: {} } as AppEvent);
+  const introduced = newlySilent(final, priorState);
+  if (introduced.length > 0) {
     throw new GateRejection(
-      `batch would leave ${remaining.length} silent node(s): ${remaining.map(n => n.id).join(', ')}`,
-      offered[offered.length - 1]!);
+      `batch would leave ${introduced.length} silent node(s): ${introduced.map(n => n.id).join(', ')}`,
+      anchor);
+  }
+
+  // Law 6, revalidated over the WHOLE batch: per-event checks are order-
+  // dependent (a cure's clock followed by a kind change to demand-free slipped
+  // both — audit). The final state is what ships, so the final state is what
+  // is checked.
+  for (const n of final.nodes.values()) {
+    if (isDemandFree(n.kind) && Object.keys(n.clocks).length > 0) {
+      const wasAlready = (() => {
+        const prev = priorState.nodes.get(n.id);
+        return !!prev && isDemandFree(prev.kind) && Object.keys(prev.clocks).length > 0;
+      })();
+      if (!wasAlready) {
+        throw new GateRejection(
+          `batch would leave ${n.kind} ${n.id} carrying a clock — demand-free kinds cannot (law 6)`,
+          anchor);
+      }
+    }
   }
 
   return out;
@@ -210,6 +290,14 @@ function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): AppEvent 
       };
 
     // Losing a parent, a clock, or a role means the node needs its own clock.
+    // node.trashed / node.merged / node.parented cure the BYSTANDERS: children
+    // whose only coverage was an ancestor that just left the world (ADR-0011:
+    // "trashing a parent must not silently orphan children"), or a node
+    // re-homed under an unclocked parent — which the old gate REFUSED outright,
+    // losing the user's write.
+    case 'node.trashed':
+    case 'node.merged':
+    case 'node.parented':
     case 'node.unparented':
     case 'node.untrashed':
     case 'clock.cleared':

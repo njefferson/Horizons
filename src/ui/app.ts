@@ -88,27 +88,50 @@ async function main(): Promise<void> {
     const text = input.value.trim();
     if (!text) return;
 
-    input.disabled = true;
+    // Clear SYNCHRONOUSLY, never disable. Disabling blurred the field for the
+    // whole commit window — dropping keystrokes and, on iPadOS, dismissing the
+    // keyboard with no guaranteed return — and the un-cleared text made a
+    // double-tap capture the same thought twice (audit). With the input empty,
+    // a second submit in the window reads '' and no-ops.
+    input.value = '';
+
+    let landed = false;
     try {
-      // Commit BEFORE the UI confirms. The confirmation reports something that
-      // already happened; it never predicts one (ADR-0008). If this throws, the
-      // user is told the truth instead of being shown a lie about "Saved".
+      // Commit BEFORE the UI confirms (ADR-0008).
       await session.commit(ctx => captureEvent(ctx, text, 'quick'));
-      input.value = '';
-      await session.setDraft('');
-      render(session);
-      status.textContent = 'Held. It will come back to you.';
+      landed = true;
     } catch (err) {
+      // The write failed: give the thought back, and say so.
+      input.value = text;
       status.textContent = `Not saved — ${(err as Error).message}`;
-    } finally {
-      input.disabled = false;
       input.focus();
+      return;
     }
+
+    // From here the write IS in the log. Nothing below may un-say that: the
+    // audit showed a post-commit throw landing in a shared catch and telling
+    // the user "Not saved" about a thought that was saved — who then retypes
+    // it and gets a duplicate. Confirmation first, housekeeping after, each
+    // failure contained.
+    status.textContent = 'Held. It will come back to you.';
+    void session.setDraft('').catch(() => { /* stale draft self-heals on next keystroke */ });
+    try {
+      render(session);
+    } catch {
+      // A render bug must not contradict a landed write; the card appears on
+      // next load. landed stays the truth.
+    }
+    if (landed) input.focus();
   });
 
   // Opens itself on a first run — a new user has no way to know that storage
-  // needs asking for — and never uninvited after that.
-  await mountAbout(session);
+  // needs asking for — and never uninvited after that. Contained: a failure
+  // here must not take capture down with it, or block readiness.
+  try {
+    await mountAbout(session);
+  } catch {
+    // The (i) failing is a lost nicety; capture still works.
+  }
 
   // The store is open, state is folded, and the surface reflects it. Marked on
   // the document so the headless walk waits for the app rather than for `load`,

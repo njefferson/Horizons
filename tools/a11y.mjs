@@ -1,19 +1,22 @@
 // The app's accessibility gate — computed, never eyeballed (B-08).
 //
 // brand.mjs checks the TOKENS. This checks the RENDERED APP: what a person is
-// actually shown, in both themes, at the reference sizes, including the states
-// a token table cannot see (the first-run dialog, a list with cards in it).
+// actually shown, in both themes, in every reachable state including the ones
+// the first version never rendered — the everyday (i) dialog, the dialog at the
+// stressed viewport, focus rings, the placeholder.
 //
-// Method, following the hub's a11y-gate:
-//  - a REGISTRY of selectors per state. A selector that stops matching FAILS —
-//    a check that silently skips what it cannot find is how gates rot.
-//  - contrast computed from getComputedStyle against the resolved ancestor
-//    background. Thresholds are WCAG: 4.5:1, or 3:1 for large text.
-//  - axe-core (pinned 4.10.2 — same pair as the hub) run per state; any
-//    violation fails. `incomplete` is printed, never trusted as a pass: audits
-//    silently downgrade transformed content to incomplete (B-08).
-//  - B-04's hardest viewport: 320px wide at 200% text. Nothing may overflow
-//    the page horizontally, and capture must still be a full-size target.
+// The first version of this gate was handed to an adversarial audit, which
+// deleted focus rings, dropped the placeholder to 1.44:1, shrank targets to
+// 20px and made borders invisible — and the gate printed 66 ok, 0 FAIL. Every
+// mechanism below that looks paranoid exists because that run happened:
+//  - registries audit EVERY visible match of a selector (worst case), not the first
+//  - pseudo-elements are sampled (::placeholder)
+//  - focus rings are focused-and-measured, not assumed
+//  - targets check width AND height, in every state including the dialog
+//  - axe runs per state AND at the stressed viewport; `incomplete` is printed
+//    by rule id, and the registry pass covers the pairs axe drops there
+//  - the dialog's own scrollWidth is checked: it is a scroll container, so
+//    page-level overflow stays 0 while content escapes sideways inside it
 //
 //   npm run a11y        (exits non-zero on any failure)
 
@@ -38,21 +41,23 @@ const failures = [];
 const fail = (m) => { failures.push(m); console.error(`  FAIL  ${m}`); };
 const pass = (m) => console.log(`  ok    ${m}`);
 
-// What must be readable, per state. Text-bearing selectors only.
+// Entries: 'sel' or {sel, pseudo}. Every VISIBLE match is audited; the worst
+// ratio is what gets judged. A selector matching nothing visible FAILS.
+const DIALOG_COMMON = [
+  '#about-title', '.version', '.about-section',
+  '#storage-body dt', '#storage-body dd', '#storage-note',
+  '#export', '#about-close', '#storage-ask',
+  '.note-triplet', '.note-kind', '.note-list li', '.about-p', '.about-p a',
+];
 const REGISTRY = {
-  'first-run dialog': [
-    '#about-title', '.version', '#about-intro p', '.intro-aside',
-    '.about-section', '#storage-body dt', '#storage-body dd',
-    '#export', '#about-close', '#storage-note', '.note-triplet', '.note-kind',
-    '.note-list li', '.about-p', '.about-p a',
-  ],
+  'first-run dialog': [...DIALOG_COMMON, '#about-intro p', '.intro-aside'],
+  'dialog, return visit': DIALOG_COMMON,
   'empty store': [
-    '.wordmark', '#capture', '#capture-form button[type=submit]',
+    '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
+    '#capture-form button[type=submit]',
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a',
   ],
-  'with cards': [
-    '.card-title', '.card-when', '#status',
-  ],
+  'with cards': ['.card-title', '.card-when', '#status'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -62,9 +67,9 @@ const ratio = (a, b) => {
   return (x + 0.05) / (y + 0.05);
 };
 
-/** Runs in the page: resolve each selector's fg colour, effective bg, size and
- *  weight. Background = nearest ancestor with a non-transparent background. */
-function sampler(selectors) {
+/** Runs in the page. For each entry, sample EVERY visible match, resolving fg
+ *  (optionally of a pseudo-element) against the nearest opaque ancestor bg. */
+function sampler(entries) {
   const parse = (s) => {
     const m = s.match(/rgba?\(([^)]+)\)/);
     if (!m) return null;
@@ -78,34 +83,42 @@ function sampler(selectors) {
     }
     return null;
   };
-  return selectors.map((sel) => {
-    const el = document.querySelector(sel);
-    if (!el) return { sel, missing: true };
-    const cs = getComputedStyle(el);
-    const fg = parse(cs.color);
-    return {
-      sel,
-      missing: false,
-      fg: fg ? fg.rgb : null,
-      bg: bgOf(el),
-      size: parseFloat(cs.fontSize),
-      weight: parseInt(cs.fontWeight, 10) || 400,
-      visible: el.getClientRects().length > 0,
-    };
+  return entries.map((entry) => {
+    const sel = typeof entry === 'string' ? entry : entry.sel;
+    const pseudo = typeof entry === 'string' ? undefined : entry.pseudo;
+    const els = [...document.querySelectorAll(sel)].filter((el) => el.getClientRects().length > 0);
+    if (els.length === 0) return { sel, pseudo, missing: true };
+    const samples = els.map((el) => {
+      const cs = getComputedStyle(el, pseudo);
+      const fg = parse(cs.color);
+      return {
+        fg: fg ? fg.rgb : null,
+        bg: bgOf(el),
+        size: parseFloat(cs.fontSize),
+        weight: parseInt(cs.fontWeight, 10) || 400,
+      };
+    });
+    return { sel, pseudo, missing: false, samples, count: els.length };
   });
 }
 
-async function auditContrast(page, stateName, theme) {
-  const rows = await page.evaluate(sampler, REGISTRY[stateName]);
+async function auditContrast(page, stateName, theme, registryKey = stateName) {
+  const rows = await page.evaluate(sampler, REGISTRY[registryKey]);
   for (const r of rows) {
-    if (r.missing) { fail(`${theme}/${stateName}: registry selector "${r.sel}" matches nothing — the gate no longer sees it`); continue; }
-    if (!r.visible) { fail(`${theme}/${stateName}: "${r.sel}" is in the registry but not visible in this state`); continue; }
-    if (!r.fg || !r.bg) { fail(`${theme}/${stateName}: could not resolve colours for "${r.sel}"`); continue; }
-    const large = r.size >= 24 || (r.size >= 18.66 && r.weight >= 600);
-    const need = large ? 3 : 4.5;
-    const got = ratio(r.fg, r.bg);
-    (got >= need ? pass : fail)(
-      `${theme.padEnd(5)} ${stateName.padEnd(16)} ${r.sel.padEnd(36)} ${got.toFixed(2)}:1 (needs ${need}:1)`,
+    const label = `${r.sel}${r.pseudo ?? ''}`;
+    if (r.missing) { fail(`${theme}/${stateName}: registry entry "${label}" matches nothing visible — the gate no longer sees it`); continue; }
+    let worst = null;
+    let bad = false;
+    for (const smp of r.samples) {
+      if (!smp.fg || !smp.bg) { bad = true; fail(`${theme}/${stateName}: could not resolve colours for "${label}"`); break; }
+      const large = smp.size >= 24 || (smp.size >= 18.66 && smp.weight >= 600);
+      const need = large ? 3 : 4.5;
+      const got = ratio(smp.fg, smp.bg);
+      if (worst === null || got / need < worst.got / worst.need) worst = { got, need };
+    }
+    if (bad || worst === null) continue;
+    (worst.got >= worst.need ? pass : fail)(
+      `${theme.padEnd(5)} ${stateName.padEnd(22)} ${label.padEnd(32)} ${worst.got.toFixed(2)}:1 (needs ${worst.need}:1, ${r.count} node${r.count === 1 ? '' : 's'})`,
     );
   }
 }
@@ -115,7 +128,8 @@ async function auditAxe(page, stateName, theme) {
   const res = await page.evaluate(() =>
     axe.run(document, { resultTypes: ['violations', 'incomplete'] }));
   if (res.violations.length === 0) {
-    pass(`${theme}/${stateName}: axe — 0 violations (${res.incomplete.length} incomplete, reported not trusted)`);
+    const inc = res.incomplete.map((i) => i.id).join(', ');
+    pass(`${theme}/${stateName}: axe — 0 violations${res.incomplete.length ? ` (incomplete: ${inc}; those pairs are held by the registry pass, not waved through)` : ''}`);
   } else {
     for (const v of res.violations) {
       fail(`${theme}/${stateName}: axe ${v.id} (${v.impact}) — ${v.help} — ${v.nodes.length} node(s), e.g. ${v.nodes[0]?.target?.join(' ')}`);
@@ -129,13 +143,71 @@ async function auditTargets(page, stateName, theme) {
     for (const el of document.querySelectorAll('button, input, a, [role=button]')) {
       const r = el.getBoundingClientRect();
       if (r.width === 0 && r.height === 0) continue;
-      if (r.height < 44) out.push(`${el.tagName.toLowerCase()}#${el.id || el.className} ${Math.round(r.width)}x${Math.round(r.height)}`);
+      // Height carries B-06's 44px floor; width gets WCAG 2.2 2.5.8's 24px —
+      // a 20px-wide sliver passed the first gate (audit).
+      if (r.height < 44 || r.width < 24) {
+        out.push(`${el.tagName.toLowerCase()}#${el.id || el.className} ${Math.round(r.width)}x${Math.round(r.height)}`);
+      }
     }
     return out;
   });
   (small.length === 0 ? pass : fail)(
-    `${theme}/${stateName}: targets ≥44px${small.length ? ` — ${small.join(', ')}` : ''}`,
+    `${theme}/${stateName}: targets ≥44px tall, ≥24px wide${small.length ? ` — ${small.join(', ')}` : ''}`,
   );
+}
+
+/** Tab to each control the way a keyboard user does — programmatic focus does
+ *  NOT set :focus-visible on buttons, so the first version observed no ring and
+ *  passed a build with `outline:none` (audit). Real Tabbing sets the keyboard
+ *  modality, so what we measure is what a keyboard user is actually shown. */
+async function auditFocusRings(page, stateName, theme, selectors) {
+  const remaining = new Set(selectors);
+  // Start from a clean slate, then walk forward with Tab.
+  await page.evaluate(() => (document.activeElement)?.blur?.());
+  for (let i = 0; i < 40 && remaining.size > 0; i++) {
+    await page.keyboard.press('Tab');
+    const hit = await page.evaluate((sels) => {
+      const el = document.activeElement;
+      if (!el || el === document.body) return null;
+      const match = sels.find((s) => el.matches(s));
+      if (!match) return null;
+      const cs = getComputedStyle(el);
+      const parseC = (str) => {
+        const m = str.match(/rgba?\(([^)]+)\)/);
+        if (!m) return null;
+        const p = m[1].split(',').map(Number);
+        return (p[3] ?? 1) > 0.99 ? [p[0], p[1], p[2]] : null;
+      };
+      const bgOf = (node) => {
+        for (let n = node; n; n = n.parentElement) {
+          const c = parseC(getComputedStyle(n).backgroundColor);
+          if (c) return c;
+        }
+        return null;
+      };
+      return {
+        match,
+        visible: cs.outlineStyle,
+        width: parseFloat(cs.outlineWidth),
+        colour: parseC(cs.outlineColor),
+        bg: bgOf(el.parentElement ?? el),
+        focusVisible: el.matches(':focus-visible'),
+      };
+    }, [...remaining]);
+    if (!hit) continue;
+    remaining.delete(hit.match);
+    const srgb2 = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
+    const lum2 = ([r, g, b]) => 0.2126 * srgb2(r) + 0.7152 * srgb2(g) + 0.0722 * srgb2(b);
+    const rat = (a, b) => { const [x, y] = [lum2(a), lum2(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+    const contrast = hit.colour && hit.bg ? rat(hit.colour, hit.bg) : 0;
+    const ok = hit.visible !== 'none' && hit.width >= 2 && contrast >= 3;
+    (ok ? pass : fail)(
+      `${theme.padEnd(5)} ${stateName.padEnd(22)} focus ring ${hit.match.padEnd(20)} ${hit.visible} ${hit.width}px @ ${contrast.toFixed(2)}:1 (needs solid ≥2px ≥3:1)`,
+    );
+  }
+  for (const sel of remaining) {
+    fail(`${theme}/${stateName}: never reached "${sel}" by Tab — not keyboard-focusable?`);
+  }
 }
 
 const { server, url } = await serve(join(ROOT, 'public'));
@@ -148,6 +220,7 @@ try {
       timezoneId: 'America/Denver',
       locale: 'en-US',
       colorScheme: theme,
+      reducedMotion: 'reduce',   // B-05: everything must hold with motion off
       viewport: { width: 390, height: 844 },
     });
     const page = await ctx.newPage();
@@ -158,12 +231,15 @@ try {
     await page.waitForSelector('#storage-body dt');
     await auditContrast(page, 'first-run dialog', theme);
     await auditAxe(page, 'first-run dialog', theme);
+    await auditTargets(page, 'first-run dialog', theme);
     await page.click('#about-close');
 
     // State 2: the empty store.
     await auditContrast(page, 'empty store', theme);
     await auditAxe(page, 'empty store', theme);
     await auditTargets(page, 'empty store', theme);
+    await auditFocusRings(page, 'empty store', theme,
+      ['#capture', '#capture-form button[type=submit]', 'button.info', '.skip']);
 
     // State 3: with a card on the surface.
     await page.fill('#capture', 'a held thought');
@@ -171,21 +247,43 @@ try {
     await page.waitForSelector('.card');
     await auditContrast(page, 'with cards', theme);
     await auditAxe(page, 'with cards', theme);
+    await auditTargets(page, 'with cards', theme);
 
-    // B-04's hardest case: 320px wide at 200% text. The page must not scroll
-    // sideways, and capture must still be a real target.
+    // State 4: the dialog as every RETURN visit sees it — the state real users
+    // live in, which the first gate structurally could not audit.
+    await page.click('#open-about');
+    await page.waitForSelector('#storage-body dt');
+    await auditContrast(page, 'dialog, return visit', theme);
+    await auditAxe(page, 'dialog, return visit', theme);
+    await auditTargets(page, 'dialog, return visit', theme);
+    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export']);
+
+    // State 5: B-04's hardest case — 320px at 200% text — WITH the dialog
+    // open. The dialog is its own scroll container, so page-level overflow
+    // stays 0 while content escapes sideways inside it; both get checked.
     await page.setViewportSize({ width: 320, height: 568 });
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const dlgOverflow = await page.evaluate(() => {
+      const d = document.querySelector('#about');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (dlgOverflow <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: dialog horizontal overflow ${dlgOverflow}px (must be ≤1)`);
+    await auditContrast(page, 'dialog @ 320/200', theme, 'dialog, return visit');
+    await auditAxe(page, 'dialog @ 320/200', theme);
+    await page.click('#about-close');
+
     const overflow = await page.evaluate(() =>
       document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
     (overflow <= 1 ? pass : fail)(
-      `${theme}/320px @ 200% text: horizontal overflow ${overflow}px (must be 0)`);
+      `${theme}/320px @ 200%: page horizontal overflow ${overflow}px (must be ≤1)`);
     const cap = await page.evaluate(() => {
       const r = document.querySelector('#capture').getBoundingClientRect();
       return { h: Math.round(r.height), w: Math.round(r.width) };
     });
     (cap.h >= 44 && cap.w >= 100 ? pass : fail)(
-      `${theme}/320px @ 200% text: capture is ${cap.w}x${cap.h} — still a usable target`);
+      `${theme}/320px @ 200%: capture is ${cap.w}x${cap.h} — still a usable target`);
+    await auditAxe(page, 'page @ 320/200', theme);
 
     await ctx.close();
   }
@@ -199,4 +297,4 @@ if (failures.length) {
   console.error(`${failures.length} check(s) failed.`);
   process.exit(1);
 }
-console.log('The rendered app passes in both themes, including at 320px/200%.');
+console.log('The rendered app passes: both themes, every state, stressed viewport, rings and placeholder measured.');

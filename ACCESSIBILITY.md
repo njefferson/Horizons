@@ -193,7 +193,7 @@ which is a separate question — an icon is seen once, a surface is lived in.
 | accent / bg | 8.92:1 | 9.45:1 | 3:1 |
 | accent / surface | 10.07:1 | 8.21:1 | 3:1 |
 | warm / surface | 7.20:1 | 9.73:1 | 4.5:1 |
-| line / surface | 1.64:1 | 1.59:1 | — |
+| line / surface | 3.45:1 | 3.42:1 | 3:1 (WCAG 1.4.11 — it is a control boundary) |
 
 **`--warm` is not the brand warm, and that is the point.** `#F5C978` is a
 *light* — beautiful as a lit opening, unreadable as text on paper. In the light
@@ -204,6 +204,11 @@ being used at the wrong contrast.**
 **A card does not rely on its fill.** `--surface` against `--bg` is only ~1.14:1
 in both themes, so cards carry a border. One channel is never enough — the same
 rule as B-01, applied to layout instead of pressure.
+
+**`--line` is a graphical object, not decoration.** It draws the boundary of the
+text input and every ghost button, so it is held to WCAG 1.4.11's 3:1 and joins
+the gate (`brand.mjs` UI_PAIRS) — the audit found it carved out with no floor at
+1.45:1, invisible to both gates.
 
 **The gate covers these.** `tools/brand.mjs` reads the tokens out of
 `public/app.css` for both themes and fails on any pair below its floor, so B-08's
@@ -225,6 +230,41 @@ belongs. Moved outside the list as a sibling paragraph; the registry now audits
 it at `#storage-note` (7.20:1 light / 9.73:1 dark).
 Status: **FIXED in 0.2.2**, same commit that stood the gate up — which is the
 point of B-08's same-commit rule.
+
+### F-02 · The a11y gate passed a build with focus rings, placeholder and target sizes broken
+Found: 2026-07-28 · adversarial audit of the gate itself
+Rule: B-06 (focus rings, ≥44px), B-08 (no exceptions incl. placeholder/disabled)
+Detail: a reviewer copied `tools/a11y.mjs` verbatim, deleted `:focus-visible`
+outlines, dropped the placeholder to 1.44:1, shrank a link to 20px and made the
+input border transparent — the gate printed **66 ok, 0 FAIL**. The values shipped
+were fine; nothing measured them. `sampler` never passed a pseudo-element, no
+function read `outlineWidth`, `auditTargets` tested height only and in one of
+three states, and the everyday (return-visit) dialog was never rendered.
+Status: **FIXED in 0.2.3** — the gate now samples `::placeholder`, Tab-navigates
+and measures each focus ring's style/width/contrast, checks width and height in
+every state, renders the return-visit dialog and the dialog at 320/200, runs axe
+at the stressed viewport, and enables reduced-motion. **Re-run against the exact
+attack: 23 failures, exit 1.** The gate was made to fail before being re-trusted
+(§6), a second time and harder.
+
+### F-03 · The text input and ghost buttons had no 3:1 boundary; `--line` was carved out of the gate
+Found: 2026-07-28 · audit
+Rule: WCAG 1.4.11 (non-text contrast of UI-component boundaries)
+Detail: `--line` drew the border of `#capture` (a form control) and every ghost
+button at **1.45–1.83:1**, and B-11 listed the pair with "Needs: —" so no gate
+watched it. A control's visible boundary needs 3:1.
+Status: **FIXED in 0.2.3** — `--line` retuned to `#8E8A7F` (3.45:1 on surface,
+3.05:1 on bg) / `#6A7896` (3.42 / 3.93), and its floor added to `brand.mjs`
+`UI_PAIRS` and to B-11, so the carve-out is closed.
+
+### F-04 · A long error message overflowed the page sideways at 320px/200%
+Found: 2026-07-28 · audit
+Rule: WCAG 1.4.10 Reflow
+Detail: `#status` used `overflow-wrap: normal`, so an error containing one
+unbroken token (a quoted id, a URL) produced 449px of horizontal page scroll at
+the reference stress viewport.
+Status: **FIXED in 0.2.3** — `#status` and every dialog descendant wrap with
+`overflow-wrap: anywhere`; the gate now asserts page AND dialog overflow ≤1px.
 
 Format:
 

@@ -47,7 +47,10 @@ export interface Stamp {
   vault: VaultId;
   at: ISODateTime;
   device: DeviceId;
-  /** Per-device monotonic and gap-free, so a shard can prove it is complete. */
+  /** Per-device monotonic, and gap-free over OFFERED events — a gate cure
+   *  deliberately shares its cause's seq and a derived id, so replay is
+   *  deterministic and a shard proves completeness over offered events while
+   *  cures are verifiable by derivation (ADR-0027). */
   seq: number;
 }
 
@@ -228,6 +231,11 @@ export const SILENT_RISK_KINDS = [
   'capture.recorded', 'clarify.routed', 'bother.received', 'bother.owned',
   'interrupt.captured', 'waiting.closed', 'dependency.released',
   'project.role.set', 'request.declined', 'menu.item.promoted',
+  // Coverage can be REMOVED at a distance: trashing or merging a parent
+  // orphans children whose only claim was that ancestor's clock, and
+  // re-parenting can move a node under an unclocked parent. All three were
+  // absent from this list and the gate never looked (audit, severe).
+  'node.trashed', 'node.merged', 'node.parented',
 ] as const satisfies readonly EventKind[];
 
 const SILENT_RISK_SET: ReadonlySet<string> = new Set(SILENT_RISK_KINDS);

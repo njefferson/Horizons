@@ -3,7 +3,7 @@
 // The cache name carries the version.capability.iteration triplet and is bumped
 // with it (Doctrine §7, CLAUDE.md). Changing the triplet is what retires the old
 // cache — that is the whole mechanism, so it is not optional.
-const CACHE = 'quietkeep-0.2.2';
+const CACHE = 'quietkeep-0.2.3';
 
 // The shell only. User data is NEVER cached here — it lives in IndexedDB, which
 // this file does not touch and must not.
@@ -32,8 +32,12 @@ self.addEventListener('install', (event) => {
 
 self.addEventListener('activate', (event) => {
   event.waitUntil((async () => {
+    // Per-key, contained: one failed delete must not abort the sweep or skip
+    // clients.claim() — reads below are pinned to CACHE, so a straggler old
+    // cache is dead weight, never the winner (the audit showed caches.match
+    // with no cacheName preferring the OLDEST cache).
     for (const key of await caches.keys()) {
-      if (key !== CACHE) await caches.delete(key);
+      if (key !== CACHE) { try { await caches.delete(key); } catch { /* retried next activate */ } }
     }
     await self.clients.claim();
   })());
@@ -66,20 +70,31 @@ self.addEventListener('fetch', (event) => {
       const timeout = new Promise((resolve) =>
         setTimeout(() => resolve(null), NAV_DEADLINE_MS));
       const winner = await Promise.race([freshen.catch(() => null), timeout]);
-      if (winner) return winner;
-      return (await caches.match('./index.html'))
-        ?? freshen.catch(() => Response.error());
+      // `.ok` matters: a reachable origin serving a 503 is a LOSS, not a win —
+      // the audit showed an installed app rendering the deploy's error page
+      // while a complete cached shell sat unused.
+      if (winner && winner.ok) return winner;
+      const cached = await (await caches.open(CACHE)).match('./index.html');
+      if (cached) return cached;
+      // No cache to fall back on (first visit): the network is all there is,
+      // however long it takes. If it errored above, hand that answer over.
+      return winner ?? freshen.catch(() => Response.error());
     })());
     return;
   }
 
-  // Cache-first for the rest of the shell — it is versioned by CACHE, so a
-  // stale asset cannot outlive its triplet.
+  // Cache-first for the SHELL only, read from THIS version's cache — an
+  // unscoped caches.match() prefers the oldest cache in creation order, which
+  // pins a stale bundle if one old cache ever survives (audit). Non-shell GETs
+  // pass through uncached, so the cache cannot grow without bound.
+  const rel = `.${url.pathname}`;
+  if (!SHELL.includes(rel) && !url.pathname.endsWith('/')) return;
   event.respondWith((async () => {
-    const hit = await caches.match(req);
+    const cache = await caches.open(CACHE);
+    const hit = await cache.match(req);
     if (hit) return hit;
     const fresh = await fetch(req);
-    if (fresh.ok) (await caches.open(CACHE)).put(req, fresh.clone());
+    if (fresh.ok) cache.put(req, fresh.clone());
     return fresh;
   })());
 });

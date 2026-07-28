@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.2.3',
+    kind: 'ITERATION',
+    date: '2026-07-28',
+    notes: [
+      'A held thought is never reported as lost. If anything goes wrong after it is saved, you are told the truth about it, and the thing you typed is never taken from you.',
+      'Holding the same thought twice by tapping quickly can no longer make a duplicate.',
+      'Exporting tells you plainly whether the file was made, and never records a copy that did not leave.',
+      'Opening the app when the network is broken always shows the copy on your device, never an error page.',
+      'Your writing reads correctly whatever your text size, and every control is reachable by keyboard with a clear focus outline.',
+    ],
+  },
+  {
     triplet: '0.2.2',
     kind: 'ITERATION',
     date: '2026-07-28',
