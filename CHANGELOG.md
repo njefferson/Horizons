@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.3.0 — CAPABILITY
+
+*2026-07-28*
+
+- You can now capture into Quietkeep from outside it: share a page or a note to it from any app, add a Capture shortcut to the app icon, or open a link that drops text straight in.
+- Anything captured from a link shows a plain confirmation with an Undo, and never runs or trusts what the link contained.
+- The app now ships a strict security policy that stops any code it did not author from running.
+
 ## 0.2.4 — ITERATION
 
 *2026-07-28*

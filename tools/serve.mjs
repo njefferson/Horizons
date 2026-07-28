@@ -6,6 +6,7 @@
 
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 import { extname, join, normalize } from 'node:path';
 
 const TYPES = {
@@ -19,7 +20,29 @@ const TYPES = {
   '.map': 'application/json; charset=utf-8',
 };
 
+/** Parse the `/*`-scoped block of a Cloudflare Pages `_headers` file into a flat
+ *  header map. The browser gates run under the SAME headers production serves,
+ *  so a CSP violation surfaces here as a console error rather than only in the
+ *  wild — which is the whole point of shipping a policy you have run the app
+ *  under (Doctrine §16.6, and V-10's "a gate nobody watched is a file"). */
+function parseHeaders(root) {
+  let text;
+  try { text = readFileSync(join(root, '_headers'), 'utf8'); } catch { return {}; }
+  const out = {};
+  let inGlobal = false;
+  for (const raw of text.split('\n')) {
+    const line = raw.replace(/\s+$/, '');
+    if (!line || line.trimStart().startsWith('#')) continue;
+    if (!line.startsWith(' ')) { inGlobal = line.trim() === '/*'; continue; }
+    if (!inGlobal) continue;
+    const i = line.indexOf(':');
+    if (i > 0) out[line.slice(0, i).trim()] = line.slice(i + 1).trim();
+  }
+  return out;
+}
+
 export function serve(root, port = 0) {
+  const extraHeaders = parseHeaders(root);
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost');
@@ -29,7 +52,7 @@ export function serve(root, port = 0) {
       const file = normalize(join(root, path));
       if (!file.startsWith(normalize(root))) { res.writeHead(403).end(); return; }
       const body = await readFile(file);
-      res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream' });
+      res.writeHead(200, { 'content-type': TYPES[extname(file)] ?? 'application/octet-stream', ...extraHeaders });
       res.end(body);
     } catch {
       res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');

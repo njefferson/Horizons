@@ -222,6 +222,13 @@ try {
       colorScheme: theme,
       reducedMotion: 'reduce',   // B-05: everything must hold with motion off
       viewport: { width: 390, height: 844 },
+      // This gate injects axe as a script, which the app's own strict CSP
+      // (script-src 'self') correctly refuses — the CSP working is proven by
+      // smoke.mjs, which runs UNDER the policy and fails on any violation.
+      // Accessibility (contrast, rings, structure) is unaffected by CSP, so this
+      // context bypasses it to let the instrument run. Division of labour:
+      // smoke owns the CSP; a11y owns accessibility.
+      bypassCSP: true,
     });
     const page = await ctx.newPage();
     await page.goto(url, { waitUntil: 'load' });

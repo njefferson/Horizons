@@ -59,6 +59,7 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0025](0025-visual-identity.md) | The mark is drawn as SVG; the social background is generated | Accepted |
 | [0026](0026-ui-and-build.md) | No UI framework; one esbuild type-strip step | Accepted |
 | [0027](0027-cure-stamps.md) | Cures share their cause's stamp; commits are serialized | Accepted |
+| [0028](0028-public-capture-surfaces.md) | URL/share/shortcut capture entrances; strict CSP | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

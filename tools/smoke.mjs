@@ -122,6 +122,50 @@ try {
   is(await page.locator('.card-title').first().textContent(), '<img src=x onerror="globalThis.__pwned=1">',
     'and shown verbatim');
 
+  console.log('\nURL capture endpoint (/capture?text=)');
+  const before = await page.locator('.card').count();
+  await page.goto(`${url}?text=${encodeURIComponent('from a hostile <img src=x> link')}`, { waitUntil: 'load' });
+  await ready();
+  await page.waitForFunction((n) => document.querySelectorAll('.card').length === n, before + 1);
+  const urlCard = await page.locator('.card-title').first().textContent();
+  is(urlCard, 'from a hostile <img src=x> link', 'url-endpoint captured the text verbatim, unescaped-but-inert');
+  is(await page.evaluate(() => globalThis.__pwned), undefined, 'and did not execute it');
+  is(new URL(page.url()).search, '', 'the ?text= param is scrubbed from the address bar');
+  is((await page.locator('#status').textContent())?.includes('Held from a link'), true,
+    'a drive-by capture is visibly confirmed, never silent');
+
+  // Share target: title + text + url compose into one item.
+  const beforeShare = await page.locator('.card').count();
+  await page.goto(`${url}?title=${encodeURIComponent('A page')}&text=${encodeURIComponent('worth keeping')}&url=${encodeURIComponent('https://example.com')}`, { waitUntil: 'load' });
+  await ready();
+  await page.waitForFunction((n) => document.querySelectorAll('.card').length === n, beforeShare + 1);
+  const shareCard = await page.locator('.card-title').first().textContent();
+  is(shareCard?.includes('A page') && shareCard?.includes('worth keeping') && shareCard?.includes('example.com'), true,
+    'share target composed title + text + url into one capture');
+
+  // Shortcut: focuses the empty line, captures nothing.
+  const beforeShortcut = await page.locator('.card').count();
+  await page.goto(`${url}?capture=1`, { waitUntil: 'load' });
+  await ready();
+  is(await page.evaluate(() => document.activeElement?.id), 'capture', 'the shortcut lands focused on capture');
+  is(await page.locator('.card').count(), beforeShortcut, 'and captures nothing by itself');
+  is(new URL(page.url()).search, '', 'the shortcut param is scrubbed too');
+  const afterDriveBy = await page.locator('.card').count();
+  await page.reload({ waitUntil: 'load' });
+  await ready();
+  is(await page.locator('.card').count(), afterDriveBy, 'a refresh after scrubbing does not re-capture (count unchanged)');
+  // Undo removes exactly the one node it created.
+  const beforeUndo = await page.locator('.card').count();
+  await page.goto(`${url}?text=${encodeURIComponent('undo me')}`, { waitUntil: 'load' });
+  await ready();
+  await page.waitForFunction((n) => document.querySelectorAll('.card').length === n, beforeUndo + 1);
+  await page.click('#status button');
+  await page.waitForFunction((n) => document.querySelectorAll('.card').length === n, beforeUndo);
+  is(await page.locator('.card').count(), beforeUndo, 'undo trashed exactly the drive-by node');
+  // Return to a clean slate for the export section.
+  await page.goto(url, { waitUntil: 'load' });
+  await ready();
+
   console.log('\nExport — the way out');
   await page.click('#open-about');
   is(await page.locator('#about').isVisible(), true, 'the (i) opens on request');

@@ -254,6 +254,14 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28 (evening)** — **Phase 1 is complete, and behind a strict CSP.** The three
+  public capture entrances shipped — `/capture?text=`, Web Share Target, and the manifest
+  `?capture=1` shortcut — each landing in the same gated `captureEvent`, each with a visible
+  confirm and an undo, each scrubbing its query so a refresh cannot re-fire it. A strict
+  `default-src 'none'` CSP landed in the same change (0.3.0, [ADR-0028](docs/adr/0028-public-capture-surfaces.md)),
+  possible here because the app has no inline script; it is verified by `serve.mjs` applying
+  the real `_headers` so every browser gate runs under it. Promoted 0.2.4 to `main` first
+  (Noah's word), so `quietkeep.pages.dev` serves the audited app.
 - **2026-07-28 (evening)** — **The claimed a11y gate exists now, and it caught a real
   defect on its first run.** `tools/a11y.mjs` audits the *rendered* app in CI — per-state
   selector registry, computed contrast in both themes, axe 4.10.2, targets, and 320px at

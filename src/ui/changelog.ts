@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.3.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-28',
+    notes: [
+      'You can now capture into Quietkeep from outside it: share a page or a note to it from any app, add a Capture shortcut to the app icon, or open a link that drops text straight in.',
+      'Anything captured from a link shows a plain confirmation with an Undo, and never runs or trusts what the link contained.',
+      'The app now ships a strict security policy that stops any code it did not author from running.',
+    ],
+  },
+  {
     triplet: '0.2.4',
     kind: 'ITERATION',
     date: '2026-07-28',

@@ -9,6 +9,7 @@
 // write goes through `session.commit`, which goes through the gate.
 
 import { openSession, captureEvent, type Session } from './session.ts';
+import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
@@ -79,6 +80,15 @@ async function main(): Promise<void> {
   input.value = await session.draft();
   render(session);
 
+  // Three URL entrances, all landing in the same capture (ADR-0008):
+  //  - ?capture=1     the manifest shortcut — just focus the empty line
+  //  - ?text=         the documented public endpoint (a hostile link can reach it)
+  //  - share target   ?title=&text=&url= from the OS share sheet (Chromium)
+  // Each is a public surface, so each does the ONE thing it may — create a single
+  // unclarified item — with a visible confirm and undo; none can set a clock,
+  // route, complete, or delete. Text is stored as text and shown with textContent.
+  await handleUrlEntrances(session, status, input);
+
   // Per keystroke. An interruption mid-capture is the EXPECTED case for this
   // audience, not the edge case (ADR-0008).
   input.addEventListener('input', () => { void session.setDraft(input.value); });
@@ -144,6 +154,76 @@ async function main(): Promise<void> {
       // to break capture, which is the one thing that must always work.
     });
   }
+}
+
+/** Compose one capture from whatever a share sheet handed over. Title, text and
+ *  URL can each be present or absent; the result is the parts that exist, joined,
+ *  trimmed — never the literal string "undefined" and never a blank line. */
+function composeShared(title: string, text: string, url: string): string {
+  return [title, text, url].map(s => s.trim()).filter(Boolean).join('\n').trim();
+}
+
+/** The three URL entrances. Captures at most once, offers an undo, and scrubs
+ *  the query from the address bar so a refresh cannot re-fire it. */
+async function handleUrlEntrances(session: Session, status: HTMLElement, input: HTMLInputElement): Promise<void> {
+  const params = new URLSearchParams(location.search);
+  const clean = location.pathname + location.hash;
+
+  // The manifest shortcut: no capture, just land ready to type.
+  if (params.get('capture') === '1') {
+    history.replaceState(null, '', clean);
+    input.focus();
+    return;
+  }
+
+  const title = params.get('title') ?? '';
+  const url = params.get('url') ?? '';
+  const rawText = params.get('text') ?? '';
+  const shared = Boolean(title || url);            // share sheet sends these; the bare endpoint does not
+  const text = shared ? composeShared(title, rawText, url) : rawText.trim();
+  if (!text) return;
+
+  // Scrub first, so a failure or a refresh cannot fire it twice.
+  history.replaceState(null, '', clean);
+
+  const source = shared ? 'share-target' : 'url-endpoint';
+  let capturedNode: string | null = null;
+  try {
+    await session.commit(ctx => {
+      const events = captureEvent(ctx, text, source);
+      capturedNode = events[0]!.node;
+      return events;
+    });
+  } catch (err) {
+    status.textContent = `Couldn’t hold that — ${(err as Error).message}`;
+    return;
+  }
+
+  render(session);
+
+  // Visible confirm with an undo — a drive-by capture is never silent and never
+  // permanent. Undo trashes the one node this created and nothing else.
+  status.replaceChildren();
+  status.append(document.createTextNode('Held from a link. '));
+  const undo = document.createElement('button');
+  undo.type = 'button';
+  undo.className = 'linklike';
+  undo.textContent = 'Undo';
+  undo.addEventListener('click', async () => {
+    undo.disabled = true;
+    try {
+      await session.commit(ctx => [{
+        id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+        kind: 'node.trashed', node: capturedNode,
+        payload: { reason: 'undo url-capture' },
+      } as AppEvent]);
+      render(session);
+      status.textContent = 'Undone.';
+    } catch (err) {
+      status.textContent = `Couldn’t undo — ${(err as Error).message}`;
+    }
+  });
+  status.append(undo);
 }
 
 void main().catch((err: unknown) => {

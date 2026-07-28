@@ -1,0 +1,23 @@
+# Security headers for quietkeep.pages.dev — Doctrine §16.6
+#
+# Unlike the hub, Quietkeep carries NO inline script or style: index.html loads
+# one external module (app.js) and one stylesheet, and the UI builds DOM with
+# textContent, never innerHTML. That means a STRICT Content-Security-Policy is
+# achievable here, and it lands now — before /capture?text= gives the app a
+# public input surface a hostile link can reach.
+#
+# The CSP is verified, not hoped: tools/serve.mjs applies this file's headers to
+# every response, so smoke.mjs and a11y.mjs already exercise the app UNDER this
+# policy, and smoke fails on any console error — a CSP violation is a console
+# error. A policy nobody ran the app under is the V-10 shape.
+#
+# No Strict-Transport-Security: pages.dev is HTTPS-only and Cloudflare owns TLS;
+# a header with lock-in semantics that cannot be tested from here is left to the
+# platform.
+
+/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self'; font-src 'self'; connect-src 'self'; manifest-src 'self'; worker-src 'self'; form-action 'self'; base-uri 'none'; frame-ancestors 'none'; object-src 'none'; upgrade-insecure-requests
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: accelerometer=(), camera=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), payment=(), usb=()

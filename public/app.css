@@ -147,6 +147,21 @@ button.ghost {
   font-weight: 400;
 }
 
+.linklike {
+  /* An inline text button (Undo) that reads as a link but is a real <button>,
+     so it is keyboard-reachable with a focus ring. Full target height. */
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0 0.25rem;
+  font: inherit;
+  color: var(--accent);
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 .status {
   min-height: 1.5rem;   /* reserves the line so nothing jumps when it fills */
   margin: 0.25rem 0 0;
