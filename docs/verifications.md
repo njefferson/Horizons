@@ -25,7 +25,49 @@ a dated resolution beneath it.
 ---
 
 ## V-00 · iPadOS storage behaviour — **the reference platform**
-**Status: NEEDS NOAH'S HANDS** · requires a real device · **highest-value open check**
+**Status: STEP 1 ANSWERED on device, 2026-07-28** · step 2 waits for tomorrow
+
+### Measured on Noah's iPad, from the deployed app
+
+| Reading | Value |
+|---|---|
+| Storage API | available |
+| **Persistent right now** | **yes** |
+| First granted | just now (2026-07-28, 12:13) |
+| Quota | **39,322 MB** (~38 GB) |
+| Used | 0.4 MB |
+| Notifications | granted |
+| Events held | 2 |
+
+**`persist()` returned true**, with notification permission granted first — which is the
+sequence the brief claimed was required. This does not prove the requirement (nobody tried
+it *without* notifications), only that the documented path works.
+
+**And the promise held on real hardware.** Noah force-quit the app and reopened it; the
+captured item was still there. That is the app's one claim, tested the only way that counts.
+
+**Two things worth reading off this that were not the question:**
+
+- **38 GB of quota.** Eviction pressure is not a near-term concern on this device, which
+  changes how urgent the export path is — it is still the durability story
+  ([ADR-0004](adr/0004-ios-path.md)), but it is not holding back a cliff.
+- **2 events for 1 node.** That is `capture.recorded` plus the gate's cure — the same-day
+  clock written in the same transaction (ADR-0008/0011). **Law 1 is being enforced on the
+  device**, not just in Node, and the gauge reading `0 silent` is a real measurement.
+
+### Still open — step 2, and it is the one that matters
+**Does `persisted()` still report `true` the next morning?** A `true` on day one that
+silently reverts is worse than a `false`, because the app would be promising durability it
+does not have. The panel records the first-grant timestamp, so opening it again tomorrow
+answers this by inspection. **Until that reads yes, this row is not VERIFIED.**
+
+Step 3 (two Home Screen icons for the same origin — one store or two?) is untested and
+lower value now that persistence is granted.
+
+---
+
+## V-00a · The original framing
+**Status: superseded by the readings above** · requires a real device
 
 > **Promoted 2026-07-27.** This was V-07, filed as a nice-to-know whose failure "costs
 > nothing". That is no longer true. Noah's decision that this is a **personal-iPad app**
@@ -442,16 +484,38 @@ is not needed.
 
 ---
 
-## V-12 · The deployed site will not load on the iPad — **OPEN**
-**Status: OPEN** · 2026-07-28 · **needs Noah's device**
+## V-12 · The deployed site would not load on the iPad — **RESOLVED, cause not proven**
+**Status: WORKING** · 2026-07-28 · cause probable, not confirmed
 
-CI publishes successfully and Safari cannot reach the result.
+CI published successfully and Safari could not reach the result — then could.
 
 | URL | Source | Noah's iPad | From a session |
 |---|---|---|---|
 | `staging.quietkeep.pages.dev` | branch alias | "connection was lost" | 403 — gateway, tells us nothing |
 | `2020c8fe.quietkeep.pages.dev` | deployment hash | same | 403 — same |
-| `quietkeep.pages.dev` | production, deployed after the promote | **not yet tried** | 403 — same |
+| `quietkeep.pages.dev` | production, after the promote | **loads, and the app runs** | 403 — same |
+
+**Two things changed between the failures and the success, and only one of them can be
+credited:**
+
+1. The promote gave the project its **first production deployment**.
+2. The successful session is **on LTE** — visible in the device's own status bar in the
+   screenshots.
+
+**The second is the likelier cause and it was not tested deliberately.** Two *different*
+DNS records failing (alias and hash) already argued against a Cloudflare-side fault, and a
+network-level block on `pages.dev` explains all three failures at once. **This row does not
+claim the promote fixed it**, because that would be crediting a change that happened to
+precede the outcome — the exact shape of reasoning V-04 and V-11 were both about.
+
+**What would settle it, cheaply, if it recurs:** open `quietkeep.pages.dev` on the Wi-Fi
+network that failed. If it fails there and works on LTE, it is that network's DNS or a
+content blocker, and nothing about the deploy needs changing.
+
+**Consequence, recorded:** [`main` was promoted to troubleshoot this](../NOTES.md), and the
+troubleshooting value of that promote is now doubtful. The promote stands — the on-device
+pass has since happened, so it is retroactively a fair state — but it was probably not
+necessary.
 
 **What the two failures already rule out.** The hash URL and the alias are different DNS
 records; both failing means it is **not** a branch-alias provisioning problem, which was

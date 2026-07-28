@@ -216,12 +216,14 @@ That error cost the Perennial round.
   **`CLOUDFLARE_API_KEY`** (the workflow accepts either that or `CLOUDFLARE_API_TOKEN` and
   logs which name it found). `main` → `quietkeep.pages.dev`, `staging` →
   `staging.quietkeep.pages.dev`. Both have deployed successfully from CI.
-- **`main` was promoted to troubleshoot, not because the §7 gate passed** (Noah,
-  2026-07-28: *"Promote to main to troubleshoot"*). Neither the branch-alias URL nor the
-  deployment-hash URL would load on his iPad, so the on-device pass **could not happen** —
-  promoting was the diagnostic, and it put a production deployment on a project that had
-  never had one. **Phase 1 is therefore on `main` unverified on real hardware.** Recorded
-  as what it was; it is not a passed gate and must not be cited as one.
+- **`main` was promoted to troubleshoot, and the on-device pass followed rather than
+  preceded it** (Noah, 2026-07-28: *"Promote to main to troubleshoot"*). At the time
+  nothing would load on his iPad, so the §7 pass could not happen first. It has since
+  happened — he ran the app at `quietkeep.pages.dev`, captured, **force-quit, reopened, and
+  the data was still there**. So `main` is in a fair state now; it got there in the wrong
+  order, and that is written down rather than tidied away.
+- **Normal flow resumes:** `staging` branches off `main` for future development, promoted
+  on Noah's word (Doctrine §7). `main` is the baseline.
 - **Hub wiring:** the app is **not yet** linked from
   `noahjefferson/public/index.html`. That edit is deliberately held until there
   is a deployed page to visit — adding a dead link to the live hub is a site
@@ -252,6 +254,12 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **Quietkeep ran on the iPad, and V-00's first half is answered.**
+  `persist()` returned **true** with notifications granted, quota **38 GB**, and the app
+  survived a force-quit with its data intact — the promise tested the only way that counts.
+  The gauge read `1 held · 0 silent` off **2 events for 1 node**, which is the gate's cure
+  firing on the device rather than only in Node. Step 2 — does `persisted()` still say yes
+  tomorrow — is the half that matters and is still open.
 - **2026-07-28** — **Phase 1: the app exists.** Shell, manifest, service worker, and the
   Dump surface — zero chrome, one line per card, drafts persisted per keystroke, every
   write through the gate and committed *before* the UI confirms. Two decisions the build
