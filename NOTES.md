@@ -1,4 +1,10 @@
-# NOTES.md — Perennial
+# NOTES.md — the planner (unnamed)
+
+> **The app has no name.** `Horizons` appears throughout this repo as the **repo slug and
+> a legacy label**; it was rejected ([ADR-0018](docs/adr/0018-name-and-slug.md)), as was
+> Perennial ([ADR-0021](docs/adr/0021-name-reopened.md)). Q-02 is open. Nothing in the
+> schema, the event vocabulary, or the file formats encodes the name, so this costs a copy
+> pass whenever it lands.
 
 The repo source of truth. **Read this first, every session** (Doctrine §12).
 Thesis, invariants, frozen scope, open questions, Project facts. Settled
@@ -142,12 +148,15 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Downstream of the clearance below |
+| Q-02 | **The app has no name.** Perennial withdrawn 2026-07-28 — three software companies hold it and `perennial.pages.dev` is taken ([ADR-0021](docs/adr/0021-name-reopened.md)). `Horizons` is the repo slug and a **legacy label, not a chosen name**. | Blocks Q-04 and the hub link. **Does not block building** — nothing in the schema, event vocabulary, or file formats encodes the name. | Open. ~21 dead candidates in the [graveyard](docs/adr/0020-name-perennial.md); check name+software unscoped **first**, every time. |
+| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Downstream of Q-02 |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
-**Standing verification note:** the name **Perennial is not cleared** — see
-[V-04](docs/verifications.md). Web search can kill a name; it cannot clear one.
+**Standing rule on names** ([V-04](docs/verifications.md)): ask *"is this name taken in
+software?"*, unscoped, **before** anything else and before showing Noah a candidate. Asking
+*"is another planner called this?"* returns a confident empty result for an occupied name.
+That error cost the Perennial round.
 
 ### Closed
 
@@ -156,7 +165,6 @@ decided by a session.**
 | Q-01 | Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial | **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted. |
 | Q-03 | Work-vault policy line, given the GFE context | **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27. |
 | Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
-| Q-02 | The app needs a new name | **Perennial**, Noah 2026-07-28 — as the **working name**, not a cleared one. It names *return*, which is what this app uniquely claims: ready again rather than overdue (law 5), and a dormant perennial has not failed, it is between seasons (law 8). ~20 candidates died first; the graveyard is in [ADR-0020](docs/adr/0020-name-perennial.md). |
 
 ---
 
@@ -171,10 +179,9 @@ decided by a session.**
 - **The folder mirror does not exist on the reference platform** — Safari has no disk
   picker. Export/import via Files carries the whole sync and durability story
   ([ADR-0004](docs/adr/0004-ios-path.md)), which is why it is built in Phase 0.
-- **Name: Perennial — working, not cleared.** No USPTO knockout has been run. The
-  repo slug is still `Horizons` and stays that way until Noah renames it on GitHub;
-  `LICENSE.md`'s Required Notice URL moves **in that same commit**, not before, or it
-  would point at a 404.
+- **No name yet** (Q-02). `Horizons` throughout this repo is the **repo slug and a legacy
+  label** — ADR-0018 records why it was rejected. Do not treat it as chosen. `LICENSE.md`'s
+  Required Notice URL follows the slug and moves only when Noah renames the repo.
 - **Repo:** `njefferson/Horizons`. Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages. Project not yet created. Subdomain pending Q-04.
@@ -192,10 +199,14 @@ decided by a session.**
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
-- **2026-07-28** — Named **Perennial** (working name, not cleared) after ~20 candidates;
-  graveyard in ADR-0020. Corrected V-04a, a row recorded VERIFIED that was wrong — and
-  the recommendation built on it. Recorded V-09, an instrument failure in name searching.
-  Opened Q-06/Q-07 on the astro app's naming and hub description.
+- **2026-07-28** — Named Perennial, then **withdrew it the same day**: three software
+  companies hold it and Noah found `perennial.pages.dev` occupied on his phone. The
+  recommendation rested on two searches that asked *"is another planner called this?"*
+  instead of *"is this name taken in software?"* — the standing rule above exists so it
+  does not recur. Also corrected V-04a (a VERIFIED row that was wrong, and the
+  recommendation built on it), proved V-05 (`pages.dev` unreachable from a session) and
+  V-09 (a query shape that returns SEO articles instead of products). Opened Q-06/Q-07 on
+  the astro app's naming and hub description.
 - **2026-07-27** — Noah answered all six open questions. Q-01, Q-03, Q-05 closed;
   Q-02 reopened as a rename. **Platform corrected: iPadOS is the reference platform,
   not a fallback** — the folder mirror demoted to a desktop convenience, export/import

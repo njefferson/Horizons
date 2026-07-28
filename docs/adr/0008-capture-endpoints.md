@@ -9,7 +9,7 @@ Capture has several entrances, all landing in the same place:
 - **`/capture?text=`** — a **documented public endpoint**. Captured text lands
   with a visible confirm and an undo.
 - **Manifest `shortcuts`** — a Capture entry on the app icon's long-press menu.
-- **Web Share Target** — share into Perennial from anywhere (Chromium).
+- **Web Share Target** — share into Horizons from anywhere (Chromium).
 - **In-app quick capture** and the **interrupt gesture** (pin + capture),
   available from every screen.
 
@@ -38,7 +38,7 @@ Per-keystroke drafts exist for the same reason at a smaller scale — an
 interruption mid-capture is the *expected* case here, not the edge case.
 
 A documented URL endpoint means the app composes with tools already on the user's
-device — shortcuts, widgets, voice, automation — without Perennial having to
+device — shortcuts, widgets, voice, automation — without Horizons having to
 integrate with any of them.
 
 ## Consequences

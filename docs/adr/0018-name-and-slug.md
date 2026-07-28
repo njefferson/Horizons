@@ -1,7 +1,7 @@
 # ADR-0018 · Repo slug `Horizons`; Pages subdomain qualified
 
-**Status:** **Superseded by [ADR-0020](0020-name-perennial.md)** (2026-07-28 — the name is
-Perennial) · **Date:** 2026-07-27
+**Status:** **Superseded by [ADR-0020](0020-name-perennial.md)**, which was itself
+superseded by [ADR-0021](0021-name-reopened.md) — the name is **open** · **Date:** 2026-07-27
 
 > **Read the superseding record for the reason this one was wrong.** It was not only the
 > hub collision. This ADR assumed the two apps' claims to "horizon" were comparable; they

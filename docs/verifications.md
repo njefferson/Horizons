@@ -107,18 +107,30 @@ search did not resolve it.
 EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
-## V-04 · Name availability — **Perennial**
-**Status: UNVERIFIED** · reopened 2026-07-28 against the new name
+## V-04 · Name availability — **the app has no name**
+**Status: OPEN** · Perennial withdrawn 2026-07-28 → [ADR-0021](adr/0021-name-reopened.md)
 
-**What was run:** two plain web searches. Neither surfaced a conflict in the
-productivity or planner space. One adjacent company exists — **Perennial Software**,
-in the security/integration sector, a different class.
+### The method, which is the part that transfers
 
-**What that proves: only that the name is not obviously dead.** Un-killed is not
-cleared, and this row will not say otherwise. Web search can eliminate a name; it
-cannot clear one.
+Perennial was reported here as "un-killed" on the strength of two searches that **asked
+the wrong question**. It is in fact held by **three** software companies — Perennial Labs
+(DeFi, and serving `perennial.pages.dev`), Perennial Systems (web dev/fintech), and
+Perennial Software (security). Noah found the subdomain occupant himself, on his phone,
+in seconds.
 
-**Why a session cannot finish this — proven 2026-07-28, not assumed.** A session can
+The two failing queries were scoped to the app's own category
+(`app task planner productivity App Store`) and to the SEO-poisoned `trademark class 9`
+shape already documented below in V-09. A single properly-scoped query —
+`"Perennial Labs" web development agency` — returned two of the three at once.
+
+> **Ask "is this name taken in software?" — never "is another planner called this?"**
+> The narrow query returns a confident empty result for a heavily occupied name. It is a
+> weak probe wearing a thorough one's clothes.
+
+**Standing rule for every future candidate:** the unscoped *name + software* query runs
+**first**, before any category query and before the name is shown to Noah at all.
+
+### What a session can and cannot do here — proven 2026-07-28, not assumed A session can
 *search* but cannot *query*. Web search returns what people have written about; the
 authoritative registers are the USPTO database and the store indexes. Both were probed
 directly:
@@ -135,18 +147,17 @@ inconclusive `pages.dev` probe. **Recorded because Doctrine §6 permits handing 
 manual step only after proving it impossible from this side — which had been asserted
 before it was tested.**
 
-**Owed, on Noah's device, in priority order:**
-1. **Apple App Store and Google Play direct searches** — the check most likely to matter.
-   A same-category name clash is the realistic failure mode; *Hyperfocus 2* is exactly
-   what this catches and web search only found by luck.
-2. **`perennial.pages.dev`** — ten seconds, and it settles Q-04.
-3. **USPTO knockout, classes 9 and 42** — *lowest priority, and arguably skippable.*
-   Trademark protects against confusion **in commerce**; this app is free, noncommercial,
-   and licensed against being sold. A live PERENNIAL mark on unrelated goods does not
-   reach it. The narrow real risk — another planner or productivity app of the same name
-   — is what step 1 catches.
+**Per candidate, owed on Noah's device — but only after the session's own checks pass:**
+1. **App Store / Play direct search** — the check most likely to matter. A same-category
+   clash is the realistic failure; *Hyperfocus 2* is exactly what this catches.
+2. **`<name>.pages.dev`** — ten seconds, and it settles Q-04.
+3. **USPTO knockout, classes 9 and 42** — *lowest priority, arguably skippable.* Trademark
+   protects against confusion **in commerce**; this app is free, noncommercial, and
+   licensed against being sold. A live mark on unrelated goods does not reach it.
 
-→ [ADR-0020](adr/0020-name-perennial.md), which is Provisional for exactly this reason.
+**Nothing reaches Noah until the session has run the unscoped name+software query and
+reported what it found.** Handing over a check that a search could have answered is what
+went wrong with Perennial.
 
 ### V-04a · The hub collision — **CORRECTED, and the original was wrong**
 **Status: CORRECTED** · originally recorded VERIFIED 2026-07-27 · corrected 2026-07-28
@@ -175,17 +186,22 @@ family record: *a claim without a test is a guess, and it must be labelled as on
 **Resolved by the rename.** The planner is now Perennial; there is no collision left.
 The astro app's *own* naming inconsistency is open separately as **Q-06**.
 
-## V-05 · `horizons.pages.dev` availability
-**Status: INCONCLUSIVE** · 2026-07-27 · HTTPS probe returned 403 from the
-sandbox proxy
+## V-05 · `pages.dev` is unreachable from a session — **and that is now proven**
+**Status: VERIFIED (as a limitation)** · 2026-07-28
 
-Doctrine §11 records that some session sandboxes block `pages.dev` outright. A
-403 from the proxy is a statement about the sandbox, not about the subdomain.
-**This proves nothing in either direction** and must not be cited as evidence
-that the name is free or taken.
+`perennial.pages.dev` and `horizons.pages.dev` both return **HTTP 000** by raw request;
+the gateway logs a **403 CONNECT policy denial**, the same refusal it gives
+`itunes.apple.com` and `tmsearch.uspto.gov`. The earlier 403 through the fetch tool was
+the same cause.
 
-Check at deploy time from a normal network. Note that a qualified subdomain is
-expected regardless — see Q-02.
+**A session can never answer whether a `pages.dev` subdomain is free.** It is a device
+check, permanently. Doctrine §11 already recorded that some sandboxes block `pages.dev`;
+this row upgrades that from "some" to "this one, measured".
+
+**What it is not an excuse for.** `perennial.pages.dev` was taken — by Perennial Labs —
+and while the *page* could not be loaded, the *occupant* was findable by search all along
+and was never searched for. The unreachable probe was real; the unattempted search was
+not. See V-04.
 
 ## V-06 · GFE Edge policy — PWA install and persistent storage
 **Status: WITHDRAWN** · 2026-07-27 · out of scope by owner's decision

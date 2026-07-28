@@ -1,6 +1,6 @@
 # Planning for Humans
 
-Why Perennial is shaped the way it is.
+Why Horizons is shaped the way it is.
 
 Every feature below is traced to the finding that motivated it, and **every
 finding carries an epistemic tag**, because the strength of the evidence varies
@@ -18,7 +18,7 @@ A design decision resting on an `emerging` or `community-construct` finding is
 built so it can be removed. One resting on a `negative finding` is a prohibition,
 and prohibitions here are permanent.
 
-**Two things this document is not.** It is not a claim that Perennial is a
+**Two things this document is not.** It is not a claim that Horizons is a
 clinical intervention — it is not, and product law 7 forbids the app from talking
 that way. And it is not a claim that these findings describe any particular user.
 They describe *patterns the design must not break under*. If a pattern doesn't
@@ -89,9 +89,9 @@ someone whose engagement is genuinely variable, that is a manufactured quitting 
 
 The two negative findings are load-bearing **prohibitions**:
 
-> **Nothing in Perennial may assume willpower is a tank** — no "you have used your
+> **Nothing in Horizons may assume willpower is a tank** — no "you have used your
 > focus for today", no depletion model, no discipline framing.
-> **Nothing in Perennial may claim to train an underlying capacity.** It is a
+> **Nothing in Horizons may claim to train an underlying capacity.** It is a
 > prosthesis, not an exercise regime. It does not make you better at remembering;
 > it remembers.
 
@@ -152,7 +152,7 @@ fragmenting a session — and if the accounts change, the design bends rather th
 
 **Cirillo's interruption protocol** *(community-construct — a widely used
 practitioner technique, not a validated finding)*: capture the interruption,
-protect the current block, return. Perennial borrows the **shape** — capture
+protect the current block, return. Horizons borrows the **shape** — capture
 without leaving — and drops the timer, which is a demand.
 
 ---
@@ -358,7 +358,7 @@ each corresponds to a feature that would look perfectly reasonable in a spec.
 | Finding | Status | What it forbids here |
 |---|---|---|
 | **Ego depletion** — willpower as a depletable resource — failed large-scale replication | **negative finding** | No depletion model. No "you have used your focus today". No discipline or willpower framing anywhere in copy or ranking. Capacity is **self-declared**, never computed from what you have spent. |
-| **Working-memory training does not transfer** to untrained tasks or daily function | **negative finding** | Perennial never claims to improve an underlying capacity. No exercises, no scores, no "getting better". It is a prosthesis. Saying otherwise would be selling something that does not work — Doctrine §5. |
+| **Working-memory training does not transfer** to untrained tasks or daily function | **negative finding** | Horizons never claims to improve an underlying capacity. No exercises, no scores, no "getting better". It is a prosthesis. Saying otherwise would be selling something that does not work — Doctrine §5. |
 | **"21 days to a habit"** — no evidential basis; Lally's median is ~66 days with an enormous range | **negative finding** | No habit-formation countdown, no automaticity progress bar, no promise of a timeline the data cannot support. |
 
 **Why they are here rather than quietly obeyed:** each of these is a feature
@@ -367,7 +367,7 @@ successful competing products. This table is the answer, with the reason attache
 
 ---
 
-## 11 · The five things Perennial claims are different
+## 11 · The five things Horizons claims are different
 
 Stated as **claims, not conclusions**. The competitive pass that would test them
 is **V-08 in [`verifications.md`](verifications.md), and it has not been run** —
@@ -426,5 +426,5 @@ transfer) · "21 days to a habit" (no basis)
 > Where a construct is contested it is tagged as contested. Where the app borrows
 > a *shape* from a practitioner method rather than a research result, it says so.
 > Prior art in personal productivity methodology is acknowledged as prior art —
-> Perennial claims no affiliation with, endorsement by, or compatibility with any
+> Horizons claims no affiliation with, endorsement by, or compatibility with any
 > methodology or its trademark holders ([ADR-0016](adr/0016-gtd-marks-and-original-content.md)).

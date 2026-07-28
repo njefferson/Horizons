@@ -1,7 +1,16 @@
 # ADR-0020 · The name is Perennial
 
-**Status:** **Provisional — working name, not cleared** · **Date:** 2026-07-28
+**Status:** **Superseded by [ADR-0021](0021-name-reopened.md)** — Perennial withdrawn
+2026-07-28 · **Date:** 2026-07-28
 **Supersedes:** [ADR-0018](0018-name-and-slug.md)
+
+> **This record was wrong, and the reason is worth more than the record.** Perennial is
+> held by three software companies and `perennial.pages.dev` is taken. It was recommended
+> on two searches that asked *"is another planner called this?"* instead of *"is this name
+> taken in software?"* — see [ADR-0021](0021-name-reopened.md).
+>
+> **The graveyard below is still current and still authoritative.** Perennial has been
+> appended to it.
 
 ## Decision
 
@@ -62,6 +71,7 @@ themselves design constraints.
 | **Latent** | Clear, but reads as machine-learning vocabulary (latent space) — off-message for an app that keeps AI at arm's length. |
 | **Helicoid**, **Telecentric**, **Emulsion**, **Lightpipe** | Un-killed but rejected on sound, length, or descriptiveness. Lightpipe additionally names a real stocked component, which makes it weak as a mark. |
 | **PDC** (backronym) | A three-letter acronym is the native register of the workplace this app exists to be a relief from — OPR, WAR, SOP. The doctrine bans that voice in naming. Also unsearchable, and *Primary Domain Controller* occupies it in class 9. **Available as an internal codename**, where it costs nothing and is a private joke. |
+| **Perennial** | Withdrawn 2026-07-28. **Perennial Labs, Inc.** (DeFi protocol) is serving `perennial.pages.dev`; **Perennial Systems** (web dev/fintech) and **Perennial Software** (security) also hold it. Not a trademark problem for a free app — a findability one. Fourth Perennial in software = invisible. |
 
 **The pattern, worth keeping:** single evocative words in class 9 are effectively
 exhausted. What survives is compounds, coinages, and slightly-odd words.

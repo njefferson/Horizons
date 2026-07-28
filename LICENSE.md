@@ -5,10 +5,10 @@
 Required Notice: Copyright © 2026 Noah Jefferson (https://github.com/njefferson/Horizons)
 
 > **Scope.** These terms cover this repository's own source, content, and
-> documentation — the Perennial application and everything in `docs/`.
+> documentation — the Horizons application and everything in `docs/`.
 >
 > **Your data is not covered by this licence, because it is not ours.** Anything
-> Perennial stores or exports belongs to the person who wrote it. The licence
+> Horizons stores or exports belongs to the person who wrote it. The licence
 > governs the software; it makes no claim on the log, the snapshots, or the
 > backups the software produces. See [`docs/data-constitution.md`](docs/data-constitution.md).
 >
