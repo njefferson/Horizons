@@ -71,6 +71,14 @@ themselves design constraints.
 | **Latent** | Clear, but reads as machine-learning vocabulary (latent space) — off-message for an app that keeps AI at arm's length. |
 | **Helicoid**, **Telecentric**, **Emulsion**, **Lightpipe** | Un-killed but rejected on sound, length, or descriptiveness. Lightpipe additionally names a real stocked component, which makes it weak as a mark. |
 | **PDC** (backronym) | A three-letter acronym is the native register of the workplace this app exists to be a relief from — OPR, WAR, SOP. The doctrine bans that voice in naming. Also unsearchable, and *Primary Domain Controller* occupies it in class 9. **Available as an internal codename**, where it costs nothing and is a private joke. |
+| **Detent** | Checked properly 2026-07-28 and rejected. npm free and the only trademark is a *skincare* mark — but **an app named Detent already exists on the App Store** (a haptic fidget wheel), and `detent` is **core Apple UI vocabulary** (`presentationDetents`, sheet detents since iOS 16). For an iPad-first app that is the worst possible collision: searching it returns Apple's docs. Also `digitaldrywood/detent`, an active work-orchestration tool. |
+| **Parallax** | **Already a project-management platform** — same category. Plus Parallax Inc. (microcontrollers, class 9, since 1987), Parallax Software, Parallax Graphics, parall.ax. npm taken. And "parallax scrolling" is ubiquitous web-design vocabulary. |
+| **Alignment** | Collides with this app's own **alignment tree** (ADR-0013, a Review surface) — the same trap as Lens and Gauge. "AI alignment" has also swallowed the word. |
+| **Skewed** | Means *distorted* or *biased*. Signals the opposite of seeing your commitments truly. Already in the codebase as clock skew. |
+| **Tideline** | Three companies: consulting, real estate, technology services. |
+| **Gimbal** | Gimbal by Infillion — a **location-tracking** adtech platform, plus App Store apps. Wrong in every sense for a no-telemetry app. |
+| **Isochrone** | Standard GIS term with a dozen products (Mapbox's Isochrone API, Smappen, an app on Play). |
+| **Escapement** | Survived every check — npm free, no App Store app, no product. **Runner-up.** Rejected only in favour of Wynts: it drags "escape" behind it and its metaphor, while accurate, describes the mechanism rather than the promise. Worth remembering if Wynts ever falls. |
 | **Perennial** | Withdrawn 2026-07-28. **Perennial Labs, Inc.** (DeFi protocol) is serving `perennial.pages.dev`; **Perennial Systems** (web dev/fintech) and **Perennial Software** (security) also hold it. Not a trademark problem for a free app — a findability one. Fourth Perennial in software = invisible. |
 
 **The pattern, worth keeping:** single evocative words in class 9 are effectively

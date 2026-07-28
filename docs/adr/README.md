@@ -51,7 +51,8 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0017](0017-licensing.md) | PolyForm Noncommercial 1.0.0 | Accepted |
 | [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Superseded by [0020](0020-name-perennial.md)** |
 | [0020](0020-name-perennial.md) | The name is Perennial — **and the candidate graveyard, which is still current** | **Superseded by [0021](0021-name-reopened.md)** |
-| [0021](0021-name-reopened.md) | Perennial withdrawn; the name is reopened | Accepted |
+| [0021](0021-name-reopened.md) | Perennial withdrawn; the name is reopened | **Superseded by [0022](0022-name-wynts.md)** |
+| [0022](0022-name-wynts.md) | **The name is Wynts** — what you need to see | Accepted |
 | [0019](0019-v1-freeze.md) | v1 scope frozen; the dogfood gate defines done | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the

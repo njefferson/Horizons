@@ -1,7 +1,13 @@
 # ADR-0021 · Perennial withdrawn; the name is reopened
 
-**Status:** Accepted · **Date:** 2026-07-28
+**Status:** **Superseded by [ADR-0022](0022-name-wynts.md)** — the name is Wynts
+(2026-07-28) · **Date:** 2026-07-28
 **Supersedes:** [ADR-0020](0020-name-perennial.md)
+
+> The method rule below is the durable part and still stands: **ask "is this name
+> taken in software?", unscoped, before anything else.** It is what found the
+> App Store app named *Detent* and the project-management platform named
+> *Parallax* before either could be adopted.
 
 ## Decision
 

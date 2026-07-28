@@ -107,8 +107,27 @@ search did not resolve it.
 EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
-## V-04 · Name availability — **the app has no name**
-**Status: OPEN** · Perennial withdrawn 2026-07-28 → [ADR-0021](adr/0021-name-reopened.md)
+## V-04 · Name availability — **Wynts**
+**Status: PARTIAL** · settled 2026-07-28 → [ADR-0022](adr/0022-name-wynts.md)
+
+### What was actually run, and by what instrument
+
+| Check | Instrument | Result |
+|---|---|---|
+| npm registry | direct query — **authoritative** | `wynts`, `wynt`, `wynts-app`, `usewynts` all free |
+| GitHub | repo search API — **authoritative** | one hit, a personal profile-config repo. No project. |
+| App Store | web search only | nothing named Wynts |
+| Unscoped name + software | web search only | nothing named Wynts |
+| This repo's own spec | `grep` | no internal collision |
+
+**Still owed, on Noah's device:** the App Store search from a real device, and a USPTO
+knockout in classes 9 and 42 if wanted. Blocked from a session — proven in V-05, not
+assumed. Until those run this row stays **PARTIAL**, not VERIFIED.
+
+**Known and accepted:** nothing is named Wynts, but the phonetic neighbourhood is busy —
+**WYNT** (community-hub app, Google Play) is one letter away, plus Wynta, Wynter, Wynk,
+Wynd Technologies. Low trademark risk for a free noncommercial planner; the real cost is
+a half-remembered name landing on a neighbour. Recorded in ADR-0022.
 
 ### The method, which is the part that transfers
 

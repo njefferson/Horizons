@@ -1,4 +1,4 @@
-# ACCESSIBILITY.md — Horizons
+# ACCESSIBILITY.md — Wynts
 
 Append-only register. Rows are **never deleted and never silently edited**. A
 fixed row keeps its original number and gains a resolution line naming the

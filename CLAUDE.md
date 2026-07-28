@@ -1,4 +1,4 @@
-# CLAUDE.md — Horizons
+# CLAUDE.md — Wynts
 
 > **Inherits the Universal App Doctrine** — the canonical copy lives in the hub
 > repo at [`njefferson/noahjefferson/DOCTRINE.md`](https://github.com/njefferson/noahjefferson/blob/main/DOCTRINE.md).
@@ -12,7 +12,7 @@
 > lives in the hub too; append to it from this repo's sessions, never copy it.
 
 ## What this repo is
-**Horizons** — a free, local-first planner for neurodivergent users. Static PWA,
+**Wynts** — a free, local-first planner for neurodivergent users. Static PWA,
 no accounts, no telemetry, no server-side user data. Deployed to Cloudflare Pages.
 
 Tagline: *"Out of sight. Never out of mind."*
@@ -69,4 +69,4 @@ pairs are added to the gate in the same commit that introduces them.
 ## Repo metadata (manual, confirm — see Doctrine §10)
 Description / website / topics / social-preview are GitHub-UI steps the session
 token cannot perform. List the exact values and ask Noah to confirm each; never
-report Horizons "set up" while any is unconfirmed.
+report Wynts "set up" while any is unconfirmed.

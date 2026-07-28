@@ -1,4 +1,6 @@
-# Horizons
+# Wynts
+
+*What You Need To See.*
 
 **Out of sight. Never out of mind.**
 
