@@ -254,6 +254,14 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28 (evening)** — **The claimed a11y gate exists now, and it caught a real
+  defect on its first run.** `tools/a11y.mjs` audits the *rendered* app in CI — per-state
+  selector registry, computed contrast in both themes, axe 4.10.2, targets, and 320px at
+  200% text. Its first run found **F-01**: the storage note sat inside the `<dl>`, invalid
+  to assistive tech; fixed in the same commit the gate landed (B-08's rule, kept
+  literally). Proven to bite both ways: a broken token → 16 failures, exit 1. Smoke also
+  gained the cold-capture **CI proxy** — 134 ms boot / 67 ms write against generous
+  bounds; the binding 2 s number remains a device reading. Shipped as 0.2.2.
 - **2026-07-28 (evening)** — **The write path is serialized and the worst network is
   handled.** Two defects from the model-switch review fixed with proofs: concurrent
   commits could silently collide on `(device, seq)` — Dexie's index is non-unique — so

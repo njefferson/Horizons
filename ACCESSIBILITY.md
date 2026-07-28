@@ -89,6 +89,17 @@ under a CSS transform. Any transformed surface is checked by explicit
 measurement, not by trusting the audit's summary. A green axe run over
 transformed content proves nothing.
 
+**Stood up for the app 2026-07-28** — until then this section described the
+brand-token check only, which was the V-10 shape (a claimed gate that was a
+sentence). `tools/a11y.mjs` now audits the **rendered app** in CI: a per-state
+selector registry (a selector that stops matching FAILS — silently skipping what
+a check cannot find is how gates rot), contrast computed against the resolved
+ancestor background in both themes, axe 4.10.2 per state, target sizes, and
+B-04's hardest viewport, 320px at 200% text, where the page may not scroll
+sideways. Proven to bite both ways before being trusted (§6): a broken
+`--ink-soft` produced 16 failures and exit 1, and the axe half caught **F-01**
+on its first run.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.
@@ -202,7 +213,18 @@ same-commit rule is enforced rather than promised.
 
 ## Part 2 — Findings register
 
-No findings yet — there is no UI. Rows begin at F-01 and are appended as found.
+Rows are appended as found.
+
+### F-01 · Storage details invalid as a definition list to assistive tech
+Found: 2026-07-28 · `tools/a11y.mjs`, its **first ever run** (axe `definition-list`, serious)
+Rule: WCAG 1.3.1 Info and Relationships
+Detail: the ⓘ panel appended its storage explanation as a direct child of the
+`<dl>` — first as a `<p>`, and axe 4.10.2 rejected the `<div>` retry too. A
+screen reader walking the list would meet prose where a term/definition pair
+belongs. Moved outside the list as a sibling paragraph; the registry now audits
+it at `#storage-note` (7.20:1 light / 9.73:1 dark).
+Status: **FIXED in 0.2.2**, same commit that stood the gate up — which is the
+point of B-08's same-commit rule.
 
 Format:
 

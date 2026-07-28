@@ -50,6 +50,13 @@ jobs:
       - name: Headless walk of the built app
         run: npm run smoke
 
+      # The rendered app, audited: contrast computed per state in both themes,
+      # axe per state, targets, and B-04's hardest viewport (320px at 200%
+      # text). This is B-08's claimed gate actually existing for the app, not
+      # only for the brand tokens. Its first run caught a real defect (F-01).
+      - name: Rendered accessibility
+        run: npm run a11y
+
       # The vocabulary is a closed list and "overdue"/"streak" are banned
       # outright (ADR-0010). A grep is the cheapest possible gate.
       - name: No banned vocabulary

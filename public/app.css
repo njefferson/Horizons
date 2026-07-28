@@ -287,7 +287,6 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 #storage-body dt { color: var(--ink-soft); }
 #storage-body dd { margin: 0; overflow-wrap: anywhere; }
 .storage-note {
-  grid-column: 1 / -1;
   margin: 0.875rem 0 0;
   padding-top: 0.75rem;
   border-top: 1px solid var(--line);

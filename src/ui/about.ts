@@ -58,9 +58,10 @@ export async function mountAbout(session: Session): Promise<void> {
   const body = document.querySelector<HTMLElement>('#storage-body');
   const ask = document.querySelector<HTMLButtonElement>('#storage-ask');
   const exp = document.querySelector<HTMLButtonElement>('#export');
+  const noteOut = document.querySelector<HTMLElement>('#storage-note');
   const notes = document.querySelector<HTMLElement>('#patch-notes');
   const version = document.querySelector<HTMLElement>('#version');
-  if (!dialog || !open || !intro || !body || !ask || !exp || !notes || !version) return;
+  if (!dialog || !open || !intro || !body || !ask || !exp || !notes || !version || !noteOut) return;
 
   version.textContent = CURRENT.triplet;
 
@@ -92,12 +93,14 @@ export async function mountAbout(session: Session): Promise<void> {
     ask.hidden = r.persisted || !r.supported;
 
     // Say what is true, including when it is not the comfortable answer (§5).
-    const note = el('p', 'storage-note', r.persisted
+    // The note lives OUTSIDE the <dl>: a definition list may only contain
+    // dt/dd groups, and the gate's axe pass failed the note as a child of it —
+    // the gate's first real catch, ten minutes after existing.
+    noteOut.textContent = r.persisted
       ? 'The browser has agreed to keep your data. Worth checking here again in a few days — if this ever says otherwise, export a copy.'
       : r.supported
         ? 'Your writing is saved on this device, but the browser has not promised to keep it and may clear it if the device runs short of space.'
-        : 'This browser will not say whether it keeps your data. Export a copy from time to time.');
-    body.append(note);
+        : 'This browser will not say whether it keeps your data. Export a copy from time to time.';
   };
 
   ask.addEventListener('click', async () => {

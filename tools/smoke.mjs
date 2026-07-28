@@ -52,8 +52,10 @@ try {
   // when `load` fires, so asserting at that moment tests the gap, not the app.
   const ready = () => page.waitForSelector('body[data-ready=true]');
 
+  const bootStart = Date.now();
   await page.goto(url, { waitUntil: 'load' });
   await ready();
+  const bootMs = Date.now() - bootStart;
 
   console.log('\nFirst run — the panel introduces itself once');
   is(await page.locator('#about').isVisible(), true, 'the (i) panel opens by itself on a fresh store');
@@ -85,8 +87,10 @@ try {
   await ready();
   is(await page.inputValue('#capture'), 'Ring the dentist', 'draft survived a reload mid-capture');
 
+  const writeStart = Date.now();
   await page.click('#capture-form button[type=submit]');
   await page.waitForSelector('.card');
+  const writeMs = Date.now() - writeStart;
   is(await page.locator('.card').count(), 1, 'one card after capture');
   is(await page.locator('.card-title').first().textContent(), 'Ring the dentist', 'card text');
   is(await page.inputValue('#capture'), '', 'input cleared after commit');
@@ -142,6 +146,15 @@ try {
     return small;
   });
   is(targets.length, 0, `every visible target is at least 44px tall${targets.length ? ` — ${targets.join(', ')}` : ''}`);
+
+  // Build-plan item 9 sets a 2 s COLD budget measured on the iPad. This is the
+  // CI PROXY for it — a desktop-class runner passing at 2 s says nothing about
+  // the iPad, but a runner FAILING it catches a gross regression (an accidental
+  // spinner, a blocking await) before it ever reaches the device. The real
+  // number stays a device reading (docs/verifications.md).
+  console.log('\nBudgets (CI proxy — the binding number is measured on the iPad)');
+  is(bootMs < 2000, true, `cold load to interactive: ${bootMs}ms (proxy bound 2000ms)`);
+  is(writeMs < 1000, true, `submit to visible card: ${writeMs}ms (proxy bound 1000ms)`);
 
   console.log('\nNo page errors');
   is(pageErrors.length, 0, pageErrors.length ? `console/page errors: ${pageErrors.join(' | ')}` : 'none');
