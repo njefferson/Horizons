@@ -70,6 +70,11 @@ try {
   await page.click('#about-close');
   is(await page.evaluate(() => document.activeElement?.id), 'capture',
     'closing the panel hands focus to capture');
+  // Wait for the SEEN write to PERSIST before reloading — a fast reload races
+  // the fire-and-forget write and the intro re-opens, its modal blocking every
+  // later click. This exact race failed CI (not locally), which is why the app
+  // flags the write's completion and the test waits for it.
+  await page.waitForSelector('body[data-intro-dismissed=true]');
   await page.reload({ waitUntil: 'load' });
   await ready();
   is(await page.locator('#about').isVisible(), false, 'and it never opens uninvited again');

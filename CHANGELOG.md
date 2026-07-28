@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.2.4 — ITERATION
+
+*2026-07-28*
+
+- The one-time welcome no longer flickers back if you reopen the app right after closing it.
+
 ## 0.2.3 — ITERATION
 
 *2026-07-28*

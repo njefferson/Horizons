@@ -29,6 +29,14 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.2.4',
+    kind: 'ITERATION',
+    date: '2026-07-28',
+    notes: [
+      'The one-time welcome no longer flickers back if you reopen the app right after closing it.',
+    ],
+  },
+  {
     triplet: '0.2.3',
     kind: 'ITERATION',
     date: '2026-07-28',

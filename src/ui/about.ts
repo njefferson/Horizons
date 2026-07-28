@@ -181,9 +181,18 @@ export async function mountAbout(session: Session): Promise<void> {
   // SEEN is written when the introduction is DISMISSED, not when it is shown:
   // for this audience interruption is the expected case (ADR-0008), and a
   // crash on first paint must not burn the one-time introduction unread.
+  // The write is AWAITED and its completion flagged on the document, so a
+  // reload immediately after closing cannot race the persistence and re-show
+  // the intro — a race the audit-fix first introduced, caught in CI.
   const seen = await session.store.getKv<boolean>(SEEN);
   if (!seen) {
-    dialog.addEventListener('close', () => { void session.store.setKv(SEEN, true); }, { once: true });
+    dialog.addEventListener('close', () => {
+      void session.store.setKv(SEEN, true).then(() => {
+        document.body.dataset.introDismissed = 'true';
+      });
+    }, { once: true });
     show(true);
+  } else {
+    document.body.dataset.introDismissed = 'true';
   }
 }
