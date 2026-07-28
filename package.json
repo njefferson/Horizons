@@ -1,0 +1,16 @@
+{
+  "name": "planner-spine",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Phase 0 spine: append-only log, fold, write gate, snapshot, export/import. No UI.",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "npm run typecheck && node --test --experimental-strip-types "test/**/*.test.ts"",
+    "test:only": "node --test --experimental-strip-types "test/**/*.test.ts""
+  },
+  "dependencies": { "dexie": "4.0.11" },
+  "devDependencies": { "typescript": "5.7.3", "@types/node": "22.10.5" }
+}

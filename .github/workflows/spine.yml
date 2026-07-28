@@ -1,0 +1,40 @@
+name: Spine
+
+# Phase 0 exit criteria run on every change. Doctrine §16.8: make it a gate, not
+# an intention. Actions are SHA-pinned (§16.1).
+
+on:
+  push:
+    branches: [staging, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spine-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test:only
+
+      # The vocabulary is a closed list and "overdue"/"streak" are banned
+      # outright (ADR-0010). A grep is the cheapest possible gate.
+      - name: No banned vocabulary
+        run: |
+          if grep -rniE '\b(overdue|streak)\b' src/ \
+             | grep -viE 'no |never|banned|forbid|law 5'; then
+            echo "banned vocabulary found in src/ — see ADR-0010" >&2
+            exit 1
+          fi
+          echo "clean"
