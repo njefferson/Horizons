@@ -162,7 +162,7 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-09 | **The four §10 repo-metadata values** | Yes, before any public release | **Three of four are set — read back from the API, not assumed.** Description ✅, website `https://quietkeep.pages.dev/` ✅, topics ✅. **Owed: the social-preview image** (1280×640), which does not exist. **One typo to fix:** the topic reads `indexed`, and the store is IndexedDB — it should be `indexeddb`. |
+| Q-09 | **The four §10 repo-metadata values** | Yes, before any public release | Description ✅, website ✅, topics ✅ (read back from the API, not assumed). **The social preview now exists** — `public/brand/social-preview.png`, 1280×640, 677 KB — but uploading it is a GitHub-UI step the session token cannot do, so it is owed on Noah's hands. **One typo still open:** the topic reads `indexed`; the store is IndexedDB, so it wants `indexeddb`. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
@@ -225,13 +225,29 @@ That error cost the Perennial round.
   back from the API and confirmed, per §10 — not assumed from the fact that he was asked).
   The social preview is **not**, and one topic is a typo. **Quietkeep is not "set up" until
   both are done** — see Q-09.
+- **Brand:** the mark is `public/brand/icon.svg` — drawn, not generated, because an icon is
+  geometry and 48px legibility has to be measured rather than hoped for
+  ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
+  `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
+  palette and its measured ratios are `ACCESSIBILITY.md` B-10.
 - **Code:** the Phase 0 spine, on `staging` (see above). `main` is documentation only.
+  `public/` holds brand assets and **no app shell yet** — which is why the deploy workflow
+  skips.
 
 ### Log
 
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **Quietkeep has a face.** Five candidates came back from image
+  generation; the background that won is the one that says the epigraph — things set down,
+  one small light — and the one that lost did so because it reads as an orbital diagram,
+  which belongs to *clear-horizons*. **None of the three generated icons survived 48px**,
+  so the mark was drawn instead: an icon is geometry, and contrast can be measured rather
+  than re-rolled. `tools/brand.mjs` renders every size and checks them, and it was broken on
+  purpose first — `1.41:1`, exit 1 — before being believed. Its own first version measured
+  the type against itself and reported a meaningless `1.00:1`; it now measures the plate
+  behind the text. [ADR-0025](docs/adr/0025-visual-identity.md), `ACCESSIBILITY.md` B-10.
 - **2026-07-28** — **The repo is `njefferson/Quietkeep`**, and the deferred `LICENSE.md`
   Required Notice URL moved with it. Q-04 closed — Noah confirmed `quietkeep.pages.dev`
   clean, so V-04 is VERIFIED. Cloudflare secrets are in place and the deploy workflow

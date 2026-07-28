@@ -5,12 +5,23 @@
   "type": "module",
   "description": "Phase 0 spine: append-only log, fold, write gate, snapshot, export/import. No UI.",
   "license": "SEE LICENSE IN LICENSE.md",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "npm run typecheck && npm run test:only",
-    "test:only": "node --test --experimental-strip-types 'test/**/*.test.ts'"
+    "test:only": "node --test --experimental-strip-types 'test/**/*.test.ts'",
+    "brand": "node tools/brand.mjs",
+    "brand:check": "node tools/brand.mjs --check"
   },
-  "dependencies": { "dexie": "4.0.11" },
-  "devDependencies": { "typescript": "5.7.3", "@types/node": "22.10.5" }
+  "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR — see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",
+  "dependencies": {
+    "dexie": "4.0.11"
+  },
+  "devDependencies": {
+    "@types/node": "22.10.5",
+    "playwright-core": "1.56.0",
+    "typescript": "5.7.3"
+  }
 }

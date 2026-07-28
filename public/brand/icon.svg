@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Quietkeep">
+  <title>Quietkeep</title>
+
+  <!--
+    The mark: a warm opening within a sheltering form. A doorway in a wall, lit
+    from inside.
+
+    Geometry, not illustration. Three flat colours, no gradient, no shadow, no
+    transparency — every one of those breaks down at 48px or on a light surface.
+
+    Why this shape and not the generated candidate it came from: that one's outer
+    form was a rounded top on straight sides with a flat base, which reads as a
+    headstone — the worst possible accidental reading for an app whose promise is
+    that nothing you put in is lost. The arch here appears ONLY in the warm
+    opening; the silhouette is a rounded square, which is a shelter and a wall.
+
+    Colours are the design-time bindings recorded in ACCESSIBILITY.md B-09, with
+    their measured ratios. Nothing here is decided at the keyboard.
+
+    Maskable-safe: the artwork sits inside the centre 80% circle (r=204.8 about
+    256,256). The shelter's furthest painted point is ~199.8 from centre.
+  -->
+
+  <!-- Field. Full-bleed and opaque: iOS composites transparency onto black. -->
+  <rect width="512" height="512" fill="#131B2E"/>
+
+  <!-- The shelter. Rounded square — a wall, not a marker. 3.34:1 against the field. -->
+  <rect x="96" y="96" width="320" height="320" rx="64" fill="#5C6E8F"/>
+
+  <!-- The opening, lit. The single warm element in the whole mark.
+       Fully rounded head, softly rounded base — an entrance, never a slab. -->
+  <path d="M192,224 A64,64 0 0 1 320,224 L320,332 A20,20 0 0 1 300,352 L212,352 A20,20 0 0 1 192,332 Z"
+        fill="#F6CE86"/>
+</svg>

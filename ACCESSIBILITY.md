@@ -93,6 +93,40 @@ transformed content proves nothing.
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.
 
+### B-10 · The brand colours — the first colour decision this app has made
+Everything above states *channels*. These are the first actual values, and they
+are recorded here rather than in a stylesheet because B-08's rule is that a new
+foreground/background pair joins the gate **in the same commit that introduces
+it**. `tools/brand.mjs` is that gate for these.
+
+| Token | Value | What it is |
+|---|---|---|
+| `--field` | `#131B2E` | the deep field the mark sits on |
+| `--shelter` | `#5C6E8F` | the holding form — a wall, not a marker |
+| `--light` | `#F6CE86` | the lit opening. The **only** warm note in the identity |
+| `--type-strong` | `#F7F4EE` | the wordmark |
+| `--type` | `#E4E9F2` | secondary type on dark |
+
+**Measured, not eyeballed** — every pair the mark actually renders:
+
+| Pair | Ratio | Needs | Why that threshold |
+|---|---|---|---|
+| shelter / field | **3.34:1** | 3:1 | WCAG 1.4.11, non-text graphical object |
+| light / shelter | **3.45:1** | 3:1 | same |
+| light / field | **11.51:1** | — | comfortably clear |
+| wordmark / plate | **11.26:1** worst | 4.5:1 | measured against the actual social-preview pixels behind it, at the worst sample |
+| tagline / plate | **10.60:1** worst | 4.5:1 | same |
+
+**The warm note is never an alarm.** `--light` is the app's one warm colour and it
+means *lit*, *held*, *here* — never *late* and never *wrong*. B-01's no-red-walls
+rule is a palette rule as well as a pressure-surface rule: **no red or amber
+enters this identity**, because a colour that means "attention" in the brand will
+eventually mean "you failed" in the UI.
+
+**Grayscale survival is checked, not assumed.** The gate asserts the shelter and
+the field stay separated with hue removed — the same pass condition B-01 sets for
+every pressure surface, applied to the identity so the two cannot drift apart.
+
 ---
 
 ## Part 2 — Findings register
