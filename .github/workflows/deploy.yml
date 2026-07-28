@@ -1,0 +1,130 @@
+name: Deploy
+
+# staging -> staging.quietkeep.pages.dev   (Noah's on-device pass; Doctrine §7)
+# main    -> quietkeep.pages.dev           (production, only after his "promote")
+#
+# Cloudflare Pages serves a preview branch at <branch>.<project>.pages.dev, which
+# is what turns the §7 staging gate from a convention I observe into a URL he can
+# open on the iPad.
+#
+# HONESTY NOTE (Doctrine §5): the deploy STEPS below have never run green, because
+# there is nothing to deploy yet — this repo has no public/ and no app shell. The
+# guard immediately below makes that state explicit and skips instead of
+# publishing an empty directory over a live site. Until a run reaches the wrangler
+# step and succeeds, this file is a prepared path and NOT a proven deploy.
+#
+# Actions are pinned by SHA, not tag (Doctrine §16.1) — a tag is a mutable pointer
+# someone else controls, and these steps execute holding a live Pages:Edit token.
+# Modelled on the hub's deploy.yml, which is the tested article.
+
+on:
+  push:
+    branches: [staging, main]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  PROJECT: quietkeep
+  # Pinned so a wrangler release cannot change deploy behaviour without a commit
+  # (Doctrine §16.1, and LESSONS §8 — a wrong pin is worse than none, so this one
+  # is recorded with its reason: it is the version the hub deploys with today).
+  WRANGLER_VERSION: "4.114.0"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+
+      - name: Is there anything to deploy yet?
+        id: site
+        run: |
+          # Phase 0 is the spine — src/, test/, no UI. Publishing an empty
+          # directory to Pages would replace a live site with nothing, so the
+          # absence of a shell is a SKIP, never a deploy.
+          if [ -f public/index.html ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "public/index.html found — proceeding."
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No public/index.html — there is no app shell in this repo yet."
+            echo "Skipping the deploy rather than publishing an empty directory."
+            echo "This is the expected state until Phase 1 lands."
+          fi
+
+      - name: Prepare Cloudflare credentials
+        id: cf
+        if: steps.site.outputs.present == 'true'
+        env:
+          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Strip any whitespace/newlines that sneak in when a secret is pasted.
+          # A trailing newline corrupts the Authorization header (Cloudflare 6111).
+          TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+          ACCOUNT=$(printf '%s' "$RAW_ACCOUNT" | tr -d '[:space:]')
+          echo "::add-mask::$TOKEN"
+          echo "::add-mask::$ACCOUNT"
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+            echo "Cloudflare secrets not configured — skipping deploy."
+          fi
+          # Doctrine §16.4: the cleaned values go to the job environment, never to
+          # step outputs. Outputs persist in the run's stored output and are
+          # readable through the API; env is scoped to this job's steps. Only the
+          # non-secret `ready` flag is an output.
+          echo "CF_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          echo "CF_ACCOUNT=$ACCOUNT" >> "$GITHUB_ENV"
+
+      - name: Verify cleaned token
+        if: steps.cf.outputs.ready == 'true'
+        continue-on-error: true
+        run: |
+          echo "cleaned token length: ${#CF_TOKEN}"
+          curl -s https://api.cloudflare.com/client/v4/user/tokens/verify \
+            -H "Authorization: Bearer $CF_TOKEN" \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('valid:', d.get('success'), '| status:', (d.get('result') or {}).get('status'), '| errors:', d.get('errors'))"
+
+      - name: Ensure Pages project exists
+        if: steps.cf.outputs.ready == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages project create ${{ env.PROJECT }} --production-branch=main
+
+      - name: Deploy to Cloudflare Pages
+        if: steps.cf.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages deploy public --project-name=${{ env.PROJECT }} --branch=${{ github.ref_name }} --commit-dirty=true
+
+      - name: Where this went, and how to roll it back
+        if: always() && steps.cf.outputs.ready == 'true'
+        run: |
+          # Doctrine §16 — the rollback path is printed on every deploy so it is
+          # known BEFORE it is needed, not looked up during an outage.
+          if [ "${{ github.ref_name }}" = "main" ]; then
+            echo "Deployed to PRODUCTION: https://quietkeep.pages.dev"
+          else
+            echo "Deployed to preview: https://${{ github.ref_name }}.quietkeep.pages.dev"
+          fi
+          echo ""
+          echo "If this deploy is bad:"
+          echo "  Cloudflare dashboard -> Workers & Pages -> quietkeep -> Deployments"
+          echo "  -> pick the last good one -> Manage deployment -> Rollback."
+          echo "That is instant. A git revert is also fine but waits for a fresh build,"
+          echo "and note concurrency cancel-in-progress can cancel an in-flight deploy."

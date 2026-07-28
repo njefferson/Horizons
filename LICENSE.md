@@ -2,7 +2,7 @@
 
 <https://polyformproject.org/licenses/noncommercial/1.0.0>
 
-Required Notice: Copyright © 2026 Noah Jefferson (https://github.com/njefferson/Horizons)
+Required Notice: Copyright © 2026 Noah Jefferson (https://github.com/njefferson/Quietkeep)
 
 > **Scope.** These terms cover this repository's own source, content, and
 > documentation — the Quietkeep application and everything in `docs/`.

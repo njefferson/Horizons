@@ -108,11 +108,17 @@ EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
 ## V-04 · Name availability — **the app is Quietkeep**
-**Status: PARTIAL** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
+**Status: VERIFIED** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
 
-PARTIAL, not VERIFIED: the session's own checks are complete and the App Store check came
-back from Noah, but `quietkeep.pages.dev` has not been tested and no USPTO knockout has
-been run. Neither is reachable from a session ([V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven)).
+Every check a session could run has run, and **both checks that only Noah's device could
+run came back from him** — the App Store search and `quietkeep.pages.dev`, on 2026-07-28.
+
+**The USPTO knockout was not run, and that is a decision rather than a gap.** Trademark
+protects against confusion **in commerce**; Quietkeep is free, has no paid tier, and is
+licensed against being sold ([ADR-0017](adr/0017-licensing.md)). A live mark on unrelated
+goods does not reach it, and the row is left visible here instead of being dropped so that
+the reasoning is auditable if the app's status ever changes. **If Quietkeep ever stops
+being free, this row reopens.**
 
 ### What was run against Quietkeep
 
@@ -123,8 +129,8 @@ been run. Neither is reachable from a session ([V-05](#v-05--pagesdev-is-unreach
 | 3 | Unscoped name + software | web search | Nothing named Quietkeep. Nearest: SoftwareKeep (retailer), Quiet Mind Software, quiet.app, Quiet Modem Project. |
 | 4 | npm + GitHub | direct registry query — **authoritative** | `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name. |
 | 5 | **App Store** | **Noah's own device, 2026-07-28** | *"there is nothing on the App Store that I see near it."* **Answered.** |
-| — | `quietkeep.pages.dev` | Noah's device | **Not yet run.** Q-04. |
-| — | USPTO classes 9 and 42 | Noah's device | **Not yet run.** Lowest priority — see the reasoning below. |
+| 6 | **`quietkeep.pages.dev`** | **Noah's own device, 2026-07-28** | *"Quietkeep.pages.dev is clean."* **Answered** — Q-04 closed, and the subdomain is the one the deploy targets. |
+| — | USPTO classes 9 and 42 | — | **Not run, by reasoning** — see above. Reopens if the app ever stops being free. |
 
 **Known and accepted, recorded rather than omitted:** **Quietstart: AI Day Planner**
 (Google Play) shares the first syllable in the same category — not a collision, but where a
@@ -132,10 +138,11 @@ half-remembered name could land. **Quiet, Inc.** holds marks on the bare word *Q
 compound is not that word, and confusion-in-commerce does not reach a free app licensed
 against being sold.
 
-> **Step 5 came back.** This is the first handed-over check in the naming sequence that
-> Noah ran and reported, rather than one a session asserted was impossible. The rule in
+> **Both handed-over checks came back.** These are the first in the naming sequence that
+> Noah ran and reported, rather than ones a session asserted were impossible. The rule in
 > Doctrine §6 — hand over a manual step only after proving it impossible from this side —
-> is what made it a real check instead of a shrug.
+> is what made them real checks instead of a shrug. The pattern to keep: prove the block,
+> name the exact thing to look at, and the answer comes back in seconds.
 
 ### The order to check a candidate in — **the standing method**
 
@@ -342,6 +349,44 @@ not an answer, it is a question.*
 
 ---
 
+## V-10 · The Spine gate had never passed — **found 2026-07-28, and it was cited as proof**
+**Status: FIXED, and proven fixed**
+
+`.github/workflows/spine.yml` is the repo's CI gate: `npm ci` → typecheck → tests →
+banned-vocabulary grep. **It failed on all four of its runs, every run since it was
+created**, and always on the very first step.
+
+The cause was three characters. `package.json` carried
+
+```json
+"test:only": "node --test --experimental-strip-types "test/**/*.test.ts""
+```
+
+— unescaped double quotes inside a JSON string, so the file is **not valid JSON**. `npm ci`
+dies with `EJSONPARSE` before a single test runs. Every downstream step was skipped, and
+the gate was red from the moment it existed.
+
+**The part that matters is not the typo.** Every session, including this one, verified the
+spine by running the tools *directly* — `node --experimental-strip-types --test …` and
+`npx tsc --noEmit` — which bypass `package.json` entirely and pass. So the local check was
+green, the CI check was red, and nobody looked at the second one. A commit message on this
+repo says *"Verified: 14/14 spine tests, tsc clean"* while a red run sat on that exact SHA.
+Each statement was individually true. Together they described a repo whose gate worked.
+
+This is [§4's fake-gate finding](../ACCESSIBILITY.md) in a second place: **a gate that has
+never been observed passing is not a gate, it is a file.** The fix for the class is not
+"be careful with JSON" — it is *watch the run*.
+
+| | |
+|---|---|
+| Runs 1–4 | `failure`, all on `npm ci`, 2026-07-28 |
+| Cause | invalid JSON in `package.json` `scripts` |
+| Fix | `test:only` quotes the glob with `'…'`; `test` chains `npm run test:only` rather than repeating it |
+| Proven | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
+| Owed | **the next run of this workflow must be observed green.** Until then this row says FIXED, not VERIFIED-IN-CI. |
+
+---
+
 ## Standing note on instruments
 
 Two lessons from sibling apps apply to every future row here:
@@ -352,3 +397,7 @@ Two lessons from sibling apps apply to every future row here:
   this reason.
 - **When a result looks absurd, suspect the instrument first.** V-05's 403 is the
   instrument, not the answer.
+- **Running the command is not the same as watching the gate.** V-10: the spine's
+  CI failed on all four runs while every session reported the same tests passing,
+  because the local invocation and the CI invocation took different paths. If a
+  workflow is going to be *cited* as verification, its run has to be opened.

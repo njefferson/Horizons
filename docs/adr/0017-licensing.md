@@ -41,6 +41,11 @@ Doctrine's answer rather than the brief's.
 
 - `LICENSE.md` is PolyForm NC 1.0.0, with the Required Notice pointing at
   `https://github.com/njefferson/Horizons`.
+  > **Addendum, 2026-07-28.** The repo was renamed to `njefferson/Quietkeep`
+  > ([ADR-0024](0024-name-quietkeep.md)) and the Required Notice URL moved with it, in the
+  > same commit — that was always the condition for moving it. The decision here is
+  > unchanged; only the address is. Recorded rather than rewritten in place, per the
+  > append-only rule.
 - The **Scope** block states explicitly that **the user's data is not covered by
   the licence, because it is not ours**. The licence governs the software; it
   makes no claim on the log, the snapshots, or the exports.

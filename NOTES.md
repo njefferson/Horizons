@@ -162,14 +162,15 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | **Unblocked** — the subdomain to test is `quietkeep.pages.dev`. Ten seconds on Noah's device; unreachable from a session ([V-05](docs/verifications.md)). The four §10 values will be drafted for his confirmation in the next session that touches deploy. |
+| Q-09 | **The four §10 repo-metadata values** — description, website, topics, social preview | Yes, before any public release | Open, and awaiting Noah's hands only. The exact values are drafted and listed in the session that raised this; the social-preview image (1280×640) **does not exist yet** and is owed. One judgement call left to him: whether `adhd` belongs in topics — highest-traffic discovery term, and diagnosis-flavoured, which the voice rules bar in *copy*. Topics are metadata rather than copy, so it is arguable; it is his call. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
-**Still owed on Noah's device:** `quietkeep.pages.dev`, and a USPTO knockout in classes 9
-and 42 if he wants one — lowest priority, arguably skippable for a free noncommercial app.
-Both are blocked from a session — proven, not assumed. **The App Store check is done:**
-Noah ran it himself, 2026-07-28.
+**Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
+App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
+classes 9 and 42 was **not run, by reasoning rather than omission**: trademark protects
+against confusion in commerce, and a free app licensed against being sold is not in
+commerce. [V-04](docs/verifications.md) records that as a decision, not a gap.
 
 **Standing rule on names** ([V-04](docs/verifications.md)): ask *"is this name taken in
 software?"*, unscoped, **before** anything else and before showing Noah a candidate. Asking
@@ -185,6 +186,7 @@ That error cost the Perennial round.
 | Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
 | Q-08 | How "Wynts" is pronounced | **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad. |
 | Q-02 | The app's name | **Quietkeep.** Noah 2026-07-28: *"I like quietkeep and there is nothing on the App Store that I see near it."* Cleared through all five checks — [ADR-0024](docs/adr/0024-name-quietkeep.md), [V-04](docs/verifications.md). |
+| Q-04 | Pages subdomain string | **`quietkeep.pages.dev`** — Noah confirmed it clean on his device, 2026-07-28. Production comes off `main`; `staging` gets `staging.quietkeep.pages.dev`, which turns the Doctrine §7 gate into a URL he can open on the iPad. The metadata half of this question is now **Q-09**, because it is a different kind of answer and was hiding behind the subdomain. |
 
 ---
 
@@ -199,15 +201,21 @@ That error cost the Perennial round.
 - **The folder mirror does not exist on the reference platform** — Safari has no disk
   picker. Export/import via Files carries the whole sync and durability story
   ([ADR-0004](docs/adr/0004-ios-path.md)), which is why it is built in Phase 0.
-- **The app is Quietkeep** ([ADR-0024](docs/adr/0024-name-quietkeep.md)). The repo slug is
-  still `Horizons` until Noah renames it on GitHub; the licence's Required Notice URL
-  follows the slug and moves in that same commit, not before, or it aims at a 404.
+- **The app is Quietkeep** ([ADR-0024](docs/adr/0024-name-quietkeep.md)), and the repo is
+  `njefferson/Quietkeep` as of 2026-07-28. The licence's Required Notice URL moved with the
+  slug in the same commit, which is the condition [ADR-0017](docs/adr/0017-licensing.md)
+  set. `Horizons` survives only as *domain* vocabulary — *higher horizons* (law 4) and the
+  *horizon-integrity engine* — and a check asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built and on `staging`** — log, fold, write gate, snapshot,
   export/import, 14 tests, all four exit criteria met. **`main` is docs-only and behind,
   awaiting Noah's explicit "promote"** (Doctrine §7).
-- **Repo:** `njefferson/Horizons`. Branches `staging` and `main` only; ignore any
+- **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
-- **Deploy:** Cloudflare Pages. Project not yet created. Subdomain pending Q-04.
+- **Deploy:** Cloudflare Pages. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are in
+  repository secrets (Noah, 2026-07-28). Subdomain `quietkeep.pages.dev`, production off
+  `main`, `staging.quietkeep.pages.dev` off `staging`. **The Pages project does not exist
+  and nothing has been deployed** — there is no `public/` and no shell to serve yet. The
+  workflow is in place and skips cleanly until there is.
 - **Hub wiring:** the app is **not yet** linked from
   `noahjefferson/public/index.html`. That edit is deliberately held until there
   is a deployed page to visit — adding a dead link to the live hub is a site
