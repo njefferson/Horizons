@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.2.1',
+    kind: 'ITERATION',
+    date: '2026-07-28',
+    notes: [
+      'Opening the app on a slow or stalling connection no longer waits on the network. After two seconds the copy already on your device appears, and any update quietly arrives for next time.',
+      'Holding two thoughts in quick succession can no longer tangle the order they are recorded in.',
+    ],
+  },
+  {
     triplet: '0.2.0',
     kind: 'CAPABILITY',
     date: '2026-07-28',

@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.2.1 — ITERATION
+
+*2026-07-28*
+
+- Opening the app on a slow or stalling connection no longer waits on the network. After two seconds the copy already on your device appears, and any update quietly arrives for next time.
+- Holding two thoughts in quick succession can no longer tangle the order they are recorded in.
+
 ## 0.2.0 — CAPABILITY
 
 *2026-07-28*

@@ -13,6 +13,7 @@
 import { chromium } from 'playwright-core';
 import { existsSync, readFileSync } from 'node:fs';
 import { serve } from './serve.mjs';
+import { CURRENT } from '../src/ui/changelog.ts';
 
 const ROOT = new URL('../public', import.meta.url).pathname;
 if (!existsSync(`${ROOT}/app.js`)) {
@@ -57,9 +58,9 @@ try {
   console.log('\nFirst run — the panel introduces itself once');
   is(await page.locator('#about').isVisible(), true, 'the (i) panel opens by itself on a fresh store');
   is(await page.locator('#about-intro').isVisible(), true, 'with the first-run introduction');
-  is((await page.locator('#version').textContent())?.trim(), '0.2.0',
+  is((await page.locator('#version').textContent())?.trim(), CURRENT.triplet,
     'version is the bare triplet — releases do not have names');
-  is(await page.locator('.note-triplet').first().textContent(), '0.2.0',
+  is(await page.locator('.note-triplet').first().textContent(), CURRENT.triplet,
     'patch notes lead with the current release');
   await page.waitForSelector('#storage-body dt');
   const storageRows = await page.locator('#storage-body dt').allTextContents();

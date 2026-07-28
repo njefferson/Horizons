@@ -254,6 +254,18 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28 (evening)** — **The write path is serialized and the worst network is
+  handled.** Two defects from the model-switch review fixed with proofs: concurrent
+  commits could silently collide on `(device, seq)` — Dexie's index is non-unique — so
+  commits now queue, with a test that fails when the queue is bypassed; and navigation was
+  network-first with no deadline, so lie-fi could hang the shell past the 2-second budget —
+  it now races a 2 s deadline and serves the cached shell while freshening behind.
+  [ADR-0027](docs/adr/0027-cure-stamps.md) settles the tension the review surfaced: cures
+  *share their cause's stamp* by design (replay determinism), so gap-freeness is defined
+  over offered events and cures are derivable attachments. Releases 0.2.0 (ⓘ panel,
+  export — which fixed the "export a copy" copy pointing at a door that didn't exist) and
+  0.2.1 shipped with the changelog now a generated, gated artifact: CI asserts the head
+  triplet equals the service-worker cache name and each bump matches its declared kind.
 - **2026-07-28** — **Quietkeep ran on the iPad, and V-00's first half is answered.**
   `persist()` returned **true** with notifications granted, quota **38 GB**, and the app
   survived a force-quit with its data intact — the promise tested the only way that counts.

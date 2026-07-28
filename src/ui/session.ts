@@ -14,9 +14,17 @@ import { admit } from '../gate.ts';
 import { fold, emptyState, type State } from '../fold.ts';
 import { ulid, newDeviceId } from '../ids.ts';
 import { DexieLogStore } from '../dexie-store.ts';
+import type { LogStore } from '../log-store.ts';
 import { loadState } from '../snapshot.ts';
 
 const DEVICE_KEY = 'device.id';
+
+/** What a session needs from storage: the log, plus the kv scratch space.
+ *  DexieLogStore provides it in the browser; MemoryLogStore in Node tests. */
+export type SessionStore = LogStore & {
+  getKv<T>(key: string): Promise<T | null>;
+  setKv(key: string, value: unknown): Promise<void>;
+};
 
 export interface Session {
   readonly device: DeviceId;
@@ -26,7 +34,7 @@ export interface Session {
   commit(make: (ctx: StampContext) => AppEvent[]): Promise<State>;
   draft(): Promise<string>;
   setDraft(text: string): Promise<void>;
-  store: DexieLogStore;
+  store: SessionStore;
 }
 
 export interface StampContext {
@@ -41,8 +49,9 @@ export async function openSession(
   now: () => number,
   vault: VaultId = 'personal',
   dbName = 'quietkeep',
+  storeOverride?: SessionStore,
 ): Promise<Session> {
-  const store = new DexieLogStore(dbName);
+  const store: SessionStore = storeOverride ?? new DexieLogStore(dbName);
 
   let device = await store.getKv<DeviceId>(DEVICE_KEY);
   if (!device) {
@@ -52,7 +61,15 @@ export async function openSession(
 
   let state: State = await loadState(store).catch(() => emptyState());
 
-  const commit: Session['commit'] = async (make) => {
+  // Commits are SERIALIZED. Two interleaved commits would both read nextSeq
+  // before either appends, and neither store enforces per-device seq uniqueness
+  // (Dexie's [device+seq] index is non-unique) — so a double-tap could silently
+  // mint two events with the same seq and break the gap-free invariant the
+  // shard-completeness proof rests on. The queue makes each commit read seq
+  // AFTER the previous one has landed. Failures do not wedge the queue.
+  let queue: Promise<unknown> = Promise.resolve();
+
+  const commitOne = async (make: (ctx: StampContext) => AppEvent[]): Promise<State> => {
     const at = new Date(now()).toISOString();
     let seq = await store.nextSeq(device!);
     const ctx: StampContext = {
@@ -81,6 +98,12 @@ export async function openSession(
     await store.append(admitted);
     state = fold(admitted, state);
     return state;
+  };
+
+  const commit: Session['commit'] = (make) => {
+    const run = queue.then(() => commitOne(make));
+    queue = run.catch(() => { /* the next commit must not inherit this failure */ });
+    return run;
   };
 
   return {

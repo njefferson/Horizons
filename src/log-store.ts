@@ -36,6 +36,17 @@ export interface LogStore {
 export class MemoryLogStore implements LogStore {
   #events: AppEvent[] = [];
   #snapshot: Snapshot | null = null;
+  #kv = new Map<string, unknown>();
+
+  /** Scratch, mirroring DexieLogStore's kv — lets the session layer be tested
+   *  in Node, where there is no IndexedDB. */
+  async getKv<T>(key: string): Promise<T | null> {
+    return this.#kv.has(key) ? (this.#kv.get(key) as T) : null;
+  }
+
+  async setKv(key: string, value: unknown): Promise<void> {
+    this.#kv.set(key, value);
+  }
 
   async append(events: readonly AppEvent[]): Promise<void> {
     for (const e of events) {

@@ -16,7 +16,7 @@
     "brand:check": "node tools/brand.mjs --check",
     "build": "esbuild src/ui/app.ts --bundle --format=esm --target=es2022 --outfile=public/app.js --sourcemap --log-level=warning",
     "serve": "node tools/serve.mjs",
-    "smoke": "node tools/smoke.mjs",
+    "smoke": "node --experimental-strip-types tools/smoke.mjs",
     "changelog": "node --experimental-strip-types tools/changelog.mjs",
     "changelog:check": "node --experimental-strip-types tools/changelog.mjs --check"
   },

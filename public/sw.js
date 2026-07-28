@@ -3,7 +3,7 @@
 // The cache name carries the version.capability.iteration triplet and is bumped
 // with it (Doctrine §7, CLAUDE.md). Changing the triplet is what retires the old
 // cache — that is the whole mechanism, so it is not optional.
-const CACHE = 'quietkeep-0.2.0';
+const CACHE = 'quietkeep-0.2.1';
 
 // The shell only. User data is NEVER cached here — it lives in IndexedDB, which
 // this file does not touch and must not.
@@ -46,19 +46,29 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // Network-first for navigations so a deployed update is picked up, with the
-  // cache as the offline floor. The network is never on the critical path for
-  // capture, which does not go near it.
+  // Network-first for navigations so a deployed update is picked up — but the
+  // network gets a BOUNDED head start, not a blank cheque. On a stalled-but-
+  // present connection ("lie-fi"), an unbounded fetch hangs far past the
+  // 2-second capture budget, and the gap between thought and safety is the
+  // whole product. If the deadline passes, the cached shell serves immediately
+  // and the fetch keeps running in the background to freshen the cache for
+  // next time.
   if (req.mode === 'navigate') {
+    const NAV_DEADLINE_MS = 2000;
     event.respondWith((async () => {
-      try {
-        const fresh = await fetch(req);
-        const cache = await caches.open(CACHE);
-        cache.put('./index.html', fresh.clone());
+      const freshen = fetch(req).then(async (fresh) => {
+        if (fresh.ok) (await caches.open(CACHE)).put('./index.html', fresh.clone());
         return fresh;
-      } catch {
-        return (await caches.match('./index.html')) ?? Response.error();
-      }
+      });
+      // Keep freshening even after we answer from cache; swallow its failure.
+      event.waitUntil(freshen.catch(() => {}));
+
+      const timeout = new Promise((resolve) =>
+        setTimeout(() => resolve(null), NAV_DEADLINE_MS));
+      const winner = await Promise.race([freshen.catch(() => null), timeout]);
+      if (winner) return winner;
+      return (await caches.match('./index.html'))
+        ?? freshen.catch(() => Response.error());
     })());
     return;
   }
