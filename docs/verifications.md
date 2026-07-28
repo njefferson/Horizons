@@ -385,11 +385,16 @@ never been observed passing is not a gate, it is a file.** The fix for the class
 | Proven locally | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
 | **Proven in CI** | **Run 5, `721f59e`, `success`** — observed, not assumed. The first green run this workflow has ever had. |
 
-**And the Deploy workflow's first run was watched too, because that is the whole point of
-this row.** Run 1 on `721f59e`: guard step green, and **all five deploy steps `skipped`**.
-Nothing was published. That is the designed behaviour for a repo with no `public/`, and it
-is now observed rather than reasoned about — though note what it does and does not prove:
-the *guard* works, the *deploy* still has not run.
+**And the Deploy workflow's runs were watched too, because that is the whole point of this
+row.** Run 1 on `721f59e` and run 3 on `fac16df`: guard step green, **all five deploy steps
+`skipped`**, nothing published. Run 3 is the stronger evidence — by then `public/` existed
+and held the brand assets, and the guard still skipped, because it tests for
+`public/index.html` rather than for the directory. That is the right granularity, and it is
+observed rather than reasoned about. Note what it does and does not prove: the *guard*
+works, the *deploy* still has not run.
+
+**Every gate in this repo has now been watched green:** Spine runs 5, 6 and 7; Deploy runs
+1, 2 and 3; and the brand gate on its first CI run, with ratios identical to local.
 
 ---
 

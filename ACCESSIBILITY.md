@@ -127,6 +127,12 @@ eventually mean "you failed" in the UI.
 the field stay separated with hue removed — the same pass condition B-01 sets for
 every pressure surface, applied to the identity so the two cannot drift apart.
 
+**Proven in CI, not just locally** — Spine run 7, `fac16df`, green, with every
+ratio above identical to the local run. Per [V-10](docs/verifications.md), a gate
+nobody has watched pass is a file; this one was watched. CI installed **chromium
+build v1194**, which is the revision `playwright-core` 1.56.0 pins to — the
+matched pair held on a machine that is not this sandbox.
+
 ---
 
 ## Part 2 — Findings register
