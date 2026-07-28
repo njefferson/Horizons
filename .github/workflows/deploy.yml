@@ -71,15 +71,35 @@ jobs:
         id: cf
         if: steps.site.outputs.present == 'true'
         env:
+          # Either name is accepted. The credential is stored as
+          # CLOUDFLARE_API_KEY in this repo; CLOUDFLARE_API_TOKEN is the name the
+          # hub uses. Reading both means the deploy does not break on which word
+          # someone reached for, and nobody has to rename a working secret.
           RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          RAW_EMAIL: ${{ secrets.CLOUDFLARE_EMAIL }}
           RAW_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           # Strip any whitespace/newlines that sneak in when a secret is pasted.
           # A trailing newline corrupts the Authorization header (Cloudflare 6111).
           TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+          KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
+          EMAIL=$(printf '%s' "$RAW_EMAIL" | tr -d '[:space:]')
           ACCOUNT=$(printf '%s' "$RAW_ACCOUNT" | tr -d '[:space:]')
+
+          # Which NAME was found is safe to log and saves the next hour of
+          # guessing. The value never is.
+          if [ -n "$TOKEN" ]; then
+            echo "credential: CLOUDFLARE_API_TOKEN"
+          elif [ -n "$KEY" ]; then
+            echo "credential: CLOUDFLARE_API_KEY"
+            TOKEN="$KEY"
+          fi
+
           echo "::add-mask::$TOKEN"
           echo "::add-mask::$ACCOUNT"
+          [ -n "$EMAIL" ] && echo "::add-mask::$EMAIL"
+          echo "CF_EMAIL=$EMAIL" >> "$GITHUB_ENV"
           if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
             echo "ready=true" >> "$GITHUB_OUTPUT"
           else
@@ -89,7 +109,7 @@ jobs:
             # that shipped nothing is the exact failure this repo keeps finding
             # (V-10). Say which secret is missing; never name its value.
             echo "::error::public/index.html exists but the deploy cannot run."
-            [ -z "$TOKEN" ]   && echo "::error::CLOUDFLARE_API_TOKEN is empty or unset."
+            [ -z "$TOKEN" ]   && echo "::error::no credential found — set CLOUDFLARE_API_TOKEN or CLOUDFLARE_API_KEY."
             [ -z "$ACCOUNT" ] && echo "::error::CLOUDFLARE_ACCOUNT_ID is empty or unset."
             echo "Set them at Settings → Secrets and variables → Actions → Repository secrets."
             exit 1
@@ -101,14 +121,25 @@ jobs:
           echo "CF_TOKEN=$TOKEN" >> "$GITHUB_ENV"
           echo "CF_ACCOUNT=$ACCOUNT" >> "$GITHUB_ENV"
 
-      - name: Verify cleaned token
+      # Informative, never a gate. A scoped API token verifies here; a Global API
+      # Key does NOT — it authenticates with X-Auth-Key + X-Auth-Email instead,
+      # so a "valid: False" below is a clue about WHICH kind of credential this
+      # is, not proof it is broken. The deploy step is the real arbiter.
+      - name: What kind of credential is this?
         if: steps.cf.outputs.ready == 'true'
         continue-on-error: true
         run: |
-          echo "cleaned token length: ${#CF_TOKEN}"
+          echo "credential length: ${#CF_TOKEN}"
           curl -s https://api.cloudflare.com/client/v4/user/tokens/verify \
             -H "Authorization: Bearer $CF_TOKEN" \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print('valid:', d.get('success'), '| status:', (d.get('result') or {}).get('status'), '| errors:', d.get('errors'))"
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print('scoped token valid:', d.get('success'), '| status:', (d.get('result') or {}).get('status'), '| errors:', d.get('errors'))"
+          if [ -n "$CF_EMAIL" ]; then
+            curl -s https://api.cloudflare.com/client/v4/user \
+              -H "X-Auth-Key: $CF_TOKEN" -H "X-Auth-Email: $CF_EMAIL" \
+              | python3 -c "import sys,json; d=json.load(sys.stdin); print('global key valid:', d.get('success'), '| errors:', d.get('errors'))"
+          else
+            echo "no CLOUDFLARE_EMAIL set — if the credential is a Global API Key rather than a scoped token, wrangler needs that too."
+          fi
 
       - name: Ensure Pages project exists
         if: steps.cf.outputs.ready == 'true'

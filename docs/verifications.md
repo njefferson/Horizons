@@ -417,15 +417,28 @@ RAW_ACCOUNT: ***              ← present
 Cloudflare secrets not configured — skipping deploy.
 ```
 
-`CLOUDFLARE_ACCOUNT_ID` is set; **`CLOUDFLARE_API_TOKEN` is not** (or is stored under a
-different name). Two separate things went wrong and only one of them is Noah's:
+**Both faults were mine.**
 
-1. **The secret is missing.** Needs his hands — Settings → Secrets and variables →
-   Actions. The name must be exactly `CLOUDFLARE_API_TOKEN`.
-2. **The workflow called that success**, which is mine. The skip-quietly behaviour was
-   correct while there was no site to publish; the moment `public/index.html` existed it
-   became a green run that shipped nothing — the very shape V-10 is about. It is now a
-   **hard failure** that names the missing secret (never its value).
+1. **The secret was never missing — it is named `CLOUDFLARE_API_KEY`.** The workflow
+   read only `CLOUDFLARE_API_TOKEN`, found nothing, and I reported the secret as absent
+   on the strength of an empty variable. An empty read of *the name I chose to look for*
+   is not evidence that no credential exists. The workflow now accepts **either name**,
+   and **logs which one it found** — the name is safe to print and it saves the next hour
+   of guessing; the value never is.
+2. **The workflow called a non-deploy "success".** Skipping quietly was right while there
+   was no site to publish; the moment `public/index.html` existed it became a green run
+   that shipped nothing — the very shape V-10 is about. It is now a **hard failure** that
+   names what is missing.
+
+> **Same error as V-11, one hour later.** There, a cached index was read as the current
+> state of the repo. Here, an unset variable was read as the absence of a credential. Both
+> times an instrument's silence got reported as a fact about the world, and both times it
+> was used to tell Noah something about his own setup that was not true.
+
+**Still open:** whether the stored value is a *scoped API token* or a *Global API Key*.
+They authenticate differently — a Global Key needs `X-Auth-Key` + `X-Auth-Email`, so it
+would also need `CLOUDFLARE_EMAIL`. The workflow now probes both and prints which one
+answers, so the next run says which it is instead of guessing.
 
 ---
 
