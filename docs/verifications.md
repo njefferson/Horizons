@@ -438,6 +438,16 @@ never been observed passing is not a gate, it is a file.** The fix for the class
 | Proven locally | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
 | **Proven in CI** | **Run 5, `721f59e`, `success`** — observed, not assumed. The first green run this workflow has ever had. |
 
+> **Addendum, 2026-07-28 evening — the rule was broken by its author the same day.**
+> Run 17 (`102af90`) was **red and unwatched**: a `git add -A` on a docs correction swept
+> the half-built ⓘ-panel into that commit, pairing the new page with the old smoke test.
+> The push whose own commit message was about watching runs went red, and nobody looked
+> until the next commit's pre-push check happened to surface it. Run 18 (`da9cb1f`)
+> restored green — watched this time. Two mechanical consequences, so this stops being
+> willpower: **stage deliberately when the tree holds unrelated in-flight work** (`add -A`
+> is how a docs fix ships half a feature), and every push's run gets opened before the next
+> claim of green — which is the rule this row already stated.
+
 **And the Deploy workflow's runs were watched too, because that is the whole point of this
 row.** Run 1 on `721f59e` and run 3 on `fac16df`: guard step green, **all five deploy steps
 `skipped`**, nothing published. Run 3 is the stronger evidence — by then `public/` existed
