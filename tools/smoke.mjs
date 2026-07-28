@@ -220,6 +220,99 @@ try {
   is(pageErrors.length, 0, pageErrors.length ? `console/page errors: ${pageErrors.join(' | ')}` : 'none');
 
   await ctx.close();
+
+  // --- Triage: the heat pass and the six clarify routes (Phase 2) -----------
+  // A fresh context so the inbox starts empty and the counts are exact. Capture
+  // six items, drain the heat pass, then route all six ways and prove — from the
+  // exported log — that each route committed its own terminal event, not merely
+  // the gate's generic cure.
+  const tctx = await browser.newContext({ timezoneId: 'America/Denver', locale: 'en-US', acceptDownloads: true });
+  const tpage = await tctx.newPage();
+  const tErrors = [];
+  tpage.on('pageerror', (e) => tErrors.push(String(e)));
+  tpage.on('console', (m) => { if (m.type() === 'error') tErrors.push(m.text()); });
+  await tpage.goto(url, { waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.click('#about-close');                 // dismiss the first-run panel
+  await tpage.waitForSelector('body[data-intro-dismissed=true]');
+
+  console.log('\nTriage — capture fills the inbox');
+  for (const t of ['do a two-minute thing', 'a real next step', 'someone owes me this',
+    'maybe one day', 'keep for reference', 'not a thing after all']) {
+    await tpage.fill('#capture', t);
+    await tpage.click('#capture-form button[type=submit]');
+  }
+  await tpage.waitForFunction(() => document.querySelectorAll('.card').length === 6);
+  await tpage.waitForSelector('#triage:not([hidden])');
+  is((await tpage.locator('#triage-gauge').textContent())?.includes('6 to clarify'), true,
+    'the inbox gauge counts every unclarified item');
+  is((await tpage.locator('#triage-prompt').textContent()), 'Hot or cold?',
+    'the heat pass leads, before clarify');
+
+  console.log('\nTriage — the heat pass drains');
+  // Six taps of Hot; the pass is done when the prompt turns to Clarify.
+  for (let i = 0; i < 6; i++) {
+    await tpage.click('#triage-actions .route');     // "Hot" is the first button
+    await tpage.waitForTimeout(20);
+  }
+  await tpage.waitForFunction(() =>
+    document.querySelector('#triage-prompt')?.textContent?.startsWith('Clarify'));
+  is((await tpage.locator('#triage-prompt').textContent())?.startsWith('Clarify (hot)'), true,
+    'heat recorded, and clarify now shows the item as hot');
+
+  console.log('\nTriage — the six routes, each terminating on its own');
+  // The clarify buttons are label+hint; match by their visible label. Route in
+  // the capture order the queue presents (oldest first).
+  const routeByLabel = async (label) => {
+    const before = Number((await tpage.locator('#triage-gauge').textContent() || '').match(/(\d+) to clarify/)?.[1] ?? 'NaN');
+    await tpage.locator('#triage-actions .route', { hasText: label }).first().click();
+    // Either the gauge drops by one, or the inbox goes clear.
+    await tpage.waitForFunction((n) => {
+      const g = document.querySelector('#triage-gauge')?.textContent || '';
+      return g.includes('Inbox clear') || Number(g.match(/(\d+) to clarify/)?.[1]) === n - 1;
+    }, before);
+  };
+
+  await routeByLabel('Do now');
+  await tpage.waitForSelector('.donow');             // added a microtask after the route commits
+  is(await tpage.locator('.donow').isVisible(), true,
+    'routing to Do now starts the visible two-minute timer');
+  is((await tpage.locator('.donow-label').textContent())?.includes('Two minutes'), true,
+    'and the timer says what it is, in words');
+  await routeByLabel('Next action');
+  await routeByLabel('Waiting for');
+  await routeByLabel('Someday');
+  await routeByLabel('Reference');
+  await routeByLabel('Trash');
+
+  await tpage.waitForSelector('#triage', { state: 'hidden' });
+  is((await tpage.locator('#triage-gauge').textContent()), 'Inbox clear.',
+    'the inbox clears and the surface hides itself');
+  is(await tpage.locator('.card').count(), 5, 'trash removed exactly its own node; the other five remain held');
+
+  console.log('\nTriage — every route left its terminal event in the log');
+  await tpage.click('#open-about');
+  const [tdl] = await Promise.all([tpage.waitForEvent('download'), tpage.click('#export')]);
+  const tlog = JSON.parse(readFileSync(await tdl.path(), 'utf8')).logJsonl
+    .split('\n').filter(Boolean).map((l) => JSON.parse(l));
+  const kindCount = (k) => tlog.filter((e) => e.kind === k).length;
+  is(kindCount('heat.set'), 6, 'six heat.set events — one per item');
+  is(kindCount('clarify.routed'), 6, 'six clarify.routed events — one per route');
+  is(kindCount('node.trashed'), 1, 'trash committed node.trashed');
+  is(tlog.some((e) => e.kind === 'node.kind.changed' && e.payload?.to === 'waiting-for'), true,
+    'waiting-for changed the node kind, not just its clock');
+  is(kindCount('menu.item.added'), 2, 'someday and reference each landed on the Menu');
+  is(tlog.filter((e) => e.kind === 'clock.set').length >= 3, true,
+    'do-now, next-action and waiting-for each set a clock');
+  await tpage.click('#about-close');
+  // The load-bearing invariant on the real write path, read from the app's own
+  // projection: after routing every way, nothing the UI touched is silent.
+  is((await tpage.locator('#gauge').textContent())?.includes('0 silent'), true,
+    'law 1 holds across all six routes — the held gauge reads 0 silent');
+
+  console.log('\nTriage — no page errors');
+  is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
+  await tctx.close();
 } finally {
   await browser.close();
   server.close();

@@ -171,6 +171,62 @@ button.ghost {
   overflow-wrap: anywhere;
 }
 
+/* --- triage: heat pass and clarify --------------------------------------- */
+
+.triage {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.triage-gauge { margin: 0 0 0.5rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.triage-prompt { margin: 0 0 0.5rem; font-size: 1.0625rem; font-weight: 600; }
+.triage-card {
+  margin: 0 0 1rem;
+  font-size: 1.0625rem;
+  overflow-wrap: anywhere;   /* a long captured token must not overflow */
+}
+.triage-actions {
+  display: grid;
+  /* min(9rem, 100%): the column floor collapses to the container's width
+     before it can force a horizontal scrollbar — at 320px/200% one 9rem
+     column is wider than the viewport, and the bare minmax overflowed. */
+  grid-template-columns: repeat(auto-fit, minmax(min(9rem, 100%), 1fr));
+  gap: 0.5rem;
+}
+.route {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+.route-label { font-weight: 600; }
+.route-hint { font-size: 0.8125rem; color: var(--ink-soft); }
+
+.donow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.donow-label { color: var(--warm); font-variant-numeric: tabular-nums; }
+
 /* --- the list ------------------------------------------------------------- */
 
 .section {

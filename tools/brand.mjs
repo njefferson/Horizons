@@ -267,7 +267,9 @@ const UI_PAIRS = [
   ['ink', 'bg', 4.5], ['ink', 'surface', 4.5],
   ['ink-soft', 'bg', 4.5], ['ink-soft', 'surface', 4.5],
   ['accent', 'bg', 3], ['accent', 'surface', 3],
-  ['warm', 'surface', 4.5],
+  // --warm is the do-now timer label on the timer's own --bg panel, as well as
+  // status text on --surface. Both pairs are held: the timer introduced warm/bg.
+  ['warm', 'surface', 4.5], ['warm', 'bg', 4.5],
   // --line draws the border of the text input and ghost buttons — a UI-component
   // boundary (WCAG 1.4.11), not decoration. Carved out with no floor until the
   // audit; now held to 3:1 like any graphical object.

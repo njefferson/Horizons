@@ -58,6 +58,13 @@ const REGISTRY = {
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a',
   ],
   'with cards': ['.card-title', '.card-when', '#status'],
+  // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
+  // shows the six routes, each a label over a hint. Every visible pair is
+  // audited — the hint is the lowest-contrast text on the surface, so it is
+  // named explicitly rather than left to axe alone.
+  'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route'],
+  'clarify': ['.triage-gauge', '.triage-prompt', '.triage-card',
+    '.route', '.route-label', '.route-hint'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -255,6 +262,22 @@ try {
     await auditContrast(page, 'with cards', theme);
     await auditAxe(page, 'with cards', theme);
     await auditTargets(page, 'with cards', theme);
+
+    // State 3b: the triage surface. Capturing a card left an unrouted node, so
+    // the heat pass is already showing. Audit it, then take the heat tap to
+    // reveal the six clarify routes and audit those too.
+    await page.waitForSelector('#triage:not([hidden]) .route');
+    await auditContrast(page, 'heat pass', theme);
+    await auditAxe(page, 'heat pass', theme);
+    await auditTargets(page, 'heat pass', theme);
+    await auditFocusRings(page, 'heat pass', theme, ['#triage-actions .route']);
+
+    await page.click('#triage-actions .route');   // Hot — advances to clarify
+    await page.waitForSelector('#triage-actions .route .route-hint');
+    await auditContrast(page, 'clarify', theme);
+    await auditAxe(page, 'clarify', theme);
+    await auditTargets(page, 'clarify', theme);
+    await auditFocusRings(page, 'clarify', theme, ['#triage-actions .route']);
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

@@ -6,7 +6,7 @@
 // arbitrary moment and grows a timezone bug that only shows up in real use.
 
 import type {
-  AppEvent, ClockKind, ISODateTime, MenuCategory, NodeId, NodeKind, VaultId,
+  AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, MenuCategory, NodeId, NodeKind, VaultId,
 } from './events.ts';
 
 export interface Clock {
@@ -29,6 +29,13 @@ export interface NodeState {
   lastDone: ISODateTime | null;
   comfortWindowDays: number | null;
   intervalDays: number | null;
+  /** Triage state (Phase 2). `heat` from the heat pass; `route` from clarify —
+   *  a non-null route means the item has been clarified and left the inbox. */
+  heat: Heat | null;
+  route: ClarifyRoute | null;
+  /** Retained from capture so clarify ordering can run a `boss`-tagged item
+   *  hotter (build-plan item 16). */
+  sourceTags: string[];
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -104,6 +111,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       id, vault, kind: 'action', title: '', parent: null,
       trashed: false, mergedInto: null, clocks: {}, onMenu: null,
       lastDone: null, comfortWindowDays: null, intervalDays: null,
+      heat: null, route: null, sourceTags: [],
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -179,6 +187,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
+        if (wins(n.stamps['sourceTags'], o)) { n.sourceTags = e.payload.sourceTags ?? []; n.stamps['sourceTags'] = o; }
         break;
       }
       case 'interrupt.captured': {
@@ -308,6 +317,17 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.toKind; n.stamps['kind'] = o; }
+        break;
+      }
+
+      case 'heat.set': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['heat'], o)) { n.heat = e.payload.heat; n.stamps['heat'] = o; }
+        break;
+      }
+      case 'clarify.routed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['route'], o)) { n.route = e.payload.route; n.stamps['route'] = o; }
         break;
       }
 

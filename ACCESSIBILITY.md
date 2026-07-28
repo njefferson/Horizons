@@ -207,6 +207,7 @@ which is a separate question — an icon is seen once, a surface is lived in.
 | accent / bg | 8.92:1 | 9.45:1 | 3:1 |
 | accent / surface | 10.07:1 | 8.21:1 | 3:1 |
 | warm / surface | 7.20:1 | 9.73:1 | 4.5:1 |
+| warm / bg | 6.38:1 | 11.21:1 | 4.5:1 |
 | line / surface | 3.45:1 | 3.42:1 | 3:1 (WCAG 1.4.11 — it is a control boundary) |
 
 **`--warm` is not the brand warm, and that is the point.** `#F5C978` is a
@@ -223,6 +224,15 @@ rule as B-01, applied to layout instead of pressure.
 text input and every ghost button, so it is held to WCAG 1.4.11's 3:1 and joins
 the gate (`brand.mjs` UI_PAIRS) — the audit found it carved out with no floor at
 1.45:1, invisible to both gates.
+
+**The triage surface (Phase 2) adds no new tokens, only one new pair.** The heat
+and clarify cards live on `--surface`; the route buttons and the do-now timer sit
+on `--bg`. Every pairing was already covered except the timer label, `--warm` on
+`--bg` — added above and to the `brand.mjs` gate in the commit that introduced the
+timer. The rendered surface is also audited directly: `tools/a11y.mjs` renders
+both the heat and clarify passes in both themes, measures the route buttons' focus
+rings, and judges the lowest-contrast text on the surface — the route hint
+(`--ink-soft` on `--bg`, 6.48:1 light).
 
 **The gate covers these.** `tools/brand.mjs` reads the tokens out of
 `public/app.css` for both themes and fails on any pair below its floor, so B-08's

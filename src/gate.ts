@@ -320,7 +320,13 @@ function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): AppEvent 
       };
 
     // Routing must terminate somewhere legal. `someday`/`reference` land on the
-    // Menu; everything else takes a clock.
+    // Menu; everything else takes a clock. NOTE: this branch is redundant
+    // defence-in-depth — it is unreachable on the real write paths, because a node
+    // is always already covered by the time it is routed (its capture clock, or an
+    // earlier cure in the same batch), and clarify.routed removes no coverage, so
+    // `newlySilent` never attributes silence to a route. It is kept so the
+    // invariant "every silent-risk event carries a cure" stays total. See ADR-0029
+    // and the two safety-net tests in test/triage.test.ts.
     case 'clarify.routed': {
       const route = (cause.payload as { route: string }).route;
       if (route === 'someday' || route === 'reference') {

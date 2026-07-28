@@ -205,11 +205,13 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.2.4` (`265c9f0`), promoted 2026-07-28** — Noah's explicit "Promote and
-  continue", onto a fully green staging (spine run 25, all 8 gates). This is a real §7 pass,
-  unlike the earlier troubleshooting fast-forward. `quietkeep.pages.dev` now serves the
-  current app: capture, the ⓘ panel, export, and every audit fix. `staging` and `main` are
-  level; new work branches from `staging` again.
+- **`main` is at `0.3.0` (`d4b40f7`), promoted 2026-07-28** — Noah's explicit "Promote and
+  continue", onto a fully green staging (spine run 28, all gates, the smoke walk and a11y
+  gate both under the real CSP). A real §7 pass, verified by fetch (`origin/main` ==
+  `origin/staging` == `d4b40f7`), unlike the earlier troubleshooting fast-forward.
+  `quietkeep.pages.dev` now serves the public capture surfaces behind the strict CSP. The
+  0.2.4 promote (`265c9f0`, spine run 25) was the prior real §7 pass. Phase 2 (triage) is
+  building on `staging` **ahead** of `main` and waits there for the next promote.
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
@@ -239,9 +241,9 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export, at 0.2.4 on
-  both branches. `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`,
-  both live and current.
+- **Code:** Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export. `main` is
+  at 0.3.0 (public capture + CSP); `staging` carries Phase 2 (triage) on top, unpromoted.
+  `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`, both live.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
   committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).
@@ -251,6 +253,25 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-28 (evening)** — **Phase 2 is building on `staging`: the app can triage what it
+  holds (0.4.0 CAPABILITY, [ADR-0029](docs/adr/0029-triage-model.md)).** Two passes, both
+  computed from the log: an optional **heat** pass (hot/cold, `heat.set`) and a forced-choice
+  **clarify** pass with six routes, each committing `clarify.routed` **plus its own terminal
+  event** in one gated commit — do-now/next-action/waiting-for clock, waiting-for also changes
+  the node kind, someday/reference to the Menu, trash trashes. Building the §6 proof
+  corrected a false claim I had written into the first draft: the gate's `clarify.routed`
+  cure is **unreachable** — a node is always already covered by the time it is routed, and
+  routing removes no coverage, so the cure never fires. The real floor is that a captured
+  node is covered from capture onward; a bare route (terminal event forgotten) stays under
+  its capture clock, and when that clock is also stripped it is `clock.cleared`'s cure that
+  holds — both asserted, both made to fail first. `fold` learned
+  `heat`/`route`/`sourceTags` (LWW-stamped; snapshot round-trip tested after the audit's lossy
+  finding). 40 unit tests; the smoke walk now captures six, drains the heat pass, routes all
+  six ways and reads `0 silent` from the held gauge; a11y renders both passes in both themes.
+  A 320px/200% overflow the triage grid introduced was caught by the a11y gate and fixed
+  (`minmax(min(9rem,100%),1fr)`). **Lands on `staging`, waits for the adversarial audit and
+  Noah's word — not promoted.** The 0.3.0 promote to `main` was a real §7 pass (verified by
+  fetch), Noah's earlier "Promote and continue" this session.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.

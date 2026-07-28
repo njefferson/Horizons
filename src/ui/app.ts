@@ -13,6 +13,7 @@ import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
+import { mountTriage } from './clarify.ts';
 
 const now = () => Date.now();
 
@@ -80,6 +81,10 @@ async function main(): Promise<void> {
   input.value = await session.draft();
   render(session);
 
+  // The triage surface (heat pass + clarify). It re-renders the held list when
+  // it moves an item, and capture refreshes it (a new item joins the inbox).
+  const triage = mountTriage(session, () => render(session));
+
   // Three URL entrances, all landing in the same capture (ADR-0008):
   //  - ?capture=1     the manifest shortcut — just focus the empty line
   //  - ?text=         the documented public endpoint (a hostile link can reach it)
@@ -88,6 +93,7 @@ async function main(): Promise<void> {
   // unclarified item — with a visible confirm and undo; none can set a clock,
   // route, complete, or delete. Text is stored as text and shown with textContent.
   await handleUrlEntrances(session, status, input);
+  triage.refresh();
 
   // Per keystroke. An interruption mid-capture is the EXPECTED case for this
   // audience, not the edge case (ADR-0008).
@@ -127,6 +133,7 @@ async function main(): Promise<void> {
     void session.setDraft('').catch(() => { /* stale draft self-heals on next keystroke */ });
     try {
       render(session);
+      triage.refresh();
     } catch {
       // A render bug must not contradict a landed write; the card appears on
       // next load. landed stays the truth.
