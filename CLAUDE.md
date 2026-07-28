@@ -47,6 +47,15 @@ Epigraph: *"It holds the rest, so you can rest."*
 - **Voice:** adult, calm, shame-free, civilian. No military vocabulary in naming
   or brand copy. Never childlike or mascot-cute. No diagnosis-flavoured copy, no
   sentiment scoring, no cause attribution.
+- **No spiral. Anywhere.** Not in the identity, not in a loading state, not in an
+  illustration. **A spiral is loss of control and it is anxiety-laden** — it is the
+  shape of tightening inward with no way out, and it names the condition this app
+  meets people in. It belongs beside *no red walls* and *no streaks* as something
+  the product structurally cannot say ([ADR-0025](docs/adr/0025-visual-identity.md)).
+- **The voice rules bind the artwork, not only the words.** Check a mark against
+  the audience's own vocabulary, not only against other logos. "Does this look like
+  something else" is a collision check, and it is a lesser question than "what does
+  this mean to the people who will use it".
 - **Storage is IndexedDB via Dexie.** `localStorage` is banned outright.
 
 ## Branches & releases

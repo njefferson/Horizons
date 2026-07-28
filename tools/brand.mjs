@@ -38,6 +38,22 @@ const ratio = (a, b) => {
   return (x + 0.05) / (y + 0.05);
 };
 
+// ------------------------------------------------------ the palette (B-10)
+// Kept here as named constants so the renderer and the checker cannot disagree
+// with each other about what the brand is.
+
+const FIELD = '#F4F1E9';       // warm paper
+const WALL = '#33425F';        // the sheltering form
+const LIGHT = '#F5C978';       // the lit opening — the one warm note
+const TYPE_STRONG = '#F7F4EE'; // wordmark on the preview
+const TYPE = '#E9EDF4';        // secondary type on the preview
+
+// The preview's source image is dusk-dark. This lift brightens it without
+// washing it out — measured against the alternatives at 1.8 and 2.4, both of
+// which flatten the scene and kill the one small lamp that makes it read as
+// *lit* rather than merely blue.
+const SOCIAL_LIFT = 'brightness(1.35) saturate(1.05)';
+
 // ------------------------------------------------------------------- the sizes
 
 const ICONS = [
@@ -64,7 +80,7 @@ async function renderIcons(browser) {
   for (const { file, size } of ICONS) {
     await page.setViewportSize({ width: size, height: size });
     await page.setContent(
-      `<style>html,body{margin:0;padding:0;background:#131B2E}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
+      `<style>html,body{margin:0;padding:0;background:${FIELD}}svg{display:block;width:${size}px;height:${size}px}</style>${svg}`,
       { waitUntil: 'load' },
     );
     await page.screenshot({ path: join(BRAND, file), omitBackground: false });
@@ -79,14 +95,14 @@ async function renderIcons(browser) {
 function socialHtml(b64, withText) {
   return `<style>
     html,body{margin:0;padding:0;width:${SOCIAL.width}px;height:${SOCIAL.height}px;overflow:hidden}
-    .wrap{position:relative;width:${SOCIAL.width}px;height:${SOCIAL.height}px;background:#131B2E}
-    .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+    .wrap{position:relative;width:${SOCIAL.width}px;height:${SOCIAL.height}px;background:${WALL}}
+    .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:${SOCIAL_LIFT}}
     .text{position:absolute;right:88px;top:50%;transform:translateY(-50%);width:620px;text-align:right;
       font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
       visibility:${withText ? 'visible' : 'hidden'}}
-    h1{margin:0;font-size:104px;line-height:1;font-weight:600;letter-spacing:-.02em;color:#F7F4EE}
-    p{margin:26px 0 0;font-size:38px;line-height:1.34;font-weight:400;color:#E4E9F2}
-    .rule{margin:34px 0 0 auto;width:132px;height:5px;border-radius:3px;background:#F6CE86}
+    h1{margin:0;font-size:104px;line-height:1;font-weight:600;letter-spacing:-.02em;color:${TYPE_STRONG}}
+    p{margin:26px 0 0;font-size:38px;line-height:1.34;font-weight:400;color:${TYPE}}
+    .rule{margin:34px 0 0 auto;width:132px;height:5px;border-radius:3px;background:${LIGHT}}
   </style>
   <div class="wrap">
     <img class="bg" src="data:image/png;base64,${b64}">
@@ -223,9 +239,9 @@ async function checkSocial(browser) {
   // Two zones, because the two type colours are different: the wordmark's band
   // and the tagline's, both across the full width the text can occupy.
   const zones = [
-    { name: 'wordmark  #F7F4EE', fg: '#F7F4EE', x0: 600, x1: 1210, y0: 190, y1: 290, min: 4.5 },
-    { name: 'tagline   #E4E9F2', fg: '#E4E9F2', x0: 600, x1: 1210, y0: 310, y1: 420, min: 4.5 },
-    { name: 'rule      #F6CE86', fg: '#F6CE86', x0: 1050, x1: 1200, y0: 440, y1: 465, min: 3.0 },
+    { name: `wordmark  ${TYPE_STRONG}`, fg: TYPE_STRONG, x0: 600, x1: 1210, y0: 190, y1: 290, min: 4.5 },
+    { name: `tagline   ${TYPE}`, fg: TYPE, x0: 600, x1: 1210, y0: 310, y1: 420, min: 4.5 },
+    { name: `rule      ${LIGHT}`, fg: LIGHT, x0: 1050, x1: 1200, y0: 440, y1: 465, min: 3.0 },
   ];
   for (const z of zones) {
     let worst = Infinity, worstAt = null;

@@ -28,13 +28,29 @@ and SVG is text, so the identity is diffable and reviewable like everything else
 
 | Candidate | Why not |
 |---|---|
-| Thin spiral | The stroke and its gap both vanish at 48px. Reads as an **@ sign**, and is one frame from a loading spinner. |
-| Bold loop | The best *idea* of the three — something leaves and returns, which is the product. Same **@ / spinner** collision, plus a drop shadow that muddies at small sizes and breaks on light surfaces. |
+| Thin spiral | The stroke and its gap both vanish at 48px. Reads as an **@ sign**, and is one frame from a loading spinner. **And it spirals** — see below, which is the disqualifying reason. |
+| Bold loop | The best *idea* of the three — something leaves and returns, which is the product. Same **@ / spinner** collision, a drop shadow that muddies at small sizes and breaks on light surfaces, and **the same spiral problem**. |
 | Lit opening | The right idea and the right bones. But the outer form was **slate on navy**, a luminance step small enough that at 48px the form disappears and only the amber survives; and its silhouette — rounded top, straight sides, flat base — **reads as a headstone**. For an app whose entire promise is that nothing you put in is lost, a grave marker is the worst reading available. |
 
-The drawn mark keeps the third one's idea and fixes both faults: the shelter is a **rounded
-square** — a wall, not a marker — measured at 3.34:1 against the field, and the arch now
-appears only in the warm opening.
+The drawn mark keeps the third one's idea and fixes both faults: the wall is a **rounded
+square** — a wall, not a marker — and the arch now appears only in the warm opening.
+
+**No spiral, and that rule outranks every legibility argument above.** Noah's call:
+*"spiraling looks bad… a spiral is the loss of control, and anxiety laden."*
+
+That is the whole reason, and it is not a matter of taste. **A spiral is loss of control.**
+It is the shape of a thing tightening inward with no way out, and the word carries anxiety
+with it wherever this app's users hear it. Quietkeep exists precisely because control has
+been lost — that is the condition it meets people in — so putting the loss on the front
+door tells them the app is the feeling rather than the answer to it. However elegant the
+geometry, that is a voice failure, and the voice rules do not bend for a nice shape. The
+same rule that killed *wince* kills this.
+
+This generalises, and it is why the check order gains a step. **A mark has to be checked
+against the audience's own vocabulary, not only against other logos.** Every check run on
+those two candidates was a *collision* check — does this look like another brand, another
+icon, a spinner. None asked what the shape *means to the people who will use it*. That is
+the visual equivalent of never saying the name aloud.
 
 **The two background candidates split on something that had nothing to do with quality.**
 The rejected one — scattered dots on curving arcs — is arguably the cleaner image, and it
@@ -61,6 +77,14 @@ as a picture. *It holds the rest, so you can rest.*
 - **No red, no amber in the identity.** `--light` is the one warm colour and it means *lit*,
   never *late*. B-01's no-red-walls rule is a palette rule too — a colour that means
   "attention" in the brand will eventually mean "you failed" in the UI.
+- **The field is light and the wall is dark, and that inversion was forced by arithmetic.**
+  Noah asked for something less dark. Paling the whole mark is impossible: the three-step
+  ladder needs ~9:1 of range, so a light field leaves nowhere for the light to go — every
+  lift-everything variant failed at 2.0–2.4:1. Inverting the wall keeps the opening reading
+  as *lit*, and it measured **better**: 8.92:1 / 6.48:1 against the old 3.34:1 / 3.45:1.
+  Recorded in `ACCESSIBILITY.md` B-10 with the rejected variants.
+- **No spiral, ever**, per the rule above. It belongs with *no red walls* and *no streaks*
+  as a thing the identity structurally cannot say.
 - The app shell does not exist yet, so nothing consumes these icons. They are ready for the
   manifest the day Phase 1 lands.
 

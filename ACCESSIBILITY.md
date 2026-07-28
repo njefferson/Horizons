@@ -101,21 +101,44 @@ it**. `tools/brand.mjs` is that gate for these.
 
 | Token | Value | What it is |
 |---|---|---|
-| `--field` | `#131B2E` | the deep field the mark sits on |
-| `--shelter` | `#5C6E8F` | the holding form — a wall, not a marker |
-| `--light` | `#F6CE86` | the lit opening. The **only** warm note in the identity |
+| `--field` | `#F4F1E9` | warm paper — the field the mark sits on |
+| `--wall` | `#33425F` | the sheltering form — a wall, not a marker |
+| `--light` | `#F5C978` | the lit opening. The **only** warm note in the identity |
 | `--type-strong` | `#F7F4EE` | the wordmark |
-| `--type` | `#E4E9F2` | secondary type on dark |
+| `--type` | `#E9EDF4` | secondary type on dark |
 
 **Measured, not eyeballed** — every pair the mark actually renders:
 
 | Pair | Ratio | Needs | Why that threshold |
 |---|---|---|---|
-| shelter / field | **3.34:1** | 3:1 | WCAG 1.4.11, non-text graphical object |
-| light / shelter | **3.45:1** | 3:1 | same |
-| light / field | **11.51:1** | — | comfortably clear |
-| wordmark / plate | **11.26:1** worst | 4.5:1 | measured against the actual social-preview pixels behind it, at the worst sample |
-| tagline / plate | **10.60:1** worst | 4.5:1 | same |
+| wall / field | **8.92:1** | 3:1 | WCAG 1.4.11, non-text graphical object |
+| light / wall | **6.48:1** | 3:1 | same |
+| wordmark / plate | **8.50:1** worst | 4.5:1 | measured against the actual social-preview pixels behind it, at the worst sample |
+| tagline / plate | **8.45:1** worst | 4.5:1 | same |
+| rule / plate | **7.34:1** worst | 3:1 | same |
+
+### Why the field is light, and why that was not just a taste call
+
+The first palette was near-black (`#131B2E` field, `#5C6E8F` wall) and Noah asked for
+something less dark. **Simply paling everything is impossible here, and the arithmetic says
+why.** The mark is a three-step ladder — wall must clear 3:1 above the field, and the light
+must clear 3:1 above the wall — so it needs roughly a **9:1 span** end to end. A light field
+leaves no room upward; every "lift the whole thing" variant failed the second step at
+2.0–2.4:1.
+
+**So the wall inverted instead.** Light paper, dark wall, warm opening. The opening still
+reads as *lit* because what surrounds it is dark — that is the one property the whole idea
+depends on, and paling the wall would have destroyed it.
+
+The lighter palette is also **measurably more legible**, which is the part worth keeping:
+the ladder went from 3.34:1 / 3.45:1 to **8.92:1 / 6.48:1**, and in grayscale the old wall
+nearly merged with its field at 32–48px where the new one stays crisp. The taste call and
+the measurement agreed.
+
+The social preview's source image is dusk-dark and is lifted `brightness(1.35)
+saturate(1.05)` in the composite. Heavier lifts were rendered and rejected: at 1.8 and 2.4
+the scene flattens and the single small lamp stops reading as a light, which is the whole
+subject.
 
 **The warm note is never an alarm.** `--light` is the app's one warm colour and it
 means *lit*, *held*, *here* — never *late* and never *wrong*. B-01's no-red-walls
@@ -127,11 +150,12 @@ eventually mean "you failed" in the UI.
 the field stay separated with hue removed — the same pass condition B-01 sets for
 every pressure surface, applied to the identity so the two cannot drift apart.
 
-**Proven in CI, not just locally** — Spine run 7, `fac16df`, green, with every
-ratio above identical to the local run. Per [V-10](docs/verifications.md), a gate
-nobody has watched pass is a file; this one was watched. CI installed **chromium
-build v1194**, which is the revision `playwright-core` 1.56.0 pins to — the
-matched pair held on a machine that is not this sandbox.
+**Proven in CI, not just locally.** Spine run 7 (`fac16df`) was watched green with
+every ratio identical to the local run, on the first palette; the palette above
+supersedes it and its run is watched the same way. Per
+[V-10](docs/verifications.md), a gate nobody has watched pass is a file. CI
+installed **chromium build v1194**, the revision `playwright-core` 1.56.0 pins to
+— the matched pair held on a machine that is not this sandbox.
 
 ---
 

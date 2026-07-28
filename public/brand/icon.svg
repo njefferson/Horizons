@@ -14,21 +14,25 @@
     that nothing you put in is lost. The arch here appears ONLY in the warm
     opening; the silhouette is a rounded square, which is a shelter and a wall.
 
-    Colours are the design-time bindings recorded in ACCESSIBILITY.md B-09, with
+    Colours are the design-time bindings recorded in ACCESSIBILITY.md B-10, with
     their measured ratios. Nothing here is decided at the keyboard.
 
     Maskable-safe: the artwork sits inside the centre 80% circle (r=204.8 about
     256,256). The shelter's furthest painted point is ~199.8 from centre.
   -->
 
-  <!-- Field. Full-bleed and opaque: iOS composites transparency onto black. -->
-  <rect width="512" height="512" fill="#131B2E"/>
+  <!-- Field. Warm paper, full-bleed and opaque: iOS composites transparency onto
+       black, and an icon that sits among other icons on a bright screen should not
+       be the darkest thing there. -->
+  <rect width="512" height="512" fill="#F4F1E9"/>
 
-  <!-- The shelter. Rounded square — a wall, not a marker. 3.34:1 against the field. -->
-  <rect x="96" y="96" width="320" height="320" rx="64" fill="#5C6E8F"/>
+  <!-- The shelter. Rounded square — a wall, not a marker. 8.92:1 against the field. -->
+  <rect x="96" y="96" width="320" height="320" rx="64" fill="#33425F"/>
 
   <!-- The opening, lit. The single warm element in the whole mark.
-       Fully rounded head, softly rounded base — an entrance, never a slab. -->
+       Fully rounded head, softly rounded base — an entrance, never a slab.
+       It still reads as LIT because the wall around it is dark; that is why the
+       wall inverted rather than the whole mark simply getting paler. -->
   <path d="M192,224 A64,64 0 0 1 320,224 L320,332 A20,20 0 0 1 300,352 L212,352 A20,20 0 0 1 192,332 Z"
-        fill="#F6CE86"/>
+        fill="#F5C978"/>
 </svg>
