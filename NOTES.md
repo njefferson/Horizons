@@ -206,16 +206,22 @@ That error cost the Perennial round.
   slug in the same commit, which is the condition [ADR-0017](docs/adr/0017-licensing.md)
   set. `Horizons` survives only as *domain* vocabulary — *higher horizons* (law 4) and the
   *horizon-integrity engine* — and a check asserts it was not lost to a rename.
-- **Phase 0 (the spine) is built and on `staging`** — log, fold, write gate, snapshot,
-  export/import, 14 tests, all four exit criteria met. **`main` is docs-only and behind,
-  awaiting Noah's explicit "promote"** (Doctrine §7).
+- **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
+  tests, all four exit criteria met.
+- **`main` and `staging` are identical at `f1092e8`** (fast-forward, no merge). See the
+  note under Deploy: this was **not** a §7 pass.
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
-- **Deploy:** Cloudflare Pages. `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` are in
-  repository secrets (Noah, 2026-07-28). Subdomain `quietkeep.pages.dev`, production off
-  `main`, `staging.quietkeep.pages.dev` off `staging`. **The Pages project does not exist
-  and nothing has been deployed** — there is no `public/` and no shell to serve yet. The
-  workflow is in place and skips cleanly until there is.
+- **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
+  **`CLOUDFLARE_API_KEY`** (the workflow accepts either that or `CLOUDFLARE_API_TOKEN` and
+  logs which name it found). `main` → `quietkeep.pages.dev`, `staging` →
+  `staging.quietkeep.pages.dev`. Both have deployed successfully from CI.
+- **`main` was promoted to troubleshoot, not because the §7 gate passed** (Noah,
+  2026-07-28: *"Promote to main to troubleshoot"*). Neither the branch-alias URL nor the
+  deployment-hash URL would load on his iPad, so the on-device pass **could not happen** —
+  promoting was the diagnostic, and it put a production deployment on a project that had
+  never had one. **Phase 1 is therefore on `main` unverified on real hardware.** Recorded
+  as what it was; it is not a passed gate and must not be cited as one.
 - **Hub wiring:** the app is **not yet** linked from
   `noahjefferson/public/index.html`. That edit is deliberately held until there
   is a deployed page to visit — adding a dead link to the live hub is a site
@@ -231,9 +237,9 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** the Phase 0 spine plus **Phase 1's shell and Dump surface**, on `staging`.
-  `public/index.html` exists, so **the deploy no longer skips** — `staging` publishes to
-  `staging.quietkeep.pages.dev`. `main` is documentation only until Noah promotes.
+- **Code:** the Phase 0 spine plus **Phase 1's shell and Dump surface**, on both branches.
+  `public/index.html` exists, so the deploy no longer skips — `staging` →
+  `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
   committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).

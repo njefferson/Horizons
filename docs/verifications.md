@@ -435,10 +435,46 @@ Cloudflare secrets not configured — skipping deploy.
 > times an instrument's silence got reported as a fact about the world, and both times it
 > was used to tell Noah something about his own setup that was not true.
 
-**Still open:** whether the stored value is a *scoped API token* or a *Global API Key*.
-They authenticate differently — a Global Key needs `X-Auth-Key` + `X-Auth-Email`, so it
-would also need `CLOUDFLARE_EMAIL`. The workflow now probes both and prints which one
-answers, so the next run says which it is instead of guessing.
+**Settled:** the stored value is a **scoped API token** under the name
+`CLOUDFLARE_API_KEY`. Deploy run 9 authenticated with `Bearer` and shipped, so the
+Global-API-Key path (`X-Auth-Key` + `X-Auth-Email`) is not in use and `CLOUDFLARE_EMAIL`
+is not needed.
+
+---
+
+## V-12 · The deployed site will not load on the iPad — **OPEN**
+**Status: OPEN** · 2026-07-28 · **needs Noah's device**
+
+CI publishes successfully and Safari cannot reach the result.
+
+| URL | Source | Noah's iPad | From a session |
+|---|---|---|---|
+| `staging.quietkeep.pages.dev` | branch alias | "connection was lost" | 403 — gateway, tells us nothing |
+| `2020c8fe.quietkeep.pages.dev` | deployment hash | same | 403 — same |
+| `quietkeep.pages.dev` | production, deployed after the promote | **not yet tried** | 403 — same |
+
+**What the two failures already rule out.** The hash URL and the alias are different DNS
+records; both failing means it is **not** a branch-alias provisioning problem, which was
+the first theory. Whatever this is, it is upstream of which name points at the deployment.
+
+**Proven, not assumed:** all three hosts are unreachable from a session — `CONNECT tunnel
+failed, 403`, identical for each, which is [V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven)'s
+policy denial and says nothing about whether the site is up. **A session cannot diagnose
+this row.**
+
+**The one check that splits it**, and it is Noah's to run: open
+**`noahjefferson.pages.dev`** — the hub, same platform, same account, different project —
+on the same device and network.
+
+- Hub loads, Quietkeep does not → Cloudflare-side, this project. The production deploy that
+  followed the promote is the candidate fix.
+- Hub also fails → not the project at all. Something between that iPad and `pages.dev`:
+  DNS filtering, a content blocker, a VPN, or the network's resolver. Cellular with Wi-Fi
+  off confirms it in seconds.
+
+**Consequence while this is open:** [V-00](#v-00--ipados-storage-behaviour--the-reference-platform)
+is blocked again, for a new reason. The storage panel exists and is deployed; it cannot be
+opened. The oldest check in the repo is one working URL away.
 
 ---
 
