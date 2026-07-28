@@ -1,7 +1,12 @@
 # ADR-0018 · Repo slug `Horizons`; Pages subdomain qualified
 
-**Status:** **Superseded pending** — Noah 2026-07-27: *"This app needs a new name."*
-The replacement (ADR-0020) is written when the name exists. · **Date:** 2026-07-27
+**Status:** **Superseded by [ADR-0020](0020-name-perennial.md)** (2026-07-28 — the name is
+Perennial) · **Date:** 2026-07-27
+
+> **Read the superseding record for the reason this one was wrong.** It was not only the
+> hub collision. This ADR assumed the two apps' claims to "horizon" were comparable; they
+> are not. *Clear Horizons* records your **actual** horizon and computes what is visible
+> from where you stand — a literal, load-bearing claim. This app's was figurative.
 
 > **Outcome:** option 1 below — keep both names and differentiate on the hub — was
 > **not** taken. Noah chose to rename this app. The reasoning below is kept because it

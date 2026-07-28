@@ -49,7 +49,8 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0015](0015-ai-never-blocks.md) | Every assisted flow has a working offline rung | Accepted |
 | [0016](0016-gtd-marks-and-original-content.md) | Never use the GTD® marks; all trigger-list content original | Accepted |
 | [0017](0017-licensing.md) | PolyForm Noncommercial 1.0.0 | Accepted |
-| [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Superseded pending** — a rename is coming (Q-02) |
+| [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Superseded by [0020](0020-name-perennial.md)** |
+| [0020](0020-name-perennial.md) | The name is Perennial | **Provisional** — working name, not cleared |
 | [0019](0019-v1-freeze.md) | v1 scope frozen; the dogfood gate defines done | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the

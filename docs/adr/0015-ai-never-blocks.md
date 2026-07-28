@@ -60,7 +60,7 @@ sometimes simply the best tool, because the person knows their own work.
 
 ## Etiquette for the two networked things
 
-Horizons has almost no network surface — but it has exactly two pieces, both v2: the
+Perennial has almost no network surface — but it has exactly two pieces, both v2: the
 Workers AI rung and the T2 push Worker. **Doctrine §15.7 applies to both**, and it is
 unconditional: a networked adapter declares its policy and pacing, and CI fails on
 looser pacing, a missing policy citation, unidentified requests, or a 429 handled

@@ -107,38 +107,51 @@ search did not resolve it.
 EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
-## V-04 · Name availability
-**Status: UNVERIFIED** · 2026-07-27 · attempted; the method available was too
-weak to count
+## V-04 · Name availability — **Perennial**
+**Status: UNVERIFIED** · reopened 2026-07-28 against the new name
 
-An App-Store-oriented web search surfaced no prominent planner named "Horizons".
-**This does not clear the name.** A search-results eyeball is not a store search,
-and it is emphatically not a USPTO knockout — the trademark database requires an
-interactive session that could not be driven from here.
+**What was run:** two plain web searches. Neither surfaced a conflict in the
+productivity or planner space. One adjacent company exists — **Perennial Software**,
+in the security/integration sector, a different class.
 
-**Explicitly still unchecked:**
-- USPTO knockout, classes **9** and **42**
-- Apple App Store and Google Play direct searches
-- Domains: `horizons.app` (expected gone), `usehorizons.app`, `horizons.page`
-- Whether Meta Horizon (Horizon Worlds / Horizon OS) adjacency is tolerable
+**What that proves: only that the name is not obviously dead.** Un-killed is not
+cleared, and this row will not say otherwise. Web search can eliminate a name; it
+cannot clear one.
 
-"Horizons" is a common English word and a busy mark. Treat the name as
-**unclear** until a real knockout is run.
+**Explicitly still unchecked, and owed before any public release copy:**
+- USPTO knockout, classes **9** and **42** — needs an interactive session
+- Apple App Store and Google Play **direct** searches
+- `perennial.pages.dev`
+- Domains
 
-### V-04a · The collision that was found
-**Status: VERIFIED** · 2026-07-27 · read of `noahjefferson/public/index.html`
-and `DOCTRINE.md:8`
+→ [ADR-0020](adr/0020-name-perennial.md), which is Provisional for exactly this reason.
 
-The brief's availability pass looked outward and missed one at home. **The hub
-already ships _Clear Horizons_** — the astronomy planner at
-`clear-horizons.pages.dev`, linked from the hub index as "Astro Planner" and
-named in the shared accessibility statement.
+### V-04a · The hub collision — **CORRECTED, and the original was wrong**
+**Status: CORRECTED** · originally recorded VERIFIED 2026-07-27 · corrected 2026-07-28
 
-*Horizons* and *Clear Horizons*, side by side on one index page, will read to any
-visitor as two versions of one product. This is a naming problem that exists
-regardless of what the USPTO says.
+**What this row said, and it was inaccurate:**
 
-**Open as Q-02 in [`NOTES.md`](../NOTES.md).** → [ADR-0018](adr/0018-name-and-slug.md)
+> *"Horizons and Clear Horizons, side by side on one index page, will read to any visitor
+> as two versions of one product."*
+
+They would not have. `noahjefferson/public/index.html:258` displays the astro app as
+**"Astro Planner"** — the name *Clear Horizons* appears only in the URL, and three times
+in `accessibility.html`. The collision was real but smaller and differently shaped than
+recorded.
+
+**The worse error was what got built on top of it.** This row was used to argue that
+"horizons" was *decorative* in the astro app and that the planner had the better claim to
+the word. That assumption was never checked. Noah corrected it: **recording your actual
+horizon, and using it to compute what is genuinely visible from where you stand, is that
+app's core differentiating feature** — something he says no other astro app does. Its
+claim is literal; the planner's was figurative.
+
+**Kept visible rather than rewritten.** A wrong `VERIFIED` row is worse than an open one,
+because it stops anyone looking again — Doctrine §6. The lesson is the one already in the
+family record: *a claim without a test is a guess, and it must be labelled as one.*
+
+**Resolved by the rename.** The planner is now Perennial; there is no collision left.
+The astro app's *own* naming inconsistency is open separately as **Q-06**.
 
 ## V-05 · `horizons.pages.dev` availability
 **Status: INCONCLUSIVE** · 2026-07-27 · HTTPS probe returned 403 from the
@@ -203,6 +216,26 @@ No decision waits on it.
 
 **Trigger:** before the first public release copy is written. Deferred, not
 dropped — this row is the record that it is owed.
+
+---
+
+## V-09 · The name-search instrument itself
+**Status: VERIFIED** · 2026-07-28 · observed twice in one session
+
+A query containing the phrase **"trademark class 9"** returns SEO articles *about*
+trademark classes and no actual products. It happened twice — for *Chroma* and for
+*Perennial* — and both times the result was an empty-looking page that could easily have
+been read as "nothing is using this name."
+
+**Chroma is in fact heavily occupied** (Razer Chroma is an entire class 9 ecosystem), which
+proves the empty result was the instrument, not the world.
+
+**Use plain queries** — `"<name>" app software company brand` — which found real conflicts
+every time. And treat any name search that returns only advice articles as a **failed
+probe**, not a clean one.
+
+This is the family lesson restated in a new place: *a success response carrying nothing is
+not an answer, it is a question.*
 
 ---
 
