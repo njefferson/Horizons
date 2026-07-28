@@ -32,10 +32,18 @@ jobs:
       # Checking them here means a change to icon.svg or the social preview cannot
       # quietly drop below 3:1 — B-08's rule is that a new pair joins the gate in
       # the same commit that introduces it, and this is that gate.
-      - name: Install chromium for the brand check
+      - name: Install chromium for the browser checks
         run: npx --no-install playwright-core install --with-deps chromium
       - name: Brand assets
         run: npm run brand:check
+
+      # The unit tests prove the spine folds. They cannot prove the bundle
+      # loads, that Dexie opens in a browser, or that a captured thought comes
+      # back — which is the app's one promise. Only driving the built page does
+      # that, so the build and the walk are both gates (build-plan §4).
+      - run: npm run build
+      - name: Headless walk of the built app
+        run: npm run smoke
 
       # The vocabulary is a closed list and "overdue"/"streak" are banned
       # outright (ADR-0010). A grep is the cheapest possible gate.

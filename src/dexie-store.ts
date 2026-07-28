@@ -14,10 +14,12 @@ import { compareEvents } from './fold.ts';
 import type { LogStore, Snapshot } from './log-store.ts';
 
 interface SnapshotRow extends Snapshot { id: number }
+interface KvRow { key: string; value: unknown }
 
 class PlannerDb extends Dexie {
   events!: Table<AppEvent, string>;
   snapshots!: Table<SnapshotRow, number>;
+  kv!: Table<KvRow, string>;
 
   constructor(name: string) {
     super(name);
@@ -29,6 +31,12 @@ class PlannerDb extends Dexie {
       events: 'id, [device+seq], at, vault, kind, node',
       snapshots: '++id, at',
     });
+    // v2 adds `kv` and nothing else — the additive rule in practice. It holds
+    // in-flight scratch that is NOT user history: the capture draft (persisted
+    // per keystroke, ADR-0008) and this device's id. Deliberately outside the
+    // log, because a keystroke is not an event and flooding the log with them
+    // would make the history unreadable for no gain.
+    this.version(2).stores({ kv: 'key' });
   }
 }
 
@@ -77,11 +85,26 @@ export class DexieLogStore implements LogStore {
     return row ?? null;
   }
 
+  /**
+   * Scratch, not history. See the v2 migration note above: this is where the
+   * per-keystroke capture draft lives so an interruption mid-capture — the
+   * EXPECTED case for this audience, not the edge case — costs nothing.
+   */
+  async getKv<T>(key: string): Promise<T | null> {
+    const row = await this.#db.kv.get(key);
+    return row ? (row.value as T) : null;
+  }
+
+  async setKv(key: string, value: unknown): Promise<void> {
+    await this.#db.kv.put({ key, value });
+  }
+
   /** Destructive by design — import seeds fresh (ADR-0006). Callers confirm first. */
   async reset(): Promise<void> {
-    await this.#db.transaction('rw', this.#db.events, this.#db.snapshots, async () => {
+    await this.#db.transaction('rw', this.#db.events, this.#db.snapshots, this.#db.kv, async () => {
       await this.#db.events.clear();
       await this.#db.snapshots.clear();
+      await this.#db.kv.clear();
     });
   }
 

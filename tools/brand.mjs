@@ -257,6 +257,51 @@ async function checkSocial(browser) {
   }
 }
 
+// --------------------------------------------------- the app's own colours
+
+// B-11. Read out of the stylesheet rather than duplicated here, so the gate
+// cannot drift from what actually ships — a second copy of a palette is a
+// second palette. Floors follow WCAG: 4.5:1 for text, 3:1 for a graphical
+// object or a large-text accent.
+const UI_PAIRS = [
+  ['ink', 'bg', 4.5], ['ink', 'surface', 4.5],
+  ['ink-soft', 'bg', 4.5], ['ink-soft', 'surface', 4.5],
+  ['accent', 'bg', 3], ['accent', 'surface', 3],
+  ['warm', 'surface', 4.5],
+];
+
+function themeTokens(css, theme) {
+  // :root holds light; the dark block overrides it. Later wins, which is what
+  // the cascade does too.
+  const blocks = [...css.matchAll(/:root\s*\{([^}]*)\}/g)].map(m => m[1]);
+  const darkBlock = /@media\s*\(prefers-color-scheme:\s*dark\)\s*\{\s*:root\s*\{([^}]*)\}/.exec(css);
+  const out = {};
+  const take = (text) => {
+    for (const [, k, v] of text.matchAll(/--([\w-]+)\s*:\s*(#[0-9a-fA-F]{6})/g)) out[k] = v;
+  };
+  take(blocks[0] ?? '');
+  if (theme === 'dark' && darkBlock) take(darkBlock[1]);
+  return out;
+}
+
+function checkAppColours() {
+  console.log('\nApp colours (B-11)');
+  const cssPath = join(ROOT, 'public', 'app.css');
+  if (!existsSync(cssPath)) { fail('public/app.css is missing'); return; }
+  const css = readFileSync(cssPath, 'utf8');
+
+  for (const theme of ['light', 'dark']) {
+    const t = themeTokens(css, theme);
+    for (const [fg, bg, min] of UI_PAIRS) {
+      if (!t[fg] || !t[bg]) { fail(`${theme}: token --${fg} or --${bg} not found in app.css`); continue; }
+      const r = ratio(t[fg], t[bg]);
+      (r >= min ? pass : fail)(
+        `${theme.padEnd(5)} ${`${fg}/${bg}`.padEnd(18)} ${r.toFixed(2)}:1 (needs ${min}:1)`,
+      );
+    }
+  }
+}
+
 // ------------------------------------------------------------------------ main
 
 const browser = await chromium.launch(launchOpts);
@@ -269,6 +314,7 @@ try {
   }
   await checkIcons(browser);
   await checkSocial(browser);
+  checkAppColours();
 } finally {
   // Close explicitly. LESSONS §8: a script that leaves the browser open looks
   // like a protocol hang, and Node block-buffers stdout to a pipe so you see

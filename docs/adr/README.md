@@ -57,6 +57,7 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0023](0023-name-wynts-withdrawn.md) | Wynts withdrawn — it sounds like "wince"; the check order | **Superseded by [0024](0024-name-quietkeep.md)** |
 | [0024](0024-name-quietkeep.md) | **The name is Quietkeep** | Accepted |
 | [0025](0025-visual-identity.md) | The mark is drawn as SVG; the social background is generated | Accepted |
+| [0026](0026-ui-and-build.md) | No UI framework; one esbuild type-strip step | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

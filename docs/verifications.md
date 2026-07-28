@@ -39,11 +39,22 @@ Two claims from the brief, both needing confirmation on the current iOS/iPadOS r
    not share a store.
 2. Storage persistence still requires **notification permission** to have been granted.
 
+> **2026-07-28 — this is no longer blocked.** It was unanswerable because there was
+> nothing to put on an iPad. There is now: the shell ships a **Storage panel** that
+> reads `persist()`, `persisted()` and `estimate()` and records the first grant with
+> its timestamp, so step 2 answers itself by opening the panel again the next day.
+> Noah runs it at **staging.quietkeep.pages.dev** once Phase 1 is deployed.
+
 **What to check, in order:**
 1. Install to the Home Screen from Safari. Does `navigator.storage.persist()` resolve
-   `true` after notification permission is granted?
+   `true` after notification permission is granted? — *the panel's "Ask for persistent
+   storage" button does exactly this, requesting notification permission first.*
 2. Does `navigator.storage.persisted()` **still** report `true` the next morning?
+   — *open the panel again; it shows both the current value and when it was first
+   granted, so a silent revert is visible rather than inferred.*
 3. If two icons are created for the same origin, do they see the same data?
+   — *add a second Home Screen icon, capture in one, look in the other. The panel
+   shows the device id and event count, which makes "same store or not" obvious.*
 
 Step 2 is the one that matters. A `true` on day one that silently reverts is worse than
 a `false`, because the app would be promising durability it does not have — and on this

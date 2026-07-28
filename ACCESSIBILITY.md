@@ -157,6 +157,47 @@ palette. Per [V-10](docs/verifications.md), a gate nobody has watched pass is a
 file. CI installs **chromium build v1194**, the revision `playwright-core` 1.56.0
 pins to — the matched pair holds on a machine that is not this sandbox.
 
+### B-11 · The app's own colours, both themes
+B-10 is the identity. These are the **interface** tokens in `public/app.css`,
+which is a separate question — an icon is seen once, a surface is lived in.
+
+| Token | Light | Dark |
+|---|---|---|
+| `--bg` | `#F4F1E9` | `#141A26` |
+| `--surface` | `#FFFFFF` | `#1E2637` |
+| `--ink` | `#1B2333` | `#F2F0EA` |
+| `--ink-soft` | `#4C5670` | `#B3BCCE` |
+| `--line` | `#CFCABD` | `#3A4560` |
+| `--accent` | `#33425F` | `#AFC0DC` |
+| `--warm` | `#7A4E00` | `#F5C978` |
+
+**Measured in both themes**, worst case of the two:
+
+| Pair | Light | Dark | Needs |
+|---|---|---|---|
+| ink / bg | 13.94:1 | 15.29:1 | 4.5:1 |
+| ink / surface | 15.73:1 | 13.28:1 | 4.5:1 |
+| ink-soft / bg | 6.48:1 | 9.13:1 | 4.5:1 |
+| ink-soft / surface | 7.31:1 | 7.93:1 | 4.5:1 |
+| accent / bg | 8.92:1 | 9.45:1 | 3:1 |
+| accent / surface | 10.07:1 | 8.21:1 | 3:1 |
+| warm / surface | 7.20:1 | 9.73:1 | 4.5:1 |
+| line / surface | 1.64:1 | 1.59:1 | — |
+
+**`--warm` is not the brand warm, and that is the point.** `#F5C978` is a
+*light* — beautiful as a lit opening, unreadable as text on paper. In the light
+theme the interface uses a deep amber at 7.20:1 instead. **The same meaning has to
+survive a different job, and the way it survives is by changing value, not by
+being used at the wrong contrast.**
+
+**A card does not rely on its fill.** `--surface` against `--bg` is only ~1.14:1
+in both themes, so cards carry a border. One channel is never enough — the same
+rule as B-01, applied to layout instead of pressure.
+
+**The gate covers these.** `tools/brand.mjs` reads the tokens out of
+`public/app.css` for both themes and fails on any pair below its floor, so B-08's
+same-commit rule is enforced rather than promised.
+
 ---
 
 ## Part 2 — Findings register

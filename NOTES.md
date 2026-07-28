@@ -231,15 +231,32 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** the Phase 0 spine, on `staging` (see above). `main` is documentation only.
-  `public/` holds brand assets and **no app shell yet** — which is why the deploy workflow
-  skips.
+- **Code:** the Phase 0 spine plus **Phase 1's shell and Dump surface**, on `staging`.
+  `public/index.html` exists, so **the deploy no longer skips** — `staging` publishes to
+  `staging.quietkeep.pages.dev`. `main` is documentation only until Noah promotes.
+- **UI is the platform, no framework**, and there is exactly one build step — esbuild,
+  stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
+  committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).
+- **`npm run smoke`** is a gate: a headless walk of the *built* app that captures a
+  thought, reloads the whole page, and asserts it came back. It was made to fail once
+  before being trusted.
 
 ### Log
 
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **Phase 1: the app exists.** Shell, manifest, service worker, and the
+  Dump surface — zero chrome, one line per card, drafts persisted per keystroke, every
+  write through the gate and committed *before* the UI confirms. Two decisions the build
+  plan deferred are settled in [ADR-0026](docs/adr/0026-ui-and-build.md): **no framework**
+  (the platform does dialogs, focus and keyboard better than anything I would add) and
+  **one esbuild step**, because TypeScript was chosen deliberately and browsers cannot
+  strip types. The headless walk asserts the promise rather than the plumbing — capture,
+  full reload, still there — and was made to fail first by dropping the write while
+  leaving the "Held." confirmation in place, which is exactly the lie ADR-0008 exists to
+  prevent. **`public/index.html` now exists, so the deploy stops skipping.** The shell
+  also carries the V-00 storage panel, which unblocks the repo's oldest open check.
 - **2026-07-28** — **The repo metadata is finished, and I was wrong about it twice.** Noah
   set all four §10 values and uploaded the social preview. I twice reported the `indexed`
   topic as still broken, quoting an API response — **he had fixed it before the first

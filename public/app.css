@@ -1,0 +1,272 @@
+/* Quietkeep — the shell.
+ *
+ * Colour tokens are ACCESSIBILITY.md B-11, with their measured ratios. Nothing
+ * here is decided at the keyboard, and no new pair enters without joining the
+ * gate in the same commit (B-08).
+ *
+ * Type is sized in rem throughout, so the reader's TEXT-SIZE preference is
+ * honoured and not only page zoom (B-04, Doctrine §4). No fixed size ignores
+ * the space available.
+ */
+
+:root {
+  color-scheme: light dark;
+
+  --bg: #F4F1E9;
+  --surface: #FFFFFF;
+  --ink: #1B2333;
+  --ink-soft: #4C5670;
+  --line: #CFCABD;
+  --accent: #33425F;
+  --warm: #7A4E00;
+
+  --gap: 1rem;
+  --radius: 0.75rem;
+  /* 44px at the default root size, but expressed in rem so it grows with the
+     reader's text setting rather than staying put (B-06). */
+  --target: 2.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141A26;
+    --surface: #1E2637;
+    --ink: #F2F0EA;
+    --ink-soft: #B3BCCE;
+    --line: #3A4560;
+    --accent: #AFC0DC;
+    --warm: #F5C978;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 0 var(--gap) calc(var(--gap) * 2);
+  padding-inline: max(var(--gap), env(safe-area-inset-left)) max(var(--gap), env(safe-area-inset-right));
+  background: var(--bg);
+  color: var(--ink);
+  font: 1rem/1.5 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  /* A comfortable measure, but never a floor that exceeds the space available. */
+  max-width: 46rem;
+  margin-inline: auto;
+}
+
+/* Off-screen until focused, but it carries its full target size the whole time.
+ * A skip link that only becomes 44px at the moment it is focused is a target
+ * that was too small right up until it mattered. */
+.skip {
+  position: absolute;
+  left: -9999px;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+}
+.skip:focus { position: static; }
+
+.visually-hidden {
+  position: absolute;
+  width: 1px; height: 1px;
+  padding: 0; margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* --- focus ---------------------------------------------------------------
+ * Never removed. The ring is drawn with outline so it follows the shape and
+ * survives a forced-colours mode. */
+:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--gap);
+  padding-block: 1.25rem 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wordmark {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* --- capture -------------------------------------------------------------- */
+
+#capture-form {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-block: 0.5rem 0.25rem;
+}
+
+#capture {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  font-size: 1.0625rem; /* >=16px equivalent: iOS zooms the page below that */
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+#capture::placeholder { color: var(--ink-soft); opacity: 1; }
+#capture:disabled { opacity: 1; background: var(--bg); }
+
+button {
+  min-height: var(--target);
+  min-width: var(--target);
+  padding: 0.5rem 1rem;
+  font: inherit;
+  font-weight: 600;
+  color: var(--bg);
+  background: var(--accent);
+  border: 2px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+button.ghost {
+  color: var(--accent);
+  background: transparent;
+  border-color: var(--line);
+  font-weight: 400;
+}
+
+.status {
+  min-height: 1.5rem;   /* reserves the line so nothing jumps when it fills */
+  margin: 0.25rem 0 0;
+  color: var(--ink-soft);
+}
+
+/* --- the list ------------------------------------------------------------- */
+
+.section {
+  margin: 1.75rem 0 0.25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+
+.gauge {
+  margin: 0 0 0.75rem;
+  color: var(--ink-soft);
+}
+
+.empty {
+  margin: 0;
+  padding: 1rem;
+  border: 2px dashed var(--line);
+  border-radius: var(--radius);
+  color: var(--ink-soft);
+}
+
+.cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.card {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  /* The border carries the separation, not the fill: surface against bg is only
+     ~1.14:1, and one channel is never enough (B-01). */
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+
+.card-title { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
+
+.card-when {
+  flex: 0 0 auto;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  /* The status is words. Nothing here depends on seeing a colour, and there is
+     no alarm state to reach — a passed clock becomes a live card, not a red
+     one (law 5, B-01). */
+}
+
+.foot {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+.foot a {
+  color: var(--accent);
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--target);
+  padding-inline: 2px;
+}
+
+/* --- diagnostics ---------------------------------------------------------- */
+
+dialog {
+  width: min(30rem, calc(100vw - 2rem));
+  padding: 1.25rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+dialog::backdrop { background: rgb(0 0 0 / 0.5); }
+dialog h2 { margin: 0 0 0.5rem; font-size: 1.25rem; }
+.diag-lead { margin: 0 0 1rem; color: var(--ink-soft); }
+
+#diag-body {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 1rem;
+  margin: 0;
+}
+#diag-body dt { color: var(--ink-soft); }
+#diag-body dd { margin: 0; overflow-wrap: anywhere; }
+.diag-note {
+  grid-column: 1 / -1;
+  margin: 1rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  color: var(--warm);
+}
+
+.diag-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  margin-top: 1.25rem;
+}
+
+/* --- motion ---------------------------------------------------------------
+ * Nothing here animates meaning, and the one transition there is goes away on
+ * request (B-05). */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

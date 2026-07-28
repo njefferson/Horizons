@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<!-- viewport-fit for the iPad's safe areas; zoom is NEVER locked (B-06). -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<title>Quietkeep</title>
+<meta name="description" content="A free, local-first planner that brings back everything you put in.">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./brand/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./brand/apple-touch-icon.png">
+<link rel="stylesheet" href="./app.css">
+<meta name="theme-color" content="#F4F1E9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#141A26" media="(prefers-color-scheme: dark)">
+</head>
+<body>
+
+<a class="skip" href="#cards">Skip to what you are holding</a>
+
+<header class="bar">
+  <h1 class="wordmark">Quietkeep</h1>
+  <button id="open-diagnostics" type="button" class="ghost">Storage</button>
+</header>
+
+<main>
+  <!-- Capture first, and it is the thing that has focus on arrival. The gap
+       between having a thought and it being safe is the whole product. -->
+  <form id="capture-form" autocomplete="off">
+    <label class="visually-hidden" for="capture">What do you want to put down?</label>
+    <input id="capture" name="capture" type="text" enterkeyhint="done"
+           autocomplete="off" autocapitalize="sentences" spellcheck="true"
+           placeholder="Put it down here" autofocus>
+    <button type="submit">Hold it</button>
+  </form>
+
+  <!-- A live region, so a screen-reader user learns the write landed without
+       hunting for it. It reports what already happened, never a prediction. -->
+  <p id="status" role="status" aria-live="polite" class="status"></p>
+
+  <h2 class="section">What you are holding</h2>
+  <p id="gauge" class="gauge"></p>
+
+  <p id="empty" class="empty" hidden>
+    Nothing yet. Whatever you put here comes back to you — you do not have to
+    remember to look.
+  </p>
+
+  <ul id="cards" class="cards" tabindex="-1"></ul>
+</main>
+
+<footer class="foot">
+  <p>Local-first. No accounts, no telemetry, no server.
+     <a href="https://noahjefferson.pages.dev/accessibility">Accessibility</a></p>
+</footer>
+
+<dialog id="diagnostics" aria-labelledby="diag-title">
+  <h2 id="diag-title">Storage on this device</h2>
+  <p class="diag-lead">
+    Whether the browser has promised to keep your data. This is a real question
+    on iPadOS and the answer is reported exactly as measured.
+  </p>
+  <dl id="diag-body"></dl>
+  <div class="diag-actions">
+    <button id="diag-ask" type="button" hidden>Ask for persistent storage</button>
+    <button id="diag-close" type="button" class="ghost">Close</button>
+  </div>
+</dialog>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
