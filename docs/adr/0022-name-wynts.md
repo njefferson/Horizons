@@ -1,7 +1,13 @@
 # ADR-0022 · The name is Wynts
 
-**Status:** Accepted · **Date:** 2026-07-28 · Noah's coinage and his call
+**Status:** **Superseded by [ADR-0023](0023-name-wynts-withdrawn.md)** — withdrawn
+2026-07-28, it sounds like *wince* · **Date:** 2026-07-28
 **Supersedes:** [ADR-0021](0021-name-reopened.md)
+
+> **This record was wrong, and the way it was wrong is the useful part.** Every check
+> below is a REGISTRY check. Not one of them says the word out loud. The table is
+> otherwise accurate — npm, GitHub and the App Store really were clear — which is
+> exactly why it read as conclusive. Saying it aloud is now check #1.
 
 ## Decision
 

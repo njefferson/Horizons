@@ -1,11 +1,16 @@
-# NOTES.md — Wynts
+# NOTES.md — the planner (unnamed)
 
-> **W**hat **Y**ou **N**eed **T**o **S**ee. Noah's coinage, settled 2026-07-28
-> ([ADR-0022](docs/adr/0022-name-wynts.md)) after twenty-three candidates — the graveyard
-> and every cause of death are in [ADR-0020](docs/adr/0020-name-perennial.md).
+> **The app has no name.** `Horizons` throughout this repo is the **repo slug and a legacy
+> label** — rejected in [ADR-0018](docs/adr/0018-name-and-slug.md). Perennial, then Wynts,
+> were adopted and withdrawn ([ADR-0021](docs/adr/0021-name-reopened.md),
+> [ADR-0023](docs/adr/0023-name-wynts-withdrawn.md)). Twenty-four candidates and every
+> cause of death are in the [graveyard](docs/adr/0020-name-perennial.md).
 >
-> The **repo slug is still `Horizons`** until Noah renames it on GitHub; `LICENSE.md`'s
-> Required Notice URL follows the slug and moves in that same commit, not before.
+> **Check a candidate in this order** — cheapest and most-likely-to-kill first:
+> **1. say it aloud** · 2. grep this repo's spec · 3. unscoped name+software search ·
+> 4. npm and GitHub · 5. App Store / USPTO on Noah's device.
+> Steps 1 and 2 are free and instant, and were being run last or not at all.
+>
 > "Horizons" also survives as **domain vocabulary** — product law 4's *higher horizons*
 > and the *horizon-integrity engine* are planning terminology, not branding.
 
@@ -18,7 +23,7 @@ decisions live here in summary and in [`docs/adr/`](docs/adr/) in full.
 ## Thesis
 
 Most planners are built for someone whose problem is *organising* what they
-already remember. Perennial is built for someone whose problem is that a thing
+already remember. This one is built for someone whose problem is that a thing
 leaves their head and does not come back — where the relief of writing it down is
 real and immediate, and the returning is the part that never happens.
 
@@ -151,13 +156,13 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Unblocked — `wynts.pages.dev` is the obvious candidate and is **unverified** (pages.dev is unreachable from a session, [V-05](docs/verifications.md)) |
-| Q-08 | **How is "Wynts" pronounced** — *WINTS* or *WHYNTS*? | No, but it sets fast | Open. A name whose pronunciation people guess at gets said wrong forever; it goes in the README once Noah rules. |
+| Q-04 | Pages subdomain string + the four §10 metadata values | Yes, before deploy | Blocked on Q-02. `pages.dev` is unreachable from a session ([V-05](docs/verifications.md)), so the subdomain is a device check whatever the name turns out to be. |
+| Q-02 | **The app has no name.** Wynts withdrawn 2026-07-28 — it sounds like *wince*, which its own voice rules forbid. | Blocks Q-04 and the hub link. **Does not block building** — nothing in the schema, event vocabulary, or file formats encodes the name. | Open. *Escapement* is the only candidate that has passed every check including the new say-it-aloud one; recorded as runner-up in the graveyard. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
-**Still owed on Noah's device:** the App Store search for *Wynts*, and a USPTO knockout
-in classes 9 and 42 if he wants one. Both are blocked from a session — proven, not
+**Still owed on Noah's device, for whatever name lands:** the App Store search, and a
+USPTO knockout in classes 9 and 42 if he wants one. Both are blocked from a session — proven, not
 assumed.
 
 **Standing rule on names** ([V-04](docs/verifications.md)): ask *"is this name taken in
@@ -172,7 +177,7 @@ That error cost the Perennial round.
 | Q-01 | Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial | **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted. |
 | Q-03 | Work-vault policy line, given the GFE context | **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27. |
 | Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
-| Q-02 | The app's name | **Wynts** — Noah's coinage, 2026-07-28. Passed every check available: npm free, no GitHub project, no App Store app, no internal collision, not a framework term. [ADR-0022](docs/adr/0022-name-wynts.md). |
+| Q-08 | How "Wynts" is pronounced | **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad. |
 
 ---
 
@@ -187,21 +192,21 @@ That error cost the Perennial round.
 - **The folder mirror does not exist on the reference platform** — Safari has no disk
   picker. Export/import via Files carries the whole sync and durability story
   ([ADR-0004](docs/adr/0004-ios-path.md)), which is why it is built in Phase 0.
-- **Name: Wynts** (ADR-0022). Repo slug is still `Horizons` until Noah renames it on
-  GitHub; the licence's Required Notice URL moves in that same commit.
+- **No name yet** (Q-02). Repo slug is `Horizons`; the licence's Required Notice URL
+  follows the slug and moves only when Noah renames the repo on GitHub.
 - **Phase 0 (the spine) is built and on `staging`** — log, fold, write gate, snapshot,
   export/import, 14 tests, all four exit criteria met. **`main` is docs-only and behind,
   awaiting Noah's explicit "promote"** (Doctrine §7).
 - **Repo:** `njefferson/Horizons`. Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages. Project not yet created. Subdomain pending Q-04.
-- **Hub wiring:** Perennial is **not yet** linked from
+- **Hub wiring:** the app is **not yet** linked from
   `noahjefferson/public/index.html`. That edit is deliberately held until there
   is a deployed page to visit — adding a dead link to the live hub is a site
   regression, not progress. Doctrine §13.6 closes when it lands, together with
   the app's About linking back to the shared `/accessibility` statement.
-- **Repo metadata:** unset. §10 confirm loop not yet run. **Perennial is not
-  "set up" until it has.**
+- **Repo metadata:** unset. §10 confirm loop not yet run. **The app is not
+  "set up" until it has** — and it needs a name first.
 - **Code:** none. This repo is documentation only as of 2026-07-27.
 
 ### Log
@@ -209,7 +214,11 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
-- **2026-07-28** — **Named Wynts** (ADR-0022) after twenty-three candidates; *Detent* and
+- **2026-07-28** — Named **Wynts**, then withdrew it the same day: it sounds like *wince*,
+  which the app's own shame-free voice rules forbid. Every check run against it was a
+  REGISTRY check; none said the word out loud. Saying it aloud is now check #1. The name
+  never reached `main` — the staging gate contained it. Earlier: named Wynts after
+  twenty-three candidates; *Detent* and
   *Parallax* both died to the proper checks (an App Store app; a same-category PM
   platform). Built **Phase 0** on `staging`: the property test caught a real bug where
   captured items were created with no way back to the user. Earlier the same day —

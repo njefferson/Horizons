@@ -1,6 +1,6 @@
 # Data constitution
 
-What Wynts stores, what it promises about it, and every way out.
+What Horizons stores, what it promises about it, and every way out.
 
 This is a commitment document. It is written so that a future version of this app
 can be checked against it, and so that you can leave without asking anyone's
@@ -74,7 +74,7 @@ is a closed list, so these are structural absences, not policy promises.
 - **No message content.** The comms sweep schedules *when you look*. It has no
   integration and never sees a message.
 - **No location, no contacts, no calendar reading.** The `.ics` export is
-  one-way — Wynts writes a file, and never reads your calendar.
+  one-way — Horizons writes a file, and never reads your calendar.
 - **No behavioural analytics.** Nothing counts how often you open the app, how
   long you looked at a screen, or what you declined. **"Not this" on the Next-up
   card is not recorded as a rejection** — there is no event for it, so no future
@@ -109,7 +109,7 @@ in the log and in old backups permanently, so the first moment is the only momen
 > could read it. This is said before you set a passphrase, not afterwards.
 
 **Calendar** — `.ics` with `RRULE` and `VALARM`, so your OS calendar does the
-reminding. A point-in-time snapshot: change a date in Wynts and the exported
+reminding. A point-in-time snapshot: change a date in Horizons and the exported
 calendar is stale until you re-export. The app says so rather than implying the
 calendar is live.
 
@@ -167,7 +167,7 @@ what was suggested.
 
 ## What this is not
 
-**Wynts is a personal app.** It is not designed for, tested on, or approved for
+**Horizons is a personal app.** It is not designed for, tested on, or approved for
 government-furnished equipment, and **nothing in it is a control for classified,
 controlled, or otherwise restricted information.**
 
@@ -189,7 +189,7 @@ boundary. Work and personal material tend to want different exports, different
 audiences, and different moments — so the app makes that easy.
 
 **What goes in it is the user's judgement**, exactly as with any other personal app on
-any other personal device. Wynts does not inspect, classify, or police what you
+any other personal device. Horizons does not inspect, classify, or police what you
 write, and it could not do so meaningfully if it tried.
 
 What the design does guarantee:

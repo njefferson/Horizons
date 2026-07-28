@@ -107,10 +107,25 @@ search did not resolve it.
 EU user. Re-run this check when T2 is actually being built, against Apple's own
 documentation rather than secondary reporting. → [ADR-0007](adr/0007-notification-tiers.md)
 
-## V-04 · Name availability — **Wynts**
-**Status: PARTIAL** · settled 2026-07-28 → [ADR-0022](adr/0022-name-wynts.md)
+## V-04 · Name availability — **the app has no name**
+**Status: OPEN** · Wynts withdrawn 2026-07-28 → [ADR-0023](adr/0023-name-wynts-withdrawn.md)
 
-### What was actually run, and by what instrument
+### The order to check a candidate in
+
+Cheapest and most-likely-to-kill first. Steps 1 and 2 are free and instant; they were
+being run last, or not at all.
+
+1. **SAY IT OUT LOUD.** Say it in a sentence. Ask what it rhymes with, what it is one
+   letter from, and what it sounds like to someone who has never seen it written.
+   *Wynts* passed every registry check and sounds like **wince** — disqualifying for an
+   app whose voice is shame-free and never a rebuke. No registry catches that.
+2. **Grep this repo's own spec.** Killed *Lens* (the person lens), *Gauge* (the coverage
+   gauge) and *Alignment* (the alignment tree).
+3. **Unscoped `"<name>" software company app brand`.** Killed *Perennial*, *Parallax*.
+4. **npm and GitHub** — authoritative and reachable from a session.
+5. **App Store / USPTO** — Noah's device; blocked from here, proven in V-05.
+
+### What was run against Wynts, and why it was not enough
 
 | Check | Instrument | Result |
 |---|---|---|
