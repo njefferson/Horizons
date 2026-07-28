@@ -162,7 +162,7 @@ decided by a session.**
 
 | # | Question | Blocking? | Status |
 |---|---|---|---|
-| Q-09 | **The four §10 repo-metadata values** — description, website, topics, social preview | Yes, before any public release | Open, and awaiting Noah's hands only. The exact values are drafted and listed in the session that raised this; the social-preview image (1280×640) **does not exist yet** and is owed. One judgement call left to him: whether `adhd` belongs in topics — highest-traffic discovery term, and diagnosis-flavoured, which the voice rules bar in *copy*. Topics are metadata rather than copy, so it is arguable; it is his call. |
+| Q-09 | **The four §10 repo-metadata values** | Yes, before any public release | **Three of four are set — read back from the API, not assumed.** Description ✅, website `https://quietkeep.pages.dev/` ✅, topics ✅. **Owed: the social-preview image** (1280×640), which does not exist. **One typo to fix:** the topic reads `indexed`, and the store is IndexedDB — it should be `indexeddb`. |
 | Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (`public/index.html:258`). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
 | Q-07 | **The hub undersells the astro app.** `public/index.html:258` reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
 
@@ -221,9 +221,10 @@ That error cost the Perennial round.
   is a deployed page to visit — adding a dead link to the live hub is a site
   regression, not progress. Doctrine §13.6 closes when it lands, together with
   the app's About linking back to the shared `/accessibility` statement.
-- **Repo metadata:** unset. §10 confirm loop not yet run — no longer blocked by the name,
-  so the four values can be drafted for Noah's confirmation. **The app is not "set up"
-  until every one of them is confirmed.**
+- **Repo metadata:** description, website and topics are **set** (Noah, 2026-07-28; read
+  back from the API and confirmed, per §10 — not assumed from the fact that he was asked).
+  The social preview is **not**, and one topic is a typo. **Quietkeep is not "set up" until
+  both are done** — see Q-09.
 - **Code:** the Phase 0 spine, on `staging` (see above). `main` is documentation only.
 
 ### Log
@@ -231,6 +232,16 @@ That error cost the Perennial round.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
+- **2026-07-28** — **The repo is `njefferson/Quietkeep`**, and the deferred `LICENSE.md`
+  Required Notice URL moved with it. Q-04 closed — Noah confirmed `quietkeep.pages.dev`
+  clean, so V-04 is VERIFIED. Cloudflare secrets are in place and the deploy workflow
+  exists, mapping `staging` to a preview URL so the §7 gate is something he can open rather
+  than a convention I observe; it skips cleanly because there is still no app shell.
+  **And the Spine gate turned out never to have passed** — four runs, four failures, all at
+  `npm ci`, on invalid JSON in `package.json`. Every session had verified the spine by
+  invoking the tools directly, which bypasses that file, so local was green while CI was
+  red and nobody opened the run. Fixed, and **run 5 is the first green one**. Recorded as
+  V-10 and in the hub's LESSONS.md; the rule is *if you cite a workflow, open the run.*
 - **2026-07-28** — **The app is Quietkeep.** Noah chose it and ran the App Store check on
   his own device. It cleared all five checks in the order ADR-0023 established, starting
   with saying it out loud. Q-02 closed after four names and thirty-odd further candidates;

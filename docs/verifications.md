@@ -350,7 +350,7 @@ not an answer, it is a question.*
 ---
 
 ## V-10 · The Spine gate had never passed — **found 2026-07-28, and it was cited as proof**
-**Status: FIXED, and proven fixed**
+**Status: FIXED · green run observed** (run 5, `721f59e`)
 
 `.github/workflows/spine.yml` is the repo's CI gate: `npm ci` → typecheck → tests →
 banned-vocabulary grep. **It failed on all four of its runs, every run since it was
@@ -382,8 +382,14 @@ never been observed passing is not a gate, it is a file.** The fix for the class
 | Runs 1–4 | `failure`, all on `npm ci`, 2026-07-28 |
 | Cause | invalid JSON in `package.json` `scripts` |
 | Fix | `test:only` quotes the glob with `'…'`; `test` chains `npm run test:only` rather than repeating it |
-| Proven | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
-| Owed | **the next run of this workflow must be observed green.** Until then this row says FIXED, not VERIFIED-IN-CI. |
+| Proven locally | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
+| **Proven in CI** | **Run 5, `721f59e`, `success`** — observed, not assumed. The first green run this workflow has ever had. |
+
+**And the Deploy workflow's first run was watched too, because that is the whole point of
+this row.** Run 1 on `721f59e`: guard step green, and **all five deploy steps `skipped`**.
+Nothing was published. That is the designed behaviour for a repo with no `public/`, and it
+is now observed rather than reasoned about — though note what it does and does not prove:
+the *guard* works, the *deploy* still has not run.
 
 ---
 
