@@ -205,13 +205,12 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.3.0` (`d4b40f7`), promoted 2026-07-28** — Noah's explicit "Promote and
-  continue", onto a fully green staging (spine run 28, all gates, the smoke walk and a11y
-  gate both under the real CSP). A real §7 pass, verified by fetch (`origin/main` ==
-  `origin/staging` == `d4b40f7`), unlike the earlier troubleshooting fast-forward.
-  `quietkeep.pages.dev` now serves the public capture surfaces behind the strict CSP. The
-  0.2.4 promote (`265c9f0`, spine run 25) was the prior real §7 pass. Phase 2 (triage) is
-  building on `staging` **ahead** of `main` and waits there for the next promote.
+- **`main` is at `0.4.0` (`87dbeb9`), promoted 2026-07-29** — Noah's explicit "Promote and
+  continue", onto a fully green staging: **spine run 31 opened and watched, all 13 steps
+  success**, after the Phase 2 adversarial audit's findings were fixed. A real §7 pass,
+  verified by fetch (`origin/main` == `origin/staging` == `87dbeb9`).
+  `quietkeep.pages.dev` now serves triage — the heat pass and the six clarify routes.
+  Prior real §7 passes: 0.3.0 (`d4b40f7`, run 28), 0.2.4 (`265c9f0`, run 25).
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
@@ -241,8 +240,8 @@ That error cost the Perennial round.
   ([ADR-0025](docs/adr/0025-visual-identity.md)). All PNG sizes render from it via
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
-- **Code:** Phase 0 spine plus Phase 1's shell, Dump surface, ⓘ panel and export. `main` is
-  at 0.3.0 (public capture + CSP); `staging` carries Phase 2 (triage) on top, unpromoted.
+- **Code:** Phase 0 spine, Phase 1 (shell, Dump surface, ⓘ panel, export, public capture
+  surfaces + CSP), Phase 2 (triage). `staging` and `main` are level at 0.4.0.
   `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`, both live.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
@@ -289,8 +288,8 @@ That error cost the Perennial round.
   now in its own region, `finish()` idempotent, starts only on a landed route.
   · **Gate theater:** `.includes('0 silent')` is true for "10 silent" — now parses the number.
   · Documented (not patched): the same-day clock uses end-of-**UTC**-day ([V-13](docs/verifications.md)).
-  **Phase 2 stays on `staging` and waits for Noah's on-device pass and his explicit
-  "promote".**
+  **Promoted to `main` the same day** on Noah's "Promote and continue", onto spine run 31
+  watched green — so `quietkeep.pages.dev` serves triage.
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.
