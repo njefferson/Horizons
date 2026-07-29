@@ -273,6 +273,14 @@
 <!-- Stopping. The five-word cue is asked for HERE and not at the moment of
      interruption, because nobody can produce five words while someone is
      standing in the doorway. It is skippable and saying nothing is unremarkable. -->
+<!-- THE PRINT AREA. Everything printable is rendered here and nowhere else, and
+     the print stylesheet hides the whole app except this. Before it existed the
+     report's "Print it" called window.print() against the live page — so what
+     came out was the About dialog, the app behind it, and whatever the screen
+     layout happened to do under print media. It is aria-hidden because on screen
+     it is empty and irrelevant; it is built only at the moment of printing. -->
+<div id="print-area" class="print-area" aria-hidden="true"></div>
+
 <dialog id="focus-sheet" aria-labelledby="focus-sheet-title">
   <h2 id="focus-sheet-title" class="detail-title">Stopping for now</h2>
   <p class="detail-hint">Your way back is already saved. This is only if you want to leave yourself a note.</p>
@@ -533,6 +541,20 @@
   <p class="about-p about-caveat">
     It is off unless you ask for it, it counts nothing, and skipping one is not
     a failure. Quietkeep cannot see your messages and never will.
+  </p>
+
+  <h3 class="about-section">Today, on paper</h3>
+  <p class="about-p">
+    One page: the thing to do next, what else is ready, what is with other people,
+    and what is coming up. For a meeting where a screen is rude, or a day the
+    battery is going to lose.
+  </p>
+  <div class="about-actions">
+    <button id="today-print" type="button">Print today</button>
+  </div>
+  <p class="about-p about-caveat">
+    Paper cannot update. Ticking something off on the printout does not reach
+    Quietkeep &mdash; the app is still where things are true.
   </p>
 
   <h3 class="about-section">Telling someone where things are</h3>

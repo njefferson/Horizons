@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.21.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Today, on one page. The thing to do next, what else is ready, what is with other people, and what is coming up \u2014 for a meeting where a screen is rude, or a day the battery is going to lose.',
+      'It says on the page that it is a snapshot, and that ticking something off on paper does not reach Quietkeep. Paper cannot update, and you should not have to remember that at four in the afternoon.',
+      'It is one page on purpose. What it leaves off, it counts \u2014 "and 34 more" \u2014 so you always know what is not in your hand.',
+      '**And "Print it" now prints the right thing.** It used to hand your printer the whole app: the panel you pressed it in, everything behind that panel, and the page layout doing its best. The button worked and what came out was unusable. Fixed for the status report as well.',
+    ],
+  },
+  {
     triplet: '0.20.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

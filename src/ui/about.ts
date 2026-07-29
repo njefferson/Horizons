@@ -17,6 +17,7 @@ import { toCalendar, calendarCount } from '../ics.ts';
 import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
 import { statusReport, renderReport, periodWords, reportedBefore, type ReportFormat } from '../delta.ts';
 import { commsNode } from '../comms.ts';
+import { printText } from './print.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
 import { highWaterMark } from '../snapshot.ts';
@@ -278,10 +279,11 @@ export async function mountAbout(session: Session): Promise<void> {
           return;                       // NOT recorded: it did not leave.
         }
       } else if (format === 'print') {
-        if (!reportPreview) return;
-        reportPreview.textContent = text;
-        reportPreview.hidden = false;
-        window.print();
+        // Through the print area, so what comes out is the report and not the
+        // dialog it was launched from plus the whole app behind it. The old path
+        // called window.print() against the live page with no print stylesheet
+        // in the repo at all — the button worked and the output was unusable.
+        printText(text, 'Quietkeep — status');
       } else {
         const ext = format === 'csv' ? 'csv' : 'md';
         const type = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8';

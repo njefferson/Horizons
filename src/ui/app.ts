@@ -19,6 +19,7 @@ import { mountDetail } from './detail.ts';
 import { mountFocus, type FocusUI } from './focus.ts';
 import { mountReentry } from './reentry.ts';
 import { mountBother } from './bother.ts';
+import { mountPrint } from './print.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
@@ -434,6 +435,10 @@ async function main(): Promise<void> {
 
   // Naming a worry (v1.5). Mounted before re-entry, which must be last.
   try { bother = mountBother(session, refreshAll); } catch { /* a surface */ }
+
+  // Today, on paper. No state of its own — it builds a card at the moment of
+  // printing and empties the area afterwards.
+  try { mountPrint(session, now); } catch { /* a surface */ }
 
   // Coming back after being away (law 8). Mounted LAST, because it measures the
   // absence from the state as loaded and must do so before any other surface has

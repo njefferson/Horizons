@@ -1060,3 +1060,42 @@ dialog, dialog * { overflow-wrap: anywhere; }
    styled identically — "not mine to carry" is not a lesser option and must not
    look like one. */
 .bother-choice-hint { color: var(--ink-soft); font-size: 0.875rem; }
+
+/* --- printing (v1.5) ------------------------------------------------------ */
+/* On screen the print area is not there at all. It is built at the moment of
+   printing and emptied afterwards. */
+.print-area { display: none; }
+
+@media print {
+  /* EVERYTHING except the print area is hidden. Before this rule the report's
+     "Print it" produced the About dialog, the app behind it, and whatever the
+     screen layout did under print media — the button worked and the output was
+     unusable, which is the worst combination. */
+  body > *:not(.print-area) { display: none !important; }
+  .print-area { display: block !important; }
+
+  /* Ink, not screen. Forcing white background and black text is the one place in
+     this app where the theme is overridden on purpose: a dark theme printed is a
+     page of toner and an unreadable result, and the printer is not a device
+     anybody chose a theme for. */
+  html, body { background: #fff !important; color: #000 !important; }
+  .print-area { color: #000; font-size: 12pt; line-height: 1.4; }
+  .print-h1 { font-size: 18pt; margin: 0 0 0.2rem; }
+  .print-when { font-size: 10pt; margin: 0 0 1rem; }
+  .print-head { font-size: 15pt; font-weight: 700; margin: 0 0 0.15rem; }
+  .print-why { font-size: 11pt; margin: 0 0 1rem; }
+  .print-h2 { font-size: 12pt; margin: 1rem 0 0.3rem; text-transform: uppercase;
+    letter-spacing: 0.05em; }
+  .print-list { margin: 0; padding-left: 1.2rem; }
+  .print-list li { margin: 0 0 0.2rem; }
+  /* A checkbox you can actually use with a pen. It is deliberately NOT a control
+     that reports anything back — the honesty line above it says so. */
+  .print-list li::marker { content: '☐  '; }
+  .print-more { font-size: 10pt; margin: 0.2rem 0 0; }
+  .print-note { font-size: 9pt; margin: 1.5rem 0 0; border-top: 1px solid #999;
+    padding-top: 0.4rem; }
+  .print-pre { white-space: pre-wrap; font-size: 11pt; }
+  /* Never break a section across pages if it can be helped. */
+  .print-block { break-inside: avoid; }
+  @page { margin: 15mm; }
+}

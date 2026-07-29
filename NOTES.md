@@ -237,7 +237,7 @@ is not obvious when you come to build them.
 **(done, 0.18.0 — [ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md); the
 re-entry vocabulary had been complete and unreachable since the first draft)** ·
 bother
-flow · staff-call lens · pebbles · journal · printable today-card · request slots
+flow · staff-call lens · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · request slots
 + Not Now ledger.
 
 > **Binding condition:** journal **encryption ships in the same commit as the

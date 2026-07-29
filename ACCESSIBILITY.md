@@ -281,6 +281,29 @@ has the same shape and is the wordiest surface in the app.
 The entry point is a closed `<details>`. The place you go to name a worry must
 not itself be a prompt to find one.
 
+### B-20 · Printing (0.21.0)
+**There was no print stylesheet in this repo at all until now**, and 0.16.0
+shipped a "Print it" button regardless. `window.print()` against the live page
+produced the About dialog, the app behind it, and whatever the screen layout did
+under print media. The control was reachable, operable and correctly labelled —
+and the artefact it produced was unusable, which no contrast or target check can
+see.
+
+Everything printable now renders into `#print-area`, and `@media print` hides
+every other child of `<body>`.
+
+**The theme is overridden on purpose, and only here.** Print forces black on
+white. A dark theme sent to a printer is a page of toner and an unreadable
+result, and the printer is not a device anybody chose a theme for — this is the
+one place in the app where the user's stated preference is not the right answer,
+and it is stated rather than assumed.
+
+Type is set in `pt` rather than `rem` for print, `@page` carries a 15mm margin,
+and `break-inside: avoid` keeps a section off a page boundary. The list marker is
+an empty ballot box so the page can be used with a pen — deliberately not a
+control that reports anything back, which the honesty line on the card says in
+words.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

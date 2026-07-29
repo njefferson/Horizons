@@ -1781,6 +1781,57 @@ try {
   is(await tpage.locator('#comms').isVisible(), false,
     'and it does not come straight back \u2014 it comes round on its own');
 
+  // --- Today, on paper -----------------------------------------------------
+  // There was no print stylesheet in this repo at all, so 0.16.0's "Print it"
+  // called window.print() against the live page: the output was the About
+  // dialog, the app behind it, and whatever the screen layout did under print
+  // media. The button worked and the result was unusable.
+  console.log('\nToday on paper \u2014 and a print that prints the right thing');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // The print area is empty until the moment of printing, and invisible always.
+  is(await tpage.locator('#print-area').isVisible(), false,
+    'the print area is not part of the app on screen');
+  is((await tpage.locator('#print-area').innerHTML()).trim(), '',
+    'and holds nothing until something is printed');
+
+  // Stub window.print so the walk can inspect what WOULD have gone to paper —
+  // the dialog itself cannot be driven, and what matters is the content.
+  await tpage.evaluate(() => {
+    window.__printed = [];
+    window.print = () => {
+      const a = document.querySelector('#print-area');
+      window.__printed.push(a ? a.innerText : '');
+    };
+  });
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#today-print');
+  await tpage.click('#today-print');
+  await tpage.waitForTimeout(200);
+  const card = await tpage.evaluate(() => window.__printed[0] ?? '');
+  is(card.includes('Quietkeep'), true, 'the card is headed');
+  is(/snapshot/i.test(card), true, 'it says it is a snapshot');
+  is(/does not reach Quietkeep/i.test(card), true,
+    'and that ticking the paper does not reach the app \u2014 the half people need');
+  // THE LOAD-BEARING ONE: what is printed is the CARD, not the panel it was
+  // launched from.
+  is(/Export a copy|Send to my calendar|Offer me a sweep/.test(card), false,
+    'and the About panel is NOT on the page \u2014 only the card is');
+
+  // It is emptied afterwards, so the next print is not this one.
+  is((await tpage.locator('#print-area').innerHTML()).trim(), '',
+    'the area is cleared after printing, so a stale card cannot be printed again');
+
+  // The status report's print path goes through the same area.
+  await tpage.click('#report-print');
+  await tpage.waitForTimeout(300);
+  const printedReport = await tpage.evaluate(() => window.__printed[1] ?? '');
+  is(/Quietkeep — status/.test(printedReport), true, 'the report prints as the report');
+  is(/Export a copy|Bringing a copy back/.test(printedReport), false,
+    'and it too leaves the dialog behind');
+  await tpage.click('#about-close');
+
   // --- Bothers: the thing that is not a task -------------------------------
   // `bother.received`, `bother.owned` and `bother.routed` have been in the
   // vocabulary from the first draft, with cures in the gate — "bother must

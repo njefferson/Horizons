@@ -107,6 +107,9 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // Today on paper. The control lives in the panel; the card itself is never on
+  // screen, so what is audited here is the button and the honesty line beside it.
+  'today on paper': ['#today-print', '.about-section', '.about-p', '.about-caveat'],
   // The bother flow. The choice hints are the lowest-contrast text and they are
   // load-bearing: they say what each answer will DO, and a forced choice with
   // unlabelled consequences is a guess. All three choices are styled identically
@@ -831,6 +834,11 @@ try {
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
     await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar']);
+
+    // Today on paper, in the same panel.
+    await auditContrast(page, 'today on paper', theme);
+    await auditTargets(page, 'today on paper', theme);
+    await auditFocusRings(page, 'today on paper', theme, ['#today-print']);
 
     // The report controls, in the panel that is already open.
     await auditContrast(page, 'report controls', theme);
