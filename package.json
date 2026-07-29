@@ -20,7 +20,8 @@
     "changelog": "node --experimental-strip-types tools/changelog.mjs",
     "changelog:check": "node --experimental-strip-types tools/changelog.mjs --check",
     "a11y": "node tools/a11y.mjs",
-    "headers:check": "node tools/headers.mjs"
+    "headers:check": "node tools/headers.mjs",
+    "vocabulary": "if grep -rniE '\\b(overdue|streak)\\b' src/ | grep -viE 'no |never|banned|forbid|law 5'; then echo 'banned vocabulary found in src/ \u2014 see ADR-0010' >&2; exit 1; fi; echo clean"
   },
   "//build": "esbuild strips types and bundles src/ui into one ES module. It is the ONLY build step and it does no transpiling down \u2014 target es2022 is what the reference platform already runs. See ADR-0026 for why a build exists at all in a family that avoids them.",
   "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR \u2014 see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",

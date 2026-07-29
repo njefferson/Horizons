@@ -145,6 +145,24 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 > (Doctrine §7), and **V-14**, which is the one claim in the whole app that no
 > gate here can settle.
 
+> **CI caught what I did not, 2026-07-29.** Spine runs 67 and 68 (0.15.0, 0.16.0)
+> went **red on the banned-vocabulary gate** after I reported all nine gates green
+> locally. Both reports were wrong in the same way and for the same reason: the
+> gate lived only in `spine.yml`, so "running it locally" meant me re-typing an
+> approximation of it at the terminal, and my version did not reproduce the
+> filter. The offending line was a comment in `src/people.ts` explaining the
+> prohibition by quoting one of the banned words — **exactly the trap already
+> recorded in this file from Phase 3**, hit again because nothing stopped it.
+>
+> Fixed twice over: the comment was reworded (never the gate widened, per
+> ADR-0010), and the gate now lives in `package.json` as `npm run vocabulary`
+> with `spine.yml` calling it. There is one definition; local and CI run the same
+> bytes. Proven to bite before being trusted (§6) — a probe line reds it.
+>
+> The lesson is not "be more careful". It is **V-10 again**: a gate I have not
+> actually run is a gate I have not run, and "green locally" means nothing unless
+> the local thing and the CI thing are the same thing.
+
 ### Should — v1.5
 
 Menu with save-for gauges · Rest mode + auto re-entry (7-day default) · bother

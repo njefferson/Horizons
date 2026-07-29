@@ -125,8 +125,12 @@ export function withWhom(state: State, n: NodeState): string | null {
  * How long, in words.
  *
  * A DURATION and never a verdict. "Three weeks" is a fact about a date; "chased
- * three times" or "overdue from Sam" would be this app keeping score on someone
- * else's behalf, and it does not keep score on anybody's.
+ * three times", or any of the words ADR-0010 bans, would be this app keeping
+ * score on someone else's behalf, and it does not keep score on anybody's.
+ *
+ * (This comment used to make the point by QUOTING one of those words, and the
+ * banned-vocabulary gate rejected it — correctly. NOTES.md already records the
+ * same trap from Phase 3: the comment gets reworded, never the gate widened.)
  */
 export function waitingWords(days: number | null): string | null {
   if (days === null || days < 1) return null;

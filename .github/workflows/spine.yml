@@ -65,11 +65,9 @@ jobs:
 
       # The vocabulary is a closed list and "overdue"/"streak" are banned
       # outright (ADR-0010). A grep is the cheapest possible gate.
+      # ONE definition, in package.json, so `npm run vocabulary` locally is the
+      # same check CI runs. It was written out longhand here and approximated by
+      # hand at the terminal — which is how 0.15.0 and 0.16.0 passed nine gates
+      # locally and went red in CI on the tenth. Two copies of one rule drift.
       - name: No banned vocabulary
-        run: |
-          if grep -rniE '\b(overdue|streak)\b' src/ \
-             | grep -viE 'no |never|banned|forbid|law 5'; then
-            echo "banned vocabulary found in src/ — see ADR-0010" >&2
-            exit 1
-          fi
-          echo "clean"
+        run: npm run vocabulary
