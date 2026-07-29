@@ -1,0 +1,136 @@
+// Editing an item: dates, repeats, and undo (Phase 3.5).
+//
+// Until now every node the app could make was a capture, and the only thing it
+// could do to one was route it six ways. That is a triage loop, not a planner —
+// you could not say "this is due Thursday", could not make anything repeat, and
+// could not take back a mistake. The decay primitive shipped with no way to
+// reach it: `upkeep.interval.set` had no UI path at all, so the Upkeep surface
+// could never populate.
+//
+// Every intent below is built from events that ALREADY EXIST in
+// docs/event-vocabulary.md. The vocabulary is a closed list and the gate refuses
+// unknown kinds, so nothing here invents a noun.
+//
+// These build events; they never touch the store. The surface hands them to
+// `session.commit`, which runs them through the gate.
+
+import type { AppEvent, MenuCategory, NodeKind } from '../events.ts';
+import type { StampContext } from './session.ts';
+import { endOfLocalDay, localDayKey } from '../time.ts';
+
+const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind, node, payload,
+} as AppEvent);
+
+/** Whole calendar days between two `YYYY-MM-DD` keys. Plain arithmetic on the
+ *  parts — no zone involved, because a key is already zone-resolved. */
+const daysBetweenKeys = (from: string, to: string): number => {
+  const [fy, fm, fd] = from.split('-').map(Number) as [number, number, number];
+  const [ty, tm, td] = to.split('-').map(Number) as [number, number, number];
+  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+};
+
+/**
+ * The instant a `YYYY-MM-DD` from a date input means: the END of that day, in
+ * the user's zone.
+ *
+ * Resolved by probing rather than assuming, because no fixed UTC hour is safely
+ * inside the same local day everywhere — offsets run from −12 to +14, so noon
+ * UTC on the key date is already the next day in Kiritimati. The probe's own
+ * local day is measured and the difference applied.
+ */
+export function endOfDayKey(dayKey: string, zone: string): string {
+  const [y, m, d] = dayKey.split('-').map(Number) as [number, number, number];
+  const probe = new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).toISOString();
+  const drift = daysBetweenKeys(localDayKey(probe, zone), dayKey);
+  return endOfLocalDay(probe, zone, drift);
+}
+
+/** "This is due Thursday." A real, hard date — the immovable kind that Next-up
+ *  ranks above everything computed. */
+export const setDueEvents = (ctx: StampContext, node: string, dayKey: string): AppEvent[] =>
+  [base(ctx, 'clock.set', node, {
+    clockKind: 'due', at: endOfDayKey(dayKey, ctx.zone), source: 'detail:due',
+  })];
+
+/**
+ * Taking a date off again.
+ *
+ * `clock.cleared` is silent-risk, and this is the one place where the gate's
+ * generic cure is exactly the right answer rather than a fallback: removing a
+ * date should hand the thing back to you today to decide about, which is
+ * precisely the same-day review clock the gate attaches. A test asserts the node
+ * does not go silent, so the reliance is checked rather than assumed.
+ */
+export const clearDueEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'clock.cleared', node, { clockKind: 'due' })];
+
+/**
+ * "This one repeats." The only path to the decay primitive
+ * ([ADR-0010](../../docs/adr/0010-decay-primitive.md)) — an interval, a comfort
+ * window of its own, and a review clock so the thing is covered under law 1 and
+ * actually comes back when it says it will.
+ *
+ * The kind change is emitted only when it is a change; re-emitting it for a node
+ * that is already an upkeep would be a no-op event, and the log should not carry
+ * claims about changes that did not happen.
+ */
+export function makeRepeatEvents(
+  ctx: StampContext,
+  node: string,
+  fromKind: NodeKind,
+  intervalDays: number,
+  comfortWindowDays: number,
+): AppEvent[] {
+  const out: AppEvent[] = [];
+  if (fromKind !== 'upkeep') {
+    out.push(base(ctx, 'node.kind.changed', node, { from: fromKind, to: 'upkeep' as NodeKind }));
+  }
+  out.push(base(ctx, 'upkeep.interval.set', node, { intervalDays, comfortWindowDays }));
+  // Covered, and due when the interval says. Without this the gate would cure
+  // the kind change with a same-day clock, which would bring a monthly thing
+  // back this evening — legal, but wrong.
+  out.push(base(ctx, 'clock.set', node, {
+    clockKind: 'review', at: endOfLocalDay(ctx.at, ctx.zone, intervalDays), source: 'detail:repeat',
+  }));
+  return out;
+}
+
+/**
+ * "Stop repeating." There is no event that un-sets an interval, and inventing
+ * one would mean opening the closed vocabulary for something expressible without
+ * it: an interval of 0 folds to `intervalDays = 0`, which `pressureOf` already
+ * treats as "no cadence" and returns null for. The kind moves back so the item
+ * stops appearing among the Upkeep chips.
+ */
+export const stopRepeatEvents = (ctx: StampContext, node: string, toKind: NodeKind = 'action'): AppEvent[] => [
+  base(ctx, 'upkeep.interval.set', node, { intervalDays: 0, comfortWindowDays: 0 }),
+  base(ctx, 'node.kind.changed', node, { from: 'upkeep' as NodeKind, to: toKind }),
+];
+
+/** "I marked that done by mistake." Not silent-risk: the node keeps whatever
+ *  coverage it had, and simply stops counting as finished. */
+export const undoneEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'done.unmarked', node, {})];
+
+/** "Actually, I still want that." Gated — an untrashed node needs somewhere to
+ *  be, and the gate gives it a clock in the same transaction. */
+export const untrashEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'node.untrashed', node, {})];
+
+/**
+ * Taking something off the Menu and making it real work.
+ *
+ * Deliberately a PROMOTION, never an obligation that accrued (law 6,
+ * [ADR-0014](../../docs/adr/0014-demand-free-types.md)): a Menu item sat there
+ * carrying no clock and no demand, and it only becomes a demand because someone
+ * chose it. The gate cures the promotion with a clock.
+ */
+export const promoteFromMenuEvents = (ctx: StampContext, node: string, toKind: NodeKind = 'action'): AppEvent[] =>
+  [base(ctx, 'menu.item.promoted', node, { toKind })];
+
+/** Putting something on the Menu from the detail sheet — the same demand-free
+ *  landing the someday/reference routes use. */
+export const toMenuEvents = (ctx: StampContext, node: string, category: MenuCategory = 'read'): AppEvent[] =>
+  [base(ctx, 'menu.item.added', node, { category })];
