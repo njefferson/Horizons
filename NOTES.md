@@ -205,7 +205,20 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.7.2` (`0bc4040`), promoted 2026-07-29** — Noah's "Promote and
+- **`main` is at `0.9.0` (`6252d26`), promoted 2026-07-29** — Noah's "Promote and
+  continue", onto watched-green **spine run 51** (all 13 steps opened and read, not
+  inferred), then **deploy run 48** watched to success, its Cloudflare Pages step
+  green. This promote carries three releases at once: **0.8.0** (the calendar file —
+  the app can reach you when it is closed), **0.8.1**, and **0.9.0** (a passed date
+  becomes a decision).
+  · **What was NOT verified, and could not be from here:** the live site itself.
+  `quietkeep.pages.dev` is denied by this environment's network policy (the proxy
+  answers 403 to CONNECT), so the fetch that would have read the deployed `sw.js`
+  cache triplet was not possible. The evidence for this promote is the deploy run's
+  own green Cloudflare step, which is weaker than a fetch and is recorded as such.
+  Earlier promotes in this repo were confirmed the same way; none has been confirmed
+  by reading production from a session.
+- **Previously `main` was at `0.7.2` (`0bc4040`), promoted 2026-07-29** — Noah's "Promote and
   continue", onto watched-green spine run 45. Production serves the grouped todo list,
   inline tick-off, rename, and the second skeptic's fixes.
 - **Previously `main` was at `0.7.1` (`fae1b7a`)** — Noah's "Promote and

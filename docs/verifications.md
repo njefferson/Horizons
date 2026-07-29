@@ -676,6 +676,36 @@ one remove — generating a correct file is not the same as a reminder arriving.
 
 ---
 
+## V-15 · A promote is confirmed by the deploy run, never by reading production
+**Status: KNOWN LIMIT — recorded so it is not mistaken for a stronger claim**
+· raised 2026-07-29 with the 0.9.0 promote
+
+Every promote in this repo has been reported as verified end-to-end. That is true
+of the *pipeline* and not of the *site*. The session cannot fetch
+`quietkeep.pages.dev` at all: the environment's network policy denies it, and the
+agent proxy answers `403` to the CONNECT, which is a policy decision and not a
+site failure (`curl "$HTTPS_PROXY/__agentproxy/status"` logs the rejection by
+host). So the chain a session can actually observe ends one step short:
+
+| Observed | How | What it does NOT prove |
+|---|---|---|
+| every spine gate passed | the run opened and read step by step (V-10) | that the built artefact is what deploys |
+| Cloudflare Pages accepted the upload | the deploy run's own step, watched green | that the apex URL serves it |
+| the triplet in the commit | `git`, locally | that the **deployed** `sw.js` carries it |
+
+**What would close it**, and only Noah can do either: read
+`quietkeep.pages.dev/sw.js` and confirm the cache name matches the released
+triplet, or simply open the app on the iPad and confirm the (i) panel shows the
+expected version. One line either way.
+
+**Why it is recorded rather than shrugged off:** the wording "verified end-to-end"
+has appeared in this repo's log for five promotes, and it overstates what was
+seen — the same class of error as [V-10](#v-10), where running a thing was
+reported as watching it. A deploy step going green is good evidence and it is not
+the same as production serving the file.
+
+---
+
 ## Standing note on instruments
 
 Two lessons from sibling apps apply to every future row here:
