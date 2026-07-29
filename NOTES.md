@@ -407,7 +407,9 @@ That error cost the Perennial round.
   "Promote to main"** — carrying 0.12.0 through 0.17.0 and the docs work. Spine run 72 was
   opened and **watched green on the staging head before the promote** (V-10); runs 67, 68 and
   70 had gone **red on the banned-vocabulary gate** after I reported nine gates green locally,
-  and run 71 confirmed the fix. **Every item on the frozen v1 Must list is now built.** That
+  and run 71 confirmed the fix. **On `main` at `574ae5f`: Spine run 74 green and Deploy run 70
+  green, both watched** — the deploy is what makes "it is live" a fact rather than an
+  inference from a successful push, and V-10 says the observed run gets written down. **Every item on the frozen v1 Must list is now built.** That
   is a statement about the list and not about a version: `NOTES.md`'s own definition of v1 done
   is the **dogfood gate** — thirty consecutive working days — and day one has not happened.
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
