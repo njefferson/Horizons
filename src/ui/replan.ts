@@ -21,6 +21,7 @@
 import type { Session } from './session.ts';
 import type { ReplanCard } from '../replan.ts';
 import { replanCards, replanWords, contextWords, REPLAN_CAP } from '../replan.ts';
+import { localDayKey } from '../time.ts';
 import { replanEvents, canResolve, REPLAN_CHOICES } from './replan-intents.ts';
 import type { ReplanChoice } from '../events.ts';
 
@@ -56,15 +57,16 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
   const title = q('#replan-sheet-title');
   const when = q('#replan-sheet-when');
   const context = q('#replan-sheet-context');
+  const error = q('#replan-sheet-error');
   const options = q('#replan-options');
   const sheetLive = q('#replan-sheet-live');
   if (!region || !heading || !count || !list || !live || !dlg || !title ||
-      !when || !context || !options || !sheetLive) {
+      !when || !context || !error || !options || !sheetLive) {
     return { refresh() {} };
   }
   const REGION = region, HEADING = heading, COUNT = count, LIST = list, LIVE = live,
-    DLG = dlg, TITLE = title, WHEN = when, CONTEXT = context, OPTIONS = options,
-    SHEET_LIVE = sheetLive;
+    DLG = dlg, TITLE = title, WHEN = when, CONTEXT = context, ERROR = error,
+    OPTIONS = options, SHEET_LIVE = sheetLive;
 
   /** What actually happened, in words, after each choice — announced rather than
    *  left for the user to infer from a row disappearing. */
@@ -73,7 +75,10 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
     escalate: 'now a waiting-for, checked in three days.',
     renegotiate: 'the conversation comes back tomorrow.',
     'new-date': 'given a new date.',
-    'to-menu': 'on the Menu — no clock, nothing owed.',
+    // Not "no clock" — the gate covers the cleared date with a review cure, so
+    // the item does still carry one. Nothing is owed, which is the true part and
+    // the part that matters.
+    'to-menu': 'on the Menu — nothing owed.',
   };
 
   let current: ReplanCard | null = null;
@@ -86,10 +91,15 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
 
   /** Say it where it can be HEARD and where it can be SEEN. A failure reported
    *  only to a visually-hidden region is a failure a sighted user never learns
-   *  about (F-08). */
+   *  about (F-08).
+   *
+   *  Into its OWN line, not over the top of "that date was five days ago". The
+   *  first version overwrote that, so pressing Set with an empty box cost the
+   *  user the context this card exists to assemble — and did not give it back
+   *  until the sheet was closed and reopened. */
   const say = (msg: string, alsoVisible = false): void => {
     SHEET_LIVE.textContent = msg;
-    if (alsoVisible) WHEN.textContent = msg;
+    if (alsoVisible) { ERROR.textContent = msg; ERROR.hidden = false; }
   };
 
   /** Focus somewhere real after the sheet closes. Resolving a card REMOVES the
@@ -103,7 +113,7 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
   const resolve = async (choice: ReplanChoice, dayKey?: string): Promise<void> => {
     if (!current || busy) return;
     busy = true;
-    const { node, clockKind } = current;
+    const { node, passedKinds } = current;
     const label = node.title || '(untitled)';
     // Refusing rather than inventing. Asked of the SAME predicate the builder
     // uses, so the surface cannot believe a date is acceptable that the events
@@ -112,7 +122,12 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
     if (!canResolve(choice, dayKey)) { say('Pick a date first.', true); busy = false; return; }
     let landed = false;
     try {
-      await session.commit(ctx => replanEvents(ctx, node.id, choice, clockKind, dayKey));
+      // EVERY passed clock, and the node's ACTUAL kind. Passing only the clock
+      // the card names left the others live and the card came straight back;
+      // letting the kind default to 'action' wrote a transition that never
+      // happened into an append-only log (audit).
+      await session.commit(ctx =>
+        replanEvents(ctx, node.id, choice, passedKinds, dayKey, node.kind));
       landed = true;
     } catch (err) {
       say(`Couldn’t do that — ${(err as Error).message}`, true);
@@ -146,6 +161,12 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
         const input = el('input', 'replan-date');
         input.type = 'date';
         input.id = 'replan-new-date';
+        // A new plan for a date already behind you is not a plan. `min` lets the
+        // PLATFORM say so, which is better than the app refusing after the fact:
+        // it is a date picker doing what date pickers do, not a judgement. If one
+        // still gets through, the returning card says plainly that it went by —
+        // which is true, so nothing is claimed that the data does not support.
+        input.min = localDayKey(nowIso(), session.zone);
         const set = el('button', 'replan-set', 'Set');
         set.type = 'button';
         set.addEventListener('click', () => void resolve('new-date', input.value));
@@ -172,6 +193,8 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
     const ctxWords = contextWords(card, session.zone);
     CONTEXT.textContent = ctxWords ?? '';
     CONTEXT.hidden = ctxWords === null;
+    ERROR.textContent = '';
+    ERROR.hidden = true;
     SHEET_LIVE.textContent = '';
     if (!DLG.open) DLG.showModal();
   }

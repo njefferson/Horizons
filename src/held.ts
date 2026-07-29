@@ -15,7 +15,8 @@
 
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
-import { hasPassedHardClock } from './replan.ts';
+import { isReadyAgain, pressureOf } from './pressure.ts';
+import { raisesReplanCard } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 
 export type HeldGroupKey = 'unsorted' | 'replan' | 'ready' | 'soon' | 'later' | 'menu' | 'done';
@@ -121,7 +122,13 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
   };
 
   for (const n of heldNodes(state)) {
-    if (n.lastDone) { buckets.done.push(n); continue; }
+    // DONE, and not still running on a cadence. The unconditional version filed
+    // a recurring upkeep that had come round again under "Done" while
+    // `upkeepChips` was offering it as live work — one node, one screen, two
+    // contradictory statements, which is the class this file's own header says
+    // it exists to remove (audit). Asked of the same predicate `nextup.ts` uses,
+    // so the list and the chip cannot disagree about whether a rhythm is over.
+    if (n.lastDone && !isReadyAgain(pressureOf(n, nowIso, zone))) { buckets.done.push(n); continue; }
     if (n.onMenu) { buckets.menu.push(n); continue; }
     if (n.captured && n.route === null) { buckets.unsorted.push(n); continue; }
     // A hard date that went by gets its OWN heading, and this is not cosmetic.
@@ -131,7 +138,12 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
     // precisely what excluding them from Next-up prevents, relocated. They stay
     // in the list, because the sum of these groups is what the coverage gauge
     // counts; only the heading changes, so the list and the surface agree.
-    if (hasPassedHardClock(n, nowIso, zone)) { buckets.replan.push(n); continue; }
+    //
+    // `raisesReplanCard` is the WHOLE question — eligibility and a passed clock.
+    // Asking only about the clock made this agree with the replan surface by
+    // accident of branch order, and the branch above has just changed, which is
+    // exactly how that kind of agreement breaks silently.
+    if (raisesReplanCard(n, nowIso, zone)) { buckets.replan.push(n); continue; }
     const soon = soonestDemand(n, zone, nowIso);
     if (soon === null) { buckets.later.push(n); continue; }   // held, but nothing asking
     if (soon.days <= 0) { buckets.ready.push(n); continue; }
@@ -164,7 +176,10 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
  *  and never a claim the data does not support — a finished thing says so
  *  instead of reporting the cure clock it happens to carry. */
 export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
-  if (n.lastDone) return 'done';
+  // Same guard, same order, same reasons as `heldGroups` — the two must agree
+  // node for node, and a status that disagreed with its own heading is the
+  // defect ADR-0032 exists to have fixed.
+  if (n.lastDone && !isReadyAgain(pressureOf(n, nowIso, zone))) return 'done';
   if (n.onMenu) return 'on the Menu';
   if (n.captured && n.route === null) return 'not sorted yet';
   // A hard date that went by is not "ready now" — that phrasing invites doing it
@@ -172,9 +187,9 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   // words the list uses for something simply waiting. It is a DECISION, and the
   // replan surface is where it gets made (law 3). Asked of the identical
   // predicate that raises the card, so the two surfaces cannot describe one item
-  // differently; the earlier guards above match `eligible()` in `replan.ts`, and
-  // `heldNodes` has already excluded the trashed and the merged.
-  if (hasPassedHardClock(n, nowIso, zone)) return 'needs a new plan';
+  // differently — and it asks the WHOLE question rather than relying on the
+  // branches above to have filtered first.
+  if (raisesReplanCard(n, nowIso, zone)) return 'needs a new plan';
   const soon = soonestDemand(n, zone, nowIso);
   if (soon === null) {
     // Nothing is demanding it — but a park is still a return date, and saying

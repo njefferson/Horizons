@@ -22,11 +22,25 @@ import type { NodeState, State } from './fold.ts';
 import { heldGroups, soonestClock } from './held.ts';
 import { localDayKey, isValidIso } from './time.ts';
 
-/** The groups that represent work that will come back. Completed items, Menu
- *  items (demand-free by law 6) and anything still in triage are deliberately
- *  absent — and this list is the ONLY place that is decided, so the calendar and
- *  the held list cannot come to disagree. */
-const IN_CALENDAR = new Set(['ready', 'soon', 'later']);
+/**
+ * What the calendar leaves OUT: completed work, Menu items (demand-free by law
+ * 6) and anything still in triage. Everything else goes in, and this list is the
+ * only place that is decided, so the calendar and the held list cannot disagree.
+ *
+ * **It is an exclusion, and it must stay one.** It was an allowlist of
+ * `ready`/`soon`/`later`, and adding the `replan` group in 0.9.0 therefore
+ * dropped every passed hard date out of the calendar silently — the single thing
+ * a reminder is most for, gone, with all eight gates green (audit; the smoke
+ * check compares the file against the surface's own promised count, so both
+ * moved together and neither noticed).
+ *
+ * The two directions of failure are not symmetric. An allowlist that forgets a
+ * new group loses someone's reminders without a word; an exclusion that forgets
+ * one sends a reminder that should not have gone. In an app whose promise is
+ * that nothing is lost, the second is the failure to prefer.
+ */
+const NOT_IN_CALENDAR = new Set(['done', 'menu', 'unsorted']);
+const inCalendar = (key: string): boolean => !NOT_IN_CALENDAR.has(key);
 
 /** The hour an all-day reminder speaks up, in the reader's own local time.
  *  A clock is an end-of-local-day instant; a timed event would fire every
@@ -139,7 +153,7 @@ export function toCalendar(
   ];
 
   for (const group of heldGroups(state, nowIso, zone)) {
-    if (!IN_CALENDAR.has(group.key)) continue;
+    if (!inCalendar(group.key)) continue;
     for (const n of group.items) {
       const at = soonestAt(n, zone, nowIso);
       // No real clock, nothing to put in a calendar. Skipping rather than
@@ -154,10 +168,11 @@ export function toCalendar(
       lines.push(`DTSTAMP:${stamp}`);
       // All-day, so no VTIMEZONE is needed anywhere in this file: a DATE value
       // has no offset to get wrong.
-      // Never dated in the past. The `ready` group is `days <= 0`, i.e. it
-      // INCLUDES clocks that already passed - and that is the one group this
-      // feature exists to remind about, so exporting it with an elapsed alarm
-      // would reliably remind nobody about exactly the work that needs it.
+      // Never dated in the past. Passed clocks genuinely reach here — a soft
+      // clock that went by sits in `ready` (`days <= 0`), and a passed HARD date
+      // now arrives via the `replan` group — and those are exactly the items this
+      // feature exists to remind about, so sending one with an elapsed alarm
+      // would reliably remind nobody about precisely the work that needs it.
       const day = dateValue(at, zone);
       const today = dateValue(nowIso, zone);
       lines.push(`DTSTART;VALUE=DATE:${day < today ? today : day}`);
@@ -195,7 +210,7 @@ export function toCalendar(
 export function calendarCount(state: State, nowIso: string, zone: string): number {
   let n = 0;
   for (const group of heldGroups(state, nowIso, zone)) {
-    if (!IN_CALENDAR.has(group.key)) continue;
+    if (!inCalendar(group.key)) continue;
     for (const item of group.items) if (soonestAt(item, zone, nowIso)) n++;
   }
   return n;

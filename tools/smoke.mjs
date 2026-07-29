@@ -661,26 +661,39 @@ try {
     'nothing has gone by yet, so the surface is not there at all');
 
   // A row that offers "Done" is exactly a live, routed, off-Menu item — the same
-  // set replan considers — so this picks a legitimate subject rather than an
-  // inbox item triage still owns.
-  const lapsedTitle = await tpage.locator('#cards .card:has(.card-done) .card-title').first().textContent();
-  await tpage.locator('#cards .card:has(.card-done) .card-open').first().click();
-  await tpage.waitForSelector('#detail[open]');
-  const pastKey = await tpage.evaluate(() =>
-    new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10));
-  await tpage.fill('#detail-date', pastKey);
-  await tpage.click('#detail-date-set');
-  await tpage.waitForTimeout(180);
-  await tpage.click('#detail-close');
+  // set replan considers — so this picks legitimate subjects rather than inbox
+  // items triage still owns.
+  //
+  // TWO of them, not one. With a single lapsed item the count line's plural
+  // branch never executed and neither did the "focus returns to the heading"
+  // branch, so a constant "One date has gone by." and a deleted tabindex both
+  // passed every gate (audit).
+  const lapsedTitles = [];
+  for (const nth of [0, 1]) {
+    const t = await tpage.locator('#cards .card:has(.card-done) .card-title').nth(nth).textContent();
+    lapsedTitles.push(t);
+    await tpage.locator('#cards .card:has(.card-done) .card-open').nth(nth).click();
+    await tpage.waitForSelector('#detail[open]');
+    const key = await tpage.evaluate(d =>
+      new Date(Date.now() - d * 86400000).toISOString().slice(0, 10), 5 + nth * 4);
+    await tpage.fill('#detail-date', key);
+    await tpage.click('#detail-date-set');
+    await tpage.waitForTimeout(180);
+    await tpage.click('#detail-close');
+    await tpage.waitForTimeout(80);
+  }
+  const lapsedTitle = lapsedTitles[0];
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
 
   await tpage.waitForSelector('#replan:not([hidden])');
-  is(await tpage.locator('#replan').isVisible(), true,
-    `a date five days behind raises a decision ("${lapsedTitle}")`);
+  is(await tpage.locator('.replan-card').count(), 2,
+    `two dates behind raise two decisions ("${lapsedTitles.join('", "')}")`);
   const replanCount = await tpage.locator('#replan-count').textContent();
-  is(/gone by/.test(replanCount || ''), true,
-    `it says how many, plainly ("${replanCount}")`);
+  // The NUMBER, not merely the phrase. `/gone by/` passed a constant string that
+  // said "One date has gone by." however many there were (audit).
+  is(replanCount, '2 dates have gone by.',
+    `it says how many, plainly (got "${replanCount}")`);
   is((await tpage.locator('.replan-card-when').first().textContent())?.length > 0, true,
     'and each row states how long ago, in words');
 
@@ -724,10 +737,28 @@ try {
   const claimNow = Number((await tpage.locator('#gauge').textContent() || '').match(/^(\d+) held/)?.[1] ?? NaN);
   is(rowsNow, claimNow, `nothing vanished into the new group (${rowsNow} rows vs "${claimNow} held")`);
 
+  // A passed hard date must still reach the calendar. This is the regression
+  // 0.9.0 shipped: adding the group moved these out of ics.ts's allowlist and
+  // the single thing a reminder exists for stopped being exported, silently,
+  // with all eight gates green. Asserted BEFORE the cards are resolved away.
+  const calPromised = await tpage.evaluate(() =>
+    document.querySelector('#calendar-note')?.textContent ?? '');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#calendar');
+  const [preIcal] = await Promise.all([
+    tpage.waitForEvent('download'),
+    tpage.click('#calendar'),
+  ]);
+  const preIcs = readFileSync(await preIcal.path(), 'utf8').replace(/\r\n[ \t]/g, '');
+  is(preIcs.includes(`SUMMARY:${lapsedTitle}`), true,
+    `a date that went by is exactly what a reminder is for ("${lapsedTitle}") ${calPromised}`);
+  await tpage.click('#about-close');
+
   // The options. Five, forward-facing, and none of them files a failure.
+  const topCard = await tpage.locator('.replan-card-title').first().textContent();
   await tpage.locator('.replan-open').first().click();
   await tpage.waitForSelector('#replan-sheet[open]');
-  is((await tpage.locator('#replan-sheet-title').textContent()), lapsedTitle,
+  is((await tpage.locator('#replan-sheet-title').textContent()), topCard,
     'the sheet names the item it is about');
   const optionText = await tpage.locator('#replan-options').textContent();
   const optionCount = await tpage.locator('.replan-choice').count();
@@ -753,13 +784,27 @@ try {
     });
   });
   is(await countReplanEvents(), 0, 'no decision has been recorded yet');
+  const whenLine = await tpage.locator('#replan-sheet-when').textContent();
   await tpage.click('.replan-set');
   await tpage.waitForTimeout(200);
   is(await countReplanEvents(), 0, 'a new date with no date is refused, not invented');
   is(await tpage.locator('#replan-sheet').isVisible(), true, 'and the sheet stays open to say so');
+  is(await tpage.locator('#replan-sheet-error').isVisible(), true,
+    'the reason is SHOWN, not only announced to a screen reader');
+  // And it does not cost the user the context. The error used to be written over
+  // the "that date was five days ago" line, which is the one thing the card
+  // exists to assemble, and it did not come back until the sheet was reopened.
+  is(await tpage.locator('#replan-sheet-when').textContent(), whenLine,
+    'and the card still says how long ago, which is what it is for');
+  // The date box refuses the past at the platform level, so a "new plan" cannot
+  // be dated behind you.
+  const minAttr = await tpage.getAttribute('#replan-new-date', 'min');
+  const todayKey = await tpage.evaluate(() => new Date().toISOString().slice(0, 10));
+  is(typeof minAttr === 'string' && minAttr >= todayKey, true,
+    `a new date cannot be in the past (min="${minAttr}")`);
 
-  // Resolve it. "Not now" is legitimate and unremarkable (ADR-0012), and it must
-  // take the passed date with it — a Menu item carries no clock by law.
+  // Resolve the FIRST of two. "Not now" is legitimate and unremarkable
+  // (ADR-0012), and it must take the passed date with it.
   await tpage.locator('.replan-choice', { hasText: 'Not now' }).first().click();
   await tpage.waitForTimeout(250);
   const resolution = await tpage.evaluate(async () => {
@@ -779,25 +824,57 @@ try {
   is(resolution.some(e => e.kind === 'menu.item.added' && e.node === lapsedNode), true,
     'and it landed somewhere real: the Menu');
   is(await tpage.locator('#replan-sheet').isVisible(), false, 'the sheet closes itself');
-  is(await tpage.locator('#replan').isVisible(), false,
-    'and with the last one decided, the surface goes away entirely');
-  const replanFocus = await tpage.evaluate(() => ({
-    tag: document.activeElement?.tagName ?? 'NONE', id: document.activeElement?.id ?? '',
-  }));
-  is(replanFocus.tag !== 'BODY' && replanFocus.tag !== 'NONE', true,
-    `focus lands somewhere real afterwards (on ${replanFocus.id || replanFocus.tag}, not <body>)`);
   is((await tpage.locator('#status').textContent())?.includes('Menu'), true,
     'and what happened is announced where it can be both seen and heard');
+
+  // ONE LEFT, so the section stays and focus takes the branch that was never
+  // exercised: back to the heading. With a single card the walk always took the
+  // else-branch, so deleting the heading's tabindex — carrying an explicit WCAG
+  // 2.4.3 comment — left every gate green (audit).
+  is(await tpage.locator('#replan').isVisible(), true, 'the other one is still there');
+  is(await tpage.locator('#replan-count').textContent(), 'One date has gone by.',
+    'and the count came down with it');
+  const midFocus = await tpage.evaluate(() => document.activeElement?.id ?? document.activeElement?.tagName ?? 'NONE');
+  is(midFocus, 'replan-heading',
+    `focus returns to the heading while the surface is still there (was "${midFocus}")`);
+
   const menuGroup = await tpage.evaluate((title) => {
     for (const h of Array.from(document.querySelectorAll('.group-head'))) {
       const list = h.nextElementSibling;
       if (list?.textContent?.includes(title)) return h.textContent;
     }
     return '(not found)';
-  }, lapsedTitle);
+  }, topCard);
   is(menuGroup, 'On the Menu', `and the list files it as such (was "${menuGroup}")`);
 
+  // Now the last one, which empties the section — the other focus branch.
+  await tpage.locator('.replan-open').first().click();
+  await tpage.waitForSelector('#replan-sheet[open]');
+  await tpage.locator('.replan-choice', { hasText: 'Less of it' }).first().click();
+  await tpage.waitForTimeout(250);
+  is(await tpage.locator('#replan').isVisible(), false,
+    'with the last one decided, the surface goes away entirely');
+  const replanFocus = await tpage.evaluate(() => ({
+    tag: document.activeElement?.tagName ?? 'NONE', id: document.activeElement?.id ?? '',
+  }));
+  is(replanFocus.tag !== 'BODY' && replanFocus.tag !== 'NONE', true,
+    `and focus lands somewhere real (on ${replanFocus.id || replanFocus.tag}, not <body>)`);
+  // "Less of it" means back today — so it is ordinary work again, and Next up is
+  // the surface that owns it now.
+  const compressed = await tpage.evaluate(() =>
+    [document.querySelector('#nextup-title')?.textContent ?? '',
+     document.querySelector('#nextup-behind')?.textContent ?? ''].join(' | '));
+  is(compressed.includes(lapsedTitles[0] || ' ') || compressed.includes(lapsedTitles[1] || ' '), true,
+    'and a compressed item comes back as work, not as a decision');
+
   console.log('\nThe calendar — the tier that reminds you when the app is shut');
+  const calExportsBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'export.written' && e.payload?.scope === 'calendar').length);
+    });
+  });
   await tpage.click('#open-about');
   await tpage.waitForSelector('#calendar');
   const calNote = await tpage.locator('#calendar-note').textContent();
@@ -853,9 +930,14 @@ try {
       tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'export.written' && e.payload?.scope === 'calendar').length);
     });
   });
-  for (let i = 0; i < 40 && (await countCalExports()) < 1; i++) await tpage.waitForTimeout(50);
+  // RELATIVE to what was already there. The replan section exports once of its
+  // own (to prove a passed date still reaches the calendar), so an absolute `1`
+  // would be measuring how many times the walk happens to press the button
+  // rather than whether one press records one hand-off.
+  for (let i = 0; i < 40 && (await countCalExports()) <= calExportsBefore; i++) await tpage.waitForTimeout(50);
   await tpage.waitForTimeout(200);           // and give a duplicate time to appear
-  is(await countCalExports(), 1, 'the hand-off is recorded exactly once');
+  is(await countCalExports(), calExportsBefore + 1,
+    `one press, one hand-off recorded (${calExportsBefore} before)`);
   // ORDERING, which the count alone can never see: the file must exist BEFORE the
   // event claiming it left. Moving the commit above the download passed the old
   // check (audit) — this reads the surface's own confirmation, which is only

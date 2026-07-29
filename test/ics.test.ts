@@ -197,20 +197,46 @@ test('the calendar carries exactly what the held list says it should', () => {
     ...item('READY', 'ready', 0),
     ...item('SOON', 'soon', 3),
     ...item('LATER', 'later', 40),
+    ...item('LAPSED', 'a date that went by'), ev('clock.set', 'LAPSED', { clockKind: 'due', at: '2026-07-25T12:00:00.000Z', source: 't' }),
     ...item('MENU', 'menu', 1), ev('menu.item.added', 'MENU', { category: 'read' }),
     ...item('DONE', 'done', 0), ev('done.marked', 'DONE', { at: NOW }),
     ...item('GONE', 'trashed', 0), ev('node.trashed', 'GONE', {}),
   );
   const uids = unfold(toCalendar(s, NOW, DENVER))
     .filter(l => l.startsWith('UID:')).map(l => l.slice(4).replace('@quietkeep', ''));
-  assert.deepEqual(uids.sort(), ['LATER', 'READY', 'SOON'], 'work that will come back, and nothing else');
+  assert.deepEqual(uids.sort(), ['LAPSED', 'LATER', 'READY', 'SOON'],
+    'work that will come back, and nothing else');
 
-  // And that set is DERIVED from heldGroups, not maintained separately.
+  // DERIVED as "everything held except the three that are excluded" — NOT as a
+  // second copy of the allowlist. The old version hardcoded ready/soon/later
+  // here too, so when 0.9.0 added the `replan` group both the code and this test
+  // agreed to drop passed hard dates, and the suite stayed green (audit).
+  const OUT = new Set(['done', 'menu', 'unsorted']);
   const fromGroups = heldGroups(s, NOW, DENVER)
-    .filter(g => ['ready', 'soon', 'later'].includes(g.key))
+    .filter(g => !OUT.has(g.key))
     .flatMap(g => g.items.map(n => n.id));
   assert.deepEqual(uids.sort(), fromGroups.sort(), 'the calendar and the list cannot disagree');
-  assert.equal(calendarCount(s, NOW, DENVER), 3, 'and the count told the truth beforehand');
+  assert.equal(calendarCount(s, NOW, DENVER), 4, 'and the count told the truth beforehand');
+});
+
+test('a date that went by is the FIRST thing the calendar should carry', () => {
+  // The regression 0.9.0 shipped and no gate caught: adding the `replan` group
+  // moved every passed hard date out of the allowlist, so the single thing a
+  // reminder exists for stopped being exported — silently, with all eight gates
+  // green. Named separately from the test above so it cannot be lost in a
+  // refactor of that one.
+  const s = st(
+    ev('node.created', 'L', { nodeKind: 'action', title: 'send the form back' }),
+    ev('clock.set', 'L', { clockKind: 'due', at: '2026-07-25T12:00:00.000Z', source: 't' }),
+  );
+  assert.equal(heldGroups(s, NOW, DENVER)[0]!.key, 'replan', 'it really is in the new group');
+  const lines = unfold(toCalendar(s, NOW, DENVER));
+  assert.ok(lines.includes('SUMMARY:send the form back'), 'and it reaches the calendar');
+  assert.equal(lines.filter(l => l === 'BEGIN:VALARM').length, 1,
+    'with an alarm — an export without one reminds nobody');
+  // Dated today rather than in the past, or the alarm has already been and gone.
+  assert.ok(lines.includes(`DTSTART;VALUE=DATE:${localDayKey(NOW, DENVER).replace(/-/g, '')}`),
+    'and never dated in the past, which would fire nothing');
 });
 
 test('a repeat becomes a real recurrence', () => {

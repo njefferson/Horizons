@@ -20,9 +20,9 @@ triplet and what it did for you.
 
 - A date that has gone by now asks you what to do about it, instead of sitting in the list looking like something you could still get on with today. There is no list of things you did not do in this app, and there never will be.
 - Five ways out, all of them forward-facing: do less of it, hand it to someone else, move the date, pick a new one, or decide it is not happening now. Choosing "not now" puts it on the Menu, where nothing is owed — and that is as easy to reach as any of the others.
-- Whatever you choose, the date that went by goes with it, so the same thing does not come straight back asking again.
+- Whatever you choose, every date that had gone by goes with it, so the same thing does not come straight back asking again.
 - At most three at a time, and it tells you how many there are altogether. Coming back after a fortnight away should not be a wall.
-- Anything waiting on a new plan is asked about once, in one place. It no longer turns up as "next up" as well, offering to be done today.
+- Something waiting on a new plan is no longer offered as "next up" as well, asking to be done today — that was the one question its date had already ruled out. It still appears in the list of what you are holding, under its own heading, so nothing is hidden.
 
 ## 0.8.1 — ITERATION
 

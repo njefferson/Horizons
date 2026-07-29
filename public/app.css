@@ -330,6 +330,10 @@ button.ghost {
 /* The question needs air above it. Butted against the "that date was…" line it
  * reads as part of the same sentence rather than as the ask. */
 #replan-sheet-ask { margin: 1rem 0 0; }
+/* A failure gets its own line rather than overwriting the card's context. Plain
+ * `--ink`, not an alert colour: "pick a date first" is an instruction, not an
+ * alarm, and nothing on this surface shouts. */
+.replan-error { margin: 0.25rem 0 0; color: var(--ink); font-weight: 600; }
 
 /* A column, not a grid. At 320px and 200% zoom a two-up layout of options this
  * wordy overflows horizontally, and the page body must never scroll sideways —

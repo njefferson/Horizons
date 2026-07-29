@@ -82,13 +82,24 @@ const REGISTRY = {
     '.replan-card-title', '.replan-card-when'],
   // The sheet. The option hints are the lowest-contrast text in the app after
   // the route hints, and they are load-bearing: they say what each choice does.
-  // `.replan-context` is deliberately absent — it renders only when there is a
-  // downstream commitment to name, and a registry entry that matches nothing
-  // visible FAILS, which is the behaviour that keeps this list honest.
-  'replan sheet': ['#replan-sheet-title', '.replan-when', '#replan-sheet-ask',
-    '.replan-choice', '.replan-choice-label', '.replan-choice-hint',
+  //
+  // `.replan-context` is NOT here, and the honest reason is not the one the
+  // first version gave. It claimed the omission "keeps this list honest"; in
+  // fact that line renders only for a node with a `suspense` clock, and NO
+  // surface in the app can write one yet — so it is unreachable in every gate,
+  // and its contrast is simply UNMEASURED (audit). Its wording and its guards
+  // are covered by unit tests in `test/replan.test.ts`; its rendered contrast is
+  // not, and will not be until `suspense.set` has a surface. It uses the same
+  // `--ink-soft`-on-`--surface` pair as `.replan-when` directly above it, which
+  // IS measured here — an argument, not a measurement, and recorded as such.
+  'replan sheet': ['#replan-sheet-title', '.replan-when',
+    '#replan-sheet-ask', '.replan-choice', '.replan-choice-label', '.replan-choice-hint',
     '.replan-option-label', '.replan-option-hint', '#replan-new-date',
     '.replan-set', '#replan-close'],
+  // The failure state, which no walk ever rendered. An error message is exactly
+  // the text that gets forgotten, and it appears at the moment a person is
+  // already stuck.
+  'replan sheet, refused': ['#replan-sheet-error', '#replan-sheet-title', '.replan-when'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -372,6 +383,14 @@ try {
     await auditTargets(page, 'replan sheet', theme);
     await auditFocusRings(page, 'replan sheet', theme,
       ['.replan-choice', '#replan-new-date', '.replan-set', '#replan-close']);
+
+    // The REFUSED state: press Set with an empty date box. No walk rendered this
+    // before, so the one message a person sees at the moment they are already
+    // stuck went unmeasured (audit).
+    await page.click('.replan-set');
+    await page.waitForSelector('#replan-sheet-error:not([hidden])');
+    await auditContrast(page, 'replan sheet, refused', theme);
+    await auditAxe(page, 'replan sheet, refused', theme);
     // The wordiest surface in the app: five options, each a label over a hint,
     // one of them carrying a date box. If anything overflows sideways at 320px
     // and 200%, it is this.

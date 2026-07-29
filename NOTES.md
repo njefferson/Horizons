@@ -294,10 +294,47 @@ That error cost the Perennial round.
   test caught it.
   · The cap is 3 (law 8) while the exclusion is uncapped, so the view states the **true
   total** and the list still holds every one. A cap that hides work is a lie by omission.
-  · 163 tests, all 8 gates green, both themes. Four §6 deliberate-failure proofs run
+  · 170 tests, all 8 gates green, both themes. Four §6 deliberate-failure proofs run
   against the new smoke checks — drop the exclusion, drop the list branch, stop retiring
   the date, invent a date for an empty box — and **all four went red**.
-  · Lands on `staging`; waits for the audit and Noah's word.
+  · **Then three skeptics ran, and the first version of this entry was too
+  confident.** Everything below was reproduced, and fixed in the same release:
+  · **A resolution retired one clock, not all of them.** A node with a passed `due`
+  *and* a passed `suspense` came straight back for four of the five options —
+  buttons that did nothing while announcing that they had. `compress` retired
+  nothing at all, on reasoning true only when the passed clock *was* the `due`.
+  **Fourteen of the fifteen (choice × clock-shape) cases had no test**; every
+  existing call passed `'due'`.
+  · **0.9.0 silently broke 0.8.0.** `ics.ts` selected calendar entries from an
+  ALLOWLIST of group keys, so adding the `replan` group dropped every passed hard
+  date out of the `.ics` — the one thing a reminder is most for — with all eight
+  gates green, because the smoke check compares the file against the surface's own
+  promised count and both moved together. Now an exclusion, so a new group
+  defaults to included.
+  · **Four gate checks were theatre.** The cap asserted against the constant the
+  code uses (self-referential — raising it to five stayed green); the "order is
+  total" test was `f(s) === f(s)`, true of any pure function; `card.fed` compared a
+  constant with itself; and `replanWords` / `contextWords` / `countWords` had **no
+  coverage at all**, so a card 400 days behind could read "that date was yesterday"
+  and pass.
+  · **Copy that was not true**: "a Menu item carries no clock" (the gate cures the
+  cleared date, so it carries one — and law 6 governs *kinds*, not Menu
+  membership); "the commitment this **fed**" (no dependency exists in the log to
+  describe); "asked about once, in one place" (the held row still offers Done);
+  "each branch terminates on its own rather than leaning on the gate's cure"
+  (three of five do lean on it).
+  · **An Area with a due date got five action-shaped buttons**, one of which turned
+  it into a waiting-for — refused by Next-up under law 4 and offered here at the
+  same moment. And `escalate` wrote `from: 'action'` into an append-only log
+  whatever the node actually was.
+  · **A recurring upkeep that had come round again was filed under "Done"** while
+  the chip beside it offered it as live work — one node, two contradictory
+  statements. Pre-existing, and ADR-0034 had just asserted otherwise.
+  · **Known and unmeasured, recorded rather than papered over**: `.replan-context`
+  renders only for a node carrying a `suspense` clock, and no surface can write one
+  yet, so its *rendered contrast* is untested. Its wording and guards are
+  unit-tested. The a11y comment previously called that omission a virtue.
+  · Lands on `staging`; waits for Noah's word.
 - **2026-07-29** — **The app can reach you when it is closed (0.8.0 CAPABILITY,
   [ADR-0033](docs/adr/0033-calendar-export-t1.md)).** This closes a hole in the **thesis**,
   not a missing feature: NOTES says the return "is not a feature — it is the structural

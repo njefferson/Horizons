@@ -75,8 +75,18 @@ a second view (the lesson ADR-0030 already paid for once).
 The **held list is deliberately not excluded**. Its totality is load-bearing: the
 sum of its groups equals `heldNodes(state)`, which is what the coverage gauge
 counts, so removing anything would make the number and the list disagree. It
-carries the item and prints `needs a new plan` — asked of the *same* predicate
-that raises the card, so the two surfaces cannot describe one item differently.
+carries the item under its own heading and prints `needs a new plan` — asked of
+the *same* predicate that raises the card, so the two surfaces cannot describe
+one item differently. That predicate is `raisesReplanCard`, which asks the whole
+question (eligibility *and* a passed clock) rather than only about the clock:
+asking half of it made the agreement a property of the order of the branches
+above it, which is the kind of agreement that breaks silently the next time
+someone reorders them.
+
+The heading matters and was not there at first. Filed under "Ready now" the rows
+read as ordinary work — the one answer the passed date has already ruled out —
+directly beneath a surface asking something else about the same items. Every gate
+was green; a screenshot found it.
 
 ### 4 · The cap is bounded re-entry, not a hiding place
 
@@ -90,6 +100,34 @@ one of them. The cap bounds what re-entry *shows*; it never bounds what the app
 
 - `replan.raised` is a vocabulary entry with no emitter. Any future code that
   writes one is a defect against this record.
+- **A resolution retires EVERY hard clock that had gone by, not the one the card
+  names.** The card names the longest-passed clock because that is what the words
+  describe; the decision has to clear all of them. The first implementation
+  carried a single clock kind through, so a node with both a passed `due` and a
+  passed `suspense` was re-raised the moment it was resolved — four of the five
+  options were buttons that did nothing while announcing that they had. Two
+  independent audits reproduced it; no gate caught it, because every test passed
+  `'due'`. `ReplanCard.passedKinds` exists for this and for nothing else.
+- **Altitude nodes never raise a card** (law 4, ADR-0013), and neither does a
+  `resume-card`, which is the app's own artifact rather than a commitment anyone
+  made. `waiting-for` *does*: a date going by on something someone else owes you
+  is a real decision, and excluding it because Next-up excludes it would copy a
+  rule without its reason — Next-up excludes it because *you* cannot act on it,
+  which says nothing about whether the date matters. The two sets live in
+  `src/kinds.ts` precisely so the difference has to be stated rather than assumed.
+- **Adding a group is not a local change.** `ics.ts` selected calendar entries
+  from an allowlist of group keys, so introducing `replan` silently dropped every
+  passed hard date out of the `.ics` — the single thing a reminder is most for,
+  gone, with all eight gates green. It is now an exclusion, so a new group
+  defaults to being *included*: an allowlist that forgets a group loses someone's
+  reminders without a word, while an exclusion that forgets one sends a reminder
+  that should not have gone, and in an app whose promise is that nothing is lost
+  the second is the failure to prefer.
+- **Nothing here may claim the Menu is clockless.** `clock.cleared` is
+  silent-risk, so the gate covers it and a node resolved to the Menu lands
+  carrying a `review` cure. Law 6 and ADR-0014 govern clocks on demand-free
+  *kinds*, not on Menu membership. "Nothing owed" is true and is what the surface
+  says; "no clock" was not.
 - The projection is pure and takes `now` and `zone` as arguments, like every
   other projection, so it is testable at a pinned non-UTC zone (V-13).
 - Adding a clock kind means deciding whether it is hard or soft. The default is
