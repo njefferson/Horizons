@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.7.2',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      'Ticking something off twice by tapping quickly can no longer record it twice.',
+      'After you tick something off, the keyboard stays with your list instead of jumping to the top of the page, and the app now says out loud what you just finished.',
+      'Typing a new name for something is no longer thrown away if you change a date in the same panel before saving it.',
+      'Things on the Menu no longer show a Done button. The Menu is the one place that asks nothing of you, and a row of completion buttons made it look like a list of things owed.',
+    ],
+  },
+  {
     triplet: '0.7.1',
     kind: 'ITERATION',
     date: '2026-07-29',

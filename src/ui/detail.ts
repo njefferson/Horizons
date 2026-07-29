@@ -91,7 +91,11 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
 
     // Seed the date box with the date it already has, so "Set" is an edit rather
     // than a blank slate you have to re-derive.
-    NAME.value = n.title;
+    // Do NOT clobber something the user is part-way through typing. `render` runs
+    // after every commit in this sheet, so setting a date used to silently eat an
+    // in-progress rename — in an app whose capture line persists a draft per
+    // keystroke precisely because interruption is the expected case (audit).
+    if (document.activeElement !== NAME || NAME.value.trim() === '') NAME.value = n.title;
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);

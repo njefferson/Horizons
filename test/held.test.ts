@@ -8,7 +8,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fold, emptyState, type State } from '../src/fold.ts';
+import { fold, emptyState, type State, type NodeState } from '../src/fold.ts';
 import { heldNodes, coverageGauge, admit, gateOptionsFor } from '../src/gate.ts';
 import { heldGroups, heldStatus, SOON_DAYS } from '../src/held.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
@@ -309,4 +309,27 @@ test('a capture newer than a rename wins - the direction the first test never ch
   const cap = ev('capture.recorded', 'N', { text: 'CAPTURE', source: 'quick', sourceTags: [] }, '2026-07-20T00:00:00.000Z');
   assert.equal(fold([ren, cap]).nodes.get('N')!.title, 'CAPTURE', 'newer capture wins');
   assert.equal(fold([cap, ren]).nodes.get('N')!.title, 'CAPTURE', 'in either arrival order');
+});
+
+test('the tick-off control matches the groups exactly — including the Menu', () => {
+  // The render guard and heldGroups must agree, or a row shows a control that
+  // contradicts the heading it sits under.
+  const s = st(
+    ev('capture.recorded', 'INBOX', { text: 'unrouted', source: 'quick', sourceTags: [] }),
+    ev('node.created', 'READY', { nodeKind: 'action', title: 'ready' }), clockKind('READY', 'due', 0),
+    ev('node.created', 'MENU', { nodeKind: 'action', title: 'menu' }),
+    ev('menu.item.added', 'MENU', { category: 'read' }),
+    ev('node.created', 'DONE', { nodeKind: 'action', title: 'done' }), clockKind('DONE', 'due', 0),
+    ev('done.marked', 'DONE', { at: NOW }),
+  );
+  // Mirrors the guard in app.ts render().
+  const tickable = (n: NodeState): boolean =>
+    !n.lastDone && !n.onMenu && !(n.captured && n.route === null);
+  const NO_TICK = new Set(['unsorted', 'menu', 'done']);
+  for (const g of heldGroups(s, NOW, TZ)) {
+    for (const n of g.items) {
+      assert.equal(tickable(n), !NO_TICK.has(g.key),
+        `"${g.title}" rows ${NO_TICK.has(g.key) ? 'must not' : 'must'} offer Done`);
+    }
+  }
 });

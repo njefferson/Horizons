@@ -84,8 +84,17 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       li.append(open);
 
       // Check it off without opening anything — what makes this a todo list.
-      // Not offered for what is already done, or for what triage still owns.
-      if (onDone && !node.lastDone && !(node.captured && node.route === null)) {
+      //
+      // NOT offered for: what is already done; what triage still owns (offering
+      // two ways to dispose of one item in two surfaces is how the two come to
+      // disagree); and NOT for anything on the Menu. Law 6 and ADR-0014 govern
+      // clocks and demand rather than completability, so a Done button there
+      // would be legal — but the Menu is the one surface described as
+      // structurally incapable of nagging, and putting a completion control on
+      // every row of it makes it look like a list of things owed. Promotion from
+      // the Menu is deliberate (detail sheet); finishing something there should
+      // be too.
+      if (onDone && !node.lastDone && !node.onMenu && !(node.captured && node.route === null)) {
         const done = document.createElement('button');
         done.type = 'button';
         done.className = 'card-done';
@@ -152,10 +161,37 @@ async function main(): Promise<void> {
   // ONE render closure, used everywhere. Two call sites used to invoke
   // `render(session)` bare — the URL-capture path and its undo — which silently
   // dropped `openDetail`, so after a link capture no card opened its sheet.
+  // One write at a time, and focus goes somewhere real afterwards. Both defects
+  // were fixed in clarify.ts and work.ts earlier and simply not carried across
+  // when this control was added: without the guard a double-tap wrote the same
+  // done.marked twice, and because ticking a row off REMOVES it from the group it
+  // was in, focus fell to <body> every time (WCAG 2.4.3).
+  let doneBusy = false;
   const markDone = (id: string): void => {
+    if (doneBusy) return;
+    doneBusy = true;
+    // Remember where we were, so focus can land on the next thing in the list
+    // rather than at the top of the document.
+    const buttons = Array.from(document.querySelectorAll<HTMLElement>('#cards .card-done'));
+    const at = buttons.findIndex(b => b === document.activeElement);
+    const label = session.state().nodes.get(id)?.title || '(untitled)';
     void session.commit(ctx => doneEvents(ctx, id))
+      .then(() => {
+        // Say it. The other two surfaces announce a completion; this one was
+        // silent, so a screen-reader user got no confirmation AND no focus
+        // (WCAG 2.4.3 + 4.1.3). #status is a live region and is visible.
+        status.textContent = `Done: ${label}.`;
+      })
       .catch((err: Error) => { status.textContent = `Couldn’t record that — ${err.message}`; })
-      .finally(() => { try { refreshAll(); } catch { /* renders on next load */ } });
+      .finally(() => {
+        doneBusy = false;
+        try { refreshAll(); } catch { /* renders on next load */ }
+        const now = Array.from(document.querySelectorAll<HTMLElement>('#cards .card-done'));
+        // The next row's control, or the one that took its place; the capture
+        // line when nothing is left to tick off.
+        const next = at >= 0 ? (now[at] ?? now[now.length - 1]) : now[0];
+        (next ?? document.querySelector<HTMLElement>('#capture'))?.focus();
+      });
   };
   const rerender = (): void => render(session, n => detail.open(n), markDone);
   const refreshAll = (): void => { rerender(); work.refresh(); };

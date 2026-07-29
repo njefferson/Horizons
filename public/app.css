@@ -401,6 +401,12 @@ button.ghost {
 
 .card-done {
   flex: 0 0 auto;
+  /* Its OWN floor, not one inherited from the sibling. `align-items: stretch` on
+     .card made this min-height inert — the 44px came from .card-open next to it,
+     so the stated guarantee was load-bearing on a neighbour (audit). align-self
+     makes the button own its height, and the floor real. */
+  align-self: center;
+  height: auto;
   min-height: var(--target);
   padding: 0 0.9rem;
   color: var(--ink);

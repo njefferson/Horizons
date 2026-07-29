@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.7.2 — ITERATION
+
+*2026-07-29*
+
+- Ticking something off twice by tapping quickly can no longer record it twice.
+- After you tick something off, the keyboard stays with your list instead of jumping to the top of the page, and the app now says out loud what you just finished.
+- Typing a new name for something is no longer thrown away if you change a date in the same panel before saving it.
+- Things on the Menu no longer show a Done button. The Menu is the one place that asks nothing of you, and a row of completion buttons made it look like a list of things owed.
+
 ## 0.7.1 — ITERATION
 
 *2026-07-29*

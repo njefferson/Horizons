@@ -433,7 +433,11 @@ try {
 
   console.log('\nWork mode — no "overdue" anywhere on the surface (law 5)');
   const surfaceText = await tpage.evaluate(() => document.body.innerText);
-  is(/overdue|late|missed|streak/i.test(surfaceText), false,
+  // \b boundaries: the bare substring `late` matches the app's own "Later"
+  // heading, so this guard passed only because that group happened to be empty at
+  // this point in the walk. One data change would have turned law 5 red for no
+  // reason (audit).
+  is(/\b(overdue|late|missed|streak)s?\b/i.test(surfaceText), false,
     'the rendered page carries no shame vocabulary');
 
   // --- The detail sheet: dates, repeats, undo (Phase 3.5) ------------------
@@ -512,8 +516,22 @@ try {
   is(headings.every(h => /^(Not sorted yet|Ready now|Coming up|Later|On the Menu|Done)$/.test(h)), true,
     'every heading is one of the six, in words');
   // No score, no count of things undone anywhere in the list (law 5).
-  is(/\b\d+\s*(left|remaining|to go|streak)\b/i.test(headings.join(' ')), false,
-    'and no heading keeps score');
+  is(/\b\d+\b/.test(headings.join(' ')), false,
+    'and no heading carries a number of any kind — headings are not a score');
+
+  // Semantics, not spelling. Collapsing every item into one group left the
+  // six-name check, the no-score check and the row count ALL green (audit), so
+  // assert that a known item is under the heading it belongs to: the do-now item
+  // routed earlier returns today, so it must sit under "Ready now".
+  const groupOf = await tpage.evaluate((title) => {
+    const heads = Array.from(document.querySelectorAll('.group-head'));
+    for (const h of heads) {
+      let el = h.nextElementSibling;
+      if (el && el.classList.contains('cards-group') && el.textContent.includes(title)) return h.textContent;
+    }
+    return '(not found)';
+  }, 'do a two-minute thing');
+  is(groupOf, 'Ready now', `an item due today is filed under Ready now (was "${groupOf}")`);
 
   // The list must never drop something it is holding: rows === the gauge's number.
   const rowCount = await tpage.locator('#cards .card').count();
@@ -539,19 +557,67 @@ try {
     });
   });
   is(doneAfter, doneBefore + 1, `ticking it off recorded exactly one done.marked ("${tickTitle}")`);
-  const doneGroupText = await tpage.evaluate(() => {
-    const heads = [...document.querySelectorAll('.group-head')];
+  // Read the row's own status ELEMENT rather than parsing concatenated text —
+  // a row's textContent also carries its button labels, which made a naive split
+  // unreliable.
+  const doneRowStatus = await tpage.evaluate((title) => {
+    const heads = Array.from(document.querySelectorAll('.group-head'));
     const done = heads.find(h => h.textContent === 'Done');
-    if (!done) return '';
-    const out = [];
-    for (let el = done.nextElementSibling; el && !el.classList.contains('group-head'); el = el.nextElementSibling) {
-      out.push(el.textContent);
+    if (!done) return { found: false, status: '(no Done group)' };
+    const list = done.nextElementSibling;
+    if (!list) return { found: false, status: '(no list)' };
+    for (const li of Array.from(list.querySelectorAll('.card'))) {
+      if (li.querySelector('.card-title')?.textContent === title) {
+        return { found: true, status: li.querySelector('.card-when')?.textContent ?? '' };
+      }
     }
-    return out.join(' | ');
+    return { found: false, status: '(not in Done)' };
+  }, tickTitle);
+  is(doneRowStatus.found, true, 'the completed row is actually found in Done');
+  // EQUALITY on the row's own status, not a denylist of three phrases over the six
+  // strings heldStatus can emit. The denylist passed for `ready now` — a finished
+  // thing announcing it is demanding attention right now, the bug in its worst
+  // form — and was vacuous whenever the assertion above failed (audit).
+  is(doneRowStatus.status, 'done',
+    `and its status reads exactly "done" (got "${doneRowStatus.status}")`);
+
+  console.log('\nThe todo list — ticking off is guarded and keeps focus');
+  // Two defect classes already fixed twice in this app (clarify.ts, work.ts) and
+  // not carried across to this control when it was added: a double-tap writing
+  // the action twice, and focus falling to <body> when the row is removed.
+  const beforeDouble = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
   });
-  is(doneGroupText.includes(tickTitle || '\u0000'), true, 'and it moved into Done');
-  is(/returns|today|tomorrow/.test(doneGroupText.split('|').find(t => t.includes(tickTitle)) || ''), false,
-    'where it no longer claims to be coming back');
+  // Two clicks in the same frame, on the same row.
+  await tpage.evaluate(() => {
+    const b = document.querySelector('#cards .card-done');
+    b?.click(); b?.click();
+  });
+  await tpage.waitForTimeout(250);
+  const afterDouble = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
+  });
+  is(afterDouble, beforeDouble + 1,
+    `a double-tap records the action ONCE (${beforeDouble} -> ${afterDouble})`);
+  const focusAfter = await tpage.evaluate(() => ({
+    tag: document.activeElement?.tagName ?? 'NONE',
+    cls: document.activeElement?.className ?? '',
+    id: document.activeElement?.id ?? '',
+  }));
+  is(focusAfter.tag !== 'BODY' && focusAfter.tag !== 'NONE', true,
+    `focus is kept after ticking something off (on ${focusAfter.id || focusAfter.cls || focusAfter.tag}, not <body>)`);
+  // And it SAYS so. The other two surfaces announce a completion; this one was
+  // silent, so a screen-reader user got neither confirmation nor focus.
+  is((await tpage.locator('#status').textContent())?.startsWith('Done:'), true,
+    'and the completion is announced, not silent');
 
   console.log('\nThe todo list — rename fixes what you wrote');
   await tpage.click('#cards .card-open');
