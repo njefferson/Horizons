@@ -14,6 +14,17 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.11.0 — CAPABILITY
+
+*2026-07-29*
+
+- Two devices can now carry the same work. Export from one, and on the other choose "Take in what I don’t have" — anything the copy has and this device doesn’t is added, and nothing here is removed.
+- It is opt-in and it is manual: nothing runs on its own and nothing is sent anywhere. There is still no account, no server and no telemetry, and the app is complete without ever using it.
+- Taking in the same copy twice costs nothing and says so, because being unsure whether you already did is the ordinary case.
+- Letting something go on one device lets it go on both once you have exchanged — this carries decisions across, not just new items.
+- Replacing everything is still there, unchanged, for setting a device up again. The two are now separate buttons that say which is which, and the one that cannot lose anything is the one your keyboard lands on.
+- If you edit the same thing on both devices before exchanging, the most recent edit wins and the other is quietly dropped. That is a real limit and it is said here rather than hidden.
+
 ## 0.10.1 — ITERATION
 
 *2026-07-29*

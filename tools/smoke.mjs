@@ -1175,6 +1175,75 @@ try {
   });
   is(seeded, 1, 'and the new log records that it was seeded from a copy');
 
+  // --- Two devices (ADR-0035) ----------------------------------------------
+  // A SECOND browser context: its own IndexedDB, its own device id, its own
+  // captures. Anything less would be testing the function, not the feature —
+  // the whole point is that two stores that have never met converge.
+  console.log('\nTwo devices — carrying your work from one to the other');
+  const otherCtx = await browser.newContext({ timezoneId: 'America/Denver', locale: 'en-US', acceptDownloads: true });
+  const other = await otherCtx.newPage();
+  await other.goto(url, { waitUntil: 'load' });
+  await other.waitForSelector('body[data-ready=true]');
+  await other.click('#about-dismiss');
+  for (const t of ['written on the other device', 'and this one too']) {
+    await other.fill('#capture', t);
+    await other.click('#capture-form button[type=submit]');
+    await other.waitForTimeout(150);
+  }
+  await other.click('#open-about');
+  const [otherExport] = await Promise.all([
+    other.waitForEvent('download'),
+    other.click('#export'),
+  ]);
+  const otherFile = join(tmpdir(), 'quietkeep-other-device.json');
+  writeFileSync(otherFile, readFileSync(await otherExport.path()));
+  await otherCtx.close();
+
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const beforeUnion = await tpage.locator('#cards .card').count();
+  const mineBefore = await tpage.locator('#cards .card-title').allTextContents();
+  await tpage.click('#open-about');
+  await tpage.setInputFiles('#import-file', otherFile);
+  await tpage.waitForTimeout(350);
+  is(await tpage.locator('#import-union').isVisible(), true,
+    'the additive option is offered, and it is the one focus lands on');
+  is(await tpage.evaluate(() => document.activeElement?.id), 'import-union',
+    'never the destructive one by default');
+  await tpage.click('#import-union');
+  await tpage.waitForTimeout(1300);
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  const afterUnion = await tpage.locator('#cards .card-title').allTextContents();
+  is(afterUnion.includes('written on the other device'), true, 'the other device\u2019s work arrived');
+  // THE LOAD-BEARING HALF. An import that replaced would also make the line
+  // above pass, so what actually matters is that MINE is all still here.
+  const lost = mineBefore.filter(t => !afterUnion.includes(t));
+  is(lost.length, 0, `and nothing of mine was lost${lost.length ? ` \u2014 ${lost.join(', ')}` : ''}`);
+  is(afterUnion.length > beforeUnion, true,
+    `the list grew rather than being swapped (${beforeUnion} -> ${afterUnion.length})`);
+
+  // Doing it again is the ordinary case: you are not sure whether you already
+  // did. It must cost nothing and must not throw on the unique-id index.
+  await tpage.click('#open-about');
+  await tpage.setInputFiles('#import-file', otherFile);
+  await tpage.waitForTimeout(350);
+  await tpage.click('#import-union');
+  await tpage.waitForTimeout(700);
+  const againNote = await tpage.locator('#import-note').textContent();
+  is(/nothing new/i.test(againNote || ''), true, `taking it in twice says so ("${againNote}")`);
+  is((await tpage.locator('#cards .card-title').allTextContents()).length, afterUnion.length,
+    'and the list is unchanged');
+  const folded = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'shard.folded').length);
+    });
+  });
+  is(folded, 1, 'and exactly one shard.folded is recorded — the one that took something');
+  await tpage.click('#about-close');
+
   console.log('\nThe badge — a glance at the icon, and a number that can reach zero');
   const badge = await tpage.evaluate(async () => {
     const calls = [];

@@ -14,7 +14,7 @@
 
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
-import { exportAll, exportFilename, inspectExport, importSeedingFresh } from '../portability.ts';
+import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
 import { heldNodes } from '../gate.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
@@ -256,8 +256,11 @@ export async function mountAbout(session: Session): Promise<void> {
   const importActions = document.querySelector<HTMLElement>('#import-actions');
   const importGo = document.querySelector<HTMLButtonElement>('#import-go');
   const importBackup = document.querySelector<HTMLButtonElement>('#import-backup');
+  const importUnion = document.querySelector<HTMLButtonElement>('#import-union');
+  const importExplainer = document.querySelector<HTMLElement>('#import-explainer');
 
-  if (importFile && importNote && importActions && importGo && importBackup) {
+  if (importFile && importNote && importActions && importGo && importBackup &&
+      importUnion && importExplainer) {
     // Held between choosing and confirming. Parsed ONCE: re-reading the file at
     // confirm time would let it change underneath the description the person
     // just agreed to.
@@ -266,6 +269,7 @@ export async function mountAbout(session: Session): Promise<void> {
     const resetImport = (): void => {
       staged = null;
       importActions.hidden = true;
+      importExplainer.hidden = true;
     };
 
     // Clearing the input's value on every open means choosing the SAME file
@@ -317,7 +321,49 @@ export async function mountAbout(session: Session): Promise<void> {
         `Bringing it in replaces the ${here} thing${here === 1 ? '' : 's'} on this device. ` +
         'Nothing is merged — this is a replacement.';
       importActions.hidden = false;
-      importBackup.focus();
+      importExplainer.hidden = false;
+      // Focus the ADDITIVE one. It is the everyday action and it cannot lose
+      // anything; the destructive one should never be what a keyboard lands on
+      // by default.
+      importUnion.focus();
+    });
+
+    // MULTI-DEVICE, and opt-in by being a thing you press. Nothing about this
+    // runs on its own, nothing phones anywhere, and the app is complete without
+    // it — someone using one device never meets it beyond a line of text
+    // (ADR-0035, Noah 2026-07-29: "it should be opt-in").
+    importUnion.addEventListener('click', async () => {
+      if (!staged) return;
+      importUnion.disabled = true;
+      importGo.disabled = true;
+      try {
+        const r = await foldInShard(session.store, staged, new Date().toISOString());
+        if (r.taken === 0) {
+          importNote.textContent =
+            'Nothing new in that copy — everything in it was already here. Nothing changed.';
+          return;
+        }
+        // Recorded IN the log, so a store can say where its contents came from.
+        const at = new Date().toISOString();
+        const seq = await session.store.nextSeq(session.device);
+        await session.store.append([{
+          id: ulid(Date.now()), vault: session.vault, at, device: session.device, seq,
+          kind: 'shard.folded', node: null,
+          payload: { fromDevice: r.fromDevices.join(', ') || 'unknown', taken: r.taken, skipped: r.skipped, at },
+        } as AppEvent]);
+        importNote.textContent =
+          `Took in ${r.taken} record${r.taken === 1 ? '' : 's'} from your other device. ` +
+          'Nothing here was removed. Reloading…';
+        setTimeout(() => location.reload(), 500);
+      } catch (err) {
+        importNote.textContent =
+          `That copy could not be taken in — ${(err as Error).message} Choose the file again to retry.`;
+        resetImport();
+        importFile.value = '';
+      } finally {
+        importUnion.disabled = false;
+        importGo.disabled = false;
+      }
     });
 
     importBackup.addEventListener('click', async () => {
@@ -326,6 +372,7 @@ export async function mountAbout(session: Session): Promise<void> {
       // be replaced out from under the copy meant to protect it (audit).
       importBackup.disabled = true;
       importGo.disabled = true;
+      importUnion.disabled = true;
       try {
         await deliverExport('all', 'json');
         importNote.textContent =
@@ -336,6 +383,7 @@ export async function mountAbout(session: Session): Promise<void> {
       } finally {
         importBackup.disabled = false;
         importGo.disabled = false;
+        importUnion.disabled = false;
       }
     });
 

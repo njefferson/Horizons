@@ -142,6 +142,17 @@ export type ExportWritten    = Ev<'export.written',     { at: ISODateTime; scope
 /** Seeds a FRESH store. There is deliberately no `import.merged` — adding one
  *  would break law 9 (ADR-0006). */
 export type ImportSeeded     = Ev<'import.seeded',      { fromExport: string; at: ISODateTime }>;
+/**
+ * A copy from ANOTHER DEVICE was folded in — the multi-device path (ADR-0035).
+ *
+ * This is not `import.merged`, which is banned and always will be. That name
+ * means resolving two versions of one state, and there is no honest way to do
+ * it. This is the union of SINGLE-WRITER SHARDS, which is what ADR-0003 has
+ * always said the fold is: each device only ever writes its own events, so two
+ * shards cannot contradict each other about what happened — only about what is
+ * currently true, which the existing per-field last-writer-wins already settles.
+ */
+export type ShardFolded      = Ev<'shard.folded',       { fromDevice: DeviceId; taken: number; skipped: number; at: ISODateTime }>;
 export type TerminologySkinApplied=Ev<'terminology.skin.applied',{ skin: string; vault: VaultId }>;
 export type TemplateLoaded   = Ev<'template.loaded',    { template: string; source: string; licence: string }>;
 export type ShardCompacted   = Ev<'shard.compacted',    { device: DeviceId; throughSeq: number; archivedTo: string }>;
@@ -185,7 +196,7 @@ export type AppEvent =
   | PebbleRaised | PebbleSettled | CapacityDeclared | WipLimitSet | EstimateRecorded
   | VaultCreated | VaultLocked | VaultUnlocked | DeviceRegistered
   | ModuleEnabled | ModuleDisabled | ConsentGranted | ConsentRevoked
-  | SnapshotWritten | SchemaMigrated | ExportWritten | ImportSeeded
+  | SnapshotWritten | SchemaMigrated | ExportWritten | ImportSeeded | ShardFolded
   | TerminologySkinApplied | TemplateLoaded | ShardCompacted
   | PersonCreated | PersonLinked | JournalEntryWritten | JournalTagAttached
   | MenuItemAdded | MenuItemPromoted | SaveForUpdated
@@ -210,7 +221,7 @@ export const EVENT_KINDS = [
   'pebble.raised','pebble.settled','capacity.declared','wip.limit.set','estimate.recorded',
   'vault.created','vault.locked','vault.unlocked','device.registered',
   'module.enabled','module.disabled','consent.granted','consent.revoked',
-  'snapshot.written','schema.migrated','export.written','import.seeded',
+  'snapshot.written','schema.migrated','export.written','import.seeded','shard.folded',
   'terminology.skin.applied','template.loaded','shard.compacted',
   'person.created','person.linked','journal.entry.written','journal.tag.attached',
   'menu.item.added','menu.item.promoted','save-for.updated',

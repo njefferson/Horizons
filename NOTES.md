@@ -280,6 +280,46 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **Two devices (0.11.0 CAPABILITY,
+  [ADR-0035](docs/adr/0035-multi-device-shard-union.md)).** Noah: *"It should be
+  opt-in for multi-device sync, and I will want to have my personal copies sync
+  so I can go from one device to another when I walk out of my office."*
+  · **The data model was already there and it was checked before anything was
+  built**: folding two devices' logs through the real gate gives everything from
+  both, iPhone-first equals iPad-first equals any interleaving, and nothing is
+  left silent. `seqByDevice` and per-field last-writer-wins have carried this
+  since the spine.
+  · **What was missing was a route, not a merge.** [V-01](docs/verifications.md)
+  settles that Safari has no directory picker, so ADR-0003's automatic folder
+  mirror cannot exist on either of his devices. This is the manual version of the
+  same operation, needing no API Safari lacks and no network at all.
+  · **It is not the merge law 9 forbids.** That means resolving two versions of
+  one state, which cannot be done honestly, and `import.merged` stays banned.
+  This is the union of single-writer shards — ADR-0003's own words — where two
+  shards cannot disagree about what *happened*. ADR-0035 makes the distinction
+  explicit so it is reviewable rather than assumed.
+  · **Additive, so it cannot cost anything.** Restoring replaces and is dangerous
+  by design; this removes nothing, so pressing it on the wrong file costs a few
+  events. The two are separate buttons saying separate things, and the safe one
+  is what focus lands on.
+  · **Deletions travel**, so it converges rather than accumulating. Taking the
+  same copy in twice costs nothing and says so — that is the ordinary case for
+  anyone actually using two devices, and an unfiltered append would have thrown
+  on the store's unique-id index.
+  · **Stated limit, not hidden**: edit the same field on both devices before
+  exchanging and last-writer-wins picks one silently.
+  · **Not assumed for anyone else.** Noah has cellular on both devices and said
+  plainly *"you can't assume everyone will"* — so nothing here touches the
+  network, and the app is complete without ever opening this.
+  · Verified in **two real browser contexts** with separate IndexedDB stores:
+  each captured its own items, one took in the other's copy, both sets survived,
+  and a second exchange took nothing.
+  · 188 tests, all 8 gates green. Lands on `staging`; waits for Noah's word.
+  · **Still open, and his call**: whether the manual exchange is low-friction
+  enough in real use. If it is not, the next question is a transport — and every
+  candidate (a relay, a native wrapper) crosses a line in the thesis, so it is a
+  separate decision and a separate record, never an implementation detail.
+
 - **2026-07-29** — **Three things Noah found on the device, and two the audit did
   (0.10.1 ITERATION).** All of it came from actually using the app, which no gate
   in this repo can substitute for.

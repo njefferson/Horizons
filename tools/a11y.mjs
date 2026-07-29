@@ -118,7 +118,7 @@ const REGISTRY = {
   // destructive control, so it is the one most worth measuring — and the note
   // above it is the sentence someone reads before replacing everything they
   // have.
-  'import, file chosen': ['#import-note', '#import-backup', '#import-go'],
+  'import, file chosen': ['#import-note', '#import-union', '#import-backup', '#import-go', '#import-explainer'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -459,7 +459,7 @@ try {
     await auditContrast(page, 'import, file chosen', theme);
     await auditAxe(page, 'import, file chosen', theme);
     await auditTargets(page, 'import, file chosen', theme);
-    await auditFocusRings(page, 'import, file chosen', theme, ['#import-file', '#import-backup', '#import-go']);
+    await auditFocusRings(page, 'import, file chosen', theme, ['#import-file', '#import-union', '#import-backup', '#import-go']);
     rmSync(validExport, { force: true });
 
     // State 5: B-04's hardest case — 320px at 200% text — WITH the dialog

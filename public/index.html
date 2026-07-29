@@ -248,10 +248,22 @@
   <p id="import-note" class="storage-note" role="status" aria-live="polite"></p>
   <!-- Hidden until a file has been read and described. Nothing destructive is
        reachable before the person has been told what it would do. -->
+  <!-- Two different operations, said as two different things. Taking in another
+       device's copy is additive and cannot lose anything, so it leads. Replacing
+       is for restoring a device and is destructive by design, so it is last and
+       is preceded by the offer to save what is here. -->
   <div id="import-actions" class="about-actions" hidden>
-    <button id="import-backup" type="button">Save what is here first</button>
+    <button id="import-union" type="button">Take in what I don&rsquo;t have</button>
+    <button id="import-backup" type="button" class="ghost">Save what is here first</button>
     <button id="import-go" type="button" class="ghost">Replace everything</button>
   </div>
+  <p id="import-explainer" class="detail-hint" hidden>
+    <strong>Take in what I don&rsquo;t have</strong> adds anything this copy has and
+    this device doesn&rsquo;t, and removes nothing &mdash; that is the one for
+    carrying your work between your own devices.
+    <strong>Replace everything</strong> throws away what is here and uses the copy
+    instead &mdash; that is the one for a device you are setting up again.
+  </p>
 
   <h3 class="about-section">Reminders that reach you</h3>
   <p class="about-p">

@@ -211,6 +211,7 @@ feature can be late; the data cannot be backfilled.
 | `snapshot.written` | `upToSeq, reason: periodic \| pre-migration` | no |
 | `schema.migrated` | `from, to` | no |
 | `export.written` | `at, scope, encrypted: bool` | no |
+| `shard.folded` | `fromDevice, taken, skipped, at` | no — another device's copy was folded in ([ADR-0035](adr/0035-multi-device-shard-union.md)) |
 | `import.seeded` | `fromExport, at` | no |
 | `terminology.skin.applied` | `skin, vault` | no |
 | `template.loaded` | `template, source, licence` | no |

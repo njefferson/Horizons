@@ -14,9 +14,9 @@ import assert from 'node:assert/strict';
 
 import { MemoryLogStore } from '../src/log-store.ts';
 import { fold, emptyState } from '../src/fold.ts';
-import { admit, gateOptionsFor } from '../src/gate.ts';
+import { admit, gateOptionsFor, heldNodes, silentNodes } from '../src/gate.ts';
 import {
-  exportAll, importSeedingFresh, inspectExport, toJsonl, fromJsonl, type ExportFile,
+  exportAll, importSeedingFresh, inspectExport, foldInShard, toJsonl, fromJsonl, type ExportFile,
 } from '../src/portability.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -285,4 +285,106 @@ test('reset does not throw away what the file never held', async () => {
   await store.reset();
   assert.equal(await store.getKv('capture.draft'), 'half a thought', 'the draft survives');
   assert.equal(await store.getKv('device.id'), 'dev-abc', 'and so does this device’s identity');
+});
+
+// --- two devices (ADR-0035) -------------------------------------------------
+
+/** A second device, writing its OWN shard through the real gate. */
+async function otherDevice(id: string, titles: string[]): Promise<ExportFile> {
+  const store = new MemoryLogStore();
+  let state = emptyState();
+  const accepted: AppEvent[] = [];
+  let n = 0;
+  for (const t of titles) {
+    const e = {
+      id: `${id}-${n}`, vault: 'personal', at: NOW, device: id, seq: n,
+      kind: 'capture.recorded', node: `${id}-node-${n}`,
+      payload: { text: t, source: 'quick', sourceTags: [] },
+    } as unknown as AppEvent;
+    const admitted = admit([e], state, opts);
+    n = Math.max(n + 1, ...admitted.map(a => a.seq + 1));
+    accepted.push(...admitted);
+    state = fold(admitted, state);
+  }
+  await store.append(accepted);
+  return exportAll(store, NOW);
+}
+
+test('two devices: what the other one holds arrives, and mine stays', async () => {
+  const { store } = await realStore(2);                       // this device
+  const mineBefore = (await store.all()).length;
+  const theirs = await otherDevice('iphone', ['milk', 'call mum']);
+
+  const r = await foldInShard(store, theirs, NOW);
+  assert.ok(r.taken > 0, 'their events arrived');
+  assert.deepEqual(r.fromDevices, ['iphone'], 'and it says whose they are');
+
+  const state = fold(await store.all());
+  const titles = heldNodes(state).map(n => n.title).sort();
+  assert.ok(titles.includes('milk') && titles.includes('call mum'), 'theirs is here');
+  assert.ok(titles.includes('thing 0') && titles.includes('thing 1'), 'and MINE is still here');
+  assert.equal((await store.all()).length, mineBefore + r.taken, 'nothing was removed');
+  assert.equal(silentNodes(state).length, 0, 'and nothing is invisible');
+  assert.equal(state.devices.size, 2, 'the store knows both devices');
+});
+
+test('doing it twice takes nothing the second time', async () => {
+  // The ordinary case for anyone actually using two devices: you hand the same
+  // file over again because you are not sure whether you already did. That must
+  // cost nothing — and must not throw, which is what an unfiltered append would
+  // do against the store's unique-id index.
+  const { store } = await realStore(1);
+  const theirs = await otherDevice('iphone', ['milk']);
+  const first = await foldInShard(store, theirs, NOW);
+  const after = (await store.all()).length;
+  const second = await foldInShard(store, theirs, NOW);
+  assert.equal(second.taken, 0, 'nothing new to take');
+  assert.equal(second.skipped, first.taken, 'and it says how many it already had');
+  assert.equal((await store.all()).length, after, 'the log did not grow');
+});
+
+test('folding in a shard NEVER removes anything, even from the wrong file', async () => {
+  // The safety property that makes this a reasonable thing to press. Restoring
+  // replaces and is dangerous by design; this one cannot lose you anything, so
+  // pressing it on a file you did not mean costs a few events and nothing else.
+  const { store } = await realStore(3);
+  const mine = await store.all();
+  const stranger = await otherDevice('someone-else', ['not mine at all']);
+  await foldInShard(store, stranger, NOW);
+  const after = await store.all();
+  for (const e of mine) {
+    assert.ok(after.some(x => x.id === e.id), `${e.id} survived`);
+  }
+});
+
+test('a deletion made on the other device travels', async () => {
+  // Convergence, not just accumulation. A deletion is an event like any other,
+  // so it arrives and wins on the same last-writer rule as everything else.
+  const store = new MemoryLogStore();
+  const shared = await otherDevice('iphone', ['a thing to let go of']);
+  await foldInShard(store, shared, NOW);
+  const node = fold(await store.all()).nodes.keys().next().value as string;
+  assert.equal(heldNodes(fold(await store.all())).length, 1);
+
+  // The other device lets it go, and re-exports.
+  const theirStore = new MemoryLogStore();
+  await theirStore.append(fromJsonl(shared.logJsonl));
+  await theirStore.append([{
+    id: 'iphone-trash', vault: 'personal', at: '2026-07-30T12:00:00.000Z',
+    device: 'iphone', seq: 99, kind: 'node.trashed', node, payload: { reason: 'test' },
+  } as unknown as AppEvent]);
+  const later = await exportAll(theirStore, '2026-07-30T12:00:00.000Z');
+
+  await foldInShard(store, later, NOW);
+  assert.equal(heldNodes(fold(await store.all())).length, 0,
+    'letting something go on one device lets it go on both');
+});
+
+test('a damaged shard is refused without taking anything', async () => {
+  const { store } = await realStore(2);
+  const before = (await store.all()).length;
+  await assert.rejects(
+    () => foldInShard(store, { format: 'nope' } as unknown as ExportFile, NOW),
+    /nothing was taken in/i);
+  assert.equal((await store.all()).length, before, 'and the store is exactly as it was');
 });

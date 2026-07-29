@@ -5,10 +5,17 @@
 // rendering of current state, because a state snapshot alone would silently
 // discard everything that led to it (ADR-0006).
 //
-// IMPORT ALWAYS SEEDS A FRESH STORE. There is no merge, no "smart import", no
-// conflict UI, and no `import.merged` event — adding one would break law 9.
-// Merging is solved once, in the folder mirror, by single-writer shards
-// (ADR-0003), and nowhere else.
+// RESTORING ALWAYS SEEDS A FRESH STORE. There is no merge, no "smart import",
+// no conflict UI, and no `import.merged` event — adding one would break law 9.
+//
+// FOLDING IN ANOTHER DEVICE'S SHARD is a different operation and is additive
+// (ADR-0035). It is not the merge law 9 forbids: that means resolving two
+// versions of one state, which cannot be done honestly. This is the union of
+// single-writer shards, which is what ADR-0003 has always said the fold is —
+// each device writes only its own events, so two shards cannot disagree about
+// what happened, and per-field last-writer-wins already settles what is
+// currently true. The two operations are separate functions with separate
+// controls saying separate things.
 
 import type { AppEvent } from './events.ts';
 import { isKnownKind } from './events.ts';
@@ -244,4 +251,62 @@ export async function importSeedingFresh(store: LogStore, file: ExportFile): Pro
   });
 
   return { events: events.length };
+}
+
+/**
+ * Fold in ANOTHER DEVICE'S copy: take the events this store does not already
+ * hold, and leave everything else exactly where it is (ADR-0035).
+ *
+ * **This is not a merge, and it is not `import.merged`.** That name means
+ * resolving two versions of one state, and there is no honest way to do it —
+ * which is why it is banned and stays banned. This is the union of SINGLE-WRITER
+ * shards, which is what [ADR-0003](../docs/adr/0003-folder-mirror.md) has always
+ * said the fold is. Each device only ever writes its own events, so two shards
+ * cannot disagree about what *happened*; they can only disagree about what is
+ * currently true, and per-field last-writer-wins over `(at, device, seq)` has
+ * settled that since the spine was built.
+ *
+ * **Additive and non-destructive.** `importSeedingFresh` replaces and is the
+ * right answer for restoring a device. This one never removes anything, so
+ * running it on the wrong file costs nothing but a few events you did not want.
+ * The two are separate controls saying separate things, because a person about
+ * to press one of them is entitled to know which.
+ *
+ * Deletions travel, because a deletion is an event like any other.
+ */
+export async function foldInShard(
+  store: LogStore,
+  file: ExportFile,
+  now: string,
+): Promise<{ taken: number; skipped: number; fromDevices: string[] }> {
+  const summary = inspectExport(file);
+  if (summary.refusals.length > 0) {
+    throw new Error(`${summary.refusals[0]} Nothing was taken in and your current data is untouched.`);
+  }
+  const incoming = fromJsonl(file.logJsonl);
+  const mine = await store.all();
+
+  // BY EVENT ID. The store's index is unique on id, so appending one it already
+  // holds throws mid-write — the exact shape that cost a store its contents
+  // before `replaceAll` existed. Filtering here means the append cannot fail on
+  // a file that has simply been taken in twice, which is the ordinary case for
+  // anyone actually using two devices.
+  const held = new Set(mine.map(e => e.id));
+  const fresh = incoming.filter(e => !held.has(e.id));
+  const fromDevices = [...new Set(fresh.map(e => e.device))].sort();
+
+  if (fresh.length > 0) {
+    await store.append(fresh);
+    // Recompute from the WHOLE log, not from the incoming events alone. The
+    // snapshot is an optimisation over everything the store holds, and one
+    // written from a fragment would be a photograph of a store that never
+    // existed.
+    const state = fold(await store.all());
+    await store.putSnapshot({
+      upToSeqByDevice: Object.fromEntries(state.seqByDevice),
+      state: serialiseState(state),
+      at: now,
+    });
+  }
+  return { taken: fresh.length, skipped: incoming.length - fresh.length, fromDevices };
 }
