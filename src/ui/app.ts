@@ -15,6 +15,7 @@ import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
+import { mountDetail } from './detail.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -31,13 +32,19 @@ const captured = (s: Session): NodeState[] =>
     .filter(n => !n.trashed)
     .sort((a, b) => (a.id < b.id ? 1 : -1));
 
-function render(session: Session): void {
+function render(session: Session, openDetail?: (n: NodeState) => void): void {
   const list = $('#cards');
   const items = captured(session);
 
   list.replaceChildren(...items.map(node => {
     const li = document.createElement('li');
-    li.className = 'card';
+
+    // The whole card is the control. Anything you are holding can be opened and
+    // changed — a date, a repeat, an undo — which is what makes this a planner
+    // rather than a list you can only read.
+    const card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'card';
 
     const title = document.createElement('span');
     title.className = 'card-title';
@@ -53,7 +60,9 @@ function render(session: Session): void {
     // nothing here depends on seeing a colour.
     when.textContent = clock ? `returns ${friendly(clock.at, session.zone)}` : 'held';
 
-    li.append(title, when);
+    card.append(title, when);
+    if (openDetail) card.addEventListener('click', () => openDetail(node));
+    li.append(card);
     return li;
   }));
 
@@ -91,31 +100,37 @@ async function main(): Promise<void> {
   const status = $('#status');
 
   input.value = await session.draft();
-  // CONTAINED, like every later render. This one runs BEFORE the submit listener
-  // is attached, so a throw here left the form with no handler at all — and a
-  // form with no handler does a native GET navigation, which clears the input
-  // and destroys the typed thought with no error at all. That is the precise
-  // failure the try/catch further down was written to prevent; the first render
-  // was simply never given the same protection.
-  try { render(session); } catch { /* the shell still works; cards appear on next load */ }
+
+  // Every surface is mounted through a mutable holder that starts as a no-op, so
+  // one failing surface cannot take the others — or capture — down with it, and
+  // no callback can close over a binding that is not initialised yet.
+  //
+  // CONTAINMENT IS LOAD-BEARING HERE, not defensive habit. These surfaces read
+  // every stored date, and they are built BEFORE the submit listener below is
+  // attached. One malformed date used to throw out of this stretch, leaving the
+  // form with no handler at all — and a form with no submit handler does a
+  // native GET navigation, which clears the input and destroys the typed thought
+  // with no error whatsoever, permanently, while the data sits intact and
+  // unreachable. Capture is the promise; everything else is a surface.
+  let detail: { open(n: NodeState): void } = { open() {} };
+  let work: { refresh(): void } = { refresh() {} };
+  let triage: { refresh(): void } = { refresh() {} };
+
+  const rerender = (): void => render(session, n => detail.open(n));
+  const refreshAll = (): void => { rerender(); work.refresh(); };
+
+  try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
+
+  // The detail sheet: tap anything you hold to give it a date, make it repeat,
+  // or take back a completion (Phase 3.5).
+  try { detail = mountDetail(session, now, refreshAll); } catch { /* a surface */ }
+
+  // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
+  try { work = mountWork(session, now, rerender); } catch { /* a surface */ }
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).
-  // Work mode first, so `triage`'s callback closes over an already-initialised
-  // binding rather than relying on no microtask running in between.
-  //
-  // CONTAINED: capture is the one thing that must always work, and this surface
-  // reads every stored date. One malformed date used to throw out of here —
-  // before the capture handlers below were even registered — and took the whole
-  // app down with the data intact and unreachable. The projections are defensive
-  // and the gate refuses bad dates now; this is the third lock.
-  let work: { refresh(): void } = { refresh() {} };
-  try {
-    work = mountWork(session, now, () => render(session));
-  } catch {
-    // Work mode is a surface. Capture is the promise.
-  }
-  const triage = mountTriage(session, () => { render(session); work.refresh(); });
+  try { triage = mountTriage(session, refreshAll); } catch { /* a surface */ }
 
   // Three URL entrances, all landing in the same capture (ADR-0008):
   //  - ?capture=1     the manifest shortcut — just focus the empty line
@@ -164,9 +179,8 @@ async function main(): Promise<void> {
     status.textContent = 'Held. It will come back to you.';
     void session.setDraft('').catch(() => { /* stale draft self-heals on next keystroke */ });
     try {
-      render(session);
+      refreshAll();
       triage.refresh();
-      work.refresh();
     } catch {
       // A render bug must not contradict a landed write; the card appears on
       // next load. landed stays the truth.

@@ -70,6 +70,10 @@ const REGISTRY = {
   'next up': ['#nextup-heading', '.nextup-title', '.nextup-why', '.nextup-count',
     '#nextup-done', '#nextup-skip', '#gauge'],
   'coverage open': ['#gauge', '.coverage-title', '.coverage-when'],
+  // The detail sheet. The hint and the inline labels are the lowest-contrast
+  // text on it, and the number inputs are the smallest targets.
+  'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
+    '.detail-hint', '#detail-date', '#detail-every', '#detail-date-set', '#detail-close'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -306,6 +310,26 @@ try {
     await auditContrast(page, 'coverage open', theme);
     await auditAxe(page, 'coverage open', theme);
     await auditTargets(page, 'coverage open', theme);
+
+    // State 3e: the detail sheet — the surface that makes this a planner.
+    await page.click('#cards .card');
+    await page.waitForSelector('#detail[open]');
+    await auditContrast(page, 'detail sheet', theme);
+    await auditAxe(page, 'detail sheet', theme);
+    await auditTargets(page, 'detail sheet', theme);
+    await auditFocusRings(page, 'detail sheet', theme, ['#detail-date-set', '#detail-close']);
+    // B-04's hardest case, for the densest surface in the app.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const sheetOverflow = await page.evaluate(() => {
+      const d = document.querySelector('#detail');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (sheetOverflow <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: detail sheet horizontal overflow ${sheetOverflow}px (must be ≤1)`);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('#detail-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

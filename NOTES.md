@@ -253,6 +253,26 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **Phase 3.5: the app is a planner now, not a triage loop (0.6.0
+  CAPABILITY).** Tap anything you are holding and a detail sheet opens: give it a real
+  date or take one off, make it repeat (its own interval AND its own comfort window),
+  take back a "done", keep something you had let go, or put it on the Menu. Every intent
+  is built from events **already in the closed vocabulary** — nothing new was invented.
+  · **Why this jumped the build-plan order** (Noah: *"I want to be able to play with it and
+  test it… have a todo list of some sort maybe soon"*): an audit of what the UI could
+  actually emit found **11 of 90 event kinds**, no date input anywhere, and — worst —
+  `upkeep.interval.set` had **no caller at all**, so the decay primitive and the Upkeep
+  chips shipped in 0.5.0 were unreachable by construction. Phase 4 (focus anchors) would
+  have added more engine to an app you still could not plan with.
+  · Dates resolve by **probing the user's zone**, because no fixed UTC hour is inside the
+  same local day everywhere — offsets run −12 to +14, so noon UTC on the key date is
+  already tomorrow in Kiritimati. Tested in six zones including +14, +12:45 and −11.
+  · The a11y gate caught the sheet overflowing **121px** at 320px/200% — the repeat row
+  cannot fit on one line at that size — and it now becomes a column.
+  · **Still missing, and named so it cannot be forgotten:** there is no **rename** (the
+  vocabulary has no event for changing a title, so it needs a deliberate addition, not a
+  slipped-in one) and no **Menu surface** yet, so someday/reference items are reachable
+  only through the sheet.
 - **2026-07-29** — **The Phase 3 audit (three skeptics) found a defect that could brick the
   app, and it shipped as 0.5.1 the same day.** 96 unit tests now, all 8 gates green.
   · **Severe, and live in production when found:** one malformed date anywhere in the log

@@ -94,6 +94,57 @@
   <ul id="cards" class="cards" tabindex="-1"></ul>
 </main>
 
+<!-- The detail sheet: what turns a triage loop into a planner. Everything here
+     is built from events already in the vocabulary. -->
+<dialog id="detail" aria-labelledby="detail-title">
+  <h2 id="detail-title" class="detail-title"></h2>
+  <p id="detail-state" class="detail-state"></p>
+
+  <div class="detail-group">
+    <label class="detail-label" for="detail-date">Give it a date</label>
+    <div class="detail-row">
+      <input id="detail-date" type="date">
+      <button id="detail-date-set" type="button">Set</button>
+      <button id="detail-date-clear" type="button" class="ghost">No date</button>
+    </div>
+  </div>
+
+  <div class="detail-group">
+    <span class="detail-label" id="detail-repeat-label">Make it repeat</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-repeat-label">
+      <label class="detail-inline" for="detail-every">every</label>
+      <input id="detail-every" type="number" min="1" max="3650" value="7"
+             inputmode="numeric" aria-describedby="detail-repeat-hint">
+      <label class="detail-inline" for="detail-slack">days, relaxed for</label>
+      <input id="detail-slack" type="number" min="1" max="3650" value="2"
+             inputmode="numeric" aria-describedby="detail-repeat-hint">
+      <button id="detail-repeat-set" type="button">Repeat</button>
+      <button id="detail-repeat-stop" type="button" class="ghost">Stop repeating</button>
+    </div>
+    <p id="detail-repeat-hint" class="detail-hint">
+      How long it can go before it asks again. A plant and a phone call do not
+      need the same patience.
+    </p>
+  </div>
+
+  <div class="detail-group">
+    <span class="detail-label" id="detail-state-label">Where it lives</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-state-label">
+      <button id="detail-done" type="button">Done</button>
+      <button id="detail-undone" type="button" class="ghost">Not done after all</button>
+      <button id="detail-menu" type="button" class="ghost">Put on the Menu</button>
+      <button id="detail-promote" type="button" class="ghost">Bring back from the Menu</button>
+      <button id="detail-trash" type="button" class="ghost">Let it go</button>
+      <button id="detail-untrash" type="button" class="ghost">Keep it after all</button>
+    </div>
+  </div>
+
+  <p id="detail-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  <div class="about-actions">
+    <button id="detail-close" type="button" class="ghost">Close</button>
+  </div>
+</dialog>
+
 <footer class="foot">
   <p>Local-first. No accounts, no telemetry, no server.
      <a href="https://noahjefferson.pages.dev/accessibility">Accessibility</a></p>

@@ -436,6 +436,73 @@ try {
   is(/overdue|late|missed|streak/i.test(surfaceText), false,
     'the rendered page carries no shame vocabulary');
 
+  // --- The detail sheet: dates, repeats, undo (Phase 3.5) ------------------
+  // The point of this section is that the app is a PLANNER now: it can hold a
+  // date and a repeat, not just a list. Each assertion reads the log, because a
+  // surface that looks right and writes nothing is the failure mode that matters.
+  console.log('\nDetail sheet — a planner, not just a list');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.click('#cards .card');
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail').isVisible(), true, 'tapping something you hold opens its sheet');
+  const sheetTitle = await tpage.locator('#detail-title').textContent();
+  is(typeof sheetTitle === 'string' && sheetTitle.length > 0, true, `the sheet names the item ("${sheetTitle}")`);
+
+  // A date.
+  await tpage.fill('#detail-date', '2026-12-24');
+  await tpage.click('#detail-date-set');
+  await tpage.waitForTimeout(150);
+  const afterDate = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  const dueSet = afterDate.filter(e => e.kind === 'clock.set' && e.payload?.clockKind === 'due');
+  is(dueSet.length, 1, 'a real date was recorded');
+  is(dueSet[0]?.payload?.source, 'detail:due', 'and it says where it came from');
+  is((await tpage.locator('#detail-state').textContent())?.includes('2026-12-24'), true,
+    'the sheet reflects the date it just set');
+
+  // A repeat — the path into the decay primitive, which had no caller at all.
+  await tpage.fill('#detail-every', '10');
+  await tpage.fill('#detail-slack', '3');
+  await tpage.click('#detail-repeat-set');
+  await tpage.waitForTimeout(150);
+  const afterRepeat = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  const intervals = afterRepeat.filter(e => e.kind === 'upkeep.interval.set');
+  is(intervals.length, 1, 'upkeep.interval.set was finally emitted by a real surface');
+  is(intervals[0]?.payload?.intervalDays, 10, 'with the interval asked for');
+  is(intervals[0]?.payload?.comfortWindowDays, 3, 'and its own comfort window');
+  is((await tpage.locator('#detail-state').textContent())?.includes('repeats every 10 days'), true,
+    'and the sheet says so in plain words');
+
+  // A bad number must not reach the log as NaN.
+  await tpage.fill('#detail-every', '0');
+  await tpage.click('#detail-repeat-set');
+  await tpage.waitForTimeout(100);
+  const intervalsAfterBad = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'upkeep.interval.set').length);
+    });
+  });
+  is(intervalsAfterBad, 1, 'a nonsense interval is refused rather than written');
+  is((await tpage.locator('#detail-state').textContent())?.includes('whole days'), true,
+    'and the reason is shown, not just announced');
+
+  await tpage.click('#detail-close');
+  is(await tpage.locator('#detail').isVisible(), false, 'the sheet closes');
+
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
   await tctx.close();

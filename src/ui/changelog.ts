@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.6.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Tap anything you are holding and you can now change it. Until now the app could only take a thought in and sort it once; now it can hold a plan.',
+      'Give something a real date, or take the date off again — if you take it off, it comes back to you today rather than going quiet.',
+      'Make something repeat: how often, and how long it can go before it asks again. A plant and a phone call do not need the same patience, so each thing keeps its own.',
+      'Take back a “done” if you ticked the wrong thing, keep something you had let go, or put it on the Menu where it waits without asking anything of you.',
+    ],
+  },
+  {
     triplet: '0.5.1',
     kind: 'ITERATION',
     date: '2026-07-29',

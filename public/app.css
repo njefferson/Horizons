@@ -354,6 +354,14 @@ button.ghost {
 }
 
 .card {
+  /* A real <button>, full width, so anything you hold can be opened and changed.
+     Styled as a card; still a control, still keyboard-reachable, still ≥44px. */
+  width: 100%;
+  min-height: var(--target);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
   display: flex;
   align-items: baseline;
   justify-content: space-between;
@@ -521,3 +529,44 @@ dialog, dialog * { overflow-wrap: anywhere; }
     transition-duration: 0.001ms !important;
   }
 }
+
+/* --- the detail sheet ------------------------------------------------------ */
+
+.detail-title { margin: 0 0 0.25rem; font-size: 1.125rem; overflow-wrap: anywhere; }
+.detail-state { margin: 0 0 1rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.detail-group { margin: 0 0 1.25rem; }
+.detail-label {
+  display: block;
+  margin: 0 0 0.4rem;
+  font-weight: 600;
+}
+.detail-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+.detail-row button { min-height: var(--target); }
+.detail-row input {
+  min-height: var(--target);
+  padding: 0.4rem 0.6rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+.detail-row input[type="number"] { width: 5rem; max-width: 100%; }
+/* At 320px/200% the repeat row cannot fit "every [n] days, relaxed for [n]" on
+   one line — the inline labels and fixed-width boxes overflowed by 121px. Let
+   every child shrink, and let the row become a column when it must. */
+.detail-row > * { min-width: 0; max-width: 100%; flex-shrink: 1; }
+.detail-row input[type="date"] { flex: 1 1 10rem; }
+.detail-row button { flex: 0 1 auto; }
+@media (max-width: 26rem) {
+  .detail-row { flex-direction: column; align-items: stretch; }
+  .detail-row input, .detail-row button { width: 100%; }
+  .detail-row input[type="number"] { width: 100%; }
+}
+.detail-inline { color: var(--ink-soft); font-size: 0.9375rem; }
+.detail-hint { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.875rem; }

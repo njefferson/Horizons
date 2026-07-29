@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.6.0 — CAPABILITY
+
+*2026-07-29*
+
+- Tap anything you are holding and you can now change it. Until now the app could only take a thought in and sort it once; now it can hold a plan.
+- Give something a real date, or take the date off again — if you take it off, it comes back to you today rather than going quiet.
+- Make something repeat: how often, and how long it can go before it asks again. A plant and a phone call do not need the same patience, so each thing keeps its own.
+- Take back a “done” if you ticked the wrong thing, keep something you had let go, or put it on the Menu where it waits without asking anything of you.
+
 ## 0.5.1 — ITERATION
 
 *2026-07-29*
