@@ -798,3 +798,22 @@ dialog, dialog * { overflow-wrap: anywhere; }
 /* The snapshot caveat: quieter than the offer above it, but never hidden — a
    calendar that silently goes stale would be the app implying it is live. */
 .about-caveat { color: var(--ink-soft); font-size: 0.9375rem; }
+
+/* --- dependencies: what holds up what ------------------------------------- */
+.detail-feeds { list-style: none; margin: 0.5rem 0 0; padding: 0; }
+.detail-feed {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  padding: 0.25rem 0;
+}
+.detail-feed button { min-height: var(--target); }
+/* The arithmetic, in words. `--ink`, not an alert colour: "it needed starting
+   two days ago" is a fact about the dates, and this app has no red walls. */
+.detail-feed-words { margin-top: 0.35rem; color: var(--ink); font-weight: 600; }
+#detail-feeds { min-height: var(--target); flex: 1 1 8rem; min-width: 0; font: inherit;
+  color: var(--ink); background: var(--surface); border: 2px solid var(--line);
+  border-radius: var(--radius); padding: 0.25rem 0.5rem; }
+#detail-lead { min-height: var(--target); width: 5rem; }

@@ -19,6 +19,7 @@ import {
 } from './events.ts';
 import { fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
+import { wouldCycle } from './dependencies.ts';
 
 export class GateRejection extends Error {
   // Explicit fields, not constructor parameter properties — Node's
@@ -226,6 +227,27 @@ export function admit(
     // Alone it is caught by the belt-and-braces delta check; batched it was not.
     if (e.kind === 'node.renamed' && (!e.node || !before.nodes.get(e.node))) {
       throw new GateRejection('cannot rename a node that does not exist', e);
+    }
+
+    // A dependency must name a real, live target, and must not close a loop.
+    // A cycle is not a mistake to report afterwards — it is a claim that two
+    // things each have to happen before the other, which has no meaning and no
+    // fix. Refusing it here keeps the graph acyclic BY CONSTRUCTION, so nothing
+    // downstream has to defend against an infinite walk.
+    if (e.kind === 'dependency.declared') {
+      const feeds = (e.payload as { feeds?: unknown }).feeds;
+      if (typeof feeds !== 'string' || !feeds) {
+        throw new GateRejection('a dependency must name what it feeds', e);
+      }
+      if (!e.node) throw new GateRejection('a dependency must belong to a node', e);
+      const target = before.nodes.get(feeds);
+      if (!target || target.trashed || target.mergedInto) {
+        throw new GateRejection(`nothing here to feed: ${feeds}`, e);
+      }
+      if (wouldCycle(before, e.node, feeds)) {
+        throw new GateRejection(
+          'that would make two things each wait for the other', e);
+      }
     }
 
     if (e.kind === 'node.merged') {

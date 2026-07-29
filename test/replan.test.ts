@@ -291,8 +291,10 @@ test('and the words say the RIGHT thing, not merely a non-empty thing', () => {
 test('the assembled context never states something the data does not support', () => {
   // Zero coverage before this: replacing the whole function with `null`, or with
   // a fixed false claim about a date, left every gate green (audit).
+  const noDeps = { feeds: [], soonest: null, leadDays: null, latestStartInDays: null, bufferDays: null };
   const card = (kind: 'due' | 'suspense', daysAgo: number, suspense: string | null, daysLeft: number | null) =>
-    ({ node: {} as never, clockKind: kind, passedKinds: [kind], at: NOW, daysAgo, fed: [], suspense, daysLeft });
+    ({ node: {} as never, clockKind: kind, passedKinds: [kind], at: NOW, daysAgo,
+       fed: [], depends: noDeps, suspense, daysLeft });
 
   assert.equal(contextWords(card('suspense', 3, NOW, -3), TZ), null,
     'when the passed clock IS the commitment, saying it twice is two questions about one item');

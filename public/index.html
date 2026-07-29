@@ -176,6 +176,26 @@
     </p>
   </div>
 
+  <!-- The dependency edge (build-plan item 27). "What breaks if I do not do
+       this?" is the question, so the edge points forward from here. -->
+  <div class="detail-group">
+    <label class="detail-label" for="detail-feeds">What does this hold up?</label>
+    <div class="detail-row">
+      <select id="detail-feeds"></select>
+      <label class="detail-inline" for="detail-lead">takes</label>
+      <input id="detail-lead" type="number" min="1" max="365" value="1"
+             inputmode="numeric" aria-describedby="detail-feeds-hint">
+      <label class="detail-inline" for="detail-lead">days</label>
+      <button id="detail-feeds-set" type="button">Link</button>
+    </div>
+    <p id="detail-feeds-hint" class="detail-hint">
+      If this has to happen before something else, say so and Quietkeep works out
+      the last day it can start. Nothing is guessed &mdash; without both a date
+      on the other thing and a length here, it stays quiet.
+    </p>
+    <ul id="detail-feeds-list" class="detail-feeds"></ul>
+  </div>
+
   <div class="detail-group">
     <span class="detail-label" id="detail-state-label">Where it lives</span>
     <div class="detail-row" role="group" aria-labelledby="detail-state-label">

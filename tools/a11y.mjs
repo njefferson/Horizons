@@ -88,7 +88,10 @@ const REGISTRY = {
   // text on it, and the number inputs are the smallest targets.
   'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
     '.detail-hint', '#detail-name', '#detail-date', '#detail-every', '#detail-rename',
-    '#detail-date-set', '#detail-close'],
+    '#detail-date-set', '#detail-close',
+    // The dependency picker. A <select> and a number box are the two smallest
+    // targets on the densest surface in the app.
+    '#detail-feeds', '#detail-lead', '#detail-feeds-set'],
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
@@ -374,7 +377,7 @@ try {
     await auditContrast(page, 'detail sheet', theme);
     await auditAxe(page, 'detail sheet', theme);
     await auditTargets(page, 'detail sheet', theme);
-    await auditFocusRings(page, 'detail sheet', theme, ['#detail-date-set', '#detail-close']);
+    await auditFocusRings(page, 'detail sheet', theme, ['#detail-date-set', '#detail-close', '#detail-feeds']);
     // B-04's hardest case, for the densest surface in the app.
     await page.setViewportSize({ width: 320, height: 568 });
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });

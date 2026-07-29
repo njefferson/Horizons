@@ -1175,6 +1175,75 @@ try {
   });
   is(seeded, 1, 'and the new log records that it was seeded from a copy');
 
+  // --- Dependency dates (build-plan item 27) --------------------------------
+  // The half of law 3 that ADR-0012 always described and nothing built. "That
+  // date went by" is a fact anyone can see; "it fed the thing you promised for
+  // the 14th, and it needed starting two days ago" is the expensive part.
+  console.log('\nDependencies — what holds up what, and when it must start');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  // Drain whatever is already in the inbox first, then add these two. Earlier
+  // sections leave items behind, and a heat card queued ahead of ours made the
+  // wait for a clarify hint time out.
+  const routeOne = async (label) => {
+    await tpage.waitForSelector('#triage:not([hidden]) .route');
+    // Heat cards have no hint; clarify cards do. Tap Hot until clarify appears.
+    for (let i = 0; i < 12; i++) {
+      if (await tpage.locator('#triage-actions .route .route-hint').count() > 0) break;
+      await tpage.click('#triage-actions .route');
+      await tpage.waitForTimeout(120);
+    }
+    await tpage.locator('#triage-actions .route', { hasText: label }).first().click();
+    await tpage.waitForTimeout(150);
+  };
+  while (await tpage.locator('#triage:not([hidden]) .route').count() > 0) {
+    await routeOne('Next action');
+  }
+  for (const t of ['draft the brief', 'brief the boss']) {
+    await tpage.fill('#capture', t);
+    await tpage.click('#capture-form button[type=submit]');
+    await routeOne('Next action');
+  }
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const sixDays = await tpage.evaluate(() => new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10));
+  await tpage.locator('#cards .card:has-text("brief the boss") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-date', sixDays);
+  await tpage.click('#detail-date-set');
+  await tpage.waitForTimeout(200);
+  await tpage.click('#detail-close');
+
+  await tpage.locator('#cards .card:has-text("draft the brief") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  // The picker offers only what can LEGALLY be fed. Offering an illegal option
+  // and refusing it afterwards is a control that lies about what it does.
+  const options = await tpage.locator('#detail-feeds option').allTextContents();
+  is(options.includes('brief the boss'), true, `the picker offers a legal target (${options.join(', ')})`);
+  is(options.includes('draft the brief'), false, 'and never itself');
+  await tpage.selectOption('#detail-feeds', { label: 'brief the boss' });
+  await tpage.fill('#detail-lead', '2');
+  await tpage.click('#detail-feeds-set');
+  await tpage.waitForTimeout(300);
+
+  const depLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'dependency.declared'));
+    });
+  });
+  is(depLog.length, 1, 'one dependency.declared was recorded');
+  is(depLog[0]?.payload?.leadEstimateDays, 2, 'carrying how long this takes');
+  // THE ARITHMETIC, in words. Six days out, two days of work: start within four.
+  const depWords = await tpage.locator('#detail-feeds-list').textContent();
+  is(/start it within 4 days/.test(depWords || ''), true,
+    `it works out the last day this can start ("${(depWords || '').slice(-60)}")`);
+  is(await tpage.locator('#detail-feeds option').allTextContents()
+    .then(o => o.includes('brief the boss')), false,
+    'and stops offering a link that already exists');
+  await tpage.click('#detail-close');
+
   // --- Two devices (ADR-0035) ----------------------------------------------
   // A SECOND browser context: its own IndexedDB, its own device id, its own
   // captures. Anything less would be testing the function, not the feature —

@@ -167,7 +167,7 @@ is a valid, unremarkable value, never nagged about.
 |---|---|---|
 | `waiting.opened` | `person, forWhat, since` | no |
 | `waiting.closed` | `outcome` | **yes — gated** |
-| `dependency.declared` | `feeds: NodeId, suspense, leadEstimate` | no |
+| `dependency.declared` | `feeds: NodeId, suspense, leadEstimate` | no — **gated**: must name a live target and must not close a loop (build-plan 27) |
 | `dependency.released` | `feeds` | **yes — gated** |
 | `suspense.set` | `at, label?` | no |
 | `project.role.set` | `role: execute \| track` | **yes — gated** (a `track` project emits no next actions — only Waiting-Fors and Upkeep check-ins, so its children must re-home) |

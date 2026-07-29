@@ -23,6 +23,8 @@ import {
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
 } from './detail-intents.ts';
 import { doneEvents } from './work.ts';
+import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
+import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 
 export interface DetailUI { open(node: NodeState): void }
 
@@ -37,10 +39,14 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const slack = q<HTMLInputElement>('#detail-slack');
   const live = q('#detail-live');
   const hint = q('#detail-repeat-hint');
+  const feedsSel = q<HTMLSelectElement>('#detail-feeds');
+  const leadInput = q<HTMLInputElement>('#detail-lead');
+  const feedsList = q('#detail-feeds-list');
   if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
     return { open() {} };
   }
   const NAME = name;
+  const FEEDS = feedsSel, LEAD = leadInput, FEEDS_LIST = feedsList;
   const DLG = dlg, TITLE = title, STATE = state, DATE = date, EVERY = every, SLACK = slack, LIVE = live;
 
   let current: NodeState | null = null;
@@ -99,6 +105,54 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
+
+    // The dependency edge (build-plan item 27). The picker offers only nodes it
+    // could legally feed — live, not itself, and not one that would close a
+    // loop. Offering an illegal option and refusing it afterwards is a control
+    // that lies about what it does.
+    if (FEEDS && LEAD && FEEDS_LIST) {
+      const st = session.state();
+      const legal = [...st.nodes.values()]
+        .filter(t => !t.trashed && !t.mergedInto && !t.lastDone && t.id !== n.id)
+        .filter(t => !wouldCycle(st, n.id, t.id))
+        .filter(t => !n.feeds.includes(t.id))
+        .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+      const keep = FEEDS.value;
+      FEEDS.replaceChildren(...[
+        Object.assign(document.createElement('option'), { value: '', textContent: 'nothing yet' }),
+        ...legal.map(t => Object.assign(document.createElement('option'), {
+          value: t.id, textContent: t.title || '(untitled)',
+        })),
+      ]);
+      if (legal.some(t => t.id === keep)) FEEDS.value = keep;
+
+      const view = dependencyView(st, n, new Date(now()).toISOString(), session.zone);
+      const words = dependencyWords(view);
+      FEEDS_LIST.replaceChildren(...view.feeds.map(f => {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const label = document.createElement('span');
+        label.textContent = f.node.title || '(untitled)';
+        const drop = document.createElement('button');
+        drop.type = 'button';
+        drop.className = 'ghost';
+        drop.textContent = 'Unlink';
+        drop.setAttribute('aria-label', `Unlink ${f.node.title || '(untitled)'}`);
+        drop.addEventListener('click', () => {
+          void run(ctx => releaseFeedsEvents(ctx, n.id, f.node.id), 'Unlinked.');
+        });
+        li.append(label, drop);
+        return li;
+      }));
+      // The arithmetic, in words, only when every term is really there.
+      if (words) {
+        const p = document.createElement('li');
+        p.className = 'detail-feed-words';
+        p.textContent = words;
+        FEEDS_LIST.append(p);
+      }
+      if (n.leadDays && n.leadDays > 0) LEAD.value = String(n.leadDays);
+    }
 
     // Only offer what this item can actually do.
     const show = (sel: string, on: boolean): void => {
@@ -173,6 +227,16 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   btn('#detail-untrash')?.addEventListener('click', () => {
     void run(ctx => untrashEvents(ctx, current!.id), 'Kept.');
   });
+  btn('#detail-feeds-set')?.addEventListener('click', () => {
+    if (!FEEDS || !LEAD || !current) return;
+    const target = FEEDS.value;
+    if (!target) { say('Pick what this holds up first.'); return; }
+    const lead = positiveInt(LEAD);
+    if (lead === null) { say('How many days does this take? A whole number, at least 1.'); return; }
+    const title = session.state().nodes.get(target)?.title || 'it';
+    void run(ctx => declareFeedsEvents(ctx, current!.id, target, lead), `Linked to ${title}.`);
+  });
+
   btn('#detail-close')?.addEventListener('click', () => DLG.close());
 
   return {

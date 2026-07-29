@@ -182,3 +182,32 @@ export const promoteFromMenuEvents = (ctx: StampContext, node: string, toKind: N
  *  landing the someday/reference routes use. */
 export const toMenuEvents = (ctx: StampContext, node: string, category: MenuCategory = 'read'): AppEvent[] =>
   [base(ctx, 'menu.item.added', node, { category })];
+
+/**
+ * Declare that this node FEEDS another — the dependency edge (build-plan item
+ * 27). The lead estimate is how long THIS takes, which is what turns the
+ * downstream date into an upstream one.
+ *
+ * The edge is stored on the upstream node pointing forward, because that is the
+ * direction the question gets asked in: "if I do not do this, what breaks?"
+ *
+ * Not silent-risk: an edge adds no coverage and removes none. What it does add
+ * is a reason, which is why the gate refuses one that names a missing target or
+ * closes a loop.
+ */
+export const declareFeedsEvents = (
+  ctx: StampContext, node: string, feeds: string, leadEstimateDays: number,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'dependency.declared', node,
+  payload: { feeds, suspense: ctx.at, leadEstimateDays },
+} as AppEvent];
+
+/** Withdraw the edge. Not a deletion of history — the declaration stays in the
+ *  log, as everything does; this says it no longer holds. */
+export const releaseFeedsEvents = (
+  ctx: StampContext, node: string, feeds: string,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'dependency.released', node, payload: { feeds },
+} as AppEvent];

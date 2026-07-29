@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.12.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'You can now say that one thing holds up another, and how long it takes — and Quietkeep works out the last day it can start. Six days until the thing you promised, two days of work, so start it within four.',
+      'A date that has gone by now tells you what it cost. Instead of only "that date was two days ago", it says which commitment it fed and that it needed starting two days ago — the part that is genuinely hard to work out in your head.',
+      'Nothing is ever guessed. Without both a date on the other thing and a length on this one, it stays quiet rather than inventing a number.',
+      'When the dates do not fit, it says so about the dates. Not about you — there is no "behind", no "late", and there never will be.',
+      'You cannot make two things each wait for the other. That is refused as you try, because it has no meaning and no fix.',
+      'Finishing or letting go of the thing downstream stops it pulling on anything. A commitment you are no longer under cannot make something else urgent.',
+    ],
+  },
+  {
     triplet: '0.11.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

@@ -48,6 +48,19 @@ export interface NodeState {
   /** The last forward choice made about a passed date (ADR-0012). A record of a
    *  decision, never a record of a failure. */
   lastReplan: ReplanChoice | null;
+  /**
+   * What this node FEEDS — the downstream things that cannot happen until it
+   * does (build-plan item 27, and the missing half of ADR-0012's assembled
+   * context). A list, because one piece of work can feed several.
+   *
+   * The edge lives on the UPSTREAM node, pointing forward, because that is the
+   * direction the question is asked in: "if I do not do this, what breaks?"
+   */
+  feeds: NodeId[];
+  /** How long this takes, in whole days, when it was declared as a dependency.
+   *  It is what turns a downstream date into an upstream one: latest-start is
+   *  the commitment minus this. Null when nobody has said. */
+  leadDays: number | null;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -125,6 +138,8 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       lastDone: null, comfortWindowDays: null, intervalDays: null,
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
       lastReplan: null,
+      feeds: [],
+      leadDays: null,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -141,6 +156,9 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       // would alias it, holing copy-on-write for it alone (audit: a derived-state
       // mutation would rewrite base history). Clone it like the other containers.
       sourceTags: [...n.sourceTags],
+      // Copied, not aliased. The lesson the hub records: a mutable field needs
+      // copy-on-clone, copy-on-store-from-payload AND default-on-deserialise.
+      feeds: [...n.feeds],
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -370,6 +388,31 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       // The decision itself. A replan CARD is computed (ADR-0034), but the choice
       // a person made about it is a fact, and state should be able to answer
       // "what did I decide about this" without re-reading the whole log.
+      // The dependency edge, and the lead time that turns a downstream date into
+      // an upstream one. Both live on the upstream node.
+      case 'dependency.declared': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const feeds = e.payload.feeds;
+        // Idempotent: declaring the same edge twice is one edge, not two. Two
+        // devices can legitimately declare it independently (ADR-0035).
+        if (feeds && !n.feeds.includes(feeds)) n.feeds = [...n.feeds, feeds];
+        const lead = e.payload.leadEstimateDays;
+        if (Number.isFinite(lead) && lead > 0 && wins(n.stamps['lead'], o)) {
+          n.leadDays = lead;
+          n.stamps['lead'] = o;
+        }
+        break;
+      }
+
+      case 'dependency.released': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const from = (e.payload as { feeds?: string }).feeds;
+        // Releasing a named edge removes that one; releasing none removes all,
+        // which is what "this no longer feeds anything" means.
+        n.feeds = from ? n.feeds.filter(f => f !== from) : [];
+        break;
+      }
+
       case 'replan.resolved': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['replan'], o)) { n.lastReplan = e.payload.choice; n.stamps['replan'] = o; }

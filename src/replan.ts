@@ -29,6 +29,7 @@ import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { NO_REPLAN_CARD } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { dependencyView, dependencyWords, type DependencyView } from './dependencies.ts';
 import type { ClockKind, NodeKind } from './events.ts';
 
 /** Law 8 bounds what re-entry may show. Returning after a fortnight could raise
@@ -55,12 +56,15 @@ export interface ReplanCard {
   at: string;
   /** How long ago, in whole local days. Stated plainly, never as a rebuke. */
   daysAgo: number;
-  /** What this fed — assembled context, per ADR-0012. Always empty until
-   *  `dependency.declared` exists (build-plan item 27). The surface renders no
-   *  line for it rather than printing "nothing recorded" on every card: that
-   *  would read as a claim this feeds nothing, which is a different statement
-   *  from "the app cannot know yet", and it is not one the data supports. */
+  /** What this fed — the assembled context ADR-0012 always described. Empty
+   *  when the person has not said this feeds anything, which is a real answer
+   *  and not a missing one; the surface renders no line rather than claiming
+   *  either way. */
   fed: NodeState[];
+  /** The arithmetic that follows from those edges: the soonest commitment, how
+   *  long this takes, and therefore when it needed starting. Null-safe
+   *  throughout — a missing term produces silence, never a guessed number. */
+  depends: DependencyView;
   /** A downstream commitment this was feeding, if one is known. */
   suspense: string | null;
   /** Days left before that commitment. Null when there is no suspense. */
@@ -142,17 +146,19 @@ export function replanAll(state: State, nowIso: string, zone: string): ReplanCar
     const passed = all[0];
     if (!passed) continue;
 
-    // Context assembly. `fed` stays empty until `dependency.declared` exists
-    // (build-plan item 27) — the surface renders no line for it rather than
-    // claiming this feeds nothing, which is a different statement.
+    // Context assembly — the expensive half of ADR-0012, and the reason this
+    // record exists. `fed` is now real: what this feeds, what that commits to,
+    // and therefore when it needed starting.
     const suspense = n.clocks.suspense && isValidIso(n.clocks.suspense.at) ? n.clocks.suspense.at : null;
+    const depends = dependencyView(state, n, nowIso, zone);
     cards.push({
       node: n,
       passedKinds: all.map(p => p.kind),
+      depends,
       clockKind: passed.kind,
       at: passed.at,
       daysAgo: passed.daysAgo,
-      fed: [],
+      fed: depends.feeds.map(f => f.node),
       suspense,
       daysLeft: suspense ? calendarDaysBetween(nowIso, suspense, zone) : null,
     });
@@ -197,6 +203,12 @@ export const replanIds = (state: State, nowIso: string, zone: string): Set<strin
  * the count were right; the relationship was invented.
  */
 export function contextWords(card: ReplanCard, zone: string): string | null {
+  // THE DEPENDENCY LEADS when there is one. "It feeds the thing you promised for
+  // the 14th, and it needed starting two days ago" is the sentence this whole
+  // record exists to produce — it is the expensive half, and it outranks the
+  // node's own second clock.
+  const dep = dependencyWords(card.depends);
+  if (dep) return dep;
   // When the passed clock IS the suspense, the card is already about it; saying
   // it twice in two different phrasings is one item asked two questions.
   if (card.clockKind === 'suspense') return null;
