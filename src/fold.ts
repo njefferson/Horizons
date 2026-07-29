@@ -45,6 +45,19 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /** For an interrupt captured during a focus session: which node was being
+   *  worked on, and when. Together they say which SESSION it belongs to — a
+   *  node id alone would make yesterday's interruptions reappear inside today's
+   *  focus on the same piece of work. */
+  interruptedFocus: NodeId | null;
+  interruptedAt: ISODateTime | null;
+  /** For a `resume-card`: the node whose thread it holds. Null on everything
+   *  else. Without it the card knows it is a card and nothing more. */
+  resumeFor: NodeId | null;
+  /** The five-word "I was about to…" cue, and it is SKIPPABLE — null is a
+   *  valid, unremarkable value that is never nagged about. Someone interrupted
+   *  mid-thought frequently cannot produce one, which is the whole situation. */
+  resumeCue: string | null;
   /** The last forward choice made about a passed date (ADR-0012). A record of a
    *  decision, never a record of a failure. */
   lastReplan: ReplanChoice | null;
@@ -74,6 +87,18 @@ export interface State {
   /** Highest seq folded per device — lets a shard prove it is complete. */
   seqByDevice: Map<string, number>;
   eventCount: number;
+  /**
+   * The one thing being worked on right now, or null.
+   *
+   * State-level and not a node field, because "focused" is a property of the
+   * SESSION rather than of the work — two nodes can never both be it, and
+   * modelling it per-node would make that expressible. LWW over the same
+   * ordering as everything else, so two devices that both started a focus
+   * converge on the later one rather than on whichever folded last.
+   */
+  focus: { node: NodeId; startedAt: ISODateTime } | null;
+  /** Ordering of the last event that moved `focus`, so it folds LWW. */
+  focusStamp: Ordering | null;
 }
 
 export const emptyState = (): State => ({
@@ -82,6 +107,8 @@ export const emptyState = (): State => ({
   devices: new Set(),
   seqByDevice: new Map(),
   eventCount: 0,
+  focus: null,
+  focusStamp: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -137,6 +164,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       trashed: false, mergedInto: null, clocks: {}, onMenu: null,
       lastDone: null, comfortWindowDays: null, intervalDays: null,
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
+      resumeFor: null, resumeCue: null, interruptedFocus: null, interruptedAt: null,
       lastReplan: null,
       feeds: [],
       leadDays: null,
@@ -182,6 +210,8 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
     devices: new Set(base.devices),
     seqByDevice: new Map(base.seqByDevice),
     eventCount: base.eventCount,
+    focus: base.focus,
+    focusStamp: base.focusStamp,
   };
 
   const ordered = [...events].sort(compareEvents);
@@ -250,6 +280,13 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         n.captured = true;   // an interrupt-capture is an inbox item too
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
+        // What it pulled you off, and when. Genesis facts, so they are latched
+        // at first write rather than fought over by LWW: an interrupt belongs to
+        // the session it happened in, for ever.
+        if (n.interruptedFocus === null) {
+          n.interruptedFocus = e.payload.duringFocus ?? null;
+          n.interruptedAt = e.at;
+        }
         break;
       }
       case 'bother.received': {
@@ -273,6 +310,25 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       case 'resume.card.created': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'resume-card'; n.stamps['kind'] = o; }
+        // WHAT it is for, and the five-word cue. Folding only the kind left the
+        // card an empty shell: Next up could rank it and had nothing to name,
+        // so "where you left off" pointed at nothing at all.
+        if (wins(n.stamps['resumeFor'], o)) { n.resumeFor = e.payload.forNode; n.stamps['resumeFor'] = o; }
+        if (wins(n.stamps['resumeCue'], o)) { n.resumeCue = e.payload.cue ?? null; n.stamps['resumeCue'] = o; }
+        break;
+      }
+      // Focus is a property of the session, not of a node. `focus.ended` clears
+      // it unconditionally: there is only ever one, so an end that names no node
+      // can only mean the one that was running.
+      case 'focus.started': {
+        if (wins(s.focusStamp ?? undefined, o)) {
+          s.focus = { node: e.payload.node, startedAt: e.at };
+          s.focusStamp = o;
+        }
+        break;
+      }
+      case 'focus.ended': {
+        if (wins(s.focusStamp ?? undefined, o)) { s.focus = null; s.focusStamp = o; }
         break;
       }
       // Both fell to `default:` before, so a spent or expired card stayed on the

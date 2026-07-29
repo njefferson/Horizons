@@ -106,6 +106,30 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // Focus. The elapsed line and the interrupt hint are the lowest-contrast text
+  // here, and both are load-bearing: one says how long you have been at it, the
+  // other says your way back is already saved. Nothing on this surface counts
+  // down and nothing goes red — there is no alert token to measure, which is the
+  // measurement (law 5, B-01).
+  //
+  // `.focus-elapsed` is NOT here, and the honest reason is that this gate cannot
+  // reach it. The line renders only once a whole minute has passed — `focusWords`
+  // returns null below that, because "0 minutes so far" is a number pretending to
+  // be information — and a walk that sat for sixty seconds twice over would be
+  // paying a minute of CI to measure a pair that IS measured: it is `--ink-soft`
+  // on `--surface`, the same pair as `.review-count` and `.replan-count` directly
+  // above. That is an ARGUMENT, not a measurement, and it is recorded as one in
+  // ACCESSIBILITY.md B-13 — same treatment as `.replan-context`.
+  'focus': ['#focus-heading', '.focus-title', '#focus-interrupt',
+    { sel: '#focus-interrupt', pseudo: '::placeholder' },
+    '#focus-interrupt-form button[type=submit]', '.detail-hint', '#focus-done', '#focus-stop'],
+  // The same surface once something has been written down during it.
+  'focus, interrupted': ['#focus-held', '.focus-title', '#focus-done', '#focus-stop'],
+  // Stopping. The five words are optional, and the sheet has to say so without
+  // making the empty answer look like a failure to answer.
+  'focus sheet': ['#focus-sheet-title', '.detail-label', '#focus-cue',
+    { sel: '#focus-cue', pseudo: '::placeholder' },
+    '.detail-hint', '#focus-sheet-stop', '#focus-sheet-cancel'],
   // Review, exceptions only. Its rows are the app telling you something is
   // structurally wrong, so they must be as calm as everything else — same ink
   // tokens, no alert colour to check, and that absence is the point.
@@ -452,6 +476,47 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
 
+    // State 3f2: focus. Reached the way a person reaches it — the control on the
+    // row — and audited in all three of its states, including the sheet where
+    // the optional five words are asked for.
+    await page.locator('#cards .card-focus').first().click();
+    await page.waitForSelector('#focus:not([hidden])');
+    await auditContrast(page, 'focus', theme);
+    await auditAxe(page, 'focus', theme);
+    await auditTargets(page, 'focus', theme);
+    await auditFocusRings(page, 'focus', theme,
+      ['#focus-interrupt', '#focus-done', '#focus-stop']);
+
+    await page.fill('#focus-interrupt', 'the phone rang');
+    await page.click('#focus-interrupt-form button[type=submit]');
+    await page.waitForSelector('#focus-held:not([hidden])');
+    await auditContrast(page, 'focus, interrupted', theme);
+    await auditAxe(page, 'focus, interrupted', theme);
+
+    await page.click('#focus-stop');
+    await page.waitForSelector('#focus-sheet[open]');
+    await auditContrast(page, 'focus sheet', theme);
+    await auditAxe(page, 'focus sheet', theme);
+    await auditTargets(page, 'focus sheet', theme);
+    await auditFocusRings(page, 'focus sheet', theme,
+      ['#focus-cue', '#focus-sheet-stop', '#focus-sheet-cancel']);
+    // B-04's hardest case for a sheet carrying a free-text box.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const focusSheetOverflow = await page.evaluate(() => {
+      const d = document.querySelector('#focus-sheet');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (focusSheetOverflow <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: focus sheet horizontal overflow ${focusSheetOverflow}px (must be ≤1)`);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('#focus-sheet-cancel');
+    await page.click('#focus-stop');
+    await page.waitForSelector('#focus-sheet[open]');
+    await page.click('#focus-sheet-stop');
+    await page.waitForTimeout(350);
+
     // State 3g: containment and Review (law 4). A container with nothing under
     // it is the app's quietest failure — it reads as an ordinary row everywhere
     // else — so the surface that finally says so must be as calm as the rest of
@@ -549,10 +614,28 @@ try {
     await auditAxe(page, 'dialog @ 320/200', theme);
     await page.click('#about-close');
 
-    const overflow = await page.evaluate(() =>
-      document.scrollingElement.scrollWidth - document.scrollingElement.clientWidth);
-    (overflow <= 1 ? pass : fail)(
-      `${theme}/320px @ 200%: page horizontal overflow ${overflow}px (must be ≤1)`);
+    // NAMES the offender. "42px of overflow" told us the page was broken and
+    // nothing about where, so finding it meant writing a throwaway probe by
+    // hand — twice. The widest element past the right edge is almost always the
+    // cause, and the gate already has the DOM in front of it.
+    const over = await page.evaluate(() => {
+      const doc = document.scrollingElement;
+      const px = doc.scrollWidth - doc.clientWidth;
+      const out = [];
+      for (const el of document.querySelectorAll('body *')) {
+        const r = el.getBoundingClientRect();
+        if (r.width === 0 && r.height === 0) continue;
+        if (r.right > doc.clientWidth + 1) {
+          out.push(`${el.tagName.toLowerCase()}${el.id ? `#${el.id}` : ''}` +
+            `${el.className && typeof el.className === 'string' ? `.${el.className.trim().split(/\s+/).join('.')}` : ''}` +
+            ` (right ${Math.round(r.right)}px)`);
+        }
+      }
+      return { px, culprits: out.slice(0, 4) };
+    });
+    (over.px <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: page horizontal overflow ${over.px}px (must be ≤1)` +
+      (over.culprits.length ? ` — past the edge: ${over.culprits.join(', ')}` : ''));
     const cap = await page.evaluate(() => {
       const r = document.querySelector('#capture').getBoundingClientRect();
       return { h: Math.round(r.height), w: Math.round(r.width) };

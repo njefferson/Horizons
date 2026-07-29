@@ -133,9 +133,23 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
       // at all was offered for ever. `demandClock`'s own comment said a parked
       // thing is held away from you on purpose; the resume branch used to skip
       // that check entirely.
-      if (arrived) {
-        items.push({ node: n, reason: 'resume', pressure: p, words: 'where you left off' });
-      }
+      //
+      // And it must point at something. A card is written the instant an
+      // interruption is recorded, so the session that made it may STILL BE
+      // RUNNING — that thread is not lost yet, and offering it back while you
+      // are sitting in it is the app interrupting you about being interrupted.
+      // A card whose target is gone is dropped for the same reason: a way back
+      // into work you have already let go is not a way back.
+      if (!arrived) continue;
+      if (!n.resumeFor || n.resumeFor === state.focus?.node) continue;
+      const target = state.nodes.get(n.resumeFor);
+      if (!target || target.trashed || target.mergedInto || target.lastDone) continue;
+      items.push({
+        node: n, reason: 'resume', pressure: p,
+        // YOUR five words when there are five words. Nothing this app composes
+        // beats what you wrote at the moment you put it down.
+        words: n.resumeCue ? `you were about to: ${n.resumeCue}` : 'where you left off',
+      });
       continue;
     }
     if (p !== null && p >= 0) {

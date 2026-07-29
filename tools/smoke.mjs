@@ -1338,6 +1338,121 @@ try {
   is(parented.length, 1, 'one node.parented was recorded');
   is(typeof parented[0]?.payload?.parent, 'string', 'naming what it went under');
 
+  // --- Focus, interruption, and getting the thread back --------------------
+  // `focus.started`, `focus.ended`, `interrupt.captured` and the three
+  // `resume.card.*` nouns have been in the vocabulary since the first draft.
+  // `fold` retired a spent card, `nextup` ranked one SECOND — behind only a hard
+  // date — and nothing in the app could create one. An entire ranking tier was
+  // ordering an empty set.
+  console.log('\nFocus \u2014 one thing, and a way to be interrupted without losing it');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#focus').isVisible(), false,
+    'nothing is running, so the surface is not there');
+
+  const focusTitle = await tpage.locator('#cards .card:has(.card-focus) .card-title').first().textContent();
+  await tpage.locator('#cards .card:has(.card-focus) .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  is(await tpage.locator('#focus-title').textContent(), focusTitle,
+    `it names what you are working on ("${focusTitle}")`);
+  // Focus lands on the surface that just appeared, not on the button that was
+  // replaced underneath it (WCAG 2.4.3).
+  is(await tpage.evaluate(() => document.activeElement?.id), 'focus-heading',
+    'and keyboard focus follows the surface that appeared');
+
+  // THE ONE THAT MATTERS. Record an interruption, then RELOAD WITHOUT STOPPING —
+  // which is the real failure: you do not get to press a button on your way out
+  // of the room. A design that wrote the card on focus.ended would pass every
+  // other check here and fail this one.
+  await tpage.fill('#focus-interrupt', 'the phone rang');
+  await tpage.click('#focus-interrupt-form button[type=submit]');
+  await tpage.waitForTimeout(350);
+  is(await tpage.locator('#focus').isVisible(), true,
+    'an interruption does not stop you \u2014 it is held and you carry on');
+  const heldNote = await tpage.locator('#focus-held').textContent();
+  is(heldNote, 'One thing came up and is held.',
+    `and it says so as a thing you DID ("${heldNote}")`);
+
+  const cardsMid = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'resume.card.created').length);
+    });
+  });
+  is(cardsMid, 1, 'the way back is written AT THE INTERRUPTION, not on the way out');
+
+  // No focus.ended. The app simply goes away, exactly as it does when the OS
+  // reclaims it or the battery dies.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#focus').isVisible(), true,
+    'and coming back, you are still in it \u2014 the session survived the app going away');
+
+  // Stop properly, and leave the five words. Optional throughout; this walk
+  // gives them so the cue path is exercised rather than assumed.
+  await tpage.click('#focus-stop');
+  await tpage.waitForSelector('#focus-sheet[open]');
+  await tpage.fill('#focus-cue', 'the paragraph about ferries');
+  await tpage.click('#focus-sheet-stop');
+  await tpage.waitForTimeout(350);
+  is(await tpage.locator('#focus').isVisible(), false, 'stopping puts the surface away');
+
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  // ONE card, not two. The cue offered on the way out must land on the card the
+  // interruption already wrote, rather than creating a second one competing with
+  // it for the same thread.
+  const cardsAfter = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'resume.card.created').map(e => e.node));
+    });
+  });
+  is(new Set(cardsAfter).size, 1,
+    `one thread, one card (${cardsAfter.length} writes to ${new Set(cardsAfter).size} card)`);
+
+  // And Next up offers it back, in YOUR words. NOT "it leads" — a real date
+  // outranks a resume card by design (nextup.ts), and this walk has items
+  // carrying dates from earlier sections, so asserting the head would have been
+  // asserting the order of THIS walk rather than the behaviour.
+  const upText = await tpage.evaluate(() =>
+    document.querySelector('#nextup')?.innerText ?? '');
+  is(/you were about to: the paragraph about ferries/.test(upText), true,
+    `the way back is offered, in the words you wrote ("${upText.replace(/\n/g, ' / ').slice(0, 120)}")`);
+
+  // Pick it back up: the card is spent and focus lands on the WORK, never on a
+  // card about a focus session.
+  await tpage.locator('#cards .card:has-text("where you left off") .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  is(await tpage.locator('#focus-title').textContent(), focusTitle,
+    'picking it back up puts you on the work itself, not on the card');
+  const spent = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'resume.card.spent').length);
+    });
+  });
+  is(spent, 1, 'and the card is spent, not left lying around');
+
+  // Finishing leaves NO way back, because there is no thread.
+  await tpage.click('#focus-done');
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#focus').isVisible(), false, 'done closes the session');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const backAgain = await tpage.locator('#cards').textContent();
+  is((backAgain || '').includes('where you left off'), false,
+    'and nothing offers you a way back into work you have finished');
+
+  const focusText = await tpage.evaluate(() =>
+    (document.querySelector('#focus')?.innerText ?? '') + ' ' +
+    (document.querySelector('#nextup')?.innerText ?? ''));
+  is(/\b(overdue|late|missed|streak|failed|wasted|distracted)s?\b/i.test(focusText), false,
+    'and none of it carries a rebuke for having been interrupted');
+
   // --- Two devices (ADR-0035) ----------------------------------------------
   // A SECOND browser context: its own IndexedDB, its own device id, its own
   // captures. Anything less would be testing the function, not the feature —

@@ -75,6 +75,35 @@
     <p id="replan-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- Focus: one thing, and a way to be interrupted without losing it.
+       The capture line here writes `interrupt.captured` rather than an ordinary
+       capture, and the resume card is written WITH IT — you do not get to press
+       a button on your way out of the room. -->
+  <section id="focus" class="focus" aria-labelledby="focus-heading" hidden>
+    <h2 id="focus-heading" class="section" tabindex="-1">Working on</h2>
+    <p id="focus-title" class="focus-title"></p>
+    <p id="focus-elapsed" class="focus-elapsed"></p>
+    <form id="focus-interrupt-form" autocomplete="off">
+      <label class="visually-hidden" for="focus-interrupt">Something else came up</label>
+      <div class="detail-row">
+        <input id="focus-interrupt" type="text" enterkeyhint="done" autocomplete="off"
+               autocapitalize="sentences" spellcheck="true"
+               placeholder="Something else came up" aria-describedby="focus-interrupt-hint">
+        <button type="submit">Hold it</button>
+      </div>
+      <p id="focus-interrupt-hint" class="detail-hint">
+        Put it down and carry on. Your way back here is saved the moment you do
+        &mdash; you do not have to stop properly for it to work.
+      </p>
+    </form>
+    <p id="focus-held" class="focus-held" hidden></p>
+    <div class="focus-actions">
+      <button id="focus-done" type="button">Done</button>
+      <button id="focus-stop" type="button" class="ghost">Stop for now</button>
+    </div>
+    <p id="focus-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
   <!-- Review, as EXCEPTIONS ONLY (v1 Must). Never a list of your work — only
        what is structurally broken, and absent entirely when nothing is. An
        empty review says so by not being here, never by congratulating anyone. -->
@@ -144,6 +173,25 @@
 
 <!-- The detail sheet: what turns a triage loop into a planner. Everything here
      is built from events already in the vocabulary. -->
+<!-- Stopping. The five-word cue is asked for HERE and not at the moment of
+     interruption, because nobody can produce five words while someone is
+     standing in the doorway. It is skippable and saying nothing is unremarkable. -->
+<dialog id="focus-sheet" aria-labelledby="focus-sheet-title">
+  <h2 id="focus-sheet-title" class="detail-title">Stopping for now</h2>
+  <p class="detail-hint">Your way back is already saved. This is only if you want to leave yourself a note.</p>
+  <div class="detail-group">
+    <label class="detail-label" for="focus-cue">I was about to&hellip;</label>
+    <input id="focus-cue" type="text" autocomplete="off" spellcheck="true"
+           enterkeyhint="done" placeholder="five words is plenty"
+           aria-describedby="focus-cue-hint">
+    <p id="focus-cue-hint" class="detail-hint">Leave it empty if you would rather. Nothing asks again.</p>
+  </div>
+  <div class="detail-row">
+    <button id="focus-sheet-stop" type="button">Stop</button>
+    <button id="focus-sheet-cancel" type="button" class="ghost">Keep going</button>
+  </div>
+</dialog>
+
 <dialog id="detail" aria-labelledby="detail-title">
   <h2 id="detail-title" class="detail-title"></h2>
   <p id="detail-state" class="detail-state"></p>

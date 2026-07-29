@@ -22,6 +22,8 @@ export function serialiseState(s: State): unknown {
     devices: [...s.devices],
     seqByDevice: [...s.seqByDevice.entries()],
     eventCount: s.eventCount,
+    focus: s.focus,
+    focusStamp: s.focusStamp,
   });
 }
 
@@ -32,6 +34,8 @@ export function deserialiseState(raw: unknown): State {
     devices: string[];
     seqByDevice: [string, number][];
     eventCount: number;
+    focus?: State['focus'];
+    focusStamp?: State['focusStamp'];
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -49,12 +53,27 @@ export function deserialiseState(raw: unknown): State {
       route: n.route ?? null,
       captured: n.captured ?? true,
       resumeSpent: n.resumeSpent ?? false,
+      resumeFor: n.resumeFor ?? null,
+      resumeCue: n.resumeCue ?? null,
+      interruptedFocus: n.interruptedFocus ?? null,
+      interruptedAt: n.interruptedAt ?? null,
       lastReplan: n.lastReplan ?? null,
+      // MUTABLE fields must be copied on deserialise as well as on clone. A
+      // shared array between a snapshot and running state is how a fold rewrote
+      // history in place once already (audit).
+      feeds: [...(n.feeds ?? [])],
+      fields: { ...(n.fields ?? {}) },
+      stamps: { ...(n.stamps ?? {}) },
+      clocks: { ...(n.clocks ?? {}) },
     }])),
     vaults: new Map(r.vaults),
     devices: new Set(r.devices),
     seqByDevice: new Map(r.seqByDevice),
     eventCount: r.eventCount,
+    // A snapshot taken before focus existed has neither. Null is exactly right:
+    // nothing was being worked on, because nothing could be.
+    focus: r.focus ?? null,
+    focusStamp: r.focusStamp ?? null,
   };
 }
 

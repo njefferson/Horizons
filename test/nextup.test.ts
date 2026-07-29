@@ -86,14 +86,24 @@ test('a hard date that has arrived outranks any amount of pressure', () => {
 });
 
 test('a resume card outranks pressure but not a hard date', () => {
+  // These fixtures carry `forNode` and a real target. They did NOT before, and
+  // the card was still ranked first — a way back into nothing at all, led the
+  // list. `resume.card.created` folded only the KIND, so the card knew it was a
+  // card and could name nothing, and no test noticed because none of them asked
+  // what it pointed at.
   const s = st(
     ...upkeep('U', 7, 1, '2026-06-01T18:00:00.000Z'),
-    ev('resume.card.created', 'R', { cue: 'the paragraph about ferries' }),
+    ev('node.created', 'W', { nodeKind: 'action', title: 'the chapter' }),
+    ev('resume.card.created', 'R', { forNode: 'W', cue: 'the paragraph about ferries' }),
     ev('clock.set', 'R', { clockKind: 'review', at: NOW, source: 'test' }),
   );
   assert.equal(nextUp(s, NOW, TZ).head!.node.id, 'R', 'pick up the thread first');
+  assert.equal(nextUp(s, NOW, TZ).head!.words, 'you were about to: the paragraph about ferries',
+    'and it says it in the words you wrote, not in the app\u2019s');
+
   const withDate = st(
-    ev('resume.card.created', 'R', { cue: 'x' }),
+    ev('node.created', 'W', { nodeKind: 'action', title: 'the chapter' }),
+    ev('resume.card.created', 'R', { forNode: 'W', cue: 'x' }),
     ev('clock.set', 'R', { clockKind: 'review', at: NOW, source: 'test' }),
     ev('node.created', 'D', { nodeKind: 'action', title: 'appointment' }),
     ev('clock.set', 'D', { clockKind: 'due', at: NOW, source: 'test' }),

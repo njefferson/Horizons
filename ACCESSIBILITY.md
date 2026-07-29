@@ -136,6 +136,36 @@ rather than a thing to route around. Measured 15.73:1 light, 13.28:1 dark.
 structural selects cannot drift into looking like different kinds of control.
 Both are `min-height: var(--target)`; targets pass at 44px in both themes.
 
+### B-13 · Focus and the way back (0.14.0)
+The focus surface carries no colour of its own and nothing on it counts down.
+Elapsed time is stated in the quiet token, the same one every other "when" line
+uses — it is a fact, not a pace to keep up with, and there is no threshold at
+which it changes appearance. That absence is deliberate and it is the point
+(law 5, B-01).
+
+**Two contrast failures the gate caught in this work, both fixed:**
+`#focus-cue::placeholder` measured **3.28:1 in dark** on `--ink-soft`/`--surface`.
+A placeholder is text someone has to read to know what the box wants, so it is
+held to 4.5:1 like any other text — now `--ink` at full opacity, matching
+`#capture::placeholder`. Both placeholders are in the registry.
+
+**Two overflow failures at 320px/200%, both fixed:** adding "Work on this" made
+`.card` a three-control row that could not wrap (**42px past the edge**), and
+once it wrapped the button itself was still wider than the viewport at 200%
+(**12px past**). `.card` now wraps; `.card-focus` is `max-width: 100%` with a
+wrapping label. Both were found by the gate rather than by looking, and the
+overflow check now **names the offending element** — "42px of overflow" said the
+page was broken and nothing about where, which cost two hand-written probes.
+
+**`.focus-elapsed` is UNMEASURED, and this is the honest record of it.** The line
+renders only after a whole minute has passed (`focusWords` returns null below
+that, because "0 minutes so far" is a number pretending to be information), and a
+CI walk that sat for sixty seconds in each theme would spend two minutes to
+measure a pair that is already measured: `--ink-soft` on `--surface`, identical
+to `.review-count` and `.replan-count`, both of which ARE in the registry. That
+is an **argument, not a measurement** — the same treatment and the same wording
+as `.replan-context`, recorded rather than quietly assumed.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

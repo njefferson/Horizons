@@ -16,6 +16,7 @@ import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
+import { mountFocus, type FocusUI } from './focus.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
@@ -35,7 +36,8 @@ const $ = <T extends HTMLElement>(sel: string): T => {
  * controls: open it, or check it off. The card used to be one big button, which
  * is why it could not gain a second one — a button inside a button is invalid.
  */
-function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: (id: string) => void): void {
+function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: (id: string) => void,
+                onFocus?: (n: NodeState) => void): void {
   const list = $('#cards');
   const nowIso = new Date(now()).toISOString();
   const groups = heldGroups(session.state(), nowIso, session.zone);
@@ -84,6 +86,25 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       open.append(title, when);
       if (openDetail) open.addEventListener('click', () => openDetail(node));
       li.append(open);
+
+      // "Work on this" — the way into a focus session, on the row rather than
+      // buried in the sheet. Starting work is the commonest thing anyone does
+      // here and it should not cost two taps and a dialog.
+      //
+      // Not offered for what is already done, what triage still owns, or what is
+      // on the Menu — the same three exclusions as Done directly below, because
+      // the question "should this be offered as work right now" has one answer
+      // per item, not one per button.
+      if (onFocus && !node.lastDone && !node.onMenu && !(node.captured && node.route === null)) {
+        const go = document.createElement('button');
+        go.type = 'button';
+        go.className = 'card-focus ghost';
+        go.textContent = node.kind === 'resume-card' ? 'Pick it back up' : 'Work on this';
+        go.setAttribute('aria-label',
+          `${node.kind === 'resume-card' ? 'Pick back up' : 'Work on'} ${node.title || '(untitled)'}`);
+        go.addEventListener('click', () => onFocus(node));
+        li.append(go);
+      }
 
       // Check it off without opening anything — what makes this a todo list.
       //
@@ -208,6 +229,7 @@ async function main(): Promise<void> {
   let work: { refresh(): void } = { refresh() {} };
   let triage: { refresh(): void } = { refresh() {} };
   let replan: { refresh(): void } = { refresh() {} };
+  let focus: FocusUI = { refresh() {}, start() {} };
 
   // ONE render closure, used everywhere. Two call sites used to invoke
   // `render(session)` bare — the URL-capture path and its undo — which silently
@@ -244,14 +266,14 @@ async function main(): Promise<void> {
         (next ?? document.querySelector<HTMLElement>('#capture'))?.focus();
       });
   };
-  const rerender = (): void => render(session, n => detail.open(n), markDone);
+  const rerender = (): void => render(session, n => detail.open(n), markDone, n => focus.start(n));
   // The held list AND the replan surface. `workSurface` excludes every id with a
   // live card, so these two must never be refreshed apart from one another: if
   // only one re-rendered, resolving a card would return the item to Next-up
   // while its row was still on screen — one item, two questions, which is
   // exactly what the exclusion exists to prevent. This is what work.ts is handed
   // as its onChange, since work refreshes itself afterwards.
-  const rerenderLists = (): void => { rerender(); replan.refresh(); };
+  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); };
   const refreshAll = (): void => { rerenderLists(); work.refresh(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
@@ -266,6 +288,11 @@ async function main(): Promise<void> {
 
   // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
   try { work = mountWork(session, now, rerenderLists); } catch { /* a surface */ }
+
+  // Focus: one thing, and a way to be interrupted without losing it. Mounted
+  // after work so its own refresh can run inside `rerenderLists` — an interrupt
+  // adds an inbox item, which changes triage, the list and the gauge.
+  try { focus = mountFocus(session, now, refreshAll); } catch { /* a surface */ }
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).

@@ -29,6 +29,22 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.14.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'You can now work on one thing. Tap "Work on this" and Quietkeep holds that one item in front of you, says how long you have been at it, and gets out of the way.',
+      'When something else comes up, put it down without stopping. It goes into your inbox like anything else and you carry on \u2014 no dialog, no decision, no losing your place.',
+      '**Your way back is saved the moment you write the interruption down**, not when you stop tidily. Close the app, get called away, let the battery die \u2014 come back and it still knows where you were. Being pulled away without getting to press a button is the whole reason this exists.',
+      'When you do stop, you can leave yourself five words: "I was about to\u2026". It is optional, saying nothing is completely ordinary, and nothing asks twice.',
+      'What comes back is your own sentence, not the app\u2019s. If you left five words, that is what it says.',
+      'Switching to something else leaves a way back to what you put down. Swapping tasks is the most ordinary thing anyone does and it should not quietly cost you a thread.',
+      'Finishing leaves no way back, because there is nothing to come back to. Nothing offers you a route into work you have already done.',
+      'A thread you let go is let go. The work itself stays exactly where it was \u2014 nothing is deleted and nothing is marked done on your behalf.',
+      'Being interrupted is not a failure here. It counts what you wrote down, which is a thing you did, and there is nothing that says you were distracted, late, or off track.',
+    ],
+  },
+  {
     triplet: '0.13.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

@@ -505,6 +505,11 @@ button.ghost {
   display: flex;
   align-items: stretch;
   gap: 0.5rem;
+  /* WRAPS. The row held two controls and did not need to; "Work on this" made it
+     three, and at 320px with 200% text the third pushed the PAGE sideways by
+     42px (a11y gate, B-04's hardest case). A row of actions that cannot wrap is
+     a row that only fits the widths it was written at. */
+  flex-wrap: wrap;
 }
 .card-open {
   flex: 1 1 auto;
@@ -847,3 +852,50 @@ dialog, dialog * { overflow-wrap: anywhere; }
 }
 .review-title { overflow-wrap: anywhere; }
 .review-why { color: var(--ink-soft); font-size: 0.875rem; }
+
+/* --- focus: one thing, and a way to be interrupted without losing it ------- */
+.focus {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.focus > .section { margin-top: 0; }
+.focus-title { margin: 0 0 0.25rem; font-size: 1.125rem; font-weight: 600; overflow-wrap: anywhere; }
+/* Elapsed time is a FACT, not a pace to keep up with, so it is stated in the
+   quiet token — the same one every other "when" line uses. Nothing here counts
+   down and nothing goes red (law 5, B-01). */
+.focus-elapsed { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+/* What you WROTE DOWN while you were at it. Ordinary ink: it is a thing you did. */
+.focus-held { margin: 0.5rem 0 0; color: var(--ink); font-size: 0.9375rem; }
+/* `min-width: 0` AND a small flex-basis. Without both, the input keeps its
+   default intrinsic width (~20ch) inside the flex row, and at 320px with 200%
+   text that pushed the PAGE sideways by 42px — B-04's hardest case, caught by
+   the gate rather than by looking at it. */
+#focus-interrupt { min-height: var(--target); flex: 1 1 6rem; min-width: 0; font: inherit; }
+.focus-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.focus-actions button { min-height: var(--target); }
+#focus-cue { min-height: var(--target); width: 100%; box-sizing: border-box; font: inherit;
+  color: var(--ink); background: var(--surface); border: 2px solid var(--line);
+  border-radius: var(--radius); padding: 0.25rem 0.5rem; margin-top: 0.35rem; }
+/* `--ink-soft` on `--surface` measured 3.28:1 in dark and the gate failed it.
+   A placeholder is text someone has to read to know what the box wants, so it
+   is held to 4.5:1 like any other text — `--ink` with the browser's own
+   default opacity removed, which is what `#capture::placeholder` does. */
+#focus-cue::placeholder { color: var(--ink); opacity: 1; }
+#focus-interrupt::placeholder { color: var(--ink); opacity: 1; }
+/* The way in, on the row itself. Starting work is the commonest act here and it
+   should not cost two taps and a dialog. Its own height floor and its own
+   flex-basis, so it never depends on a neighbour for either — the mistake
+   `.card-done`'s comment records from an earlier audit. */
+.card-focus {
+  flex: 0 1 auto; align-self: center; min-height: var(--target);
+  /* At 320px and 200% text "Pick it back up" is wider than the viewport, so it
+     wrapped onto its own line and STILL hung 12px past the edge (a11y gate).
+     `max-width` bounds it to the column and the label wraps inside the button
+     rather than the button escaping the page. */
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

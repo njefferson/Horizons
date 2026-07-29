@@ -122,6 +122,16 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
   };
 
   for (const n of heldNodes(state)) {
+    // A SPENT resume card is not a thing you are holding. It is the residue of a
+    // thread you have already picked back up — or let go — and it carries a cure
+    // clock like every other node, so without this it sat in "Ready now" for
+    // ever, reading "where you left off" about work that was finished. Next up
+    // has excluded spent cards since the tier existed; the held list did not,
+    // and the two surfaces disagreed (smoke).
+    //
+    // The card is not trashed and not hidden from an export: it happened, and
+    // the log says so. It simply is not work.
+    if (n.kind === 'resume-card' && n.resumeSpent) continue;
     // DONE, and not still running on a cadence. The unconditional version filed
     // a recurring upkeep that had come round again under "Done" while
     // `upkeepChips` was offering it as live work — one node, one screen, two
