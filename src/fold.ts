@@ -123,7 +123,22 @@ export interface State {
   nodes: Map<NodeId, NodeState>;
   vaults: Map<VaultId, { name: string; domain: string }>;
   devices: Set<string>;
-  /** Highest seq folded per device — lets a shard prove it is complete. */
+  /**
+   * Highest seq folded per device.
+   *
+   * **This does NOT prove a shard is complete, and an earlier version of this
+   * comment said it did.** It is a maximum, so a log holding d1's seq 1, 2 and 5
+   * — because 3 and 4 were in a transfer that failed halfway — reports 5 and
+   * thereby claims to have events it does not. A device announcing that to
+   * another device is told nothing in return, and 3 and 4 are lost by everybody,
+   * silently, with the coverage gauge still reading zero.
+   *
+   * It is fine for what it is actually used for: proving a snapshot covers a
+   * prefix of the log this device wrote itself, where seq is contiguous by
+   * construction (ADR-0027). **For deciding what to exchange with another device,
+   * use `src/exchange.ts`, which describes contiguous RANGES held and cannot make
+   * that claim falsely.**
+   */
   seqByDevice: Map<string, number>;
   eventCount: number;
   /**
