@@ -371,6 +371,22 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29 (late afternoon)** — **0.17.1 (audit fixes) and 0.18.0 (rest mode) on
+  `staging`, both watched green: Spine runs 76 and 78.** Rest mode was picked first on the
+  reasoning that it is the one v1.5 item that protects the **dogfood gate itself** — thirty
+  consecutive days, reset by any lapse, and a bad week is a certainty rather than a risk.
+  The re-entry vocabulary had been complete and unreachable since the first draft, which is
+  the fifth time this repo has shipped that shape ([ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md)).
+  · **Operational note for future sessions: `curl` cannot reach `api.github.com` from this
+  environment.** Three `Monitor` watches built on it ran their full loop and produced no
+  output at all, which reads exactly like "still running" and is indistinguishable from a
+  green result if you are not careful. **Only the `mcp__github__actions_*` tools work.** A
+  poll that cannot fail is a poll that tells you nothing — the same lesson as the
+  banned-vocabulary gate, in a different costume.
+  · **`main` is unchanged at `574ae5f`.** Noah is using that build; 0.17.1 and 0.18.0 wait
+  for his word (Doctrine §7). Flagged to him that 0.17.1 carries the report-injection fix and
+  is worth having before he hands a status report to anybody.
+
 - **2026-07-29 (afternoon, after the promote)** — **Adversarial audit of 0.13.0–0.17.0,
   the five releases shipped in one sitting. Four real defects found, all mine, all shipped.**
   Ran unprompted while Noah began using the app, on the reasoning that I would rather find
