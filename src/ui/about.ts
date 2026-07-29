@@ -15,6 +15,8 @@
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
 import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
+import { statusReport, renderReport, periodWords, type ReportFormat } from '../delta.ts';
+import { fold } from '../fold.ts';
 import { heldNodes } from '../gate.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
@@ -191,6 +193,85 @@ export async function mountAbout(session: Session): Promise<void> {
       // the user needs to read. Freshness is handled when the panel opens.
     }
   });
+
+  // --- the status report ----------------------------------------------------
+  // "What has changed since I last told anyone" is not a change-log this app
+  // maintains. It is fold(log up to then) compared with fold(log) — the same
+  // arithmetic everything else here is built on, so there is no second source of
+  // truth to drift, and a report over an imported history is exactly as correct
+  // as one over a history this device wrote.
+  const reportNote = document.querySelector<HTMLElement>('#report-note');
+  const reportPreview = document.querySelector<HTMLElement>('#report-preview');
+
+  /**
+   * Hand it over, THEN record it — the ordering an audit already had to fix on
+   * the export path. A `status.report.exported` written before the text reached
+   * anywhere would move the mark, and the next report would silently start from
+   * a moment nobody was ever told about. That is a whole reporting period lost,
+   * with no error and nothing to notice.
+   */
+  const deliverReport = async (format: ReportFormat): Promise<void> => {
+    if (!reportNote) return;
+    const nowIso = new Date().toISOString();
+    const after = session.state();
+    const since = after.lastReportAt;
+    const all = await session.store.all();
+    const before = since ? fold(all.filter(e => e.at <= since)) : fold([]);
+    const r = statusReport(before, after, since, nowIso, session.zone);
+    const text = renderReport(r, format, session.zone);
+
+    try {
+      if (format === 'clipboard') {
+        // The clipboard can be refused — a permission, a browser that only
+        // allows it inside a gesture, an iPad in a state that says no. When it
+        // is, the text still has to reach the person, so it is shown rather
+        // than lost with an apology.
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch {
+          if (reportPreview) { reportPreview.textContent = text; reportPreview.hidden = false; }
+          reportNote.textContent = 'Your browser would not let me use the clipboard. Here it is instead — select it and copy.';
+          return;                       // NOT recorded: it did not leave.
+        }
+      } else if (format === 'print') {
+        if (!reportPreview) return;
+        reportPreview.textContent = text;
+        reportPreview.hidden = false;
+        window.print();
+      } else {
+        const ext = format === 'csv' ? 'csv' : 'md';
+        const type = format === 'csv' ? 'text/csv;charset=utf-8' : 'text/markdown;charset=utf-8';
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = exportFilename('status', nowIso, false, ext);
+        document.body.append(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 120_000);
+      }
+
+      await session.commit((ctx) => [{
+        id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+        kind: 'status.report.exported', node: null,
+        payload: { format, scope: 'all' },
+      } as AppEvent]);
+      reportNote.textContent = 'Handed over. The next one starts from this moment.';
+    } catch (err) {
+      reportNote.textContent = `That did not work — nothing left your device. (${(err as Error).message})`;
+    }
+  };
+
+  const REPORT_BUTTONS: [string, ReportFormat][] = [
+    ['#report-copy', 'clipboard'], ['#report-markdown', 'markdown'],
+    ['#report-csv', 'csv'], ['#report-print', 'print'],
+  ];
+  for (const [sel, format] of REPORT_BUTTONS) {
+    document.querySelector<HTMLButtonElement>(sel)?.addEventListener('click', () => {
+      void deliverReport(format);
+    });
+  }
 
   // --- export ---------------------------------------------------------------
   // The way out, on the surface that talks about durability. DELIVER, then

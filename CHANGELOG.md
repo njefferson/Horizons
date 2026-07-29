@@ -14,6 +14,20 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.16.0 — CAPABILITY
+
+*2026-07-29*
+
+- Some work you do; some work you **carry**. Open anything you have made bigger than one step and say "someone else is doing this", and it moves to a new "Carrying" — who is running it, when you owe an answer, and what is outstanding.
+- **Quietkeep stops offering you their work.** Nothing under something you are only carrying will be handed to you as your next step. It stays on your list, because it is still real — it just stops being your job.
+- Nothing is graded. No "at risk", no amber, no colour that means anything about how someone else is getting on. It states who and when and lets you decide, because it does not have the evidence to do anything else.
+- You can now say when you owe somebody an answer, and that date behaves like any other — when it goes by it asks you what to do about it rather than sitting there.
+- And there is now a report. What has changed since the last time you told anyone — finished, come back, now with someone else — plus what is still outstanding and what is coming up.
+- Copy it, save it as Markdown, save it as a spreadsheet, or print it. Nothing is sent anywhere; it is written for you to hand over yourself.
+- It is worked out from your own history, so **nothing has to be kept up to date for it to be right**. There is no second list to maintain and no chance of the two disagreeing.
+- The next report starts where the last one ended. It will not tell you the same thing twice.
+- If your browser will not let Quietkeep use the clipboard, it shows you the text instead of losing it with an apology.
+
 ## 0.15.0 — CAPABILITY
 
 *2026-07-29*

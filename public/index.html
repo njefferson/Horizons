@@ -104,6 +104,16 @@
     <p id="focus-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- The track portfolio (v1 Must). Some work you do; some you CARRY. What you
+       hold is a name, a date you owe an answer, and whether it has moved. No
+       health word anywhere — "at risk" and "slipping" are this app grading
+       somebody else's work on evidence it does not have. -->
+  <section id="portfolio" class="portfolio" aria-labelledby="portfolio-heading" hidden>
+    <h2 id="portfolio-heading" class="section" tabindex="-1">Carrying</h2>
+    <p id="portfolio-count" class="portfolio-count"></p>
+    <ul id="portfolio-list" class="portfolio-list"></ul>
+  </section>
+
   <!-- The person lens (v1 Must). Not filing — "what am I waiting on Sam for" is
        a question you get asked out loud, in a corridor, with no time to look
        anything up. The same nodes, sliced the way the question arrives. -->
@@ -258,6 +268,15 @@
     <div class="detail-row">
       <button id="detail-make-project" type="button" class="ghost">This is bigger than one step</button>
     </div>
+    <div class="detail-row" id="detail-track-row" hidden>
+      <button id="detail-track" type="button" class="ghost">Someone else is doing this</button>
+      <button id="detail-untrack" type="button" class="ghost">I am doing this</button>
+    </div>
+    <div class="detail-row" id="detail-suspense-row" hidden>
+      <label class="detail-inline" for="detail-suspense">Answer owed by</label>
+      <input id="detail-suspense" type="date">
+      <button id="detail-suspense-set" type="button">Set</button>
+    </div>
     <p id="detail-parent-hint" class="detail-hint">
       Bigger things hold smaller ones. Nothing is filed away out of reach &mdash;
       whatever is under here still comes back to you on its own.
@@ -399,6 +418,26 @@
     <strong>Replace everything</strong> throws away what is here and uses the copy
     instead &mdash; that is the one for a device you are setting up again.
   </p>
+
+  <h3 class="about-section">Telling someone where things are</h3>
+  <p class="about-p">
+    What has changed since the last time you told anyone &mdash; finished, come
+    back, now with someone else &mdash; plus what is still outstanding and what
+    is coming up. It is worked out from your own history, so nothing has to be
+    kept up to date for it to be right.
+  </p>
+  <div class="about-actions">
+    <button id="report-copy" type="button">Copy it</button>
+    <button id="report-markdown" type="button" class="ghost">Save as Markdown</button>
+    <button id="report-csv" type="button" class="ghost">Save as a spreadsheet</button>
+    <button id="report-print" type="button" class="ghost">Print it</button>
+  </div>
+  <p id="report-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    Nothing is sent anywhere. It is written for you to paste or hand over
+    yourself, and the next one starts from this moment.
+  </p>
+  <pre id="report-preview" class="report-preview" hidden></pre>
 
   <h3 class="about-section">Reminders that reach you</h3>
   <p class="about-p">

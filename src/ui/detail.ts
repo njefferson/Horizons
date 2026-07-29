@@ -26,6 +26,7 @@ import { doneEvents } from './work.ts';
 import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
 import { makeContainerEvents, parentEvents, unparentEvents } from './detail-intents.ts';
 import { linkPersonEvents, closeWaitingEvents } from './detail-intents.ts';
+import { setTrackRoleEvents, setSuspenseEvents } from './detail-intents.ts';
 import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting } from '../people.ts';
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
@@ -281,6 +282,17 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // other control here: never offer what this item cannot do.
     show('#detail-unparent', Boolean(n.parent));
     show('#detail-make-project', !isContainer(n) && !n.trashed);
+    // The track role and the answer-owed date belong to containers only: a role
+    // on a single action would be a label with nothing under it to govern.
+    const container = isContainer(n) && !n.trashed;
+    const trackRow = q('#detail-track-row');
+    const suspRow = q('#detail-suspense-row');
+    if (trackRow) trackRow.hidden = !container;
+    if (suspRow) suspRow.hidden = !container;
+    show('#detail-track', container && n.role !== 'track');
+    show('#detail-untrack', container && n.role === 'track');
+    const susp = q<HTMLInputElement>('#detail-suspense');
+    if (susp && n.clocks.suspense) susp.value = localDayKey(n.clocks.suspense.at, session.zone);
   }
 
   /** A positive whole number, or null. A blank or nonsense box must not become
@@ -389,6 +401,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
         forWhat: current!.title,
       });
     }, `With ${name}.`);
+  });
+
+  btn('#detail-track')?.addEventListener('click', () => {
+    void run(ctx => setTrackRoleEvents(ctx, current!.id, 'track'),
+      'You are carrying this, not doing it. Nothing under it will be offered as your next step.');
+  });
+  btn('#detail-untrack')?.addEventListener('click', () => {
+    void run(ctx => setTrackRoleEvents(ctx, current!.id, 'execute'), 'Back to yours to do.');
+  });
+  btn('#detail-suspense-set')?.addEventListener('click', () => {
+    const key = q<HTMLInputElement>('#detail-suspense')?.value ?? '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) { say('Pick a date first.'); return; }
+    void run(ctx => setSuspenseEvents(ctx, current!.id, key), `Answer owed by ${key}.`);
   });
 
   btn('#detail-close')?.addEventListener('click', () => DLG.close());

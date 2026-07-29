@@ -1338,6 +1338,127 @@ try {
   is(parented.length, 1, 'one node.parented was recorded');
   is(typeof parented[0]?.payload?.parent, 'string', 'naming what it went under');
 
+  // --- Carrying, and telling someone where things are ----------------------
+  // `project.role.set` has been in the vocabulary from the first draft with the
+  // note "a track project emits no next actions". Nothing folded the role, so
+  // every project was an execute project and the distinction lived only in
+  // prose — meaning Next up would hand you somebody else's job.
+  console.log('\nCarrying \u2014 and the report that says where things are');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#portfolio').isVisible(), false,
+    'you are carrying nothing, so the surface is not there');
+
+  await tpage.fill('#capture', 'the migration');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Next action');
+  await tpage.fill('#capture', 'write the script');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Next action');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.locator('#cards .card:has-text("the migration") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-track-row').isVisible(), false,
+    'a plain action has no role to set — a role with nothing under it is a label');
+  await tpage.click('#detail-make-project');
+  await tpage.waitForTimeout(300);
+  is(await tpage.locator('#detail-track-row').isVisible(), true,
+    'and a container does');
+  await tpage.click('#detail-track');
+  await tpage.waitForTimeout(300);
+  const owedBy = await tpage.evaluate(() => new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10));
+  await tpage.fill('#detail-suspense', owedBy);
+  await tpage.click('#detail-suspense-set');
+  await tpage.waitForTimeout(300);
+  await tpage.click('#detail-close');
+
+  await tpage.locator('#cards .card:has-text("write the script") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.selectOption('#detail-parent', { label: 'the migration' });
+  await tpage.click('#detail-parent-set');
+  await tpage.waitForTimeout(300);
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.waitForSelector('#portfolio:not([hidden])');
+  is(await tpage.locator('.portfolio-title').first().textContent(), 'the migration',
+    'what you are carrying is named');
+  const carryWords = await tpage.locator('.portfolio-why').first().textContent();
+  is(/an answer is due in \d+ days/.test(carryWords || ''), true,
+    `and when you owe an answer ("${carryWords}")`);
+  // THE LOAD-BEARING ONE. Next up must not hand you somebody else's job.
+  const upNow = await tpage.evaluate(() =>
+    (document.querySelector('#nextup')?.innerText ?? ''));
+  is(upNow.includes('write the script'), false,
+    'and work under it is NOT offered as your next step \u2014 you are not the one doing it');
+  is((await tpage.locator('#cards').textContent() || '').includes('write the script'), true,
+    'though it is still on your list, because it is still real');
+  is(/\b(at risk|slipping|amber|red|on track|healthy|behind)\b/i.test(carryWords || ''), false,
+    'and nothing grades anyone');
+
+  // The status report. Computed from the log, so nothing has to be kept up to
+  // date for it to be right.
+  console.log('\nThe report \u2014 what has changed since you last told anyone');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#report-markdown');
+  const [reportFile] = await Promise.all([
+    tpage.waitForEvent('download'),
+    tpage.click('#report-markdown'),
+  ]);
+  const reportName = reportFile.suggestedFilename();
+  is(reportName.startsWith('quietkeep-status-') && reportName.endsWith('.md'), true,
+    `the file is named for what it is ("${reportName}")`);
+  const reportText = readFileSync(await reportFile.path(), 'utf8');
+  is(/^## Status/m.test(reportText), true, 'and it is a status report');
+  is(/everything so far/i.test(reportText), true,
+    'the first one of all says what it really is, rather than claiming a period');
+  is(/\b(overdue|late|missed|slipped|failed|chased)\b/i.test(reportText), false,
+    'and it carries no rebuke to hand to anybody');
+  // WAIT for the write, then read the surface's own confirmation — the file must
+  // exist before the event claiming it left, the ordering an audit already had
+  // to fix on the export path.
+  for (let i = 0; i < 40; i++) {
+    if ((await tpage.locator('#report-note').textContent() || '').startsWith('Handed over')) break;
+    await tpage.waitForTimeout(50);
+  }
+  is((await tpage.locator('#report-note').textContent() || '').startsWith('Handed over'), true,
+    'and the surface confirms only after the file was handed over');
+
+  // THE MARK MOVED. A second report covers the period since the first, not
+  // everything all over again.
+  await tpage.click('#about-close');
+  await tpage.fill('#capture', 'something after the report');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForTimeout(300);
+  await tpage.click('#open-about');
+  const [second] = await Promise.all([
+    tpage.waitForEvent('download'),
+    tpage.click('#report-markdown'),
+  ]);
+  const secondText = readFileSync(await second.path(), 'utf8');
+  is(/everything so far/i.test(secondText), false,
+    'the second report covers a period, not the whole history again');
+  is(secondText.includes('something after the report'), true,
+    'and it carries what happened since the last one');
+  // It may still appear under "Coming up" — that is a fact about the state, not
+  // a change, and a report that hid an upcoming date because it mentioned it
+  // last week would be actively misleading. What must NOT recur is the CHANGE.
+  const changesOnly = secondText.split('### Coming up')[0] ?? secondText;
+  is(changesOnly.includes('the migration'), false,
+    'and does not repeat a change it already told you about');
+  is(/### Coming up[\s\S]*the migration/.test(secondText), true,
+    'though an upcoming date is still stated — hiding it would be worse than repeating it');
+  await tpage.click('#about-close');
+
+  // Leave the inbox as this section found it. The capture above is still
+  // unrouted, and the next section's first `routeOne` would grab IT rather than
+  // its own item — which is exactly what happened (smoke), and the failure
+  // pointed at the person lens rather than at this section that caused it.
+  await routeOne('Next action');
+
   // --- The person lens -----------------------------------------------------
   // `person.created`, `person.linked`, `waiting.opened` and `waiting.closed`
   // have been in the vocabulary from the start; only `person.created` was folded

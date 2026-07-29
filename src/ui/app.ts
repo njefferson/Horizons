@@ -22,6 +22,7 @@ import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
 import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
+import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -133,6 +134,41 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
 
   list.replaceChildren(...rows);
   $('#empty').hidden = groups.length > 0;
+
+  // The track portfolio. What you carry rather than do — a name, a date you owe
+  // an answer, and whether it has moved. No health word anywhere: "at risk" and
+  // "slipping" are this app grading someone else's work on evidence it does not
+  // have. It states the dates and lets you decide.
+  try {
+    const nowIso = new Date(now()).toISOString();
+    const lines = trackPortfolio(session.state(), nowIso, session.zone);
+    const region = document.querySelector<HTMLElement>('#portfolio');
+    const count = document.querySelector<HTMLElement>('#portfolio-count');
+    const list = document.querySelector<HTMLElement>('#portfolio-list');
+    if (region && count && list) {
+      region.hidden = lines.length === 0;
+      count.textContent = portfolioWords(lines.length);
+      list.replaceChildren(...lines.map(l => {
+        const li = document.createElement('li');
+        li.className = 'portfolio-item';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'portfolio-open';
+        const t = document.createElement('span');
+        t.className = 'portfolio-title';
+        t.textContent = l.node.title || '(untitled)';
+        const w = document.createElement('span');
+        w.className = 'portfolio-why';
+        w.textContent = trackWords(l);
+        b.append(t, w);
+        if (openDetail) b.addEventListener('click', () => openDetail(l.node));
+        li.append(b);
+        return li;
+      }));
+    }
+  } catch {
+    // A surface. It must never take the list down with it.
+  }
 
   // The person lens. Everything you are owed, longest first, INCLUDING the ones
   // nobody has put a name to — the route that creates a waiting-for is a single

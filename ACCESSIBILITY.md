@@ -186,6 +186,30 @@ answer is a thing to learn rather than a thing to read.
 placeholder in the app after the 0.14.0 finding — a placeholder is text someone
 must read to know what the box wants, so it meets 4.5:1 like any other text.
 
+### B-15 · Carrying, and the report (0.16.0)
+`.portfolio-why` is the whole content of a portfolio row — who is running it,
+when an answer is owed, what is outstanding — so it is the lowest-contrast
+load-bearing text on the surface. `--ink-soft` on `--bg`, in the registry, both
+themes.
+
+**There is no colour on this surface that means "at risk", and there will not
+be.** A hue aimed at how somebody else's work is going is this app grading a
+third party on evidence it does not have. Every status is stated in words at one
+weight; no threshold changes the appearance of anything. B-01, and law 5 applied
+to someone who never agreed to be measured.
+
+`#detail-track` is **not** in the `detail sheet, carried` registry: once
+something is tracked that control is replaced by `#detail-untrack`, which is what
+the state actually offers. The gate reported the missing selector rather than
+skipping it — the registry rule biting for the third time (`#detail-place`,
+`.focus-elapsed`, now this), which is what it is for.
+
+`.report-preview` is `--ink` on `--bg` with `white-space: pre-wrap` and
+`overflow-wrap: anywhere`. It renders in two situations: when the clipboard is
+refused, and when printing. The first is the one that matters — a permission
+failure must put the text in front of the person rather than lose it with an
+apology, and it therefore has to be as readable as any other text in the app.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

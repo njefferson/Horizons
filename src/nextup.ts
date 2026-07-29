@@ -99,6 +99,26 @@ const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
     c != null && c.kind !== 'park' && isValidIso(c.at) &&
     calendarDaysBetween(nowIso, c.at, zone) <= 0);
 
+/**
+ * Is any ancestor a project someone else is executing?
+ *
+ * Bounded by a seen set, like every other ancestor walk in this codebase: the
+ * gate keeps the parent graph acyclic, and a shard can still deliver two halves
+ * of a loop neither device wrote whole (ADR-0035/0038).
+ */
+function underTrackedProject(state: State, n: NodeState): boolean {
+  const seen = new Set<string>([n.id]);
+  let cur = n.parent;
+  while (cur && !seen.has(cur)) {
+    seen.add(cur);
+    const p = state.nodes.get(cur);
+    if (!p || p.trashed || p.mergedInto) return false;
+    if (p.role === 'track') return true;
+    cur = p.parent;
+  }
+  return false;
+}
+
 /** A hard date is `due` or `suspense` — the immovable kinds. A `review` clock is
  *  the app's own "bring this back", which is soft by construction. */
 const hasHardDate = (n: NodeState): boolean => Boolean(n.clocks.due ?? n.clocks.suspense);
@@ -116,6 +136,17 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
 
   for (const n of state.nodes.values()) {
     if (!isCandidate(n, nowIso, zone)) continue;
+    // Work under a TRACKED project is not yours to do. The vocabulary has said
+    // so since the first draft — "a `track` project emits no next actions, only
+    // Waiting-Fors and Upkeep check-ins" — and nothing enforced it, because
+    // nothing folded the role. Offering a next action on something you are only
+    // carrying is the app telling you to do somebody else's job, which is the
+    // fastest way to stop trusting a surface whose whole promise is that it has
+    // already decided.
+    //
+    // A waiting-for and an upkeep still come through: chasing IS the work when
+    // you are the one carrying it.
+    if (n.kind !== 'waiting-for' && n.kind !== 'upkeep' && underTrackedProject(state, n)) continue;
 
     const p = pressureOf(n, nowIso, zone);
     const arrived = arrivedClock(n, nowIso, zone);

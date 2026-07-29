@@ -45,6 +45,14 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /** For a project: `execute` (you do it) or `track` (you carry it, someone else
+   *  does it). Null until anyone has said, which means execute by default —
+   *  stated rather than stored, so an unanswered question is not a decision. */
+  role: string | null;
+  /** The one person responsible. Not a list: "who is running this" has exactly
+   *  one answer or it has none, and a shared OPR is how a thing ends up with
+   *  nobody running it. */
+  opr: NodeId | null;
   /**
    * Who this is with, and in what capacity.
    *
@@ -117,6 +125,10 @@ export interface State {
   focus: { node: NodeId; startedAt: ISODateTime } | null;
   /** Ordering of the last event that moved `focus`, so it folds LWW. */
   focusStamp: Ordering | null;
+  /** When a status report was last handed over. The provenance the delta reads
+   *  from — MAX rather than last-folded, so a shard arriving out of order cannot
+   *  wind the mark backwards and re-report a fortnight of changes. */
+  lastReportAt: ISODateTime | null;
 }
 
 export const emptyState = (): State => ({
@@ -127,6 +139,7 @@ export const emptyState = (): State => ({
   eventCount: 0,
   focus: null,
   focusStamp: null,
+  lastReportAt: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -184,6 +197,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
       resumeFor: null, resumeCue: null, interruptedFocus: null, interruptedAt: null,
       people: [], waitingOn: null, waitingFor: null, waitingSince: null, waitingOutcome: null,
+      role: null, opr: null,
       lastReplan: null,
       feeds: [],
       leadDays: null,
@@ -234,6 +248,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
     eventCount: base.eventCount,
     focus: base.focus,
     focusStamp: base.focusStamp,
+    lastReportAt: base.lastReportAt,
   };
 
   const ordered = [...events].sort(compareEvents);
@@ -346,6 +361,37 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
           n.waitingOutcome = e.payload.outcome ?? 'closed';
           n.stamps['waiting'] = o;
         }
+        break;
+      }
+      case 'project.role.set': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['role'], o)) { n.role = e.payload.role; n.stamps['role'] = o; }
+        break;
+      }
+      case 'opr.assigned': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['opr'], o)) { n.opr = e.payload.person; n.stamps['opr'] = o; }
+        break;
+      }
+      // A suspense is a CLOCK — the date you owe somebody an answer — and it
+      // folds into the same `clocks` map every other date does. Its own event
+      // exists because setting one is a different act from scheduling work, but
+      // one date living in two places is how the calendar and the list come to
+      // disagree, so there is exactly one home for it.
+      case 'suspense.set': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['clock:suspense'], o)) {
+          n.clocks = { ...n.clocks, suspense: { kind: 'suspense', at: e.payload.at, setBy: o } };
+          n.stamps['clock:suspense'] = o;
+        }
+        break;
+      }
+      // State-level: WHEN a report last left, which is the provenance "what has
+      // changed since I last told anyone" reads from. The log is the only place
+      // that fact can honestly live — a preference would survive an import that
+      // replaced the very history it describes.
+      case 'status.report.exported': {
+        if (!s.lastReportAt || e.at > s.lastReportAt) s.lastReportAt = e.at;
         break;
       }
       case 'person.created': {

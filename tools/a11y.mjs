@@ -107,6 +107,23 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // The track portfolio. The facts line is the lowest-contrast text and it is the
+  // whole content of the row — who, when an answer is owed, what is outstanding.
+  // There is no colour here that means "at risk" and there will not be one: a hue
+  // aimed at someone else's work is this app grading them (B-01, law 5).
+  'portfolio': ['#portfolio-heading', '.portfolio-count', '.portfolio-open',
+    '.portfolio-title', '.portfolio-why'],
+  // The sheet's controls for it, which only a container ever shows. `#detail-track`
+  // is NOT here: once the thing is tracked it is replaced by `#detail-untrack`,
+  // which is the control this state actually offers. The gate said so rather than
+  // silently skipping a selector it could not find, which is the registry rule
+  // working — the same way it did for `#detail-place` in 0.13.0.
+  'detail sheet, carried': ['#detail-untrack', '#detail-suspense', '#detail-suspense-set',
+    '.detail-inline', '#detail-close'],
+  // The status report's controls, in the panel that talks about handing things
+  // over. Four buttons and the line that confirms one worked.
+  'report controls': ['#report-copy', '#report-markdown', '#report-csv', '#report-print',
+    '.about-p', '.about-caveat', '.about-section'],
   // The person lens. How long something has been with someone is the
   // lowest-contrast text here and it is load-bearing — it is the fact you use to
   // decide whether to mention it. Same ink tokens as everything else: there is
@@ -488,6 +505,31 @@ try {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
 
+    // State 3f0: carrying. Reached the way a person reaches it — make a container,
+    // then say somebody else is doing it.
+    await page.click('#cards .card-open');
+    await page.waitForSelector('#detail[open]');
+    await page.click('#detail-make-project');
+    await page.waitForTimeout(250);
+    await page.click('#detail-track');
+    await page.waitForTimeout(250);
+    const owedBy = await page.evaluate(() =>
+      new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10));
+    await page.fill('#detail-suspense', owedBy);
+    await page.click('#detail-suspense-set');
+    await page.waitForTimeout(250);
+    await auditContrast(page, 'detail sheet, carried', theme);
+    await auditAxe(page, 'detail sheet, carried', theme);
+    await auditTargets(page, 'detail sheet, carried', theme);
+    await auditFocusRings(page, 'detail sheet, carried', theme,
+      ['#detail-suspense', '#detail-suspense-set']);
+    await page.click('#detail-close');
+    await page.waitForSelector('#portfolio:not([hidden])');
+    await auditContrast(page, 'portfolio', theme);
+    await auditAxe(page, 'portfolio', theme);
+    await auditTargets(page, 'portfolio', theme);
+    await auditFocusRings(page, 'portfolio', theme, ['.portfolio-open']);
+
     // State 3f1: the person lens. Reached the way a person reaches it — route
     // something to "Waiting for", which is the only way to be owed anything.
     await page.fill('#capture', 'the signed form');
@@ -622,6 +664,12 @@ try {
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
     await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar']);
+
+    // The report controls, in the panel that is already open.
+    await auditContrast(page, 'report controls', theme);
+    await auditTargets(page, 'report controls', theme);
+    await auditFocusRings(page, 'report controls', theme,
+      ['#report-copy', '#report-markdown', '#report-csv', '#report-print']);
 
     // The import surface with a file chosen — the state that carries the
     // destructive control. An empty log is a perfectly valid export (a new user

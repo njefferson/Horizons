@@ -117,8 +117,12 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 - ~~**Interrupt/pin + focus anchor**, with auto-paired resume cards.~~ **Done, 0.14.0** — `focus.started`/`focus.ended`/`interrupt.captured`/`resume.card.*` had been in the vocabulary since the first draft, `nextup` ranked resume cards SECOND, and nothing could create one: an entire ranking tier ordering an empty set. The card is written **at the interruption**, not at `focus.ended` ([ADR-0039](docs/adr/0039-focus-and-the-way-back.md)).
 - ~~**Dependency dates + replan.**~~ **Done, 0.12.0.** `feeds →` (project, suspense) + lead estimate,
   computed latest-start, buffer burn, auto-replan on miss (law 3).
-- **Track portfolio + delta report.** The work half: OPR, suspenses, status
-  output to clipboard/Markdown/print/CSV.
+- ~~**Track portfolio + delta report.** The work half: OPR, suspenses, status
+  output to clipboard/Markdown/print/CSV.~~ **Done, 0.16.0** — `project.role.set`
+  was in the vocabulary saying *"a track project emits no next actions"* and
+  nothing folded it, so Next up would hand you somebody else's job. The report is
+  `fold(log up to then)` vs `fold(log)`, so there is no second source of truth to
+  drift ([ADR-0041](docs/adr/0041-carrying-and-the-report.md)).
 - ~~**Person lens.**~~ **Done, 0.15.0** — `person.linked`, `waiting.opened` and `waiting.closed` were in the vocabulary and unfolded, so the "Waiting for" route said *someone else owes you this* and never asked who. Unattributed waiting-fors are shown, not hidden: the route is one tap, so unattributed is the commonest kind ([ADR-0040](docs/adr/0040-the-person-lens.md)).
 - ~~**Stalled/orphan detection** (the exceptions-first Review surface).~~ **Done, 0.13.0** — and it needed *containment* built first: the parent field had existed since the first fold with no control able to set one, so nothing in the app could stall. [ADR-0038](docs/adr/0038-containment-and-exceptions-review.md).
 - **T0 + T1 notifications.** Permission + badge + glance surfaces; `.ics` export

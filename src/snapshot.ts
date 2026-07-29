@@ -24,6 +24,7 @@ export function serialiseState(s: State): unknown {
     eventCount: s.eventCount,
     focus: s.focus,
     focusStamp: s.focusStamp,
+    lastReportAt: s.lastReportAt,
   });
 }
 
@@ -36,6 +37,7 @@ export function deserialiseState(raw: unknown): State {
     eventCount: number;
     focus?: State['focus'];
     focusStamp?: State['focusStamp'];
+    lastReportAt?: string | null;
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -63,6 +65,8 @@ export function deserialiseState(raw: unknown): State {
       waitingFor: n.waitingFor ?? null,
       waitingSince: n.waitingSince ?? null,
       waitingOutcome: n.waitingOutcome ?? null,
+      role: n.role ?? null,
+      opr: n.opr ?? null,
       lastReplan: n.lastReplan ?? null,
       // MUTABLE fields must be copied on deserialise as well as on clone. A
       // shared array between a snapshot and running state is how a fold rewrote
@@ -80,6 +84,7 @@ export function deserialiseState(raw: unknown): State {
     // nothing was being worked on, because nothing could be.
     focus: r.focus ?? null,
     focusStamp: r.focusStamp ?? null,
+    lastReportAt: r.lastReportAt ?? null,
   };
 }
 

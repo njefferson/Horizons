@@ -29,6 +29,22 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.16.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Some work you do; some work you **carry**. Open anything you have made bigger than one step and say "someone else is doing this", and it moves to a new "Carrying" \u2014 who is running it, when you owe an answer, and what is outstanding.',
+      '**Quietkeep stops offering you their work.** Nothing under something you are only carrying will be handed to you as your next step. It stays on your list, because it is still real \u2014 it just stops being your job.',
+      'Nothing is graded. No "at risk", no amber, no colour that means anything about how someone else is getting on. It states who and when and lets you decide, because it does not have the evidence to do anything else.',
+      'You can now say when you owe somebody an answer, and that date behaves like any other \u2014 when it goes by it asks you what to do about it rather than sitting there.',
+      'And there is now a report. What has changed since the last time you told anyone \u2014 finished, come back, now with someone else \u2014 plus what is still outstanding and what is coming up.',
+      'Copy it, save it as Markdown, save it as a spreadsheet, or print it. Nothing is sent anywhere; it is written for you to hand over yourself.',
+      'It is worked out from your own history, so **nothing has to be kept up to date for it to be right**. There is no second list to maintain and no chance of the two disagreeing.',
+      'The next report starts where the last one ended. It will not tell you the same thing twice.',
+      'If your browser will not let Quietkeep use the clipboard, it shows you the text instead of losing it with an apology.',
+    ],
+  },
+  {
     triplet: '0.15.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

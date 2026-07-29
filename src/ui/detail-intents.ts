@@ -314,3 +314,29 @@ export const closeWaitingEvents = (
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
   kind: 'waiting.closed', node, payload: { outcome },
 } as AppEvent];
+
+/**
+ * Someone else is doing this.
+ *
+ * `project.role.set` is silent-risk and gated: a tracked project emits no next
+ * actions, so its children stop being offered as work and the gate re-clocks
+ * anything that would otherwise go quiet. That is the point of the role, not a
+ * side effect of it.
+ */
+export const setTrackRoleEvents = (
+  ctx: StampContext, node: string, role: 'execute' | 'track',
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'project.role.set', node, payload: { role },
+} as AppEvent];
+
+/** The date you owe somebody an answer. A hard date like `due` — it raises a
+ *  replan card when it passes, because a promise you have not kept to another
+ *  person is exactly the kind of date law 3 exists for. */
+export const setSuspenseEvents = (
+  ctx: StampContext, node: string, dayKey: string, label?: string,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'suspense.set', node,
+  payload: { at: endOfDayKey(dayKey, ctx.zone), ...(label ? { label } : {}) },
+} as AppEvent];
