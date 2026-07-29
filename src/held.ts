@@ -44,13 +44,40 @@ export const SOON_DAYS = 7;
  * purpose, so it must not make something "Ready now". It is reported separately.
  */
 function soonestDemand(n: NodeState, zone: string, nowIso: string): { days: number; at: string } | null {
-  let best: { days: number; at: string } | null = null;
+  return soonestClock(n, zone, nowIso, false);
+}
+
+/**
+ * The soonest clock that will bring this node back, compared as INSTANTS.
+ *
+ * `includePark` is why this is one function rather than two. A park is not a
+ * DEMAND — it is held away from you on purpose, so it must never make something
+ * "Ready now" — but it IS a return date, and anything asking "when does this come
+ * back" (the calendar) must count it. `src/ics.ts` had its own copy that excluded
+ * park, so an item the list displayed as "parked until Aug 1" was silently
+ * missing from the calendar: the app contradicting itself, which is precisely
+ * what ADR-0032 claims one definition prevents.
+ *
+ * `Date.parse`, never a string compare. That duplicate sorted `c.at`
+ * LEXICOGRAPHICALLY, which matches instant order only while every stored
+ * timestamp is a Z-suffixed ISO string of identical shape — and nothing enforces
+ * that, since `isValidIso` accepts any format `Date.parse` handles and import
+ * validates none. An offset-form timestamp made the card and the calendar name
+ * different days for the same node (audit).
+ */
+export function soonestClock(
+  n: NodeState, zone: string, nowIso: string, includePark: boolean,
+): { days: number; at: string } | null {
+  let best: { days: number; at: string; ms: number } | null = null;
   for (const c of Object.values(n.clocks)) {
-    if (!c || c.kind === 'park' || !isValidIso(c.at)) continue;
-    const days = calendarDaysBetween(nowIso, c.at, zone);
-    if (best === null || days < best.days) best = { days, at: c.at };
+    if (!c || !isValidIso(c.at)) continue;
+    if (!includePark && c.kind === 'park') continue;
+    const ms = Date.parse(c.at);
+    if (best === null || ms < best.ms) {
+      best = { days: calendarDaysBetween(nowIso, c.at, zone), at: c.at, ms };
+    }
   }
-  return best;
+  return best ? { days: best.days, at: best.at } : null;
 }
 
 /** A park is not a demand, but it is still a return, and the surface should be

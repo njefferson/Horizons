@@ -192,7 +192,10 @@
     holding to your calendar and the calendar will tell you instead &mdash; it
     already runs when this app does not.
   </p>
-  <p id="calendar-note" class="storage-note"></p>
+  <!-- A live region, like #status and the other surfaces. Without it, a
+       keyboard or screen-reader user who pressed the button got no focus,
+       no announcement and no sign anything had happened (audit). -->
+  <p id="calendar-note" class="storage-note" role="status" aria-live="polite"></p>
   <div class="about-actions">
     <button id="calendar" type="button">Send to my calendar</button>
   </div>

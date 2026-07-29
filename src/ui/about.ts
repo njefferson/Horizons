@@ -148,6 +148,7 @@ export async function mountAbout(session: Session): Promise<void> {
     const at = new Date().toISOString();
     if (calendarCount(session.state(), at, session.zone) === 0) {
       calNote.textContent = 'Nothing has a date yet. Give something a date first, and it can go to your calendar.';
+      cal.focus();
       return;
     }
     cal.disabled = true;
@@ -175,6 +176,12 @@ export async function mountAbout(session: Session): Promise<void> {
       calNote.textContent = `That did not send — nothing left your device. (${(err as Error).message})`;
     } finally {
       cal.disabled = false;
+      // Disabling the FOCUSED button blurs it, and re-enabling does not bring
+      // focus back — so activating this control dropped focus to <body>, outside
+      // the dialog. The same defect class was already fixed twice in this app
+      // (clarify.ts, work.ts) and came straight back on a new control (audit).
+      // NOT paintCalendar() here: it would immediately overwrite the confirmation
+      // the user needs to read. Freshness is handled when the panel opens.
     }
   });
 
@@ -231,6 +238,10 @@ export async function mountAbout(session: Session): Promise<void> {
     intro.hidden = !firstRun;
     dialog.showModal();
     void paintStorage();
+    // The calendar count is recomputed on every open. It used to be painted once
+    // at mount, so reopening the panel showed the PREVIOUS action's outcome —
+    // "Sent. Open the file…" — indefinitely, whatever had changed since (audit).
+    paintCalendar();
   };
 
   open.addEventListener('click', () => show(false));

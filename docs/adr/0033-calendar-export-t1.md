@@ -26,7 +26,16 @@ independent bisection oracle across 10,220 zone-days ([V-13](../verifications.md
 
 **A relative alarm, because it is resolved in the reader's own local time by the
 calendar.** `PT9H` from the start of an all-day event is 9am *where they are*,
-without this file naming a zone. An absolute `TRIGGER` would need a zone and would
+without this file naming a zone — **on 363 days a year.** §3.3.6 makes an
+hour-based duration *exact* rather than nominal, so on a DST-transition day the
+alarm lands at 08:00 or 10:00 local instead. The audit measured it: Denver
+2027-03-14 gives 10:00, 2026-11-01 gives 08:00, and Chatham the same on its own
+dates. That is an hour out, twice a year, on a gentle reminder — accepted rather
+than fixed, because the alternative is a per-event `VALUE=DATE-TIME` trigger that
+needs a `VTIMEZONE` and reopens every timezone question this design closes by
+construction. Recorded here so the next reader is not misled by the round number.
+
+An absolute `TRIGGER` would be worse on both counts: it needs a zone, and it would
 be wrong the moment someone travelled. **The `VALARM` is the entire point of the
 feature** — an event without one is a diary entry, and a diary entry does not
 remind anybody. The tests assert one alarm per event, always.
@@ -75,7 +84,20 @@ surface repeats it in plain words under the button.
   explains nothing.
 - T0's badge lands with it (`navigator.setAppBadge`), counting **only** the
   `ready` group: a badge showing everything you hold is a number that never falls,
-  which is a nag rather than information.
+  which is a nag rather than information. **Known limit, stated rather than
+  implied:** it is only updated while the app is open, because nothing in the
+  service worker touches it. Something that becomes ready overnight is not on the
+  icon in the morning — so the badge is a convenience, and the calendar is the
+  thing that actually reaches you.
+- **A park is a return date.** The calendar counts `park` clocks even though the
+  grouping does not treat them as demand: the held list shows "parked until Aug 1",
+  and a calendar that silently omitted it would be the app contradicting something
+  the user can plainly see. One helper, `soonestClock(…, includePark)`, serves both
+  so they cannot drift.
+- **Clocks are compared as instants, never as strings.** A duplicate local copy
+  sorted timestamps lexicographically, which matches instant order only while every
+  stored value is a Z-suffixed ISO string — nothing enforces that, and an
+  offset-form timestamp made the card and the calendar name different days.
 
 ## What would overturn it
 

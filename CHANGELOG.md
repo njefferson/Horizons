@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.8.1 — ITERATION
+
+*2026-07-29*
+
+- The calendar file is now accepted by strict calendar apps. Text pasted from a PDF or a terminal could carry invisible characters that quietly made the file invalid.
+- Something parked until a date now goes to your calendar too. The list said "parked until Friday" while the calendar quietly left it out.
+- A reminder is never dated in the past, so it can actually go off — previously anything already waiting was sent with a moment that had been and gone.
+- The panel no longer shows you a stale answer. Reopening it used to repeat whatever it said last time, however much had changed since.
+- After sending to your calendar, the keyboard stays on the button and the result is announced, instead of silently jumping to the top of the page.
+
 ## 0.8.0 — CAPABILITY
 
 *2026-07-29*

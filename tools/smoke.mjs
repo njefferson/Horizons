@@ -654,8 +654,12 @@ try {
   await tpage.click('#open-about');
   await tpage.waitForSelector('#calendar');
   const calNote = await tpage.locator('#calendar-note').textContent();
-  is(/thing(s)? (has|have) a date to send|nothing to send/.test(calNote || ''), true,
-    `it says what it is about to hand over ("${calNote}")`);
+  // The NUMBER, not a regex that matched the zero-state too: `/…|nothing to send/`
+  // accepted "Nothing has a date yet" while the file carried two events, so the
+  // two mutually exclusive claims both passed the same check (audit).
+  const promised = Number((calNote || '').match(/^(\d+) thing/)?.[1] ?? NaN);
+  is(Number.isInteger(promised) && promised > 0, true,
+    `it says how many it is about to hand over ("${calNote}")`);
   const [ical] = await Promise.all([
     tpage.waitForEvent('download'),
     tpage.click('#calendar'),
@@ -669,25 +673,64 @@ try {
   is(icsLines[icsLines.length - 1], 'END:VCALENDAR', 'a complete one');
   const vevents = icsLines.filter(l => l === 'BEGIN:VEVENT').length;
   const valarms = icsLines.filter(l => l === 'BEGIN:VALARM').length;
-  is(vevents > 0, true, `it carries ${vevents} event(s)`);
+  // EQUALITY against what the surface promised. `vevents > 0` had no expected
+  // value at all: emitting one event while the note promised two passed (audit),
+  // which is half a person's reminders silently missing.
+  is(vevents, promised, `it carries exactly what it promised (${vevents} vs ${promised})`);
   is(valarms, vevents, 'every one of which has an alarm — otherwise it reminds nobody');
-  is(icsLines.some(l => l.startsWith('DTSTART;VALUE=DATE:')), true,
-    'all-day dates, so no timezone block can be got wrong');
-  is(icsLines.some(l => l.startsWith('X-WR-CALNAME:') && /as of \d{4}-\d{2}-\d{2}/.test(l)), true,
-    'and it says when it was made, because it is a snapshot');
+  // Every DTSTART all-day, AND no timezone machinery anywhere. Checking that ONE
+  // DATE line exists passed a file carrying a full VTIMEZONE plus timed 23:59
+  // events — the exact failure the all-day design exists to prevent (audit).
+  const dtstarts = icsLines.filter(l => l.startsWith('DTSTART'));
+  is(dtstarts.length, vevents, 'every event has a DTSTART');
+  is(dtstarts.every(l => l.startsWith('DTSTART;VALUE=DATE:')), true,
+    'and every one of them is all-day');
+  is(icsLines.some(l => l === 'BEGIN:VTIMEZONE'), false, 'no timezone block to get wrong');
+  is(icsLines.some(l => /^[A-Za-z0-9-]+(;[^:]*)?;TZID=/.test(l)), false, 'and no TZID parameter');
+  // The actual date, not merely date-SHAPED. The filename two lines up already
+  // carries the truth, so there is no excuse for accepting 1999-01-01 (audit).
+  const isoDay = (icsName.match(/(\d{4}-\d{2}-\d{2})/) || [])[1];
+  is(icsLines.some(l => l.startsWith('X-WR-CALNAME:') && l.includes(`as of ${isoDay}`)), true,
+    `and it says WHEN it was made — as of ${isoDay} — because it is a snapshot`);
   // The completed item from earlier must NOT be in a list of things to come back to.
   const summaries = icsLines.filter(l => l.startsWith('SUMMARY:')).join(' | ');
   is(summaries.includes(doneTitle || '\u0000'), false,
     'nothing already finished is exported as a reminder');
-  const icsKinds = await tpage.evaluate(async () => {
+  // WAIT for it to settle. This read fired immediately after the `download`
+  // event — which happens at a.click(), BEFORE the commit — so it was blind to a
+  // duplicate and would go red on a correct app if the write took 300ms (audit).
+  const countCalExports = () => tpage.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
       const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
       tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'export.written' && e.payload?.scope === 'calendar').length);
     });
   });
-  is(icsKinds, 1, 'and the hand-off is recorded once, after the file existed');
+  for (let i = 0; i < 40 && (await countCalExports()) < 1; i++) await tpage.waitForTimeout(50);
+  await tpage.waitForTimeout(200);           // and give a duplicate time to appear
+  is(await countCalExports(), 1, 'the hand-off is recorded exactly once');
+  // ORDERING, which the count alone can never see: the file must exist BEFORE the
+  // event claiming it left. Moving the commit above the download passed the old
+  // check (audit) — this reads the surface's own confirmation, which is only
+  // written after both.
+  is((await tpage.locator('#calendar-note').textContent())?.startsWith('Sent.'), true,
+    'and the surface confirms only after the file was handed over');
   await tpage.click('#about-close');
+
+  console.log('\nThe badge — a glance at the icon, and a number that can reach zero');
+  const badge = await tpage.evaluate(async () => {
+    const calls = [];
+    navigator.setAppBadge = (n) => { calls.push(n ?? 'set'); return Promise.resolve(); };
+    navigator.clearAppBadge = () => { calls.push('clear'); return Promise.resolve(); };
+    document.querySelector('#capture').value = 'badge probe';
+    document.querySelector('#capture-form').dispatchEvent(new Event('submit', { cancelable: true }));
+    await new Promise(r => setTimeout(r, 400));
+    const ready = document.querySelector('.group-head')?.textContent ?? '';
+    return { calls, ready };
+  });
+  is(badge.calls.length > 0, true, `the icon is told something (${JSON.stringify(badge.calls)})`);
+  is(badge.calls.every(c => c === 'clear' || Number.isInteger(c)), true,
+    'and it is a whole count or an explicit clear, never a stale string');
 
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');

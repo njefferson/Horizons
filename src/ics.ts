@@ -19,7 +19,7 @@
 // event description carry the moment they were made.
 
 import type { NodeState, State } from './fold.ts';
-import { heldGroups } from './held.ts';
+import { heldGroups, soonestClock } from './held.ts';
 import { localDayKey, isValidIso } from './time.ts';
 
 /** The groups that represent work that will come back. Completed items, Menu
@@ -40,6 +40,13 @@ const ALARM_AT_HOUR = 9;
  * property value terminates the property and corrupts the file.
  */
 const esc = (s: string): string => s
+  // Strip every control character EXCEPT the line breaks, which are handled
+  // below. §3.1's VALUE-CHAR admits WSP, %x21-7E and non-ASCII and nothing else,
+  // so a form feed or an ANSI escape pasted out of a PDF or a terminal produced a
+  // file no strict parser would accept. `cleanTitle` guards the rename path, but
+  // capture assigns the raw text straight to the title, so this is the only place
+  // that catches it (audit).
+  .replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g, '')
   .replace(/\\/g, '\\\\')
   .replace(/;/g, '\\;')
   .replace(/,/g, '\\,')
@@ -88,14 +95,8 @@ const stampValue = (iso: string): string =>
 
 /** The soonest demanding clock — the same question `held.ts` groups on. `park`
  *  is excluded: a parked thing is being held away from you on purpose. */
-function soonestAt(n: NodeState): string | null {
-  let best: string | null = null;
-  for (const c of Object.values(n.clocks)) {
-    if (!c || c.kind === 'park' || !isValidIso(c.at)) continue;
-    if (best === null || c.at < best) best = c.at;
-  }
-  return best;
-}
+const soonestAt = (n: NodeState, zone: string, nowIso: string): string | null =>
+  soonestClock(n, zone, nowIso, true)?.at ?? null;
 
 export interface CalendarOptions {
   /** Overridable so tests do not depend on the wall clock. */
@@ -115,7 +116,11 @@ export function toCalendar(
   zone: string,
   opts: CalendarOptions = {},
 ): string {
-  const hour = opts.alarmHour ?? ALARM_AT_HOUR;
+  // A whole hour in 0..23, or the default. `PT-1H` and `PT9.5H` are both
+  // malformed DURATIONs (3.3.6 puts the sign before the P), and this is a
+  // parameter, so it is validated rather than trusted.
+  const asked = opts.alarmHour ?? ALARM_AT_HOUR;
+  const hour = Number.isSafeInteger(asked) && asked >= 0 && asked <= 23 ? asked : ALARM_AT_HOUR;
   const madeOn = isValidIso(nowIso) ? localDayKey(nowIso, zone) : 'an earlier day';
   const stamp = isValidIso(nowIso) ? stampValue(nowIso) : '19700101T000000Z';
 
@@ -127,13 +132,16 @@ export function toCalendar(
     'CALSCALE:GREGORIAN',
     // Says WHEN, because this file is a snapshot and will not update itself.
     `X-WR-CALNAME:${esc(`Quietkeep — as of ${madeOn}`)}`,
-    'METHOD:PUBLISH',
+    // No METHOD. It would promote this from a plain iCalendar object into an
+    // iTIP message, and RFC 5546 3.2.1 then REQUIRES an ORGANIZER on every
+    // VEVENT - which a personal, serverless export has no business inventing.
+    // Strict importers reject the mismatch (audit).
   ];
 
   for (const group of heldGroups(state, nowIso, zone)) {
     if (!IN_CALENDAR.has(group.key)) continue;
     for (const n of group.items) {
-      const at = soonestAt(n);
+      const at = soonestAt(n, zone, nowIso);
       // No real clock, nothing to put in a calendar. Skipping rather than
       // throwing is deliberate: one malformed stored date must not take the
       // whole export down (the audit's crash class).
@@ -146,15 +154,25 @@ export function toCalendar(
       lines.push(`DTSTAMP:${stamp}`);
       // All-day, so no VTIMEZONE is needed anywhere in this file: a DATE value
       // has no offset to get wrong.
-      lines.push(`DTSTART;VALUE=DATE:${dateValue(at, zone)}`);
+      // Never dated in the past. The `ready` group is `days <= 0`, i.e. it
+      // INCLUDES clocks that already passed - and that is the one group this
+      // feature exists to remind about, so exporting it with an elapsed alarm
+      // would reliably remind nobody about exactly the work that needs it.
+      const day = dateValue(at, zone);
+      const today = dateValue(nowIso, zone);
+      lines.push(`DTSTART;VALUE=DATE:${day < today ? today : day}`);
       lines.push(`SUMMARY:${esc(n.title || '(untitled)')}`);
       lines.push(`DESCRIPTION:${esc(
         `From Quietkeep, as it stood on ${madeOn}. This is a snapshot — if you change ` +
         `this in Quietkeep, the calendar will not follow.`)}`);
       // A repeat becomes a real recurrence, so the calendar keeps asking on its
       // own rather than needing a fresh export every cycle.
-      if (n.intervalDays != null && Number.isFinite(n.intervalDays) && n.intervalDays > 0) {
-        lines.push(`RRULE:FREQ=DAILY;INTERVAL=${Math.round(n.intervalDays)}`);
+      // 3.3.10 wants a positive INTEGER. `Math.round` alone yielded `INTERVAL=0`
+      // for any cadence under half a day and exponential notation above 1e21 -
+      // both malformed, and nothing validates intervalDays on the way in (audit).
+      const iv = Math.round(Number(n.intervalDays));
+      if (Number.isSafeInteger(iv) && iv > 0) {
+        lines.push(`RRULE:FREQ=DAILY;INTERVAL=${iv}`);
       }
       lines.push('BEGIN:VALARM');
       lines.push('ACTION:DISPLAY');
@@ -178,7 +196,7 @@ export function calendarCount(state: State, nowIso: string, zone: string): numbe
   let n = 0;
   for (const group of heldGroups(state, nowIso, zone)) {
     if (!IN_CALENDAR.has(group.key)) continue;
-    for (const item of group.items) if (soonestAt(item)) n++;
+    for (const item of group.items) if (soonestAt(item, zone, nowIso)) n++;
   }
   return n;
 }

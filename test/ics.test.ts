@@ -38,6 +38,49 @@ const item = (id: string, title: string, days = 0): AppEvent[] =>
 const unfold = (ics: string): string[] =>
   ics.replace(/\r\n[ \t]/g, '').split('\r\n').filter(Boolean);
 
+/**
+ * A VALIDATOR, not a splitter.
+ *
+ * The audit's sharpest point: `unfold()` above can never reject anything, so a
+ * suite built on it validates nothing — every defect the audit found had sailed
+ * through 133 green tests because no test ever CHECKED a line, only split one.
+ * This walks the octets and returns the RFC violations it finds.
+ */
+function violations(ics: string): string[] {
+  const errs: string[] = [];
+  const enc = new TextEncoder();
+  if (!ics.endsWith('\r\n')) errs.push('file does not end with CRLF');
+  if (/(?<!\r)\n/.test(ics)) errs.push('bare LF somewhere in the file');
+  for (const line of ics.split('\r\n')) {
+    if (line === '') continue;
+    // §3.1: no physical line over 75 octets, excluding the CRLF.
+    const n = enc.encode(line).length;
+    if (n > 75) errs.push(`line of ${n} octets: ${line.slice(0, 24)}…`);
+  }
+  // §3.1 VALUE-CHAR = WSP / %x21-7E / NON-US-ASCII. Everything else is illegal
+  // ANYWHERE in a content line — this is the check that would have caught a form
+  // feed pasted out of a PDF reaching the file raw.
+  for (const [i, ch] of [...ics].entries()) {
+    const c = ch.codePointAt(0)!;
+    if (ch === '\r' || ch === '\n' || ch === '\t') continue;
+    if (c < 0x20 || c === 0x7f) errs.push(`illegal control U+${c.toString(16).padStart(4, '0')} at ${i}`);
+  }
+  const stack: string[] = [];
+  for (const l of unfold(ics)) {
+    if (l.startsWith('BEGIN:')) stack.push(l.slice(6));
+    else if (l.startsWith('END:') && stack.pop() !== l.slice(4)) errs.push(`unmatched END:${l.slice(4)}`);
+  }
+  if (stack.length) errs.push(`unclosed: ${stack.join(', ')}`);
+  return errs;
+}
+
+/** Is there a REAL TZID parameter, as opposed to the letters appearing in a
+ *  user's own text? The old check was `ics.includes('TZID')`, which an item
+ *  titled "renew TZID certificate" makes false while the file is perfectly
+ *  conformant — a substring test that can only fail spuriously (audit). */
+const hasTzidParam = (ics: string): boolean =>
+  unfold(ics).some(l => /^[A-Za-z0-9-]+(;[^:]*)?;TZID=/.test(l) || /^[A-Za-z0-9-]+;TZID=/.test(l));
+
 // --- shape -----------------------------------------------------------------
 
 test('the file is one well-formed VCALENDAR with matched BEGIN/END pairs', () => {
@@ -93,9 +136,10 @@ test('the all-day date is the day the READER would call it, in their own zone', 
 });
 
 test('no VTIMEZONE is needed anywhere, because every event is all-day', () => {
-  const ics = toCalendar(st(...item('A', 'a')), NOW, KIRITIMATI);
-  assert.ok(!ics.includes('VTIMEZONE'), 'no timezone block to get wrong');
-  assert.ok(!ics.includes('TZID'), 'and no TZID references');
+  const ics = toCalendar(st(...item('A', 'a'), ...item('B', 'renew TZID certificate', 2)), NOW, KIRITIMATI);
+  assert.equal(unfold(ics).some(l => l === 'BEGIN:VTIMEZONE'), false, 'no timezone block to get wrong');
+  assert.equal(hasTzidParam(ics), false, 'and no TZID PARAMETER — checked structurally, not as a substring');
+  assert.ok(ics.includes('TZID'), 'even though a user title legitimately contains those letters');
 });
 
 // --- the user's own text, which can be anything ----------------------------
@@ -135,7 +179,14 @@ test('continuation lines begin with exactly one space', () => {
   const raw = ics.split('\r\n');
   const continuations = raw.filter(l => l.startsWith(' '));
   assert.ok(continuations.length > 0, 'it did fold');
-  for (const c of continuations) assert.ok(!c.startsWith('  '), 'one space, not two');
+  // NOT "never two spaces": only the FIRST WSP is the fold marker, so a fold
+  // landing on a space produces a legal line beginning "  " whose second space
+  // is content. The old assertion was a wrong invariant that passed only because
+  // its fixture had no spaces in it (audit).
+  const spacey = toCalendar(st(...item('N', 'a '.repeat(120))), NOW, DENVER);
+  assert.deepEqual(violations(spacey), [], 'a title full of spaces still folds legally');
+  const back = unfold(spacey).find(l => l.startsWith('SUMMARY:'))!;
+  assert.equal(back.slice('SUMMARY:'.length), 'a '.repeat(120), 'and unfolds back exactly');
 });
 
 // --- what goes in, and what must not ---------------------------------------
@@ -221,4 +272,112 @@ test('an untitled item still gets a usable summary', () => {
   const s = st(ev('node.created', 'N', { nodeKind: 'action', title: '' }), clockAt('N', 0));
   const lines = unfold(toCalendar(s, NOW, DENVER));
   assert.ok(lines.includes('SUMMARY:(untitled)'), 'never a blank calendar entry');
+});
+
+// --- audit fixes (T1 adversarial pass) -------------------------------------
+
+test('every case in this file also passes a real RFC validator, not just a splitter', () => {
+  const s = st(
+    ...item('A', 'plain'), ...item('B', 'with, commas; and \\ backslashes', 2),
+    ...item('C', '\u{1F331}'.repeat(40), 5), ...item('D', 'a '.repeat(90), 40),
+  );
+  for (const zone of [DENVER, KIRITIMATI, 'Pacific/Midway', 'Pacific/Chatham']) {
+    assert.deepEqual(violations(toCalendar(s, NOW, zone)), [], `${zone} produces a conformant file`);
+  }
+});
+
+test('control characters from an ordinary capture never reach the file (audit, high)', () => {
+  // A form feed pasted out of a PDF is enough. `cleanTitle` guards the RENAME
+  // path, but capture assigns the raw text straight to the title, so the calendar
+  // generator is the only thing standing between a paste and a broken file.
+  const FF = String.fromCharCode(12);      // form feed
+  const ESC = String.fromCharCode(27);     // an ANSI escape, as pasted from a terminal
+  const NUL = String.fromCharCode(0);
+  const nasty = `call the clinic${FF}about the referral${ESC}[0m${NUL}`;
+  const s = st(ev('capture.recorded', 'N', { text: nasty, source: 'quick', sourceTags: [] }),
+    ev('clarify.routed', 'N', { route: 'next-action' }), clockAt('N', 1));
+  const ics = toCalendar(s, NOW, DENVER);
+  assert.deepEqual(violations(ics), [], 'the file is conformant despite the paste');
+  const summary = unfold(ics).find(l => l.startsWith('SUMMARY:'))!;
+  assert.ok(summary.includes('call the clinic') && summary.includes('referral'),
+    'and the readable text survives');
+});
+
+test('newlines still become the one escape RFC 5545 provides', () => {
+  const s = st(...item('N', 'line one\nline two\r\nline three'));
+  const summary = unfold(toCalendar(s, NOW, DENVER)).find(l => l.startsWith('SUMMARY:'))!;
+  assert.equal(summary, 'SUMMARY:line one\\nline two\\nline three',
+    'CR, CRLF and LF all collapse to one escape — the spec provides no \\r');
+});
+
+test('no METHOD, because this is a publication and not an iTIP message (audit)', () => {
+  const ics = toCalendar(st(...item('A', 'a')), NOW, DENVER);
+  assert.equal(unfold(ics).some(l => l.startsWith('METHOD:')), false,
+    'METHOD:PUBLISH would require an ORGANIZER on every VEVENT (RFC 5546 3.2.1)');
+  assert.equal(unfold(ics).some(l => l.startsWith('ORGANIZER')), false,
+    'and a personal, serverless export has no organiser to name');
+});
+
+test('INTERVAL is always a positive integer, or absent (audit)', () => {
+  for (const iv of [0.4, 0.6, 1e21, -3, Infinity, NaN, 2.5]) {
+    const s = st(
+      ev('node.created', 'U', { nodeKind: 'upkeep', title: 'u' }),
+      ev('upkeep.interval.set', 'U', { intervalDays: iv, comfortWindowDays: 1 }),
+      clockAt('U', 0),
+    );
+    const rule = unfold(toCalendar(s, NOW, DENVER)).find(l => l.startsWith('RRULE:'));
+    if (rule) {
+      const n = Number(rule.split('INTERVAL=')[1]);
+      assert.ok(Number.isSafeInteger(n) && n > 0, `intervalDays ${iv} gave INTERVAL=${n}`);
+      assert.ok(!/e[+-]/i.test(rule), `and never exponential notation (${rule})`);
+    }
+  }
+});
+
+test('a reminder is never dated in the past — it could not fire (audit)', () => {
+  // `ready` is days <= 0, so it INCLUDES clocks that already passed, and that is
+  // exactly the group this feature exists to remind about.
+  const s = st(...item('OLD', 'a week ago', -7), ...item('TODAY', 'today', 0));
+  const dates = unfold(toCalendar(s, NOW, DENVER))
+    .filter(l => l.startsWith('DTSTART')).map(l => l.split(':')[1]!);
+  const today = localDayKey(NOW, DENVER).replace(/-/g, '');
+  assert.equal(dates.length, 2);
+  for (const d of dates) assert.ok(d >= today, `${d} is not before today (${today})`);
+});
+
+test('a parked item is in the calendar, because a park IS a return date (audit)', () => {
+  // The held list shows it as "parked until ..."; the calendar used to drop it,
+  // so the app contradicted itself about something the user could plainly see.
+  const s = st(ev('node.created', 'P', { nodeKind: 'action', title: 'parked thing' }),
+    clockAt('P', 5, 'park'));
+  const groups = heldGroups(s, NOW, DENVER);
+  assert.ok(groups.some(g => g.items.some(n => n.id === 'P')), 'the list holds it');
+  const uids = unfold(toCalendar(s, NOW, DENVER)).filter(l => l.startsWith('UID:'));
+  assert.equal(uids.length, 1, 'and so does the calendar');
+  assert.equal(calendarCount(s, NOW, DENVER), 1, 'and the count agrees');
+});
+
+test('clocks are compared as INSTANTS, never as strings (audit)', () => {
+  // An offset-form timestamp sorts differently as text than as a moment. The old
+  // local copy compared `c.at` lexicographically, so the card and the calendar
+  // named different days for the same node.
+  const s = st(
+    ev('node.created', 'N', { nodeKind: 'action', title: 'x' }),
+    ev('clock.set', 'N', { clockKind: 'due', at: '2026-08-05T00:00:00.000Z', source: 't' }),
+    ev('clock.set', 'N', { clockKind: 'review', at: '2026-08-04T20:00:00.000-12:00', source: 't' }),
+  );
+  assert.ok('2026-08-04T20:00:00.000-12:00' < '2026-08-05T00:00:00.000Z', 'text order is the trap');
+  assert.ok(Date.parse('2026-08-04T20:00:00.000-12:00') > Date.parse('2026-08-05T00:00:00.000Z'),
+    'instant order is the truth');
+  const d = unfold(toCalendar(s, NOW, DENVER)).find(l => l.startsWith('DTSTART'))!;
+  assert.equal(d, 'DTSTART;VALUE=DATE:20260804', 'the soonest INSTANT is what the calendar names');
+});
+
+test('an out-of-range alarm hour falls back rather than emitting a malformed DURATION', () => {
+  for (const h of [-1, 24, 9.5, NaN]) {
+    const ics = toCalendar(st(...item('A', 'a')), NOW, DENVER, { alarmHour: h });
+    assert.deepEqual(violations(ics), [], `alarmHour ${h} still produces a conformant file`);
+    const trig = unfold(ics).find(l => l.startsWith('TRIGGER'))!;
+    assert.match(trig, /^TRIGGER;RELATED=START:PT\d+H$/, `and a well-formed duration (${trig})`);
+  }
 });
