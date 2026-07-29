@@ -10,8 +10,9 @@
 // tested at an arbitrary moment.
 
 import type { AppEvent, CaptureSource, DeviceId, VaultId } from '../events.ts';
-import { admit } from '../gate.ts';
+import { admit, gateOptionsFor } from '../gate.ts';
 import { fold, emptyState, type State } from '../fold.ts';
+import { deviceZone } from '../time.ts';
 import { ulid, newDeviceId } from '../ids.ts';
 import { DexieLogStore } from '../dexie-store.ts';
 import type { LogStore } from '../log-store.ts';
@@ -29,6 +30,9 @@ export type SessionStore = LogStore & {
 export interface Session {
   readonly device: DeviceId;
   readonly vault: VaultId;
+  /** The device's IANA zone, read once at the edge. Everything that says
+   *  "today" resolves against this, never against UTC (V-13). */
+  readonly zone: string;
   state(): State;
   /** Commit intents. Resolves only once the write has LANDED (ADR-0008). */
   commit(make: (ctx: StampContext) => AppEvent[]): Promise<State>;
@@ -41,6 +45,8 @@ export interface StampContext {
   at: string;
   device: DeviceId;
   vault: VaultId;
+  /** So an intent can clock things to the end of the user's day, not UTC's. */
+  zone: string;
   seq: () => number;
   id: () => string;
 }
@@ -50,6 +56,7 @@ export async function openSession(
   vault: VaultId = 'personal',
   dbName = 'quietkeep',
   storeOverride?: SessionStore,
+  zone: string = deviceZone(),
 ): Promise<Session> {
   const store: SessionStore = storeOverride ?? new DexieLogStore(dbName);
 
@@ -76,6 +83,7 @@ export async function openSession(
       at,
       device: device!,
       vault,
+      zone,
       seq: () => seq++,
       id: () => ulid(now()),
     };
@@ -93,7 +101,7 @@ export async function openSession(
     // would break that determinism to satisfy a property the store does not
     // actually require — `nextSeq` takes the max, and the derived id keeps the
     // cure sorting immediately after its cause.
-    const admitted = admit(offered, state);
+    const admitted = admit(offered, state, gateOptionsFor(zone));
 
     try {
       await store.append(admitted);
@@ -118,6 +126,7 @@ export async function openSession(
   return {
     device,
     vault,
+    zone,
     state: () => state,
     commit,
     draft: async () => (await store.getKv<string>('capture.draft')) ?? '',

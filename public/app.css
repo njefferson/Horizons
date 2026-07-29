@@ -9,6 +9,13 @@
  * the space available.
  */
 
+/* `hidden` MUST win. Any rule that sets `display` on an element defeats the UA's
+ * [hidden] { display: none } — the coverage list set display:flex and rendered
+ * fully expanded while every gate and every screen reader was told it was
+ * hidden. Caught by the smoke walk; this is the structural fix, so no future
+ * display rule can reintroduce it. */
+[hidden] { display: none !important; }
+
 :root {
   color-scheme: light dark;
 
@@ -235,10 +242,99 @@ button.ghost {
   font-weight: 600;
 }
 
+/* The gauge is a real button: its number is a claim, and tapping it opens the
+   itemised list that backs the claim. Styled as text, but a full target. */
 .gauge {
+  display: block;
+  width: 100%;
   margin: 0 0 0.75rem;
+  padding: 0.5rem 0;
+  min-height: var(--target);
+  text-align: left;
   color: var(--ink-soft);
+  background: none;
+  border: none;
+  font: inherit;
+  cursor: pointer;
 }
+
+.coverage {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0.5rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.coverage-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+}
+.coverage-title { overflow-wrap: anywhere; }
+.coverage-when { flex: 0 1 auto; min-width: 0; color: var(--ink-soft); font-size: 0.9375rem; }
+
+/* --- next up and upkeep ---------------------------------------------------- */
+
+.nextup {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.nextup-title { margin: 0 0 0.25rem; font-size: 1.0625rem; overflow-wrap: anywhere; }
+.nextup-why { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.nextup-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.nextup-actions button { min-height: var(--target); }
+.nextup-count { margin: 0.75rem 0 0; color: var(--ink-soft); font-size: 0.9375rem; }
+.nextup-behind {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.behind-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+}
+.behind-title { overflow-wrap: anywhere; }
+.behind-why { flex: 0 1 auto; min-width: 0; }
+
+.chips {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.1rem;
+  min-height: var(--target);
+  padding: 0.4rem 0.75rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+.chip-why { color: var(--ink-soft); font-size: 0.8125rem; }
 
 .empty {
   margin: 0;

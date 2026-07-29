@@ -57,8 +57,34 @@
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- Next up: one thing, chosen for you, with a short capped list behind it.
+       Hidden when nothing is asking — an empty morning says so. -->
+  <section id="nextup" class="nextup" aria-labelledby="nextup-heading" hidden>
+    <h2 id="nextup-heading" class="section" tabindex="-1">Next up</h2>
+    <p id="nextup-title" class="nextup-title"></p>
+    <p id="nextup-why" class="nextup-why"></p>
+    <div class="nextup-actions">
+      <button id="nextup-done" type="button">Done</button>
+      <button id="nextup-skip" type="button" class="ghost">Not this</button>
+    </div>
+    <p id="nextup-count" class="nextup-count"></p>
+    <ul id="nextup-behind" class="nextup-behind"></ul>
+    <p id="nextup-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
+  <!-- Upkeep: the small repeating things that have come round. Never a failure
+       to have not done one yet. -->
+  <section id="upkeep" class="upkeep" aria-labelledby="upkeep-heading" hidden>
+    <h2 id="upkeep-heading" class="section">Upkeep</h2>
+    <ul id="upkeep-chips" class="chips"></ul>
+  </section>
+
   <h2 class="section">What you are holding</h2>
-  <p id="gauge" class="gauge"></p>
+  <!-- Tappable: the gauge's number is a claim, and the claim is checkable —
+       every item and the date it comes back. -->
+  <button id="gauge" class="gauge" type="button" aria-expanded="false"
+          aria-controls="coverage"></button>
+  <ul id="coverage" class="coverage" hidden></ul>
 
   <p id="empty" class="empty" hidden>
     Nothing yet. Whatever you put here comes back to you — you do not have to

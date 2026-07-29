@@ -241,7 +241,8 @@ That error cost the Perennial round.
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
 - **Code:** Phase 0 spine, Phase 1 (shell, Dump surface, ⓘ panel, export, public capture
-  surfaces + CSP), Phase 2 (triage). `staging` and `main` are level at 0.4.0.
+  surfaces + CSP), Phase 2 (triage), Phase 3 (work mode). `main` is at 0.4.0; `staging`
+  carries Phase 3 (0.5.0) on top, unpromoted.
   `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`, both live.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
@@ -252,6 +253,37 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **Phase 3 (work mode) is building on `staging`: the app is now worth
+  opening in the morning (0.5.0 CAPABILITY, [ADR-0030](docs/adr/0030-work-mode.md)).**
+  It opens with **one thing to do**, chosen by a fixed precedence — hard landscape >
+  resume cards > pressure > anything else whose clock arrived — and it says which tier
+  fired, in words. **"Not this" records nothing**: no event, no field, no persistence, and
+  the smoke walk counts the IndexedDB log before and after a skip to prove it rather than
+  assert it. Behind the head sits a capped five; Upkeep chips carry the recurring things;
+  and the coverage gauge became a **button** whose number opens into the itemised list that
+  backs the claim. The decay primitive ([ADR-0010](docs/adr/0010-decay-primitive.md)) is
+  now real code: `(elapsed − interval) / comfort_window`, continuous, unbounded, computed
+  at read time and stored nowhere — `null` rather than `0` where there is no cadence, and
+  **never-done is ready, not infinitely late**.
+  · **[V-13](docs/verifications.md) is fixed first**, because everything here says
+  "today": `src/time.ts` is a pure zone-aware primitive, the zone read once at the UI edge
+  and threaded through `openSession` → the gate → the route intents, never stored in the
+  log. The display path had the same bug (`friendly()` divided elapsed ms, so it said
+  "today" at 23:00 about tomorrow). Eight zone tests pinned to Denver, Kiritimati (+14) and
+  Chatham (+12:45); reverting the primitive fails five of them.
+  · **The gates caught two real defects in my own work**, which is what they are for: a
+  completed one-off was offered for ever (the gate re-clocks `done.marked` to keep it
+  non-silent, so an explicit "done and not recurring is finished" check was needed), and
+  `.coverage { display: flex }` **silently defeated the `hidden` attribute** — the list
+  rendered expanded while `aria-expanded` said `false` ([F-07](ACCESSIBILITY.md)). A
+  global `[hidden] { display: none !important }` is the structural fix.
+  · The **banned-vocabulary gate rejected my own comments** for explaining the prohibition
+  using the prohibited word. ADR-0010 says it belongs only in that record and the
+  vocabulary, so the comments were reworded rather than the gate widened.
+  · Deferred with a reason: build-plan item 22 (comms-sweep chip on focus-exit ramps)
+  needs focus ramps, which are Phase 4.
+  **70 unit tests, all 8 gates green. Lands on `staging`; waits for the adversarial audit
+  and Noah's word.**
 - **2026-07-28 (evening)** — **Phase 2 is building on `staging`: the app can triage what it
   holds (0.4.0 CAPABILITY, [ADR-0029](docs/adr/0029-triage-model.md)).** Two passes, both
   computed from the log: an optional **heat** pass (hot/cold, `heat.set`) and a forced-choice

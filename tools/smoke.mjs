@@ -329,6 +329,96 @@ try {
 
   console.log('\nTriage — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
+
+  // --- Work mode: Next up, "not this", the coverage list (Phase 3) ----------
+  // Routing to do-now / next-action left items under clocks, so Next up has
+  // something to offer. This asserts the surface OFFERS, RECORDS a done, and —
+  // the load-bearing one — that "Not this" writes nothing at all.
+  console.log('\nWork mode — one thing is offered');
+  // Two more do-nows, so there is genuinely more than one thing asking and
+  // "Not this" has somewhere to go. (Of the six routed above, only do-now is
+  // asking today: next-action returns tomorrow, waiting-for is someone else's,
+  // someday/reference are on the Menu, trash is gone.)
+  for (const t of ['second thing asking', 'third thing asking']) {
+    await tpage.fill('#capture', t);
+    await tpage.click('#capture-form button[type=submit]');
+    await tpage.waitForSelector('#triage:not([hidden]) .route');
+    await tpage.click('#triage-actions .route');                       // Hot
+    await tpage.waitForSelector('#triage-actions .route .route-hint');
+    await tpage.locator('#triage-actions .route', { hasText: 'Do now' }).first().click();
+    await tpage.waitForTimeout(80);
+  }
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForSelector('#nextup:not([hidden])');
+  const offered = await tpage.locator('#nextup-title').textContent();
+  is(typeof offered === 'string' && offered.length > 0, true, `Next up offers one thing ("${offered}")`);
+  is((await tpage.locator('#nextup-why').textContent())?.length > 0, true,
+    'and says why, in words');
+  const countText = await tpage.locator('#nextup-count').textContent();
+  is(/asking/.test(countText || ''), true, `it states how many are asking ("${countText}")`);
+
+  console.log('\nWork mode — "not this" records nothing');
+  const logLenBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    return await new Promise((res, rej) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result); tx.onerror = () => rej(tx.error);
+    });
+  });
+  await tpage.click('#nextup-skip');
+  await tpage.waitForTimeout(120);
+  const afterSkip = await tpage.locator('#nextup-title').textContent();
+  const logLenAfter = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => {
+      const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result);
+    });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(logLenAfter, logLenBefore, `skipping appended NOTHING to the log (${logLenBefore} events before and after)`);
+  is(afterSkip !== offered, true, `and it moved on ("${offered}" -> "${afterSkip}")`);
+
+  console.log('\nWork mode — Done records, and the item stops being offered');
+  const doneTitle = await tpage.locator('#nextup-title').textContent();
+  await tpage.click('#nextup-done');
+  await tpage.waitForTimeout(150);
+  const logAfterDone = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => {
+      const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result);
+    });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.map(e => e.kind));
+    });
+  });
+  is(logAfterDone.filter(k => k === 'done.marked').length, 1, 'exactly one done.marked was appended');
+  is(await tpage.locator('#nextup-title').textContent() !== doneTitle, true,
+    'the completed thing is no longer the one being offered');
+
+  console.log('\nWork mode — the gauge is a claim you can open');
+  is(await tpage.locator('#coverage').isVisible(), false, 'the coverage list starts closed');
+  is(await tpage.getAttribute('#gauge', 'aria-expanded'), 'false', 'and says so to assistive tech');
+  await tpage.click('#gauge');
+  await tpage.waitForSelector('#coverage:not([hidden])');
+  is(await tpage.getAttribute('#gauge', 'aria-expanded'), 'true', 'tapping opens it');
+  const rows = await tpage.locator('.coverage-item').count();
+  is(rows > 0, true, `every held item is listed with when it returns (${rows} rows)`);
+  is((await tpage.locator('.coverage-when').first().textContent())?.length > 0, true,
+    'and each row states its return in words');
+
+  console.log('\nWork mode — no "overdue" anywhere on the surface (law 5)');
+  const surfaceText = await tpage.evaluate(() => document.body.innerText);
+  is(/overdue|late|missed|streak/i.test(surfaceText), false,
+    'the rendered page carries no shame vocabulary');
+
+  console.log('\nWork mode — no page errors');
+  is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
   await tctx.close();
 } finally {
   await browser.close();

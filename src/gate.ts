@@ -18,6 +18,7 @@ import {
   type AppEvent, type EventKind, type NodeId, type NodeKind, type VaultId,
 } from './events.ts';
 import { fold, type NodeState, type State } from './fold.ts';
+import { endOfLocalDay } from './time.ts';
 
 export class GateRejection extends Error {
   // Explicit fields, not constructor parameter properties — Node's
@@ -111,15 +112,17 @@ export interface GateOptions {
   sameDayClockAt: (e: AppEvent) => string;
 }
 
-const endOfDay = (iso: string): string => {
-  const d = new Date(iso);
-  d.setUTCHours(23, 59, 59, 0);
-  return d.toISOString();
-};
+/** The gate's cures clock things to the end of the day the user is IN, so the
+ *  zone has to be supplied — end-of-UTC-day is end-of-local-day only in UTC, and
+ *  anywhere else it lands a captured item up to a day late (V-13). */
+export const gateOptionsFor = (zone: string): GateOptions => ({
+  sameDayClockAt: e => endOfLocalDay(e.at, zone),
+});
 
-export const defaultGateOptions: GateOptions = {
-  sameDayClockAt: e => endOfDay(e.at),
-};
+/** UTC fallback, for callers with no device zone to offer (and the tests that
+ *  are not about zones). The app always injects the real one — `openSession`
+ *  reads it once at the UI edge and threads it here. */
+export const defaultGateOptions: GateOptions = gateOptionsFor('UTC');
 
 /**
  * Admit a batch of events, curing anything that would otherwise go silent.

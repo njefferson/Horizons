@@ -14,6 +14,8 @@ import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
+import { mountWork } from './work.ts';
+import { calendarDaysBetween } from '../time.ts';
 
 const now = () => Date.now();
 
@@ -49,7 +51,7 @@ function render(session: Session): void {
     const clock = node.clocks.due ?? node.clocks.review ?? node.clocks.start;
     // Every item states its own status in words — the text channel of B-01, so
     // nothing here depends on seeing a colour.
-    when.textContent = clock ? `returns ${friendly(clock.at)}` : 'held';
+    when.textContent = clock ? `returns ${friendly(clock.at, session.zone)}` : 'held';
 
     li.append(title, when);
     return li;
@@ -59,18 +61,23 @@ function render(session: Session): void {
 
   // The gauge reads as text first and the number is the information (B-02).
   const { silent, total } = coverageGauge(session.state());
+  // The gauge is a button now: its number is a claim, and the claim opens into
+  // the itemised list that backs it (build-plan item 21).
   $('#gauge').textContent =
-    total === 0 ? 'nothing held yet' : `${total} held · ${silent} silent`;
+    total === 0 ? 'nothing held yet' : `${total} held · ${silent} silent · see each`;
 }
 
-/** Plain words, one idea, no idioms (B-09). Never a countdown, never a rebuke. */
-function friendly(iso: string): string {
-  const then = new Date(iso);
-  const days = Math.round((then.getTime() - now()) / 86_400_000);
+/** Plain words, one idea, no idioms (B-09). Never a countdown, never a rebuke.
+ *
+ *  Counts CALENDAR days in the reader's zone. The first version divided elapsed
+ *  milliseconds by 86_400_000, which says "today" at 23:00 about a clock two
+ *  hours away — plainly tomorrow — and is an hour out on every DST day (V-13). */
+function friendly(iso: string, zone: string): string {
+  const days = calendarDaysBetween(new Date(now()).toISOString(), iso, zone);
   if (days <= 0) return 'today';
   if (days === 1) return 'tomorrow';
   if (days < 7) return `in ${days} days`;
-  return then.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: zone });
 }
 
 async function main(): Promise<void> {
@@ -83,7 +90,10 @@ async function main(): Promise<void> {
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).
-  const triage = mountTriage(session, () => render(session));
+  const triage = mountTriage(session, () => { render(session); work.refresh(); });
+
+  // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
+  const work = mountWork(session, now, () => render(session));
 
   // Three URL entrances, all landing in the same capture (ADR-0008):
   //  - ?capture=1     the manifest shortcut — just focus the empty line
@@ -134,6 +144,7 @@ async function main(): Promise<void> {
     try {
       render(session);
       triage.refresh();
+      work.refresh();
     } catch {
       // A render bug must not contradict a landed write; the card appears on
       // next load. landed stays the truth.

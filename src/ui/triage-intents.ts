@@ -20,6 +20,7 @@
 
 import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
 import type { StampContext } from './session.ts';
+import { endOfLocalDay } from '../time.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -29,17 +30,13 @@ const base = (ctx: StampContext, kind: string, node: string, payload: unknown): 
 const routed = (ctx: StampContext, node: string, route: ClarifyRoute): AppEvent =>
   base(ctx, 'clarify.routed', node, { route });
 
-const clockToday = (ctx: StampContext, node: string, source: string): AppEvent => {
-  const end = new Date(ctx.at);
-  end.setUTCHours(23, 59, 59, 0);
-  return base(ctx, 'clock.set', node, { clockKind: 'review', at: end.toISOString(), source });
-};
-
-const clockReview = (ctx: StampContext, node: string, days: number, source: string): AppEvent => {
-  const at = new Date(ctx.at);
-  at.setUTCDate(at.getUTCDate() + days);
-  return base(ctx, 'clock.set', node, { clockKind: 'review', at: at.toISOString(), source });
-};
+// A route's clock is "back with you before this day is out", so it lands on the
+// last second of a LOCAL calendar day — the user's day, not UTC's (V-13) — and
+// counts calendar days, so a DST changeover in between does not move it an hour.
+const clockInDays = (ctx: StampContext, node: string, days: number, source: string): AppEvent =>
+  base(ctx, 'clock.set', node, {
+    clockKind: 'review', at: endOfLocalDay(ctx.at, ctx.zone, days), source,
+  });
 
 const menu = (ctx: StampContext, node: string): AppEvent =>
   base(ctx, 'menu.item.added', node, { category: 'read' });
@@ -59,14 +56,14 @@ export function routeEvents(ctx: StampContext, node: string, route: ClarifyRoute
     case 'do-now':
       // A same-day clock; the 2-minute timer is a UI affordance, recorded
       // separately as do-now.timed when it ends.
-      return [r, clockToday(ctx, node, 'clarify:do-now')];
+      return [r, clockInDays(ctx, node, 0, 'clarify:do-now')];
     case 'next-action':
-      return [r, clockReview(ctx, node, 1, 'clarify:next-action')];
+      return [r, clockInDays(ctx, node, 1, 'clarify:next-action')];
     case 'waiting-for':
       return [
         r,
         base(ctx, 'node.kind.changed', node, { from: fromKind, to: 'waiting-for' as NodeKind }),
-        clockReview(ctx, node, 3, 'clarify:waiting-for'),
+        clockInDays(ctx, node, 3, 'clarify:waiting-for'),
       ];
     case 'someday':
     case 'reference':

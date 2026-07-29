@@ -315,6 +315,20 @@ Status: **FIXED (0.4.0, pre-promote)** — `.card-when` is `flex: 0 1 auto; min-
 so it shrinks and wraps within the card on its own line; the gate asserts page
 overflow ≤1px in this state.
 
+### F-07 · A `display` rule silently defeated the `hidden` attribute
+Found: 2026-07-29 · Phase 3 smoke walk
+Rule: WCAG 4.1.2 Name, Role, Value (state must match what is rendered)
+Detail: `.coverage { display: flex }` overrides the user-agent's
+`[hidden] { display: none }`, so the coverage list rendered **fully expanded**
+while its `hidden` attribute was set and its toggle button reported
+`aria-expanded="false"`. Assistive tech and sighted users were told two different
+things, and every gate that asked "is it hidden?" by attribute was satisfied. Any
+element given a `display` value is exposed to this; it is a property of the
+cascade, not a one-off mistake.
+Status: **FIXED (0.5.0)** — a global `[hidden] { display: none !important }` now
+leads `app.css`, so no future `display` rule can reintroduce it, and the smoke
+walk asserts the list starts closed and that `aria-expanded` tracks it.
+
 Format:
 
 ```

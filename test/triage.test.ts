@@ -9,9 +9,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { admit, silentNodes } from '../src/gate.ts';
+import { admit, silentNodes, gateOptionsFor } from '../src/gate.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
+import { localDayKey, calendarDaysBetween } from '../src/time.ts';
 import { unclarified, needsHeat, nextToClarify, inboxGauge } from '../src/triage.ts';
 import { routeEvents, heatEvents } from '../src/ui/triage-intents.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
@@ -19,8 +20,10 @@ import type { StampContext } from '../src/ui/session.ts';
 
 let seq = 0;
 const at = '2026-07-28T14:00:00.000Z';
+// A NON-UTC zone, deliberately: end-of-UTC-day equals end-of-local-day only in
+// UTC, so a suite pinned to UTC cannot see a whole class of clock bug (V-13).
 const ctx = (): StampContext => ({
-  at, device: 'd0', vault: 'personal',
+  at, device: 'd0', vault: 'personal', zone: 'America/Denver',
   seq: () => seq++, id: () => `i${seq}-${Math.floor(seq)}`,
 });
 
@@ -167,6 +170,29 @@ test('sourceTags honours copy-on-write — a derived mutation cannot rewrite his
   assert.notEqual(a1, a2, 'the clone got its own sourceTags array, not an alias of the base');
   a2.push('__mutated__');
   assert.deepEqual(s1.nodes.get('N')!.sourceTags, ['boss'], 'the base node (history) is untouched');
+});
+
+test('a do-now routed in the evening returns THAT evening, not the next day (V-13)', () => {
+  // 20:30 on 28 July in Denver — already 02:30 on the 29th in UTC. The old
+  // end-of-UTC-day clock landed at 17:59 local on the 29th: a "do it now" item
+  // that does not come back until the following afternoon.
+  const evening = '2026-07-29T02:30:00.000Z';
+  const tz = 'America/Denver';
+  const c: StampContext = { at: evening, device: 'd0', vault: 'personal', zone: tz,
+    seq: () => seq++, id: () => `tz${seq}` };
+  let s = fold(admit([{
+    id: c.id(), vault: 'personal', at: evening, device: 'd0', seq: c.seq(),
+    kind: 'capture.recorded', node: 'N', payload: { text: 'a small thing', source: 'quick', sourceTags: [] },
+  } as AppEvent], emptyState(), gateOptionsFor(tz)));
+  s = fold(admit(routeEvents(c, 'N', 'do-now', s.nodes.get('N')!.kind), s, gateOptionsFor(tz)), s);
+
+  const clockAt = s.nodes.get('N')!.clocks.review!.at;
+  assert.equal(localDayKey(clockAt, tz), localDayKey(evening, tz),
+    'the clock is in the same LOCAL day the user routed it in');
+  assert.equal(calendarDaysBetween(evening, clockAt, tz), 0, 'which reads as "today"');
+  // And the gate's own capture cure obeys the same zone.
+  const cure = s.nodes.get('N')!.clocks.review!;
+  assert.ok(cure.at <= '2026-07-29T06:00:00.000Z', 'end of the local day, not the end of the UTC day');
 });
 
 test('capture does not alias the log event payload array (audit)', () => {

@@ -14,6 +14,17 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.5.0 — CAPABILITY
+
+*2026-07-29*
+
+- Quietkeep now opens with one thing to do, chosen for you, and says why it picked it. Behind it is a short list — never the whole pile.
+- “Not this” moves on and keeps no record of it. Skipping something is not held against you, because nothing about it is written down at all.
+- Things you do regularly come back on their own rhythm, and each one has its own idea of what “a while” means — the plant and the phone call are not held to the same patience.
+- Nothing is ever marked late. When something comes round again it simply says so, and it keeps saying so gently rather than louder.
+- Tapping what you are holding now opens the full list, with the day each thing comes back — so the count is something you can check rather than take on trust.
+- “Today” now means today where you are. Anything you put down in the evening comes back that same evening, not the following afternoon.
+
 ## 0.4.0 — CAPABILITY
 
 *2026-07-28*

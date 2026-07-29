@@ -533,8 +533,34 @@ worked as soon as production existed. Every observation fits; nothing else chang
 
 ---
 
-## V-13 · Same-day clocks use end-of-UTC-day, not the user's local day — **known limitation**
-**Status: KNOWN, NOT YET FIXED** · found by the Phase 2 audit, 2026-07-29
+## V-13 · Same-day clocks used end-of-UTC-day, not the user's local day — **FIXED**
+**Status: FIXED in 0.5.0** · found by the Phase 2 audit, 2026-07-29 · fixed the same day
+
+**The fix:** `src/time.ts` — a pure, zone-aware primitive (`endOfLocalDay`,
+`localDayKey`, `calendarDaysBetween`) that never reads the clock, with the zone
+read once at the UI edge (`deviceZone()`) and threaded through `openSession` →
+`StampContext` → the gate (`gateOptionsFor(zone)`) and the route intents. The zone
+is **not** stored in the log: a clock's `at` is an absolute instant, so it is
+zone-independent once computed, and "today" resolving against the *reader's*
+zone is exactly what a traveller wants — without rewriting a single stored event.
+
+The display path carried the same class of bug and was fixed with it: `friendly()`
+divided elapsed milliseconds by 86_400_000, which says "today" at 23:00 about a
+clock two hours away and is an hour out on every DST day. It now counts calendar
+days in the reader's zone.
+
+**Proven, made to fail first (§6):** eight zone tests pinned to non-UTC zones
+(Denver, Kiritimati at UTC+14, Chatham at UTC+12:45), plus a route-level test that
+a do-now routed at 20:30 Denver returns *that evening*. Reverting `endOfLocalDay`
+to the old end-of-UTC-day behaviour fails five of them, including the route test.
+
+The original finding is kept below, because a record that explains what was wrong
+is worth more than one that only says it is fine now.
+
+---
+
+### The original finding
+**Status when found: KNOWN, NOT YET FIXED** · Phase 2 audit, 2026-07-29
 
 The gate's capture cure-clock (`endOfDay`) and the do-now / same-day route clock
 (`clockToday` in `triage-intents.ts`) both stamp `setUTCHours(23,59,59)`, i.e. the
@@ -546,14 +572,13 @@ reads as a dated "returns \<day\>". The Phase 2 a11y gate caught the downstream
 symptom — a longer card status than "returns today" overflowed the card at
 320px/200%, now fixed by letting `.card-when` wrap.
 
-**Why recorded, not patched now:** this is pre-existing in the gate and
-cross-cutting (every clock in the app derives its "day" this way), so a correct fix
-is a single timezone-aware `endOfLocalDay(now, tz)` primitive threaded through the
-gate and the intents — a deliberate change with its own tests, not a one-line patch
-buried in a triage commit. It has **no bearing on law 1**: the node is clocked
-either way, never silent — only the *label's day* is wrong. The binding correctness
-test is a device reading on Noah's iPad (America/Denver), which V-00 already owns.
-Tracked as an open question for the timezone pass.
+**Why it was recorded rather than patched on the spot:** it is pre-existing in the
+gate and cross-cutting (every clock in the app derives its "day" this way), so the
+correct fix is a single timezone-aware primitive threaded through the gate and the
+intents — a deliberate change with its own tests, not a one-line patch buried in a
+triage commit. It had **no bearing on law 1**: the node is clocked either way,
+never silent — only the *label's day* was wrong. That judgement held: the fix
+landed as the first step of Phase 3, with its own suite, one release later.
 
 > **A correction, and it matters more than the finding.** This row previously read that the
 > likelier cause was the device being on LTE rather than Wi-Fi. **Noah was on LTE for every
