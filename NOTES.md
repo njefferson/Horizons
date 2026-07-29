@@ -205,7 +205,16 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.9.0` (`6252d26`), promoted 2026-07-29** — Noah's "Promote and
+- **`main` is at `0.11.0` (`af2e415`), promoted 2026-07-29** — Noah's "Promote",
+  onto watched-green **spine run 57** (all 13 steps read individually) with
+  **deploy run 54** watched to success. Carries **0.10.0** (bringing a copy
+  back), **0.10.1** (the do-now flow, the panel's close and calendar
+  confirmation, and the CRITICAL import fix) and **0.11.0** (two devices).
+  · Same limit as every promote here: production itself was not read. See
+  [V-15](docs/verifications.md) — `quietkeep.pages.dev` is denied by this
+  environment's network policy, so the evidence is the deploy run's own green
+  Cloudflare step and not the apex URL serving the file.
+- **Previously `main` was at `0.9.0` (`6252d26`), promoted 2026-07-29** — Noah's "Promote and
   continue", onto watched-green **spine run 51** (all 13 steps opened and read, not
   inferred), then **deploy run 48** watched to success, its Cloudflare Pages step
   green. This promote carries three releases at once: **0.8.0** (the calendar file —
