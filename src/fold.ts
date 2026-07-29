@@ -9,6 +9,7 @@ import type {
   AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, MenuCategory, NodeId, NodeKind,
   ReplanChoice, VaultId,
 } from './events.ts';
+import { isValidIso } from './time.ts';
 
 export interface Clock {
   kind: ClockKind;
@@ -132,6 +133,15 @@ export interface State {
   /** The per-device high-water mark that report went out with, or null for a
    *  report written before marks existed. Copied, never aliased. */
   lastReportMark: Record<string, number> | null;
+  /**
+   * When anything last happened, across the whole log.
+   *
+   * A MAXIMUM, like `lastReportAt` and for the same reason: a shard delivering
+   * older history must not make it look as though you were away since then. It
+   * lives in state rather than in a preference because a preference would
+   * survive an import that replaced the very history it describes.
+   */
+  lastActivityAt: ISODateTime | null;
 }
 
 export const emptyState = (): State => ({
@@ -144,6 +154,7 @@ export const emptyState = (): State => ({
   focusStamp: null,
   lastReportAt: null,
   lastReportMark: null,
+  lastActivityAt: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -254,6 +265,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
     focusStamp: base.focusStamp,
     lastReportAt: base.lastReportAt,
     lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
+    lastActivityAt: base.lastActivityAt,
   };
 
   const ordered = [...events].sort(compareEvents);
@@ -261,6 +273,9 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
 
   for (const e of ordered) {
     const o = orderingOf(e);
+    // Every event is activity, whatever it is. Taken as a maximum so a shard of
+    // older history cannot make it look as though you have been away since then.
+    if (isValidIso(e.at) && (!s.lastActivityAt || e.at > s.lastActivityAt)) s.lastActivityAt = e.at;
     s.devices.add(e.device);
     const seen = s.seqByDevice.get(e.device);
     if (seen === undefined || e.seq > seen) s.seqByDevice.set(e.device, e.seq);

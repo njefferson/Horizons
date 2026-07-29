@@ -1781,6 +1781,133 @@ try {
   is(await tpage.locator('#comms').isVisible(), false,
     'and it does not come straight back \u2014 it comes round on its own');
 
+  // --- Coming back after being away (law 8) --------------------------------
+  // `lapse.migration.ran`, `reentry.greeted` and `amnesty.offered`/`.accepted`
+  // have been in the vocabulary from the first draft, with the bound written into
+  // the SCHEMA — "there is no shape it could take that shows the backlog". None
+  // of them was folded and nothing could emit one.
+  //
+  // Law 8 calls re-entry the PRIMARY DESIGNED PATH, and NOTES.md defines v1 done
+  // as thirty consecutive working days. A bad week is not a risk to that gate,
+  // it is a certainty.
+  console.log('\nComing back \u2014 a fortnight away, and the app does not present a bill');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#reentry').isVisible(), false,
+    'you have not been away, so there is no greeting');
+
+  // Age the ENTIRE log by a fortnight. Backdating one event cannot work —
+  // `lastActivityAt` is a maximum, which is the whole point of it (unit-tested),
+  // so the only honest way to simulate having been away is for everything to be
+  // old. This is the state a real fortnight produces.
+  await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const all = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    const shift = 15 * 86400000;
+    const store = db.transaction('events', 'readwrite').objectStore('events');
+    for (const e of all) {
+      const moved = { ...e, at: new Date(Date.parse(e.at) - shift).toISOString() };
+      if (moved.payload && typeof moved.payload === 'object') {
+        moved.payload = { ...moved.payload };
+        for (const k of ['at', 'since', 'startedAt', 'endedAt', 'returnAt']) {
+          if (typeof moved.payload[k] === 'string' && !Number.isNaN(Date.parse(moved.payload[k]))) {
+            moved.payload[k] = new Date(Date.parse(moved.payload[k]) - shift).toISOString();
+          }
+        }
+      }
+      store.put(moved);
+    }
+    await new Promise((res) => { store.transaction.oncomplete = res; });
+    // The snapshot is its own STORE (`snapshots`), not a key in `kv` — the first
+    // version of this fixture deleted a key that does not exist, so the app
+    // reloaded the old snapshot and the walk was asserting against a state it had
+    // failed to create. `lastActivityAt` folds as a maximum, so a snapshot
+    // carrying today's timestamp beats every backdated event in the tail.
+    //
+    // Dropping it makes the reload fold the log itself, which is also the path
+    // ADR-0006's restoreFromLogAlone exists to keep honest.
+    if (db.objectStoreNames.contains('snapshots')) {
+      const snaps = db.transaction('snapshots', 'readwrite').objectStore('snapshots');
+      snaps.clear();
+      await new Promise((res) => { snaps.transaction.oncomplete = res; });
+    }
+  });
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.waitForSelector('#reentry:not([hidden])');
+  const greeting = await tpage.locator('#reentry-words').textContent();
+  is(/You were away/.test(greeting || ''), true, `it says how long ("${greeting}")`);
+  is(/still here/.test(greeting || ''), true, 'and that nothing was lost, which is the point');
+  is(/!/.test(greeting || ''), false, 'nothing is exclaimed at somebody who has been away');
+
+  // THE BOUND. However much is waiting, the greeting is Next-up + at most three
+  // triage + the gauge. It must never become the pile.
+  const reentryText = await tpage.evaluate(() => document.querySelector('#reentry')?.innerText ?? '');
+  is(/\b(behind|backlog|catch up|caught up|overdue|missed|sorry|neglect)\b/i.test(reentryText), false,
+    'and none of it is a bill');
+  const cardsShown = await tpage.locator('#reentry li').count();
+  is(cardsShown, 0, 'the greeting lists nothing at all \u2014 it states counts and stops');
+
+  // The amnesty, if anything went by. It marks nothing done and deletes nothing.
+  const hasAmnesty = await tpage.locator('#reentry-amnesty').isVisible();
+  console.log(`  ..   amnesty offered: ${hasAmnesty}`);
+  if (hasAmnesty) {
+    const words = await tpage.locator('#reentry-amnesty-words').textContent();
+    is(/nothing is deleted/i.test(words || ''), true, `the offer says what it will not do ("${(words||'').slice(0,80)}...")`);
+    is(/nothing is marked done/i.test(words || ''), true, 'both halves of it');
+    const doneBefore = await tpage.evaluate(async () => {
+      const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+      return await new Promise((res) => {
+        const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+        tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+      });
+    });
+    await tpage.click('#reentry-amnesty-go');
+    await tpage.waitForTimeout(600);
+    const after = await tpage.evaluate(async () => {
+      const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+      return await new Promise((res) => {
+        const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+        tx.onsuccess = () => res({
+          done: tx.result.filter(e => e.kind === 'done.marked').length,
+          accepted: tx.result.filter(e => e.kind === 'amnesty.accepted').length,
+          resolved: tx.result.filter(e => e.kind === 'replan.resolved').length,
+          trashed: tx.result.filter(e => e.kind === 'node.trashed').length,
+        });
+      });
+    });
+    is(after.done, doneBefore, `it marked NOTHING done (${doneBefore} before, ${after.done} after)`);
+    is(after.accepted, 1, 'one amnesty recorded');
+    is(after.resolved > 0, true, `and each item got a real forward resolution (${after.resolved})`);
+    await tpage.reload({ waitUntil: 'load' });
+    await tpage.waitForSelector('body[data-ready=true]');
+    is(await tpage.locator('#replan').isVisible(), false, 'nothing is asking any more');
+  }
+
+  // It is dismissible, and dismissing it does not strand focus on <body>.
+  if (await tpage.locator('#reentry').isVisible()) {
+    await tpage.locator('#reentry-dismiss, #reentry-dismiss-plain').first().click();
+    await tpage.waitForTimeout(200);
+    is(await tpage.locator('#reentry').isVisible(), false, 'and it can be put away');
+    const f = await tpage.evaluate(() => document.activeElement?.id || document.activeElement?.tagName);
+    is(f !== 'BODY' && f !== undefined, true, `focus lands somewhere real (on ${f})`);
+  }
+
+  const greetLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'reentry.greeted').map(e => e.payload));
+    });
+  });
+  is(greetLog.length >= 1, true, 'the arrival is recorded');
+  is(greetLog.every(p => p.shown && p.shown.triage <= 3), true,
+    `and what it says it showed is within the schema's own bound (${JSON.stringify(greetLog[0]?.shown)})`);
+
   // --- Two devices (ADR-0035) ----------------------------------------------
   // A SECOND browser context: its own IndexedDB, its own device id, its own
   // captures. Anything less would be testing the function, not the feature —

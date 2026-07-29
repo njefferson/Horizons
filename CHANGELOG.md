@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.18.0 — CAPABILITY
+
+*2026-07-29*
+
+- Come back after a week or more away and Quietkeep says so plainly — how long you were gone, and that everything you put down is still here. That is the whole greeting. It does not present you with a bill.
+- **It cannot show you the pile.** Not after a fortnight, not after a year, not with a thousand things waiting. What you get is one thing to do next, at most three to sort, and the count — and there is no setting, no length of absence and no amount of work that changes that.
+- It says how many are waiting and then says "a few at a time". A number is a fact; a list is a demand.
+- If dates went by while you were away, you can move them all to the Menu in one go. **Nothing is deleted and nothing is marked done** — everything is still there and you can bring any of it back whenever you want.
+- What that actually removes is not the work. It is the twenty separate decisions standing between you and being able to start, which is the real cost of coming back.
+- You can decline and take them one at a time instead. Saying no is not recorded as anything.
+- Nothing here says you are behind, and nothing apologises on your behalf. Being away is not something that happened to your list — it is something you did, and it was allowed.
+
 ## 0.17.1 — ITERATION
 
 *2026-07-29*

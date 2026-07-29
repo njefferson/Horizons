@@ -42,6 +42,27 @@
        hunting for it. It reports what already happened, never a prediction. -->
   <p id="status" role="status" aria-live="polite" class="status"></p>
 
+  <!-- Coming back (product law 8: rest is legitimate). The greeting is BOUNDED
+       BY SCHEMA — Next-up, at most three triage items, the gauge, and an amnesty
+       offer. There is no shape it can take that shows the backlog, and it says
+       how long you were away without apologising on your behalf. -->
+  <section id="reentry" class="reentry" aria-labelledby="reentry-heading" hidden>
+    <h2 id="reentry-heading" class="section" tabindex="-1">Welcome back</h2>
+    <p id="reentry-words" class="reentry-words"></p>
+    <p id="reentry-waiting" class="reentry-waiting" hidden></p>
+    <div id="reentry-amnesty" class="reentry-amnesty" hidden>
+      <p id="reentry-amnesty-words" class="reentry-amnesty-words"></p>
+      <div class="reentry-actions">
+        <button id="reentry-amnesty-go" type="button">Move them all to the Menu</button>
+        <button id="reentry-dismiss" type="button" class="ghost">I'll take them one at a time</button>
+      </div>
+    </div>
+    <div id="reentry-plain-actions" class="reentry-actions">
+      <button id="reentry-dismiss-plain" type="button" class="ghost">Thanks</button>
+    </div>
+    <p id="reentry-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
   <!-- Triage: the heat pass and clarify. One card at a time; hidden when the
        inbox is clear. Announced in its own live region. -->
   <section id="triage" class="triage" aria-labelledby="triage-prompt" hidden>

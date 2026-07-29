@@ -984,3 +984,24 @@ dialog, dialog * { overflow-wrap: anywhere; }
 .comms-actions button { min-height: var(--target); max-width: 100%;
   white-space: normal; overflow-wrap: anywhere; }
 #comms-start, #comms-stop { min-height: var(--target); }
+
+/* --- coming back (law 8: rest is legitimate) ------------------------------ */
+/* Deliberately the SAME box as review, people and the portfolio. Coming back
+   should not be met with a screen that looks unlike the app you left. */
+.reentry {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.reentry > .section { margin-top: 0; }
+/* "You were away a fortnight. Everything you put down is still here." — the
+   reassurance is the content, so it gets full ink, not the hint token. */
+.reentry-words { margin: 0 0 0.5rem; color: var(--ink); font-size: 1rem; }
+/* What is waiting, as a count. Quieter, because it is the lesser fact. */
+.reentry-waiting { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.reentry-amnesty-words { margin: 0 0 0.75rem; color: var(--ink); font-size: 0.9375rem; }
+.reentry-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.reentry-actions button { min-height: var(--target); max-width: 100%;
+  white-space: normal; overflow-wrap: anywhere; }

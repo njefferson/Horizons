@@ -17,6 +17,7 @@ import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
 import { mountFocus, type FocusUI } from './focus.ts';
+import { mountReentry } from './reentry.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
@@ -308,6 +309,7 @@ async function main(): Promise<void> {
   let triage: { refresh(): void } = { refresh() {} };
   let replan: { refresh(): void } = { refresh() {} };
   let focus: FocusUI = { refresh() {}, start() {} };
+  let reentry: { refresh(): void } = { refresh() {} };
 
   // ONE render closure, used everywhere. Two call sites used to invoke
   // `render(session)` bare — the URL-capture path and its undo — which silently
@@ -351,7 +353,7 @@ async function main(): Promise<void> {
   // while its row was still on screen — one item, two questions, which is
   // exactly what the exclusion exists to prevent. This is what work.ts is handed
   // as its onChange, since work refreshes itself afterwards.
-  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); };
+  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); };
   const refreshAll = (): void => { rerenderLists(); work.refresh(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
@@ -371,6 +373,13 @@ async function main(): Promise<void> {
   // after work so its own refresh can run inside `rerenderLists` — an interrupt
   // adds an inbox item, which changes triage, the list and the gauge.
   try { focus = mountFocus(session, now, refreshAll); } catch { /* a surface */ }
+
+  // Coming back after being away (law 8). Mounted LAST, because it measures the
+  // absence from the state as loaded and must do so before any other surface has
+  // had a chance to commit anything — a cure clock written by another mount
+  // would be activity, and the greeting would report an absence of zero to
+  // somebody who has been gone a fortnight.
+  try { reentry = mountReentry(session, now, refreshAll); } catch { /* a surface */ }
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).

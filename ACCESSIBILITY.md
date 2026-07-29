@@ -225,6 +225,26 @@ renders only on the focus-exit ramp, so it never steals attention or moves focus
 during a task. Declining writes nothing, so the surface has no state that
 accumulates and nothing that can build up to be faced later.
 
+### B-17 · Coming back (0.18.0)
+`.reentry-words` carries full `--ink`, not the hint token: *"You were away a
+fortnight. Everything you put down is still here."* is the **content** of this
+surface, and the reassurance is the reason it exists. The counts beneath it are
+the lesser fact and sit in `--ink-soft`. Both are registered, both themes.
+
+**Nothing here is keyed to how long you were away** — no colour, no threshold, no
+emphasis that grows with the number. A lapse is not a severity. This is B-01's
+rule about hue, applied to the one surface where a designer's instinct is
+strongest to signal urgency, and where doing so would contradict law 8 outright.
+
+The greeting is audited at 320px and 200% text as its own overflow case. It is
+the screen somebody meets after a fortnight away, which makes it the one where a
+horizontal scrollbar would be least forgivable.
+
+`#reentry-dismiss` moves focus to `#capture`, because the section it lives in
+disappears on activation and focus must not fall to `<body>` (WCAG 2.4.3) — the
+same fix `clarify.ts` and `work.ts` already carry, applied at the point the
+control was written rather than after an audit found it.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

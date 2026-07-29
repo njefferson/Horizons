@@ -107,6 +107,12 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // Coming back (law 8). The reassurance is the CONTENT, so it gets full ink;
+  // the counts beneath it are the lesser fact and sit in the quiet token. There
+  // is nothing here keyed to how long you were away — no colour, no threshold —
+  // because a lapse is not a severity.
+  'reentry': ['#reentry-heading', '.reentry-words', '.reentry-waiting',
+    '.reentry-amnesty-words', '#reentry-amnesty-go', '#reentry-dismiss'],
   // The comms sweep on the focus-exit ramp. Its line is an OFFER, stated in
   // `--ink` rather than a quieter token — it is the content of the surface, not
   // an aside — and there is no badge, no count and no colour anywhere on it.
@@ -510,6 +516,58 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3e2: coming back. Reached by ageing the whole log, which is the only
+    // honest way — `lastActivityAt` is a maximum, so one backdated event proves
+    // nothing. The snapshot is its own store and has to go with it.
+    await page.evaluate(async () => {
+      const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+      const all = await new Promise((res) => {
+        const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+        tx.onsuccess = () => res(tx.result);
+      });
+      const shift = 15 * 86400000;
+      const store = db.transaction('events', 'readwrite').objectStore('events');
+      for (const e of all) {
+        const moved = { ...e, at: new Date(Date.parse(e.at) - shift).toISOString() };
+        if (moved.payload && typeof moved.payload === 'object') {
+          moved.payload = { ...moved.payload };
+          for (const k of ['at', 'since', 'startedAt', 'endedAt', 'returnAt']) {
+            if (typeof moved.payload[k] === 'string' && !Number.isNaN(Date.parse(moved.payload[k]))) {
+              moved.payload[k] = new Date(Date.parse(moved.payload[k]) - shift).toISOString();
+            }
+          }
+        }
+        store.put(moved);
+      }
+      await new Promise((res) => { store.transaction.oncomplete = res; });
+      if (db.objectStoreNames.contains('snapshots')) {
+        const snaps = db.transaction('snapshots', 'readwrite').objectStore('snapshots');
+        snaps.clear();
+        await new Promise((res) => { snaps.transaction.oncomplete = res; });
+      }
+    });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('body[data-ready=true]');
+    await page.waitForSelector('#reentry:not([hidden])');
+    await auditContrast(page, 'reentry', theme);
+    await auditAxe(page, 'reentry', theme);
+    await auditTargets(page, 'reentry', theme);
+    await auditFocusRings(page, 'reentry', theme, ['#reentry-amnesty-go', '#reentry-dismiss']);
+    // B-04's hardest case for the surface someone meets after a fortnight away —
+    // the one screen where a horizontal scrollbar would be least forgivable.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const reOver = await page.evaluate(() => {
+      const d = document.querySelector('#reentry');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (reOver <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: re-entry greeting horizontal overflow ${reOver}px (must be ≤1)`);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('#reentry-dismiss');
+    await page.waitForTimeout(200);
 
     // State 3f-: the comms sweep. Turned on through the panel, made due the way
     // the smoke walk does it, then reached the only way it can be reached — by

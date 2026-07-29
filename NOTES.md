@@ -165,7 +165,10 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 
 ### Should — v1.5
 
-Menu with save-for gauges · Rest mode + auto re-entry (7-day default) · bother
+Menu with save-for gauges · ~~Rest mode + auto re-entry (7-day default)~~
+**(done, 0.18.0 — [ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md); the
+re-entry vocabulary had been complete and unreachable since the first draft)** ·
+bother
 flow · staff-call lens · pebbles · journal · printable today-card · request slots
 + Not Now ledger.
 

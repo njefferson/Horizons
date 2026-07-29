@@ -26,6 +26,7 @@ export function serialiseState(s: State): unknown {
     focusStamp: s.focusStamp,
     lastReportAt: s.lastReportAt,
     lastReportMark: s.lastReportMark,
+    lastActivityAt: s.lastActivityAt,
   });
 }
 
@@ -40,6 +41,7 @@ export function deserialiseState(raw: unknown): State {
     focusStamp?: State['focusStamp'];
     lastReportAt?: string | null;
     lastReportMark?: Record<string, number> | null;
+    lastActivityAt?: string | null;
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -89,6 +91,7 @@ export function deserialiseState(raw: unknown): State {
     lastReportAt: r.lastReportAt ?? null,
     // MUTABLE — copied on deserialise, like every other container here.
     lastReportMark: r.lastReportMark ? { ...r.lastReportMark } : null,
+    lastActivityAt: r.lastActivityAt ?? null,
   };
 }
 
