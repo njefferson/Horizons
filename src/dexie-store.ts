@@ -101,10 +101,25 @@ export class DexieLogStore implements LogStore {
 
   /** Destructive by design — import seeds fresh (ADR-0006). Callers confirm first. */
   async reset(): Promise<void> {
-    await this.#db.transaction('rw', this.#db.events, this.#db.snapshots, this.#db.kv, async () => {
+    // `kv` is NOT cleared, and that is a correction. It was, so every successful
+    // import discarded the in-flight capture draft — the thing ADR-0008 exists
+    // to protect — along with the device id and whether the intro had been seen.
+    // None of that is in the file being imported, so none of it is the file's to
+    // replace. `MemoryLogStore` never cleared kv, so no Node test could see the
+    // difference (audit).
+    await this.#db.transaction('rw', this.#db.events, this.#db.snapshots, async () => {
       await this.#db.events.clear();
       await this.#db.snapshots.clear();
-      await this.#db.kv.clear();
+    });
+  }
+
+  /** One transaction: clear and refill together, so a constraint error partway
+   *  through rolls the clear back with it. */
+  async replaceAll(events: readonly AppEvent[]): Promise<void> {
+    await this.#db.transaction('rw', this.#db.events, this.#db.snapshots, async () => {
+      await this.#db.events.clear();
+      await this.#db.snapshots.clear();
+      if (events.length > 0) await this.#db.events.bulkAdd(events as AppEvent[]);
     });
   }
 

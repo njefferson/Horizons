@@ -30,6 +30,18 @@ export interface LogStore {
   latestSnapshot(): Promise<Snapshot | null>;
   /** Import seeds a FRESH store — this wipes before seeding (ADR-0006). */
   reset(): Promise<void>;
+  /**
+   * Replace the whole log ATOMICALLY: either the new events are all there, or
+   * the old ones still are. Never a half of each.
+   *
+   * `reset()` then `append()` is NOT the same thing, and the difference cost a
+   * user their data: a file that passed validation still hit a duplicate-id
+   * constraint partway through the append, so the store was already empty and
+   * only some of the new rows had landed — real items gone, replaced by a
+   * corrupt fragment, with a raw library error on screen (audit). Import is the
+   * one operation whose entire purpose is not losing anything.
+   */
+  replaceAll(events: readonly AppEvent[]): Promise<void>;
 }
 
 /** In-memory LogStore. Used by the whole Phase 0 test suite. */
@@ -77,4 +89,11 @@ export class MemoryLogStore implements LogStore {
   async latestSnapshot(): Promise<Snapshot | null> { return this.#snapshot; }
 
   async reset(): Promise<void> { this.#events = []; this.#snapshot = null; }
+
+  async replaceAll(events: readonly AppEvent[]): Promise<void> {
+    // Build the replacement FIRST, so a throw leaves the old one in place.
+    const next = [...events];
+    this.#events = next;
+    this.#snapshot = null;
+  }
 }

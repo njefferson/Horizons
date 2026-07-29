@@ -48,6 +48,10 @@ const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
+  // The always-reachable way out. This panel is thousands of pixels tall, so a
+  // close button only at the bottom meant scrolling the entire release history
+  // to shut it (Noah, on device).
+  '#about-dismiss',
   // Bringing a copy back. The label and the picker are always there; the note
   // and the two actions only appear once a file has been read, so they get
   // their own state below rather than being registered here where they would
@@ -71,6 +75,10 @@ const REGISTRY = {
   'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route'],
   'clarify': ['.triage-gauge', '.triage-prompt', '.triage-card',
     '.route', '.route-label', '.route-hint'],
+  // What a just-routed "Do now" offers. The timer is an offering, not a gate,
+  // so this state exists before any stopwatch is running — and it carries the
+  // Done the flow previously had no way to express at all.
+  'do now offered': ['.donow', '.donow-label', '.donow-done'],
   // Work mode. The "why" lines and the behind-list are the lowest-contrast text
   // on these surfaces, so they are named rather than left to axe alone.
   'next up': ['#nextup-heading', '.nextup-title', '.nextup-why', '.nextup-count',
@@ -338,6 +346,14 @@ try {
     const afterRoute = await page.evaluate(() => document.activeElement?.id ?? '');
     (afterRoute === 'capture' ? pass : fail)(
       `${theme}/triage: focus returns to capture after the last card is routed (on ${afterRoute || 'BODY'}, not <body>)`);
+
+    // State 3c-ii: the do-now offer. It outlives the triage surface — that was
+    // the defect — so it is audited here, with #triage already hidden.
+    await page.waitForSelector('.donow-done');
+    await auditContrast(page, 'do now offered', theme);
+    await auditAxe(page, 'do now offered', theme);
+    await auditTargets(page, 'do now offered', theme);
+    await auditFocusRings(page, 'do now offered', theme, ['.donow-done']);
 
     // State 3d: Work mode — Next up, then the coverage list opened.
     await page.waitForSelector('#nextup:not([hidden])');

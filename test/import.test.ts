@@ -28,6 +28,13 @@ let seq = 0;
 const ev = (kind: string, node: string | null, payload: unknown): AppEvent =>
   ({ id: `e${seq}`, vault: 'personal', at: NOW, device: 'd0', seq: seq++, kind, node, payload } as AppEvent);
 
+/** Override fields on an event WITHOUT spreading it. `AppEvent` is a large
+ *  discriminated union, and `{...e, x}` makes tsc distribute the spread across
+ *  every member — the check went from ten seconds to over three minutes.
+ *  `Object.assign` on a plain object sidesteps the distribution entirely. */
+const tweak = (base: AppEvent, over: Record<string, unknown>): AppEvent =>
+  Object.assign({}, base as unknown as Record<string, unknown>, over) as unknown as AppEvent;
+
 /** A real store, written the only way the app writes: through the gate. */
 async function realStore(items: number): Promise<{ store: MemoryLogStore; file: ExportFile; held: number }> {
   const store = new MemoryLogStore();
@@ -91,7 +98,13 @@ test('inspectExport NEVER throws, whatever it is handed', () => {
     const s = inspectExport(raw);
     assert.ok(Array.isArray(s.refusals), `${JSON.stringify(raw)} returned a summary`);
     for (const r of s.refusals) {
-      assert.ok(r.length > 0 && /[.!]$/.test(r), `"${r}" is a finished sentence, not a code fragment`);
+      // LEADS with a finished sentence. Not "ends with a period" — some
+      // refusals carry a technical detail in brackets after the sentence, which
+      // is useful to anyone who opens the file and is not the part a person
+      // reads. What must never happen is a raw thrown message arriving as-is:
+      // "Cannot read properties of null (reading 'name')" has a capital and no
+      // sentence at all, and still fails this.
+      assert.match(r, /^[A-Z][^.!]{14,}[.!]/, `"${r}" leads with a sentence, not a code fragment`);
     }
   }
 });
@@ -178,4 +191,98 @@ test('a successful import replaces rather than merges, and the store reads back'
   assert.equal(after.some(e => e.node === 'OLD'), false, 'and nothing of the old store survived — it seeds fresh');
   const s = inspectExport(file);
   assert.equal(fold(after).nodes.size, s.items + 0, 'what was promised is what arrived');
+});
+
+// --- what the audit found, each pinned so it cannot come back ---------------
+
+test('CRITICAL: a file that would fail on WRITE is refused on READ', async () => {
+  // The worst defect this app has had. Two events sharing an id: `inspectExport`
+  // never looked at ids, `store.append` enforces them, and the order was
+  // reset-then-append — so the store was already empty when the write failed.
+  // The person's real items were gone, replaced by whichever rows landed first,
+  // and all they were shown was a raw database error.
+  const dup = ev('capture.recorded', 'A', { text: 'one', source: 'quick', sourceTags: [] });
+  const log = toJsonl([
+    dup,
+    ev('clock.set', 'A', { clockKind: 'review', at: NOW, source: 'gate:capture.recorded' }),
+    tweak(dup, { node: 'B' }),                  // SAME id, different node
+    ev('clock.set', 'B', { clockKind: 'review', at: NOW, source: 'gate:capture.recorded' }),
+  ]);
+  const file = { format: 'planner-log', version: 1, at: NOW, scope: 'all', encrypted: false, logJsonl: log, snapshot: null };
+  const s = inspectExport(file);
+  assert.equal(s.refusals.length, 1, 'it is refused while the user still has everything');
+  assert.match(s.refusals[0]!, /same record twice/);
+
+  const store = new MemoryLogStore();
+  await store.append([ev('capture.recorded', 'MINE', { text: 'my real data', source: 'quick', sourceTags: [] })]);
+  await assert.rejects(() => importSeedingFresh(store, file as ExportFile));
+  const after = await store.all();
+  assert.equal(after.length, 1, 'and the store is untouched');
+  assert.equal(after[0]!.node, 'MINE');
+});
+
+test('replaceAll is atomic — a half-import is not a state this app can be in', async () => {
+  // Validation cannot rule out a quota or disk failure partway through a write,
+  // so the operation itself must be all-or-nothing. `reset()` then `append()`
+  // could never be.
+  const store = new MemoryLogStore();
+  const mine = ev('capture.recorded', 'MINE', { text: 'my real data', source: 'quick', sourceTags: [] });
+  await store.append([mine]);
+  const exploding = { get length(): number { throw new Error('disk full'); } } as unknown as AppEvent[];
+  await assert.rejects(() => store.replaceAll(exploding));
+  assert.deepEqual(await store.all(), [mine], 'the old data is still all there');
+});
+
+test('every question the STORE will ask is asked before anything is destroyed', () => {
+  // Import used to run none of the gate's shape checks, so a hand-edited file
+  // could carry these straight in. `seq: 1e999` was the worst: `nextSeq` returns
+  // max + 1, and Infinity + 1 is Infinity, so every future write was refused —
+  // a permanently unwritable store.
+  const bad: [string, Record<string, unknown>][] = [
+    ['negative seq', { seq: -5 }],
+    ['fractional seq', { seq: 1.5 }],
+    ['infinite seq', { seq: Infinity }],
+    ['unparseable date', { at: 'not-a-date' }],
+    ['no vault', { vault: '' }],
+  ];
+  for (const [name, over] of bad) {
+    const e = tweak(ev('capture.recorded', 'X', { text: 'x', source: 'quick', sourceTags: [] }), over);
+    const log = toJsonl([e]);
+    const s = inspectExport({ format: 'planner-log', version: 1, at: NOW, scope: 'all', encrypted: false, logJsonl: log, snapshot: null });
+    assert.ok(s.refusals.length > 0, `${name} is refused`);
+    assert.match(s.refusals[0]!, /^That file/, `${name}: and refused in a sentence`);
+  }
+});
+
+test('a payload the fold would choke on is an answer, not a crash', () => {
+  // `fold` reads payload fields unguarded, and those calls sat outside the only
+  // try in `inspectExport` — so `payload: null` threw a TypeError out of a
+  // function whose entire contract is that it never throws. The surface, which
+  // had wrapped only `JSON.parse`, then sat on "Reading it…" for ever.
+  const shapes = [
+    '{"kind":"vault.created","id":"a","seq":0,"device":"d","vault":"personal","at":"' + NOW + '","payload":null}',
+    '{"kind":"capture.recorded","id":"b","seq":0,"device":"d","vault":"personal","at":"' + NOW + '","node":"n"}',
+    '{"kind":"node.created","id":"c","seq":0,"device":"d","vault":"personal","at":"' + NOW + '","node":"n","payload":null}',
+    '{"kind":"capture.recorded","id":"d","seq":0,"device":"d","vault":"personal","at":"' + NOW + '","node":"n","payload":{"text":"x","source":"quick","sourceTags":5}}',
+  ];
+  for (const line of shapes) {
+    const s = inspectExport({ format: 'planner-log', version: 1, at: NOW, scope: 'all', encrypted: false, logJsonl: line, snapshot: null });
+    assert.ok(s.refusals.length > 0, `${line.slice(0, 40)}… is refused rather than thrown`);
+    assert.match(s.refusals[0]!, /^[A-Z][^.!]{14,}[.!]/, 'and leads with a sentence');
+  }
+});
+
+test('reset does not throw away what the file never held', async () => {
+  // A successful import used to clear the kv store too, taking the in-flight
+  // capture draft — the thing ADR-0008 exists to protect — the device id, and
+  // whether the intro had been seen. None of that is in the file, so none of it
+  // is the file's to replace. Only `MemoryLogStore` behaved correctly, which is
+  // why no test could see it.
+  const store = new MemoryLogStore();
+  await store.setKv('capture.draft', 'half a thought');
+  await store.setKv('device.id', 'dev-abc');
+  await store.append([ev('capture.recorded', 'OLD', { text: 'old', source: 'quick', sourceTags: [] })]);
+  await store.reset();
+  assert.equal(await store.getKv('capture.draft'), 'half a thought', 'the draft survives');
+  assert.equal(await store.getKv('device.id'), 'dev-abc', 'and so does this device’s identity');
 });

@@ -133,6 +133,61 @@ export const gateOptionsFor = (zone: string): GateOptions => ({
 export const defaultGateOptions: GateOptions = gateOptionsFor('UTC');
 
 /**
+ * The SHAPE checks — everything the gate can decide about one event on its own,
+ * without knowing any prior state. Returns the reason it must be refused, or
+ * null.
+ *
+ * Extracted so IMPORT can ask the same questions. Import is a second write path
+ * that does not go through `admit`, and it was asking almost none of them: a
+ * hand-edited or concatenated file could carry a negative `seq`, an unparseable
+ * date, or a `__proto__` field name straight into the store — and one carrying
+ * `seq: 1e999` permanently bricked writing, because `nextSeq` returns
+ * `max + 1` and `Infinity + 1 === Infinity` (audit). Two write paths asking
+ * different questions is how a closed vocabulary stops being closed.
+ */
+export function structuralRefusal(e: AppEvent): string | null {
+  if (!isKnownKind(e.kind)) {
+    return `unknown event kind "${e.kind}" — the vocabulary is a closed list`;
+  }
+  if (!e.vault) {
+    return 'every event belongs to exactly one vault';
+  }
+  if (!Number.isInteger(e.seq) || e.seq < 0) {
+    // Continuity is the SESSION's job (ADR-0027); the gate can only check shape.
+    return 'seq must be a non-negative integer';
+  }
+  if (e.kind === 'node.field.set') {
+    const p = e.payload as { field?: unknown };
+    if (typeof p.field !== 'string' || !p.field) {
+      return 'node.field.set carries exactly one named field';
+    }
+    if (p.field === '__proto__' || p.field === 'constructor' || p.field === 'prototype') {
+      // A prototype-key field lands in live state but vanishes from every
+      // snapshot and export (audit). fold also defends; refuse at the door.
+      return `"${p.field}" is not a usable field name`;
+    }
+  }
+
+  // Every date the log carries must be a real instant. `Intl.formatToParts`
+  // throws `RangeError: Invalid time value` on anything else, and the temporal
+  // projections read these fields unvalidated — so ONE malformed date used to
+  // throw out of the work surface, which is built before capture's handlers are
+  // registered, and killed the whole app with the data intact and unreachable.
+  // The projections are now defensive too, but bad data should not get in.
+  if (!isValidIso(e.at)) {
+    return `event "at" is not a real instant: ${JSON.stringify(e.at)}`;
+  }
+  for (const field of ['at', 'returnAt', 'endedAt', 'startedAt'] as const) {
+    const p = e.payload as Record<string, unknown> | null;
+    // `at` on the envelope is checked above; here it is the payload's own.
+    if (p && Object.hasOwn(p, field) && p[field] != null && !isValidIso(p[field])) {
+      return `${e.kind} payload "${field}" is not a real instant: ${JSON.stringify(p[field])}`;
+    }
+  }
+  return null;
+}
+
+/**
  * Admit a batch of events, curing anything that would otherwise go silent.
  *
  * Returns the events that should be appended — which may be MORE than were
@@ -147,46 +202,9 @@ export function admit(
   const out: AppEvent[] = [];
 
   for (const e of offered) {
-    // --- structural refusals, before anything else ---------------------------
-    if (!isKnownKind(e.kind)) {
-      throw new GateRejection(`unknown event kind "${e.kind}" — the vocabulary is a closed list`, e);
-    }
-    if (!e.vault) {
-      throw new GateRejection('every event belongs to exactly one vault', e);
-    }
-    if (!Number.isInteger(e.seq) || e.seq < 0) {
-      // Continuity is the SESSION's job (ADR-0027); the gate can only check shape.
-      throw new GateRejection('seq must be a non-negative integer', e);
-    }
-    if (e.kind === 'node.field.set') {
-      const p = e.payload as { field?: unknown };
-      if (typeof p.field !== 'string' || !p.field) {
-        throw new GateRejection('node.field.set carries exactly one named field', e);
-      }
-      if (p.field === '__proto__' || p.field === 'constructor' || p.field === 'prototype') {
-        // A prototype-key field lands in live state but vanishes from every
-        // snapshot and export (audit). fold also defends; refuse at the door.
-        throw new GateRejection(`"${p.field}" is not a usable field name`, e);
-      }
-    }
-
-    // Every date the log carries must be a real instant. `Intl.formatToParts`
-    // throws `RangeError: Invalid time value` on anything else, and the temporal
-    // projections read these fields unvalidated — so ONE malformed date used to
-    // throw out of the work surface, which is built before capture's handlers are
-    // registered, and killed the whole app with the data intact and unreachable.
-    // The projections are now defensive too, but bad data should not get in.
-    if (!isValidIso(e.at)) {
-      throw new GateRejection(`event "at" is not a real instant: ${JSON.stringify(e.at)}`, e);
-    }
-    for (const field of ['at', 'returnAt', 'endedAt', 'startedAt'] as const) {
-      const p = e.payload as Record<string, unknown> | null;
-      // `at` on the envelope is checked above; here it is the payload's own.
-      if (p && Object.hasOwn(p, field) && p[field] != null && !isValidIso(p[field])) {
-        throw new GateRejection(
-          `${e.kind} payload "${field}" is not a real instant: ${JSON.stringify(p[field])}`, e);
-      }
-    }
+    // Shape first, from the one definition import also uses.
+    const bad = structuralRefusal(e);
+    if (bad) throw new GateRejection(bad, e);
 
     const before = fold(out, priorState);
 

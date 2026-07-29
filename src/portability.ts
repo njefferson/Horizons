@@ -14,7 +14,7 @@ import type { AppEvent } from './events.ts';
 import { isKnownKind } from './events.ts';
 import type { LogStore, Snapshot } from './log-store.ts';
 import { fold } from './fold.ts';
-import { silentNodes, heldNodes } from './gate.ts';
+import { silentNodes, heldNodes, structuralRefusal } from './gate.ts';
 import { serialiseState } from './snapshot.ts';
 
 export interface ExportFile {
@@ -119,9 +119,30 @@ export function inspectExport(raw: unknown): ExportSummary {
   if (typeof f.logJsonl !== 'string') {
     return { ...empty, at, scope, refusals: ['That export has no log in it, so there is nothing to bring back.'] };
   }
+  try {
+    return describe(f, at, scope);
+  } catch (err) {
+    // THE WHOLE BODY, not just the parse. `fold` reads payload fields
+    // unguarded — `payload: null` on a `vault.created` line threw a TypeError
+    // straight out of here, and the surface, which had only wrapped
+    // `JSON.parse`, sat on "Reading it…" for ever with an uncaught error in the
+    // console (audit). This function's contract is that a bad file is an answer.
+    // Plain sentence first, technical detail in brackets after it. The raw
+    // message here is whatever threw — "Cannot read properties of null" is not
+    // a thing to lead with when someone is trying to get their data back, but it
+    // is worth keeping for anyone who opens the file to see what happened.
+    return {
+      refusals: [`That file is damaged — one of its records could not be read. (${(err as Error).message})`],
+      events: 0, items: 0, at, scope,
+    };
+  }
+}
+
+function describe(f: Partial<ExportFile>, at: string | null, scope: string | null): ExportSummary {
+  const empty: ExportSummary = { refusals: [], events: 0, items: 0, at, scope };
   let events: AppEvent[];
   try {
-    events = fromJsonl(f.logJsonl);
+    events = fromJsonl(f.logJsonl as string);
   } catch (err) {
     // WRAPPED, not passed through. `fromJsonl`'s messages are precise and are
     // written for whoever is debugging — "export line 4 carries unknown kind" is
@@ -131,13 +152,47 @@ export function inspectExport(raw: unknown): ExportSummary {
     return { ...empty, at, scope, refusals: [`That file could not be read in full (${(err as Error).message}).`] };
   }
 
+  const refusals: string[] = [];
+
+  // EVERY QUESTION THE STORE WILL ASK, asked here — while the user's data is
+  // still intact. This is the check whose absence cost someone their store: a
+  // file with two events sharing an id was described as "2 things, ready", and
+  // the append then failed on the unique-id constraint AFTER the clear had run.
+  // The person's real items were gone, replaced by whichever rows happened to
+  // land first (audit, CRITICAL).
+  const seen = new Set<string>();
+  for (let i = 0; i < events.length; i++) {
+    const e = events[i]!;
+    if (typeof e.id !== 'string' || !e.id) {
+      refusals.push(`That file is damaged — record ${i + 1} has no identifier.`);
+      break;
+    }
+    if (seen.has(e.id)) {
+      refusals.push(
+        `That file is damaged — it carries the same record twice (id "${e.id}"). ` +
+        'Two exports may have been joined together.');
+      break;
+    }
+    seen.add(e.id);
+    // The gate's own shape rules, from the one definition it uses. Import used
+    // to ask none of them, so a negative or infinite `seq`, an unparseable date
+    // or a `__proto__` field name went straight in.
+    const bad = structuralRefusal(e);
+    if (bad) {
+      refusals.push(`That file cannot be brought back — record ${i + 1}: ${bad}.`);
+      break;
+    }
+  }
+  if (refusals.length > 0) {
+    return { refusals, events: events.length, items: 0, at, scope };
+  }
+
   // THE GATE'S OWN QUESTION, asked of the file. Import is a second write path
   // that does not go through `admit`, so a crafted file could seed silent nodes
   // (audit). A log this app produced cannot contain one, so a file that folds to
   // silence was altered or written by something else.
   const candidate = fold(events);
   const silent = silentNodes(candidate);
-  const refusals: string[] = [];
   if (silent.length > 0) {
     refusals.push(
       `That file is not a faithful Quietkeep export — ${silent.length} item(s) in it ` +
@@ -172,8 +227,13 @@ export async function importSeedingFresh(store: LogStore, file: ExportFile): Pro
   const events = fromJsonl(file.logJsonl);
   const candidate = fold(events);
 
-  await store.reset();          // seeds fresh — never merges
-  await store.append(events);
+  // ATOMIC. `reset()` then `append()` left a window in which the old data was
+  // already gone and the new data had not all arrived — and a file that passed
+  // validation still found it, through a constraint the validation did not ask
+  // about. Validation now asks; this makes the window not exist either way,
+  // because a quota or disk failure mid-append is not something validation can
+  // ever rule out.
+  await store.replaceAll(events);
 
   // Recompute rather than trusting the file's snapshot.
   const state = candidate;

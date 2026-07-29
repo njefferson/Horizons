@@ -233,6 +233,15 @@ button.ghost {
   border-radius: var(--radius);
 }
 .donow-label { color: var(--warm); font-variant-numeric: tabular-nums; }
+/* The offer now lives outside the triage section, so it needs its own room —
+   it used to inherit the section's margins. */
+#triage-donow:empty { display: none; }
+#triage-donow { margin: 0 0 1rem; }
+/* Done is the primary action here and reads as one. It is available before the
+   timer, during it, and at the question — a two-minute job finished in forty
+   seconds should never need the timer stopped first. */
+.donow-done { min-height: var(--target); }
+.donow button { min-height: var(--target); }
 
 /* --- the list ------------------------------------------------------------- */
 
@@ -592,6 +601,61 @@ dialog {
 }
 dialog::backdrop { background: rgb(0 0 0 / 0.5); }
 dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
+
+/* The always-reachable way out. `position: sticky` inside the dialog's own
+ * scroll container, so it rides along however far down the patch notes you are.
+ * It carries the dialog's own background, or the text it scrolls over shows
+ * through it. */
+.about-bar {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: -1.25rem -1.25rem 0.75rem;
+  padding: 1.25rem 1.25rem 0.5rem;
+  background: var(--surface);
+}
+.about-bar h2 { margin: 0; }
+/* A sticky header can hide the thing you just moved focus to — WCAG 2.2's
+ * 2.4.11 Focus Not Obscured, which is AA and therefore this app's target. The
+ * a11y gate found it immediately at 320px and 200%, where the bar takes a large
+ * share of a short dialog. `scroll-margin-top` is what scroll-into-view honours,
+ * so a focused control now stops BELOW the bar instead of under it. In rem, so
+ * it grows with the text it has to clear. */
+#about :is(button, a, input, label, h3, dt, dd) { scroll-margin-top: 5rem; }
+/* At 200% text on a small screen the title wraps and the bar grew to 99% of the
+ * dialog — the way out eating the thing it was meant to let you leave. Measured,
+ * not guessed. Compact here, and the text still says everything it said. */
+/* PX, not rem. Inside a media query `rem` resolves against the INITIAL root
+ * font size, never the zoomed one — so a rem threshold silently failed to match
+ * at exactly the zoom level it was written for, and the bar stayed at 99% of
+ * the dialog. Measured after changing it, not assumed. */
+@media (max-height: 640px) {
+  .about-bar { padding: 0.4rem 1.25rem 0.35rem; margin-bottom: 0.4rem; }
+  /* The title wraps at this size whatever we do — 320px at 200% is about ten
+     characters a line. Tightening the leading is what is left, and it keeps
+     every word rather than truncating any of them. */
+  .about-bar h2 { font-size: 0.95rem; line-height: 1.15; }
+  #about :is(button, a, input, label, h3, dt, dd) { scroll-margin-top: 3.5rem; }
+}
+.about-x {
+  flex: none;
+  min-width: var(--target);
+  min-height: var(--target);
+  padding: 0;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  /* The glyph, not the box. 1.5rem keeps the × legible at a 44px target. */
+  font: inherit;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+}
 /* At 320px/200% a long unbroken run (the wordmark inside a bold intro clause)
    pushed the dialog into sideways scroll where the page check could not see it
    (audit). Every text descendant may break. */

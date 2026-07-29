@@ -268,20 +268,32 @@ export async function mountAbout(session: Session): Promise<void> {
       importActions.hidden = true;
     };
 
+    // Clearing the input's value on every open means choosing the SAME file
+    // twice still fires `change`. Without it the second choice was silent — the
+    // surface said nothing at all, which reads as a broken control (audit).
+    importFile.addEventListener('click', () => { importFile.value = ''; });
+
     importFile.addEventListener('change', async () => {
       resetImport();
       const chosen = importFile.files?.[0];
       if (!chosen) { importNote.textContent = ''; return; }
       importNote.textContent = 'Reading it…';
+      // EVERYTHING in the try, not just the parse. `inspectExport` sat outside
+      // it, so a file that made it throw left this listener rejected and the
+      // note reading "Reading it…" for ever — on the one screen people reach for
+      // after something has already gone wrong (audit). `inspectExport` is now
+      // total as well; this is the second belt, because an async listener that
+      // can reject silently is a bad shape whatever it calls.
       let summary;
       let parsed: unknown;
       try {
         parsed = JSON.parse(await chosen.text());
-      } catch {
-        importNote.textContent = 'That file is not readable as an export. Nothing has changed.';
+        summary = inspectExport(parsed);
+      } catch (err) {
+        importNote.textContent =
+          `That file could not be read (${(err as Error).message}). Nothing has changed.`;
         return;
       }
-      summary = inspectExport(parsed);
       if (summary.refusals.length > 0) {
         // The refusal is the whole message. It already ends by saying nothing
         // was touched, because at this point nothing has been.
@@ -309,7 +321,11 @@ export async function mountAbout(session: Session): Promise<void> {
     });
 
     importBackup.addEventListener('click', async () => {
+      // BOTH disabled. "Replace everything" stayed live while the backup this
+      // flow calls "offered first" was still being written, so the store could
+      // be replaced out from under the copy meant to protect it (audit).
       importBackup.disabled = true;
+      importGo.disabled = true;
       try {
         await deliverExport('all', 'json');
         importNote.textContent =
@@ -319,6 +335,7 @@ export async function mountAbout(session: Session): Promise<void> {
         importNote.textContent = `Could not save a copy — ${(err as Error).message}. Nothing has been replaced.`;
       } finally {
         importBackup.disabled = false;
+        importGo.disabled = false;
       }
     });
 
@@ -349,14 +366,26 @@ export async function mountAbout(session: Session): Promise<void> {
         // people reach for after something has already gone wrong.
         setTimeout(() => location.reload(), 400);
       } catch (err) {
-        importNote.textContent = `${(err as Error).message}`;
+        // The staged file is DROPPED and the actions are withdrawn. Leaving them
+        // armed after a failure meant "Replace everything" could be pressed
+        // again over a store whose state was no longer the one described
+        // (audit). Choosing the file again is one tap, and it re-describes.
+        importNote.textContent =
+          `That copy could not be brought back — ${(err as Error).message} Choose the file again to retry.`;
+        resetImport();
+        importFile.value = '';
         importGo.disabled = false;
         importBackup.disabled = false;
       }
     });
   }
 
+  // Two ways out, both real buttons. The one at the bottom is where a reader who
+  // has worked down the panel expects it; the sticky one at the top is the one
+  // that matters, because the panel is thousands of pixels tall and Esc is not
+  // available to a thumb on an iPad.
   document.querySelector('#about-close')?.addEventListener('click', () => dialog.close());
+  document.querySelector('#about-dismiss')?.addEventListener('click', () => dialog.close());
 
   // A programmatic showModal has no opener to hand focus back to, so the return
   // is explicit — and it goes to capture, because that is what this app is for.

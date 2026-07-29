@@ -29,6 +29,20 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.10.1',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      'A "Do now" thing can now simply be marked done. Before, the only thing on offer was a two-minute timer, so a job you finished in forty seconds stayed on your list until you went looking for it.',
+      'The two-minute timer is now something you choose, not something that starts on you. "Do now" is a category — the timer is a tool, and it is there if you want it.',
+      'When the two minutes are up, Quietkeep asks whether you finished. It used to record that you had, without asking. Time running out is not the same as being done, and saying "not yet" is not a failure.',
+      'The Do now panel no longer disappears when your inbox goes empty. Sorting your last item into it made the whole thing vanish, timer and all.',
+      'The panel has a close button at the top that stays with you as you scroll. Closing it used to mean scrolling past every release note to reach the bottom.',
+      'Sending to your calendar now confirms it where you can see it. The confirmation was appearing above the button, off the top of the screen — so it looked like nothing had happened.',
+      'A damaged or joined-together copy is now refused before anything is replaced, and says what is wrong with it in a sentence.',
+    ],
+  },
+  {
     triplet: '0.10.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

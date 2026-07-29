@@ -14,10 +14,11 @@
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
 import { heatEvents, routeEvents } from './triage-intents.ts';
+import { doneEvents } from './work.ts';
 import type { AppEvent, ClarifyRoute, Heat } from '../events.ts';
 
 const ROUTES: { route: ClarifyRoute; label: string; hint: string }[] = [
-  { route: 'do-now', label: 'Do now', hint: 'a two-minute thing — start the timer' },
+  { route: 'do-now', label: 'Do now', hint: 'this one is for today — two minutes if you want them' },
   { route: 'next-action', label: 'Next action', hint: 'a real next step, comes back tomorrow' },
   { route: 'waiting-for', label: 'Waiting for', hint: 'someone else owes you this' },
   { route: 'someday', label: 'Someday', hint: 'onto the Menu, no clock' },
@@ -80,9 +81,42 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
     else captureInput()?.focus();
   };
 
-  // A do-now route starts a visible two-minute timer in DONOW. It is an
-  // affordance, not a gate — the item is already routed and clocked. On finish
-  // or stop, exactly one do-now.timed carries the outcome. `ended` makes finish
+  /** Record that the item is finished. The ONE thing the do-now flow could not
+   *  do, and the thing it most obviously needed: routing something to "Do now"
+   *  clocked it for today and then offered no way to say you had done it, so a
+   *  two-minute job sat under "Ready now" until it was found in the list
+   *  (Noah, on device). Gated like every other completion. */
+  const markDone = (node: string): void => {
+    void session.commit(ctx => doneEvents(ctx, node)).then(() => {
+      LIVE.textContent = 'Done.';
+      onChange();
+    }).catch((err: Error) => { LIVE.textContent = `Couldn’t record that — ${err.message}`; });
+  };
+
+  /**
+   * What a just-routed "Do now" offers: finish it, or start two minutes.
+   *
+   * **The timer is an offering, not a gate.** It used to start on its own the
+   * moment the route landed, which made a category ("this one is for now") into
+   * a stopwatch nobody asked for. The category is the useful part; the two
+   * minutes are a tool some people want and others do not.
+   */
+  const offerDoNow = (node: string): void => {
+    active?.stop('abandoned');
+    const bar = el('div', 'donow');
+    bar.append(el('span', 'donow-label', 'Now — finish it, or take two minutes.'));
+    const done = el('button', 'donow-done', 'Done');
+    done.type = 'button';
+    done.addEventListener('click', () => { DONOW.replaceChildren(); markDone(node); });
+    const start = el('button', 'ghost', 'Start two minutes');
+    start.type = 'button';
+    start.addEventListener('click', () => startDoNowTimer(node));
+    bar.append(done, start);
+    DONOW.replaceChildren(bar);
+  };
+
+  // The two-minute timer, started only when asked for. On finish or stop,
+  // exactly one do-now.timed carries the outcome. `ended` makes finish
   // idempotent, so a completion racing a Stop click cannot commit twice.
   const startDoNowTimer = (node: string): void => {
     // Starting a new timer while one runs records the old one as abandoned — its
@@ -90,19 +124,30 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
     active?.stop('abandoned');
 
     const startedAt = new Date().toISOString();
-    const DURATION = 120; // seconds
+    // Two minutes, unless the page says otherwise. `data-seconds` on the timer's
+    // own region is a deliberate seam: the behaviour most worth gating is what
+    // happens when the clock reaches zero — it used to record "completed" there,
+    // unasked — and a gate cannot wait two real minutes to check it. Nothing in
+    // the app writes this attribute, so shipped behaviour is always 120.
+    const DURATION = Number(DONOW.dataset.seconds) || 120;
     let left = DURATION;
     let ended = false;
     let interval: number | undefined;
 
     const bar = el('div', 'donow');
     const label = el('span', 'donow-label');
+    // Done is available THROUGHOUT, in one tap. Finishing in forty seconds is
+    // the good case, and it should not require stopping a timer first.
+    const doneBtn = el('button', 'donow-done', 'Done');
+    doneBtn.type = 'button';
     const stopBtn = el('button', 'ghost', 'Stop');
     stopBtn.type = 'button';
-    bar.append(label, stopBtn);
+    bar.append(label, doneBtn, stopBtn);
     DONOW.replaceChildren(bar);
 
-    const finish = (outcome: 'completed' | 'abandoned'): void => {
+    /** Record the timer's outcome. `completed` means the person SAID they
+     *  finished — never merely that the clock ran out. */
+    const finish = (outcome: 'completed' | 'abandoned', andDone = false): void => {
       if (ended) return;
       ended = true;
       if (interval !== undefined) clearInterval(interval);
@@ -113,19 +158,42 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
         kind: 'do-now.timed', node,
         payload: { startedAt, endedAt: new Date().toISOString(), outcome },
       } as unknown as AppEvent]).catch(() => {});
+      if (andDone) markDone(node);
     };
     const handle = { stop: finish };
     active = handle;
+
+    /**
+     * Two minutes are up. **ASK.**
+     *
+     * The old code recorded `outcome: 'completed'` the instant the clock hit
+     * zero — the app asserting the person had finished something it never asked
+     * about, in a log that is permanent, for an audience whose whole difficulty
+     * is with time. Elapsed is not finished. Neither answer here is a failure:
+     * "not yet" leaves it exactly where it was, clocked for today.
+     */
+    const ask = (): void => {
+      if (ended) return;
+      if (interval !== undefined) clearInterval(interval);
+      label.textContent = 'Two minutes are up. Did you finish it?';
+      doneBtn.textContent = 'Done';
+      stopBtn.textContent = 'Not yet';
+      // Focus the question, because the timer ending is the app speaking first
+      // and the person may have looked away.
+      LIVE.textContent = 'Two minutes are up. Did you finish it?';
+      doneBtn.focus();
+    };
 
     const tick = (): void => {
       const m = Math.floor(left / 60);
       const sec = String(left % 60).padStart(2, '0');
       label.textContent = `Two minutes: ${m}:${sec} left`;
-      if (left <= 0) { finish('completed'); return; }
+      if (left <= 0) { ask(); return; }
       left -= 1;
     };
     tick();
     interval = setInterval(tick, 1000) as unknown as number;
+    doneBtn.addEventListener('click', () => finish('completed', true));
     stopBtn.addEventListener('click', () => finish('abandoned'));
   };
 
@@ -154,7 +222,8 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
           .then(ok => {
             // Start the timer only if the route actually landed, and only after
             // the card has advanced — the timer's own region is untouched by that.
-            if (ok && route === 'do-now') startDoNowTimer(nodeId);
+            // OFFER, do not start. The route is the decision; the timer is a tool.
+            if (ok && route === 'do-now') offerDoNow(nodeId);
             restoreFocus();
           });
       });

@@ -51,11 +51,16 @@
     <h2 id="triage-prompt" class="triage-prompt" tabindex="-1"></h2>
     <p id="triage-card" class="triage-card"></p>
     <div id="triage-actions" class="triage-actions"></div>
-    <!-- The do-now timer lives here, OUTSIDE the card, so advancing the carousel
-         never orphans a running two-minute countdown or drops its outcome. -->
-    <div id="triage-donow"></div>
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
+
+  <!-- The do-now offer and its timer live OUTSIDE the triage section, not merely
+       outside the card. They were inside it, and `refresh()` hides that whole
+       section the moment the inbox is clear — so routing your LAST item to "Do
+       now" made the offer disappear, and a running timer went on to reach zero
+       invisibly. The old comment claimed this was "outside the card", which was
+       true and not enough. -->
+  <div id="triage-donow"></div>
 
   <!-- Dates that have gone by (product law 3, ADR-0012/ADR-0034). NOT a list of
        failures — there is no such list in this app. Each row is a live decision,
@@ -195,7 +200,15 @@
 </footer>
 
 <dialog id="about" aria-labelledby="about-title">
-  <h2 id="about-title">Quietkeep <span id="version" class="version"></span></h2>
+  <!-- A close that is ALWAYS reachable. This panel carries every release's
+       patch notes, so it grew past ten thousand pixels tall and the only way
+       out was at the bottom of all of them — you had to scroll the whole
+       history to shut it (Noah, on device). Sticky, so it stays where your
+       thumb is, whatever you have scrolled past. -->
+  <div class="about-bar">
+    <h2 id="about-title">Quietkeep <span id="version" class="version"></span></h2>
+    <button id="about-dismiss" type="button" class="about-x" aria-label="Close">&times;</button>
+  </div>
 
   <!-- Shown only on the first run. Everything below it is always here. -->
   <div id="about-intro" class="intro" hidden>
@@ -246,13 +259,17 @@
     holding to your calendar and the calendar will tell you instead &mdash; it
     already runs when this app does not.
   </p>
-  <!-- A live region, like #status and the other surfaces. Without it, a
-       keyboard or screen-reader user who pressed the button got no focus,
-       no announcement and no sign anything had happened (audit). -->
-  <p id="calendar-note" class="storage-note" role="status" aria-live="polite"></p>
   <div class="about-actions">
     <button id="calendar" type="button">Send to my calendar</button>
   </div>
+  <!-- A live region, like #status and the other surfaces. Without it, a
+       keyboard or screen-reader user who pressed the button got no focus,
+       no announcement and no sign anything had happened (audit).
+       BELOW the button, not above it. This dialog is thousands of pixels tall,
+       so the button is reached by scrolling — and the confirmation was
+       rendering off-screen above the reader's eyes. It always worked; nobody
+       could see it (Noah, on device). -->
+  <p id="calendar-note" class="storage-note" role="status" aria-live="polite"></p>
   <p class="about-p about-caveat">
     It is a snapshot of this moment. If you change a date here afterwards, the
     calendar will not follow &mdash; send a fresh copy when it matters.

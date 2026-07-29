@@ -289,9 +289,14 @@ try {
   await routeByLabel('Do now');
   await tpage.waitForSelector('.donow');             // added a microtask after the route commits
   is(await tpage.locator('.donow').isVisible(), true,
-    'routing to Do now starts the visible two-minute timer');
-  is((await tpage.locator('.donow-label').textContent())?.includes('Two minutes'), true,
-    'and the timer says what it is, in words');
+    'routing to Do now offers what to do about it');
+  // THE TIMER IS AN OFFERING, NOT A GATE. It used to start on its own, turning a
+  // category ("this one is for today") into a stopwatch nobody asked for, and
+  // leaving no way at all to simply say the thing was done (Noah, on device).
+  is((await tpage.locator('.donow-label').textContent())?.includes('left'), false,
+    'and does NOT start a stopwatch nobody asked for');
+  is(await tpage.locator('.donow-done').count(), 1,
+    'Done is offered without having to run a timer first');
   await routeByLabel('Next action');
   await routeByLabel('Waiting for');
   await routeByLabel('Someday');
@@ -305,6 +310,13 @@ try {
   // With the surface gone, focus returns to the capture line, not <body>.
   is(await tpage.evaluate(() => document.activeElement?.id), 'capture',
     'clearing the inbox returns focus to capture, never to <body>');
+  // AND THE DO-NOW OFFER SURVIVES THAT. It used to live INSIDE #triage, which
+  // this same code hides the moment the inbox is clear — so routing your last
+  // item to "Do now" made the offer vanish, and a running timer went on to reach
+  // zero invisibly and record an outcome nobody saw.
+  is(await tpage.locator('.donow').isVisible(), true,
+    'and the Do now offer survives the triage surface hiding itself');
+
 
   console.log('\nTriage — every route left its terminal event in the log');
   await tpage.click('#open-about');
@@ -329,6 +341,73 @@ try {
   is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'law 1 holds across all six routes — the held gauge reads 0 silent');
 
+  console.log('\nDo now — the timer asks, it does not assume');
+  // ITS OWN item. The one routed above is left alone deliberately: a later
+  // section asserts that an item due today is filed under "Ready now", and
+  // completing it here would quietly hollow that check out into a tautology.
+  await tpage.fill('#capture', 'a timed two-minute job');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+  await tpage.click('#triage-actions .route');                   // Hot
+  await tpage.waitForSelector('#triage-actions .route .route-hint');
+  await tpage.locator('#triage-actions .route', { hasText: 'Do now' }).first().click();
+  await tpage.waitForSelector('.donow-done');
+  // Two seconds instead of two minutes. `data-seconds` is a seam that exists so
+  // this check can happen at all; nothing in the app writes it, so shipped
+  // behaviour is always 120.
+  await tpage.evaluate(() => { document.querySelector('#triage-donow').dataset.seconds = '2'; });
+  await tpage.locator('.donow button.ghost').click();            // Start two minutes
+  await tpage.waitForTimeout(200);
+  is((await tpage.locator('.donow-label').textContent())?.includes('left'), true,
+    'asking for the timer starts it');
+  const timedBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'do-now.timed').length);
+    });
+  });
+  await tpage.waitForTimeout(2800);
+  // THE HONESTY FIX. Reaching zero used to commit `outcome: 'completed'` — the
+  // app asserting, in a permanent log, that someone had finished a thing it
+  // never asked them about. Elapsed is not finished.
+  const atZero = await tpage.locator('.donow-label').textContent();
+  is(/did you finish/i.test(atZero || ''), true,
+    `when the time is up it ASKS ("${atZero}")`);
+  const timedAtZero = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'do-now.timed').length);
+    });
+  });
+  is(timedAtZero, timedBefore, 'and records NOTHING until it has been answered');
+
+  const doneBeforeAnswer = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
+  });
+  await tpage.locator('.donow-done').click();
+  await tpage.waitForTimeout(500);
+  const answered = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(answered.filter(e => e.kind === 'do-now.timed').length, timedBefore + 1,
+    'answering records exactly one outcome');
+  is(answered.filter(e => e.kind === 'do-now.timed').pop()?.payload?.outcome, 'completed',
+    'and "completed" now means the person SAID so');
+  // The whole point of the report: a two-minute job could be started and never
+  // finished, because nothing in this flow could mark it done.
+  is(answered.filter(e => e.kind === 'done.marked').length, doneBeforeAnswer + 1,
+    'saying you finished it actually finishes it');
+  is(await tpage.locator('.donow').count(), 0, 'and the offer clears itself away');
   console.log('\nTriage — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
 
@@ -387,6 +466,17 @@ try {
   is(afterSkip !== offered, true, `and it moved on ("${offered}" -> "${afterSkip}")`);
 
   console.log('\nWork mode — Done records, and the item stops being offered');
+  // RELATIVE to what is already there. An absolute 1 was measuring how many
+  // times the whole walk happens to complete something, not whether this button
+  // records one completion — and it went red the moment the do-now flow gained
+  // a Done of its own, which is a fact about the walk and not about this button.
+  const doneMarkedBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
+  });
   const doneTitle = await tpage.locator('#nextup-title').textContent();
   const totalBefore = Number((await tpage.locator('#nextup-count').textContent() || '').match(/(\d+) things/)?.[1] ?? '1');
   await tpage.click('#nextup-done');
@@ -400,7 +490,8 @@ try {
       tx.onsuccess = () => res(tx.result.map(e => e.kind));
     });
   });
-  is(logAfterDone.filter(k => k === 'done.marked').length, 1, 'exactly one done.marked was appended');
+  is(logAfterDone.filter(k => k === 'done.marked').length, doneMarkedBefore + 1,
+    `one press, exactly one done.marked (${doneMarkedBefore} before)`);
   // NOT "the title changed" — that passed even with the done-check deleted,
   // because completing an item also moved the rotation (audit: THEATER). Ask the
   // question that actually matters: is the completed thing GONE from the surface,
@@ -980,6 +1071,57 @@ try {
     `a file that is not an export says so ("${junkNote}")`);
   is(await tpage.locator('#import-actions').isVisible(), false,
     'and "Replace everything" stays out of reach');
+
+  // A file that would fail on WRITE must be refused on READ. This is the worst
+  // defect this app has had: two records sharing an id passed inspection, and
+  // the append then failed on the unique-id constraint AFTER the store had been
+  // cleared — real items gone, replaced by whichever rows landed first, with a
+  // raw database error on screen. Checked against the LIVE store, in a browser,
+  // because the constraint that broke it is the browser's.
+  const dupEvent = { id: 'DUPLICATE', vault: 'personal', at: '2026-07-29T12:00:00.000Z',
+    device: 'd', seq: 0, kind: 'capture.recorded', node: 'a',
+    payload: { text: 'imported a', source: 'quick', sourceTags: [] } };
+  const dupFile = join(tmpdir(), 'quietkeep-duplicate-ids.json');
+  writeFileSync(dupFile, JSON.stringify({
+    format: 'planner-log', version: 1, at: '2026-07-29T12:00:00.000Z', scope: 'all', encrypted: false,
+    logJsonl: [dupEvent, { ...dupEvent, node: 'b', seq: 1 }].map(o => JSON.stringify(o)).join('\n'),
+    snapshot: null,
+  }));
+  const eventsBeforeDup = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  await tpage.setInputFiles('#import-file', dupFile);
+  await tpage.waitForTimeout(300);
+  const dupNote = await tpage.locator('#import-note').textContent();
+  is(/damaged/i.test(dupNote || ''), true, `a file that would fail on write is refused on read ("${dupNote}")`);
+  is(await tpage.locator('#import-actions').isVisible(), false,
+    'and the destructive control is never offered for it');
+  const eventsAfterDup = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(eventsAfterDup, eventsBeforeDup, 'and nothing of the user’s was touched');
+
+  // A file whose payload the fold cannot read must be a sentence, not a crash.
+  const badPayload = join(tmpdir(), 'quietkeep-bad-payload.json');
+  writeFileSync(badPayload, JSON.stringify({
+    format: 'planner-log', version: 1, at: '2026-07-29T12:00:00.000Z', scope: 'all', encrypted: false,
+    logJsonl: '{"kind":"vault.created","id":"q","seq":0,"device":"d","vault":"personal","at":"2026-07-29T12:00:00.000Z","payload":null}',
+    snapshot: null,
+  }));
+  await tpage.setInputFiles('#import-file', badPayload);
+  await tpage.waitForTimeout(300);
+  const badNote = await tpage.locator('#import-note').textContent();
+  is(/damaged/i.test(badNote || ''), true,
+    `an unreadable record is an answer, not a stuck "Reading it…" ("${badNote}")`);
+  is((badNote || '').startsWith('Reading it'), false, 'the surface never stops mid-sentence');
 
   // A file the app WROTE must be described, with the numbers stated.
   await tpage.setInputFiles('#import-file', backupPath);

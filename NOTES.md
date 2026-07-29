@@ -280,6 +280,59 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **Three things Noah found on the device, and two the audit did
+  (0.10.1 ITERATION).** All of it came from actually using the app, which no gate
+  in this repo can substitute for.
+  · **"There is nothing to mark the item done rather than starting a 2 minute
+  timer."** Routing something to *Do now* clocked it for today and then offered
+  no way to say you had done it, so a two-minute job sat under "Ready now" until
+  you found it in the list. The timer also **started on its own**, turning a
+  category into a stopwatch nobody asked for — Noah's words: *"the 2 minute timer
+  should be an offering, not a gate"*. It is now offered beside a **Done**, and
+  Done is one tap before the timer, during it, and after it.
+  · **"Doesn't ask you if you completed it in the two minutes."** Reaching zero
+  committed `outcome: 'completed'` — **the app asserting, in a permanent log,
+  that a person had finished something it never asked them about**, for an
+  audience whose whole difficulty is with time. It now asks, and records nothing
+  until answered. Neither answer is a failure.
+  · **A bug underneath that report**: `#triage-donow` lived INSIDE the triage
+  section, which hides itself the moment the inbox is clear — so routing your
+  **last** item to *Do now* made the offer vanish, and a running timer went on to
+  reach zero invisibly. The old comment said it lived "outside the card", which
+  was true and not enough. It is now outside the section.
+  · **"Pressing calendar shows no indication it did anything."** It always
+  worked. The confirmation renders *above* the button, the panel is thousands of
+  pixels tall, so by the time you had scrolled to the button the message was off
+  the top of the screen. Moved below it.
+  · **"There is no X to close the popup."** The only way out sat beneath every
+  release note — **measured at 10,130px down**. There is now a sticky close at
+  the top. At 320px and 200% text it first took **99% of the dialog**, which the
+  a11y gate caught as WCAG 2.2 **2.4.11 Focus Not Obscured**; compacted to 48%
+  with the title intact, and `scroll-margin-top` keeps focused controls clear of
+  it. A `rem` threshold in the media query silently never matched — inside a
+  media query `rem` resolves against the *initial* root font size, not the
+  zoomed one.
+  · **From the audit, CRITICAL and now fixed**: a file `inspectExport` called
+  READY could destroy the store and then fail. Two records sharing an id passed
+  inspection, the append hit the unique-id constraint **after** the clear, and
+  the user's real items were gone — replaced by whichever rows landed first, with
+  a raw database error on screen, under a patch note promising exactly the
+  opposite. `inspectExport` now asks every question the store will ask (duplicate
+  ids, and the gate's own shape rules from one shared definition), and
+  `store.replaceAll` is **atomic**, because validation can never rule out a quota
+  failure mid-write.
+  · **Also from the audit**: `inspectExport` could throw (`fold` reads payloads
+  unguarded, outside the only try) leaving the surface on "Reading it…" for ever;
+  import bypassed every shape check the gate makes, so `seq: 1e999` produced a
+  permanently unwritable store; and `DexieLogStore.reset()` cleared `kv`, so
+  every successful import silently discarded the in-flight capture draft — the
+  thing ADR-0008 exists to protect. `MemoryLogStore` never did, which is why no
+  Node test could see it.
+  · **A tooling lesson**: spreading `AppEvent` in a test took `tsc` from 2s to
+  over 3 minutes. It is a large discriminated union and the spread distributes
+  across every member.
+  · 183 tests, all 8 gates green, both themes.
+
 - **2026-07-29** — **The way back in (0.10.0 CAPABILITY).** The app could hand you
   your entire log and had **no way to read one back**. `importSeedingFresh` existed,
   was tested, and had no surface at all — so moving to a new device meant starting
