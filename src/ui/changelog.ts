@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.17.1',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      '"Worth a look" was staying quiet about a stalled piece of work when the only thing left under it was the leftovers of a finished focus session. That is exactly the failure it exists to catch, and it was hidden by residue.',
+      'A status report could be made to say "Nothing to report." when there was plenty to report \u2014 anything you had written down on more than one line could break the shape of the document. It is a page you hand to another person, so it now says only what is true.',
+      'Work brought in from your other device is now included in the next report. It was being left out for being older than your last one, even though you had never seen it and had certainly never told anyone about it.',
+      'Somebody you have let go is no longer named as running something. It was still showing their name, confidently, which is worse than showing none.',
+    ],
+  },
+  {
     triplet: '0.17.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

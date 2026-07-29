@@ -17,7 +17,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { CONTAINER_KINDS } from './tree.ts';
-import { isOpenWaiting, openDays } from './people.ts';
+import { isOpenWaiting, openDays, personName } from './people.ts';
 import { calendarDaysBetween, isValidIso, localDayKey } from './time.ts';
 import type { NodeKind } from './events.ts';
 
@@ -68,7 +68,7 @@ export function trackPortfolio(state: State, nowIso: string, zone: string): Trac
     const hasDate = s && isValidIso(s.at);
     out.push({
       node: n,
-      opr: n.opr ? (state.nodes.get(n.opr)?.title || null) : null,
+      opr: personName(state, n.opr),
       suspense: hasDate ? localDayKey(s.at, zone) : null,
       suspenseDays: hasDate ? calendarDaysBetween(nowIso, s.at, zone) : null,
       waiting: children.filter(isOpenWaiting)

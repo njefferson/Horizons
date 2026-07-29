@@ -11,7 +11,10 @@ import assert from 'node:assert/strict';
 import { fold, type State } from '../src/fold.ts';
 import { admit } from '../src/gate.ts';
 import { trackPortfolio, trackWords, portfolioWords, isTracked } from '../src/portfolio.ts';
-import { statusReport, renderMarkdown, renderCsv, renderText, periodWords } from '../src/delta.ts';
+import {
+  statusReport, renderMarkdown, renderCsv, renderText, periodWords, reportedBefore,
+} from '../src/delta.ts';
+import { highWaterMark } from '../src/snapshot.ts';
 import { nextUp } from '../src/nextup.ts';
 import { waitingOnAnyone } from '../src/people.ts';
 import { setTrackRoleEvents, setSuspenseEvents } from '../src/ui/detail-intents.ts';
@@ -34,6 +37,14 @@ const clocked = (id: string, at = NOW): AppEvent =>
 const ctx = {
   id: () => `x${seq++}`, vault: 'personal', at: NOW, device: 'd0', seq: () => seq++, zone: TZ,
 };
+/** Stamped explicitly, so a shard's device and seq can be set. */
+const mkAt = (id: string, title: string, at: string, device: string, sq: number): AppEvent =>
+  ({ id: `${device}-${sq}`, vault: 'personal', at, device, seq: sq,
+     kind: 'node.created', node: id, payload: { nodeKind: 'action', title } } as AppEvent);
+const ckAt = (id: string, at: string, device: string, sq: number): AppEvent =>
+  ({ id: `${device}-${sq}`, vault: 'personal', at, device, seq: sq,
+     kind: 'clock.set', node: id, payload: { clockKind: 'review', at: NOW, source: 't' } } as AppEvent);
+
 const apply = (state: State, events: AppEvent[]): State =>
   events.length === 0 ? state : fold(admit(events, state), state);
 
@@ -260,4 +271,86 @@ test('the mark only ever moves forward, even when an older report arrives later'
   const withOlder = fold([ev('status.report.exported', null, { format: 'csv', scope: 'all' }, AGO(9))], recent);
   assert.equal(withOlder.lastReportAt, AGO(1),
     'the older report does not wind the mark back to nine days ago');
+});
+
+test('a tracked project does not name an owner who was let go', () => {
+  // FOUND BY AUDIT, 2026-07-29. The line read "Ada is running it" about
+  // somebody already trashed. Worse than a missing name: it is a confident
+  // wrong answer on a surface whose whole job is telling you who has what.
+  const s = apply(st(
+    mk('P', 'project'), clocked('P'), mk('p1', 'person', 'Ada'),
+    ev('opr.assigned', 'P', { person: 'p1' }),
+    ev('node.trashed', 'p1', {}),
+  ), setTrackRoleEvents(ctx, 'P', 'track'));
+  const line = trackPortfolio(s, NOW, TZ)[0]!;
+  assert.equal(line.opr, null);
+  assert.match(trackWords(line), /nobody named yet/,
+    'it falls back to the honest answer, not a ghost');
+});
+
+// --- audit findings, 2026-07-29 ---------------------------------------------
+
+test('AUDIT: a title cannot inject structure into a Markdown report', () => {
+  // Titles are free text somebody typed and are stored VERBATIM by design — the
+  // share target composes title/text/url with newlines, so multi-line titles are
+  // normal rather than hostile. Dropped into a bullet list unchanged, one of them
+  // ended the list, opened a heading, and emitted a bare "Nothing to report."
+  // into a report about real work. That is a document handed to another person,
+  // saying something untrue.
+  const nasty = '## Finished\n- everything\n\nNothing to report.';
+  const s = fold([mk('X', 'action', nasty), clocked('X'), ev('done.marked', 'X', { at: NOW })]);
+  const md = renderMarkdown(statusReport(fold([]), s, null, NOW, TZ), TZ);
+  const lines = md.split('\n').filter(l => l.trim());
+  assert.equal(lines.filter(l => /^###? /.test(l)).length, 2,
+    'exactly the two headings the report itself writes, and no injected third');
+  assert.equal(lines.some(l => l.trim() === 'Nothing to report.'), false,
+    'a report about real work never claims there is nothing to report');
+  assert.equal(md.includes(nasty), false, 'the raw multi-line title is not pasted in');
+  assert.equal(md.includes('everything'), true, 'but the content is still there, on one line');
+});
+
+test('AUDIT: work that arrived by shard is reported, even though it is older', () => {
+  // "What has changed since I last told anyone" is not a question about the
+  // clock. A shard union (ADR-0035) brings another device's history stamped
+  // BEFORE your last report — you have never seen it and have certainly never
+  // reported it, and a purely time-based cut buried it for ever.
+  const mine = [
+    mkAt('MINE', 'my thing', AGO(9), 'd0', 1),
+    ckAt('MINE', AGO(9), 'd0', 2),
+  ];
+  const atReport = fold(mine);
+  const report = {
+    id: 'r1', vault: 'personal', at: AGO(5), device: 'd0', seq: 3,
+    kind: 'status.report.exported', node: null,
+    payload: { format: 'markdown', scope: 'all', upToSeqByDevice: highWaterMark(atReport) },
+  } as AppEvent;
+  const shard = [
+    mkAt('THEIRS', 'their thing', AGO(7), 'other', 1),
+    ckAt('THEIRS', AGO(7), 'other', 2),
+  ];
+  const log = [...mine, report, ...shard];
+  const after = fold(log);
+  const before = fold(reportedBefore(log, { at: after.lastReportAt, upToSeqByDevice: after.lastReportMark }));
+  const r = statusReport(before, after, after.lastReportAt, NOW, TZ);
+  assert.deepEqual(r.changes.map(c => c.node.id), ['THEIRS'],
+    'news is news whenever it happened');
+  assert.equal(r.changes.some(c => c.node.id === 'MINE'), false,
+    'and what was already reported is not reported twice');
+});
+
+test('AUDIT: a report written before marks existed still works', () => {
+  // Data is never lost to updates. A mark with no watermark is still a mark, and
+  // it falls back to the time cut it was written under.
+  const log = [
+    mkAt('OLD', 'before', AGO(9), 'd0', 1), ckAt('OLD', AGO(9), 'd0', 2),
+    { id: 'r0', vault: 'personal', at: AGO(5), device: 'd0', seq: 3,
+      kind: 'status.report.exported', node: null,
+      payload: { format: 'markdown', scope: 'all' } } as AppEvent,
+    mkAt('NEW', 'after', AGO(2), 'd0', 4), ckAt('NEW', AGO(2), 'd0', 5),
+  ];
+  const after = fold(log);
+  assert.equal(after.lastReportMark, null, 'no watermark on it');
+  const before = fold(reportedBefore(log, { at: after.lastReportAt, upToSeqByDevice: after.lastReportMark }));
+  const r = statusReport(before, after, after.lastReportAt, NOW, TZ);
+  assert.deepEqual(r.changes.map(c => c.node.id), ['NEW'], 'and it still cuts at the right moment');
 });

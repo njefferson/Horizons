@@ -129,6 +129,9 @@ export interface State {
    *  from — MAX rather than last-folded, so a shard arriving out of order cannot
    *  wind the mark backwards and re-report a fortnight of changes. */
   lastReportAt: ISODateTime | null;
+  /** The per-device high-water mark that report went out with, or null for a
+   *  report written before marks existed. Copied, never aliased. */
+  lastReportMark: Record<string, number> | null;
 }
 
 export const emptyState = (): State => ({
@@ -140,6 +143,7 @@ export const emptyState = (): State => ({
   focus: null,
   focusStamp: null,
   lastReportAt: null,
+  lastReportMark: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -249,6 +253,7 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
     focus: base.focus,
     focusStamp: base.focusStamp,
     lastReportAt: base.lastReportAt,
+    lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
   };
 
   const ordered = [...events].sort(compareEvents);
@@ -391,7 +396,15 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       // that fact can honestly live — a preference would survive an import that
       // replaced the very history it describes.
       case 'status.report.exported': {
-        if (!s.lastReportAt || e.at > s.lastReportAt) s.lastReportAt = e.at;
+        if (!s.lastReportAt || e.at > s.lastReportAt) {
+          s.lastReportAt = e.at;
+          // The per-device high-water mark the report went out with, when it
+          // carries one. This is what makes the next delta a question about what
+          // was REPORTED rather than about the clock — a shard can deliver work
+          // stamped before your last report that you had never seen (audit).
+          const hw = (e.payload as { upToSeqByDevice?: Record<string, number> }).upToSeqByDevice;
+          s.lastReportMark = hw ? { ...hw } : null;
+        }
         break;
       }
       case 'person.created': {

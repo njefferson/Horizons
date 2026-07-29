@@ -15,10 +15,11 @@
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
 import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
-import { statusReport, renderReport, periodWords, type ReportFormat } from '../delta.ts';
+import { statusReport, renderReport, periodWords, reportedBefore, type ReportFormat } from '../delta.ts';
 import { commsNode } from '../comms.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
+import { highWaterMark } from '../snapshot.ts';
 import { heldNodes } from '../gate.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
@@ -256,7 +257,10 @@ export async function mountAbout(session: Session): Promise<void> {
     const after = session.state();
     const since = after.lastReportAt;
     const all = await session.store.all();
-    const before = since ? fold(all.filter(e => e.at <= since)) : fold([]);
+    // What was already REPORTED, not what is merely older. A shard union brings
+    // in another device's history stamped before your last report; a time cut
+    // would bury it for ever (audit).
+    const before = fold(reportedBefore(all, { at: since, upToSeqByDevice: after.lastReportMark }));
     const r = statusReport(before, after, since, nowIso, session.zone);
     const text = renderReport(r, format, session.zone);
 
@@ -295,7 +299,10 @@ export async function mountAbout(session: Session): Promise<void> {
       await session.commit((ctx) => [{
         id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
         kind: 'status.report.exported', node: null,
-        payload: { format, scope: 'all' },
+        // The watermark this report went out with — read from the state the
+        // report was actually built from, so it can never claim to cover
+        // something that landed while the file was being written.
+        payload: { format, scope: 'all', upToSeqByDevice: highWaterMark(after) },
       } as AppEvent]);
       reportNote.textContent = 'Handed over. The next one starts from this moment.';
     } catch (err) {

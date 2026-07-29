@@ -62,6 +62,15 @@ function isLiveWork(n: NodeState): boolean {
   if (n.trashed || n.mergedInto) return false;
   if (n.lastDone) return false;
   if (n.onMenu) return false;                 // demand-free by law 6
+  // A SPENT resume card is residue, not work. The thread was picked back up or
+  // let go; either way nothing is moving because of it.
+  //
+  // Without this, a project whose only remaining child was a dead card read as
+  // healthy — the precise failure this whole surface exists to catch, hidden by
+  // the leftovers of a feature. `held.ts` learned the same lesson in 0.14.0 and
+  // this file was not told: one concept, two places, one of them checking
+  // (audit, 2026-07-29).
+  if (n.kind === 'resume-card' && n.resumeSpent) return false;
   if (NOT_ACTIONABLE.has(n.kind as NodeKind)) return false;
   return true;
 }

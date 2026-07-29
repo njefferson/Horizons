@@ -118,6 +118,35 @@ export function statusReport(
   return { ...r, ahead };
 }
 
+/**
+ * The events this device had already REPORTED, given the mark a report left.
+ *
+ * "What has changed since I last told anyone" is not a question about the clock.
+ * A shard union (ADR-0035) brings in another device's history stamped *before*
+ * your last report — you have never seen it and have certainly never reported
+ * it, yet a purely time-based cut puts it on the wrong side of the line and it
+ * is silently absent from every report you ever send again (audit).
+ *
+ * So the mark a report leaves is a **per-device high-water mark**, the same
+ * structure a shard uses to prove it is complete. Everything at or below it was
+ * known when the report went out; everything else is news, whenever it happened.
+ *
+ * `at`-based filtering remains the fallback for a report written before this
+ * existed — a mark with no watermark is still a mark, and an old log must keep
+ * working (data is never lost to updates).
+ */
+export function reportedBefore<T extends { at: string; device: string; seq: number }>(
+  events: readonly T[],
+  mark: { at: string | null; upToSeqByDevice?: Record<string, number> | null },
+): T[] {
+  const hw = mark.upToSeqByDevice;
+  if (hw && Object.keys(hw).length > 0) {
+    return events.filter(e => Object.hasOwn(hw, e.device) && e.seq <= hw[e.device]!);
+  }
+  if (!mark.at) return [];
+  return events.filter(e => e.at <= mark.at!);
+}
+
 // --- rendering --------------------------------------------------------------
 
 export type ReportFormat = 'clipboard' | 'markdown' | 'print' | 'csv';
@@ -134,6 +163,28 @@ const ORDER: ChangeKind[] = ['finished', 'arrived', 'now-waiting', 'started', 'n
 
 const title = (n: NodeState): string => n.title || '(untitled)';
 
+/**
+ * A title, made safe to put in a Markdown document.
+ *
+ * Titles are free text somebody typed, stored VERBATIM by design — the share
+ * target composes title/text/url with newlines, so multi-line titles are normal
+ * rather than hostile. Dropped into a bullet list unchanged, one of them ended a
+ * list, opened a heading, and emitted a bare line reading "Nothing to report."
+ * into a report about real work (audit). That is not a rendering blemish: it is a
+ * document you hand to another person, saying something untrue.
+ *
+ * So: newlines and runs of whitespace collapse to a single space, and the
+ * characters that begin a Markdown block at the start of a line are escaped.
+ * Exactly the same reasoning as the CSV formula guard below — which was written
+ * first and then not applied here, which is the oversight this fixes.
+ */
+const mdSafe = (v: string): string =>
+  v.replace(/\s+/g, ' ').trim()
+   .replace(/^([#>\-*+|=]|\d+[.)])/, '\\$1')
+   .replace(/\|/g, '\\|');
+
+const mdTitle = (n: NodeState): string => mdSafe(title(n));
+
 /** The one line that says what period this covers. Honest about "everything so
  *  far", which is what the first report of all genuinely is. */
 export function periodWords(since: string | null, zone: string): string {
@@ -148,14 +199,14 @@ export function renderMarkdown(r: DeltaReport, zone: string): string {
     const rows = r.changes.filter(c => c.kind === kind);
     if (rows.length === 0) continue;
     out.push(`### ${HEADS[kind]}`);
-    for (const c of rows) out.push(`- ${title(c.node)}`);
+    for (const c of rows) out.push(`- ${mdTitle(c.node)}`);
     out.push('');
   }
   if (r.outstanding.length) {
     out.push('### Still with someone else');
     for (const w of r.outstanding) {
-      const bits = [title(w.node)];
-      if (w.whom) bits.push(`— ${w.whom}`);
+      const bits = [mdTitle(w.node)];
+      if (w.whom) bits.push(`— ${mdSafe(w.whom)}`);
       if (w.days != null && w.days >= 1) bits.push(`(${w.days} days)`);
       out.push(`- ${bits.join(' ')}`);
     }
@@ -163,7 +214,7 @@ export function renderMarkdown(r: DeltaReport, zone: string): string {
   }
   if (r.ahead.length) {
     out.push('### Coming up');
-    for (const a of r.ahead) out.push(`- ${a.day} — ${title(a.node)}`);
+    for (const a of r.ahead) out.push(`- ${a.day} — ${mdTitle(a.node)}`);
     out.push('');
   }
   // NOTHING is a legitimate answer and it is said plainly. A report that padded

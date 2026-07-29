@@ -13,7 +13,7 @@ import { fold, type State } from '../src/fold.ts';
 import { admit } from '../src/gate.ts';
 import {
   people, personView, waitingOnAnyone, withWhom, openDays, waitingWords,
-  peopleWords, isOpenWaiting,
+  peopleWords, isOpenWaiting, personName,
 } from '../src/people.ts';
 import { linkPersonEvents, closeWaitingEvents } from '../src/ui/detail-intents.ts';
 import type { AppEvent } from '../src/events.ts';
@@ -211,4 +211,21 @@ test('a person who was let go takes their lens with them, not your work', () => 
   assert.deepEqual(waitingOnAnyone(s1, NOW, TZ).map(l => l.node.id), ['W'],
     'but you are still owed the thing — losing the name does not lose the work');
   assert.equal(withWhom(s1, s1.nodes.get('W')!), null, 'it simply stops claiming who');
+});
+
+test('a person who was let go is not named anywhere', () => {
+  // FOUND BY AUDIT, 2026-07-29. `withWhom` checked liveness; `portfolio.ts`
+  // reached into state.nodes directly and did not, so a tracked project went on
+  // announcing "Ada is running it" about somebody already let go. One concept,
+  // two places, one of them checking — now one function.
+  const s = st(
+    mk('p1', 'person', 'Ada'),
+    mk('W', 'waiting-for'), clocked('W'),
+    ev('waiting.opened', 'W', { person: 'p1', forWhat: 'x', since: AGO(3) }),
+    ev('node.trashed', 'p1', {}),
+  );
+  assert.equal(personName(s, 'p1'), null, 'let go');
+  assert.equal(personName(s, 'GHOST'), null, 'never existed');
+  assert.equal(personName(s, null), null, 'nobody named');
+  assert.equal(withWhom(s, s.nodes.get('W')!), null, 'and the waiting-for stops claiming who');
 });

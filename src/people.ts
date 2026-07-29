@@ -113,12 +113,25 @@ export function waitingOnAnyone(state: State, nowIso: string, zone: string): Per
   return out.sort((a, b) => (b.days ?? -1) - (a.days ?? -1) || (a.node.id < b.node.id ? -1 : 1));
 }
 
-/** The name to show for whoever a waiting-for is with. */
-export function withWhom(state: State, n: NodeState): string | null {
-  const id = n.waitingOn ?? n.people.find(l => l.relation === 'waiting-on')?.person ?? null;
+/**
+ * The name of a person node, or null.
+ *
+ * Null for missing AND for let-go, and that second half is the whole reason this
+ * is a shared function. `withWhom` checked it; `portfolio.ts` reached into
+ * `state.nodes` directly and did not, so a tracked project went on announcing
+ * "Ada is running it" about somebody who had been let go. One concept, two
+ * places, one of them checking (audit, 2026-07-29) — the same shape as the
+ * spent-card bug found in `review.ts` in the same pass.
+ */
+export function personName(state: State, id: string | null): string | null {
   if (!id) return null;
   const p = state.nodes.get(id);
   return p && alive(p) ? (p.title || '(unnamed)') : null;
+}
+
+/** The name to show for whoever a waiting-for is with. */
+export function withWhom(state: State, n: NodeState): string | null {
+  return personName(state, n.waitingOn ?? n.people.find(l => l.relation === 'waiting-on')?.person ?? null);
 }
 
 /**

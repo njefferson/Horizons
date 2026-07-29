@@ -218,7 +218,10 @@ decided by a session.**
 
 ### Open
 
-*(Nothing open.)*
+- **Q-10**
+  - Question: **Nothing in this app scopes a projection by vault.** `heldNodes`, Next up, the person lens, the portfolio and the status report all read every node in the store regardless of vault. In practice a session opens exactly one vault so it has never shown, but the vault split is a stated feature and two vaults would currently bleed into one another on every surface. Raised by the 0.17.1 audit while probing the report.
+  - Blocking: No — one vault is in use, and the report is no worse than any other surface.
+  - Status: **Open.** Deliberately not fixed in the audit: making the status report the single vault-aware surface would be a worse inconsistency than the one it fixed. It is one decision applied everywhere, or nowhere, and it wants Noah's word on whether the second vault is real.
 
 **Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
 App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
@@ -364,6 +367,41 @@ That error cost the Perennial round.
   before being trusted.
 
 ### Log
+
+- **2026-07-29 (afternoon, after the promote)** — **Adversarial audit of 0.13.0–0.17.0,
+  the five releases shipped in one sitting. Four real defects found, all mine, all shipped.**
+  Ran unprompted while Noah began using the app, on the reasoning that I would rather find
+  the fifth thing than he would on day three.
+  · **Review stayed silent about a stalled container** whose only remaining child was a
+  SPENT resume card — the precise failure the surface exists to catch, hidden by another
+  feature's residue. `held.ts` learned that a spent card is not work in 0.14.0 and
+  `review.ts` was never told.
+  · **A captured title could inject structure into a status report.** Titles are stored
+  verbatim by design (the share target composes with newlines), so a multi-line one ended
+  the list, opened a heading, and emitted a bare *"Nothing to report."* into a report about
+  real work. I had written the CSV formula guard and not applied the same reasoning to
+  Markdown. **This is a document handed to another person saying something untrue**, which
+  is the most serious of the four.
+  · **Work arriving by shard was invisible to every future report.** The delta cut on time,
+  so another device's history — stamped before your last report, never seen, never reported —
+  fell on the wrong side for ever. `status.report.exported` now carries a **per-device
+  high-water mark**, the same structure a shard already uses; old marks fall back to the time
+  cut, because data is never lost to updates.
+  · **A let-go person was still named as running a tracked project.** `withWhom` checked
+  liveness; `portfolio.ts` reached into `state.nodes` directly and did not. A confident wrong
+  answer, on the surface whose only job is saying who has what.
+  · **Three of the four are the same shape:** one concept, two places, one of them checking.
+  Every fix collapses them into one function or one predicate rather than adding a second
+  guard.
+  · Also probed and **found clean:** resume cards never go silent (law 1); a card whose work
+  is trashed disappears without orphaning; the sweep node is neither a stalled container nor
+  silent; two devices starting a focus at the same instant converge regardless of arrival
+  order; the parent picker never offers a non-container.
+  · **Recorded, not fixed: no projection in this app scopes by vault.** The report is not
+  uniquely affected — `heldNodes` and every other surface behave the same way — so making the
+  report the one vault-aware surface would be worse than leaving it. Raised as Q-10.
+  **Shipped as 0.17.1 ITERATION. 306 unit tests; six deliberate-failure proofs across the
+  four fixes.**
 
 - **2026-07-29 (afternoon)** — **`main` fast-forwarded to `c480796`, promoted on Noah's
   "Promote to main"** — carrying 0.12.0 through 0.17.0 and the docs work. Spine run 72 was

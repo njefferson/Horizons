@@ -177,3 +177,28 @@ test('the order is total, so a render never reshuffles what it just showed', () 
   const ids = () => reviewExceptions(st(...events)).shown.map(x => x.node.id);
   assert.deepEqual(ids(), ['p0', 'p1', 'p2'], 'by id, regardless of insertion order');
 });
+
+test('a spent resume card does not keep a container looking alive', () => {
+  // FOUND BY AUDIT, 2026-07-29, in shipped 0.13.0–0.17.0 code.
+  //
+  // A project whose only remaining child was a dead resume card read as
+  // perfectly healthy — which is the exact failure this surface exists to
+  // catch, hidden by the leftovers of a different feature. `held.ts` learned
+  // that a spent card is not work in 0.14.0; this file was not told.
+  const s = st(
+    mk('P', 'project', 'the report'),
+    mk('C', 'action', 'a card', 'P'),
+    ev('resume.card.created', 'C', { forNode: 'P', cue: null }),
+    ev('resume.card.spent', 'C', {}),
+  );
+  assert.deepEqual(stalled(s).map(x => x.node.id), ['P'],
+    'residue is not motion');
+
+  // And a LIVE card still counts — it is a thread genuinely waiting for you.
+  const live = st(
+    mk('Q', 'project'),
+    mk('D', 'action', 'a card', 'Q'),
+    ev('resume.card.created', 'D', { forNode: 'Q', cue: null }),
+  );
+  assert.deepEqual(stalled(live), [], 'a way back into it is something happening');
+});
