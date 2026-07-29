@@ -41,6 +41,9 @@ export interface NodeState {
    *  NOT "any unrouted node", so a person/anchor/bother/promoted-Menu node never
    *  pollutes triage. A latch: set true at genesis, never cleared. */
   captured: boolean;
+  /** A resume card that has been picked up, or that went cold. Either way the
+   *  thread is no longer waiting for you, so it stops being offered. A latch. */
+  resumeSpent: boolean;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -116,7 +119,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       id, vault, kind: 'action', title: '', parent: null,
       trashed: false, mergedInto: null, clocks: {}, onMenu: null,
       lastDone: null, comfortWindowDays: null, intervalDays: null,
-      heat: null, route: null, sourceTags: [], captured: false,
+      heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -231,6 +234,15 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       case 'resume.card.created': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'resume-card'; n.stamps['kind'] = o; }
+        break;
+      }
+      // Both fell to `default:` before, so a spent or expired card stayed on the
+      // work surface for ever — and ADR-0030's claim that ranking "already knows
+      // where resume cards go" was false, because nothing could retire one.
+      case 'resume.card.spent':
+      case 'resume.card.expired': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        n.resumeSpent = true;   // a latch, like `captured`
         break;
       }
       case 'node.field.set': {

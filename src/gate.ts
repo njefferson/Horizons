@@ -18,7 +18,7 @@ import {
   type AppEvent, type EventKind, type NodeId, type NodeKind, type VaultId,
 } from './events.ts';
 import { fold, type NodeState, type State } from './fold.ts';
-import { endOfLocalDay } from './time.ts';
+import { endOfLocalDay, isValidIso } from './time.ts';
 
 export class GateRejection extends Error {
   // Explicit fields, not constructor parameter properties — Node's
@@ -97,10 +97,18 @@ const newlySilent = (after: State, before: State): NodeState[] =>
 export const silentNodes = (state: State): NodeState[] =>
   [...state.nodes.values()].filter(n => isSilent(n, state));
 
+/** Nodes the gauge counts and the coverage list itemises — ONE definition, so
+ *  the two can never disagree. `state.nodes.size` counted trashed and merged
+ *  nodes, so the gauge said "3 held" over a list of 2: a claim the user was
+ *  invited to open, which then failed to check out (law 2 is about PROVING the
+ *  invariant, and a proof that contradicts itself proves nothing). */
+export const heldNodes = (state: State): NodeState[] =>
+  [...state.nodes.values()].filter(n => !n.trashed && !n.mergedInto);
+
 /** The coverage gauge (law 2). Reads 0 when the gate is doing its job. */
 export const coverageGauge = (state: State): { silent: number; total: number } => ({
   silent: silentNodes(state).length,
-  total: state.nodes.size,
+  total: heldNodes(state).length,
 });
 
 export interface GateOptions {
@@ -159,6 +167,24 @@ export function admit(
         // A prototype-key field lands in live state but vanishes from every
         // snapshot and export (audit). fold also defends; refuse at the door.
         throw new GateRejection(`"${p.field}" is not a usable field name`, e);
+      }
+    }
+
+    // Every date the log carries must be a real instant. `Intl.formatToParts`
+    // throws `RangeError: Invalid time value` on anything else, and the temporal
+    // projections read these fields unvalidated — so ONE malformed date used to
+    // throw out of the work surface, which is built before capture's handlers are
+    // registered, and killed the whole app with the data intact and unreachable.
+    // The projections are now defensive too, but bad data should not get in.
+    if (!isValidIso(e.at)) {
+      throw new GateRejection(`event "at" is not a real instant: ${JSON.stringify(e.at)}`, e);
+    }
+    for (const field of ['at', 'returnAt', 'endedAt', 'startedAt'] as const) {
+      const p = e.payload as Record<string, unknown> | null;
+      // `at` on the envelope is checked above; here it is the payload's own.
+      if (p && Object.hasOwn(p, field) && p[field] != null && !isValidIso(p[field])) {
+        throw new GateRejection(
+          `${e.kind} payload "${field}" is not a real instant: ${JSON.stringify(p[field])}`, e);
       }
     }
 

@@ -386,6 +386,7 @@ try {
 
   console.log('\nWork mode — Done records, and the item stops being offered');
   const doneTitle = await tpage.locator('#nextup-title').textContent();
+  const totalBefore = Number((await tpage.locator('#nextup-count').textContent() || '').match(/(\d+) things/)?.[1] ?? '1');
   await tpage.click('#nextup-done');
   await tpage.waitForTimeout(150);
   const logAfterDone = await tpage.evaluate(async () => {
@@ -398,8 +399,20 @@ try {
     });
   });
   is(logAfterDone.filter(k => k === 'done.marked').length, 1, 'exactly one done.marked was appended');
-  is(await tpage.locator('#nextup-title').textContent() !== doneTitle, true,
-    'the completed thing is no longer the one being offered');
+  // NOT "the title changed" — that passed even with the done-check deleted,
+  // because completing an item also moved the rotation (audit: THEATER). Ask the
+  // question that actually matters: is the completed thing GONE from the surface,
+  // and did the count fall?
+  // Scoped to what the surface OFFERS — the head and the list behind it. The
+  // live region is excluded on purpose: "Done: <thing>." naming what you just
+  // did is correct, and is not the thing still being offered.
+  const offeredText = await tpage.evaluate(() =>
+    [document.querySelector('#nextup-title')?.textContent ?? '',
+     document.querySelector('#nextup-behind')?.textContent ?? ''].join(' | '));
+  is(offeredText.includes(doneTitle || '\u0000'), false,
+    `the completed thing is gone from head AND from the list behind ("${doneTitle}")`);
+  const totalAfter = Number((await tpage.locator('#nextup-count').textContent() || '').match(/(\d+) things/)?.[1] ?? '1');
+  is(totalAfter, totalBefore - 1, `and the count fell (${totalBefore} -> ${totalAfter})`);
 
   console.log('\nWork mode — the gauge is a claim you can open');
   is(await tpage.locator('#coverage').isVisible(), false, 'the coverage list starts closed');
@@ -407,8 +420,14 @@ try {
   await tpage.click('#gauge');
   await tpage.waitForSelector('#coverage:not([hidden])');
   is(await tpage.getAttribute('#gauge', 'aria-expanded'), 'true', 'tapping opens it');
+  // NOT `rows > 0` — that passed with the list truncated to a single item
+  // (audit: THEATER). The gauge makes a NUMERIC claim and this list is that
+  // claim opened, so the two must agree exactly. This is the check that catches
+  // the gauge counting trashed nodes the list omits.
   const rows = await tpage.locator('.coverage-item').count();
-  is(rows > 0, true, `every held item is listed with when it returns (${rows} rows)`);
+  const gaugeText = await tpage.locator('#gauge').textContent();
+  const claimed = Number((gaugeText || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  is(rows, claimed, `the list itemises exactly what the gauge claims ("${gaugeText}" -> ${rows} rows)`);
   is((await tpage.locator('.coverage-when').first().textContent())?.length > 0, true,
     'and each row states its return in words');
 

@@ -99,14 +99,23 @@ export function makeRepeatEvents(
 
 /**
  * "Stop repeating." There is no event that un-sets an interval, and inventing
- * one would mean opening the closed vocabulary for something expressible without
- * it: an interval of 0 folds to `intervalDays = 0`, which `pressureOf` already
- * treats as "no cadence" and returns null for. The kind moves back so the item
- * stops appearing among the Upkeep chips.
+ * one would mean opening the closed vocabulary for something already expressible:
+ * an interval of 0 folds to `intervalDays = 0`, which `pressureOf` reads as "no
+ * cadence" and returns null for. The kind moves back so the item leaves the
+ * Upkeep chips.
+ *
+ * The `done.unmarked` is load-bearing, not tidying. An interval of 0 makes the
+ * item non-recurring, and a non-recurring item that has EVER been completed is
+ * finished for good — so stopping the repeat on something already ticked off
+ * once would silently retire it. Worse, before the guards agreed, such an item
+ * became un-completable and un-dismissable: it rode its old cure clock for ever
+ * and Done did nothing. Clearing the completion is what keeps it live and
+ * ordinary, and the audit found this exact shape.
  */
 export const stopRepeatEvents = (ctx: StampContext, node: string, toKind: NodeKind = 'action'): AppEvent[] => [
   base(ctx, 'upkeep.interval.set', node, { intervalDays: 0, comfortWindowDays: 0 }),
   base(ctx, 'node.kind.changed', node, { from: 'upkeep' as NodeKind, to: toKind }),
+  base(ctx, 'done.unmarked', node, {}),
 ];
 
 /** "I marked that done by mistake." Not silent-risk: the node keeps whatever

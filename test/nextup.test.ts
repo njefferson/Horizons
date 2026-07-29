@@ -10,7 +10,8 @@ import assert from 'node:assert/strict';
 
 import { fold, emptyState, type State, type NodeState } from '../src/fold.ts';
 import { pressureOf, isReadyAgain, pressureWords } from '../src/pressure.ts';
-import { nextUp, nextUpQueue, upkeepChips, BEHIND_CAP } from '../src/nextup.ts';
+import { nextUp, nextUpQueue, upkeepChips, workSurface, BEHIND_CAP } from '../src/nextup.ts';
+import { coverageGauge, heldNodes } from '../src/gate.ts';
 import { serialiseState } from '../src/snapshot.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -204,4 +205,154 @@ test('the display threshold is a presentation choice, not storage (ADR-0010)', (
   assert.equal(upkeepChips(s, NOW, TZ, 1).length, 0, 'hidden at threshold 1 — same stored data');
   const n: NodeState = s.nodes.get('mild')!;
   assert.equal(Object.hasOwn(n, 'pressure'), false, 'and pressure is nowhere on the node');
+});
+
+// --- audit fixes (Phase 3 adversarial pass) ---------------------------------
+
+test('a malformed date cannot throw out of a projection and kill the app (audit, severe)', () => {
+  // One bad `at` in the log used to throw RangeError out of the work surface —
+  // which is built before capture's handlers are registered — and took the whole
+  // app down with the data intact and unreachable.
+  const s = st(
+    ev('node.created', 'BAD', { nodeKind: 'action', title: 'corrupt' }),
+    ev('clock.set', 'BAD', { clockKind: 'due', at: '2026-08-32T00:00:00.000Z', source: 'import' }),
+    ev('node.created', 'OK', { nodeKind: 'action', title: 'fine' }),
+    ev('clock.set', 'OK', { clockKind: 'due', at: NOW, source: 'test' }),
+  );
+  assert.doesNotThrow(() => nextUpQueue(s, NOW, TZ), 'the queue survives bad data');
+  assert.doesNotThrow(() => upkeepChips(s, NOW, TZ), 'so do the chips');
+  assert.deepEqual(nextUpQueue(s, NOW, TZ).map(i => i.node.id), ['OK'],
+    'the good item is still offered; the bad one is simply not asking');
+});
+
+test('a NaN or infinite cadence yields no pressure and no words — never the loudest phrase', () => {
+  for (const bad of [{ intervalDays: NaN, comfortWindowDays: 2 },
+    { intervalDays: 7, comfortWindowDays: NaN },
+    { intervalDays: 7, comfortWindowDays: Infinity },
+    { intervalDays: Infinity, comfortWindowDays: 2 }]) {
+    const s = st(
+      ev('node.created', 'U', { nodeKind: 'upkeep', title: 'u' }),
+      ev('upkeep.interval.set', 'U', bad),
+      ev('done.marked', 'U', { at: '2026-01-01T12:00:00.000Z' }),
+    );
+    const p = pressureOf(s.nodes.get('U')!, NOW, TZ);
+    assert.equal(p, null, `${JSON.stringify(bad)} has no pressure`);
+    assert.equal(pressureWords(p), '', 'and says nothing, rather than "been a good while"');
+  }
+  assert.equal(pressureWords(NaN), '', 'a NaN never falls through to the loudest phrase');
+});
+
+test('an item cannot become un-completable and un-dismissable (audit, severe)', () => {
+  // intervalDays 0 counted as "recurring" for the finished-check but produced
+  // null pressure, so the item rode a stale cure clock for ever and Done did
+  // nothing. The two guards now ask the same question.
+  const s = st(
+    ev('node.created', 'Z', { nodeKind: 'upkeep', title: 'zombie' }),
+    ev('upkeep.interval.set', 'Z', { intervalDays: 0, comfortWindowDays: 0 }),
+    ev('clock.set', 'Z', { clockKind: 'review', at: '2026-06-01T12:00:00.000Z', source: 'gate' }),
+    ev('done.marked', 'Z', { at: NOW }),
+  );
+  assert.deepEqual(nextUpQueue(s, NOW, TZ).map(i => i.node.id), [],
+    'marking it done actually finishes it');
+});
+
+test('work never vanishes because one clock kind hid another (audit, severe)', () => {
+  // review today + due next month: the kind-precedence lookup showed only `due`,
+  // read it as "not arrived", and dropped the item off the surface entirely.
+  const s = st(
+    ev('node.created', 'A', { nodeKind: 'action', title: 'gate-clocked today' }),
+    ev('clock.set', 'A', { clockKind: 'review', at: NOW, source: 'gate:capture' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: '2026-08-30T00:00:00.000Z', source: 'detail' }),
+    ev('node.created', 'B', { nodeKind: 'action', title: 'start passed, due later' }),
+    ev('clock.set', 'B', { clockKind: 'start', at: '2026-07-01T12:00:00.000Z', source: 'test' }),
+    ev('clock.set', 'B', { clockKind: 'due', at: '2026-09-30T00:00:00.000Z', source: 'test' }),
+  );
+  assert.deepEqual(nextUpQueue(s, NOW, TZ).map(i => i.node.id).sort(), ['A', 'B'],
+    'both are asking, and neither disappeared');
+});
+
+test('altitude nodes are never offered as the next thing to do (law 4)', () => {
+  const s = st(
+    ...['goal', 'area', 'outcome', 'project'].flatMap((kind, i) => [
+      ev('node.created', `N${i}`, { nodeKind: kind, title: kind }),
+      ev('clock.set', `N${i}`, { clockKind: 'review', at: NOW, source: 'test' }),
+    ]),
+  );
+  assert.deepEqual(nextUpQueue(s, NOW, TZ).map(i => i.node.id), [],
+    'the runway is the only workspace — an area is not a thing you "do"');
+});
+
+test('a resume card must be due, and retires when spent or expired', () => {
+  const parked = st(
+    ev('resume.card.created', 'R', { forNode: 'X', cue: 'ferries' }),
+    ev('clock.set', 'R', { clockKind: 'park', at: '2026-12-25T00:00:00.000Z', source: 'test' }),
+  );
+  assert.deepEqual(nextUpQueue(parked, NOW, TZ).map(i => i.node.id), [],
+    'a card parked until Christmas does not lead the list in July');
+
+  const noClock = st(ev('resume.card.created', 'R', { forNode: 'X', cue: null }));
+  assert.deepEqual(nextUpQueue(noClock, NOW, TZ).map(i => i.node.id), [],
+    'and one with no clock is not offered for ever');
+
+  const spent = st(
+    ev('resume.card.created', 'R', { forNode: 'X', cue: 'c' }),
+    ev('clock.set', 'R', { clockKind: 'review', at: NOW, source: 'test' }),
+    ev('resume.card.spent', 'R', {}),
+  );
+  assert.deepEqual(nextUpQueue(spent, NOW, TZ).map(i => i.node.id), [],
+    'a thread already picked up is not still waiting');
+});
+
+test('a hard date outranks a resume card, whatever order the branches run in', () => {
+  const s = st(
+    ev('resume.card.created', 'AAA', { forNode: 'X', cue: 'c' }),
+    ev('clock.set', 'AAA', { clockKind: 'due', at: NOW, source: 'test' }),
+    ev('node.created', 'ZZZ', { nodeKind: 'action', title: 'appointment' }),
+    ev('clock.set', 'ZZZ', { clockKind: 'due', at: NOW, source: 'test' }),
+  );
+  assert.deepEqual(nextUpQueue(s, NOW, TZ).map(i => i.reason), ['hard-date', 'hard-date'],
+    'a resume card carrying a real date is tier 1, not tier 2');
+});
+
+test('the chips obey the same exclusions as Next-up (law 1 clause c)', () => {
+  const onMenu = st(
+    ev('node.created', 'M', { nodeKind: 'upkeep', title: 'menu upkeep' }),
+    ev('upkeep.interval.set', 'M', { intervalDays: 1, comfortWindowDays: 1 }),
+    ev('menu.item.added', 'M', { category: 'try' }),
+  );
+  assert.deepEqual(upkeepChips(onMenu, NOW, TZ).map(c => c.node.id), [],
+    'the Menu is a surface, not a demand — chips may not volunteer it either');
+
+  const inbox = st(
+    ev('capture.recorded', 'C', { text: 'unrouted', source: 'quick', sourceTags: [] }),
+    ev('node.kind.changed', 'C', { from: 'action', to: 'upkeep' }),
+    ev('upkeep.interval.set', 'C', { intervalDays: 1, comfortWindowDays: 1 }),
+  );
+  assert.deepEqual(upkeepChips(inbox, NOW, TZ).map(c => c.node.id), [],
+    'an unclarified item still belongs to triage');
+});
+
+test('the work surface never shows the same thing twice', () => {
+  const s = st(...upkeep('bins', 7, 1, '2026-07-01T12:00:00.000Z'));
+  const { up, chips } = workSurface(s, NOW, TZ);
+  const chipIds = new Set(chips.map(c => c.node.id));
+  assert.deepEqual(chips.map(c => c.node.id), ['bins'], 'it is a ready upkeep, so it is a chip');
+  assert.equal(up.head, null, 'and therefore NOT also the Next-up head');
+  for (const i of [up.head, ...up.behind].filter(Boolean)) {
+    assert.equal(chipIds.has((i as { node: { id: string } }).node.id), false, 'no overlap anywhere');
+  }
+});
+
+test('the gauge counts exactly what the coverage list itemises (audit)', () => {
+  const s = st(
+    ev('node.created', 'A', { nodeKind: 'action', title: 'a' }),
+    ev('clock.set', 'A', { clockKind: 'review', at: NOW, source: 't' }),
+    ev('node.created', 'B', { nodeKind: 'action', title: 'b' }),
+    ev('clock.set', 'B', { clockKind: 'review', at: NOW, source: 't' }),
+    ev('node.created', 'T', { nodeKind: 'action', title: 'trashed' }),
+    ev('node.trashed', 'T', {}),
+  );
+  assert.equal(coverageGauge(s).total, heldNodes(s).length,
+    'the number and the list are one definition — a claim you open must check out');
+  assert.equal(coverageGauge(s).total, 2, 'and a trashed node is not "held"');
 });

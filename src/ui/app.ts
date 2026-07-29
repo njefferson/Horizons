@@ -15,7 +15,7 @@ import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
-import { calendarDaysBetween } from '../time.ts';
+import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
 
@@ -73,6 +73,11 @@ function render(session: Session): void {
  *  milliseconds by 86_400_000, which says "today" at 23:00 about a clock two
  *  hours away — plainly tomorrow — and is an hour out on every DST day (V-13). */
 function friendly(iso: string, zone: string): string {
+  // A stored date that is not a real instant degrades to plain words rather than
+  // throwing. Before the zone-aware path this divided milliseconds and produced
+  // the harmless string "Invalid Date"; converting that degradation into a fatal
+  // throw was a regression, and it killed capture (audit).
+  if (!isValidIso(iso)) return 'held';
   const days = calendarDaysBetween(new Date(now()).toISOString(), iso, zone);
   if (days <= 0) return 'today';
   if (days === 1) return 'tomorrow';
@@ -86,14 +91,31 @@ async function main(): Promise<void> {
   const status = $('#status');
 
   input.value = await session.draft();
-  render(session);
+  // CONTAINED, like every later render. This one runs BEFORE the submit listener
+  // is attached, so a throw here left the form with no handler at all — and a
+  // form with no handler does a native GET navigation, which clears the input
+  // and destroys the typed thought with no error at all. That is the precise
+  // failure the try/catch further down was written to prevent; the first render
+  // was simply never given the same protection.
+  try { render(session); } catch { /* the shell still works; cards appear on next load */ }
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).
+  // Work mode first, so `triage`'s callback closes over an already-initialised
+  // binding rather than relying on no microtask running in between.
+  //
+  // CONTAINED: capture is the one thing that must always work, and this surface
+  // reads every stored date. One malformed date used to throw out of here —
+  // before the capture handlers below were even registered — and took the whole
+  // app down with the data intact and unreachable. The projections are defensive
+  // and the gate refuses bad dates now; this is the third lock.
+  let work: { refresh(): void } = { refresh() {} };
+  try {
+    work = mountWork(session, now, () => render(session));
+  } catch {
+    // Work mode is a surface. Capture is the promise.
+  }
   const triage = mountTriage(session, () => { render(session); work.refresh(); });
-
-  // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
-  const work = mountWork(session, now, () => render(session));
 
   // Three URL entrances, all landing in the same capture (ADR-0008):
   //  - ?capture=1     the manifest shortcut — just focus the empty line

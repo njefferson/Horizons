@@ -56,9 +56,13 @@ is a machine for generating quitting moments.
 - A passed *hard* date is a different thing from decay pressure and is handled by
   [ADR-0012](0012-no-past-bucket.md) — it raises a replan card, which is also
   not a failure state.
-- **A grep for `overdue`, `late`, `missed`, or `streak` in this repo should
-  return nothing outside this document and the vocabulary's prohibition.** That
-  is a CI check, not an intention.
+- **A grep for `overdue` or `streak` in `src/` returns nothing outside a
+  prohibition.** That is a CI check, not an intention (`.github/workflows/spine.yml`).
+  **Scope, stated accurately:** the gate covers those two words, in `src/` only —
+  an audit found this record claiming all four of `overdue/late/missed/streak`
+  across the whole repo, which the workflow has never done. `late` and `missed`
+  are governed by review, not by the gate. The law itself holds either way: no
+  such state, boolean or variable name exists.
 
 ## What would overturn it
 

@@ -9,9 +9,10 @@
 //      allowed to outrank it.
 //   2. RESUME CARDS — the thread you were already pulling. Picking up where you
 //      were is cheaper than starting something new, and for this audience the
-//      cost of a cold start is the whole problem (Phase 4 creates these; ranking
-//      already knows where they go, so they land in the right place the day they
-//      exist rather than needing this file reopened).
+//      cost of a cold start is the whole problem. Phase 4 creates these; ranking
+//      and retirement (spent/expired) are handled, but the cue and the pairing
+//      are not built yet, so this is not a finished feature — only a place kept
+//      honestly.
 //   3. PRESSURE — the decay primitive, highest first (ADR-0010).
 //
 // **"Not this" cycles freely and records nothing.** No event, no penalty, no
@@ -23,7 +24,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { pressureOf } from './pressure.ts';
-import { calendarDaysBetween } from './time.ts';
+import { calendarDaysBetween, isValidIso } from './time.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
  *  channel of B-01, and the honest answer to "why am I being shown this?". */
@@ -41,35 +42,61 @@ export interface NextUpItem {
 /** Kinds that can never be "the next thing to do". A waiting-for is someone
  *  else's move; the demand-free kinds refuse clocks by law and must not be
  *  dressed up as demands here either; a person/anchor/journal is not an action. */
-const NOT_ACTIONABLE = new Set(['waiting-for', 'aspiration', 'pebble', 'person', 'anchor', 'journal']);
+const NOT_ACTIONABLE = new Set([
+  'waiting-for', 'aspiration', 'pebble', 'person', 'anchor', 'journal',
+  // Altitude nodes. Product law 4: "levels push down; the user never climbs —
+  // the runway is the only workspace", and ADR-0013 makes altitude views
+  // inspection modes, not destinations. Offering an AREA called "Health" as the
+  // single next thing to do, with a Done button that writes `done.marked` on it,
+  // is the climbing task law 4 forbids — and a goal or an area cannot be "done"
+  // at all. They shape the ranking of the runway; they do not enter the queue.
+  'goal', 'area', 'outcome', 'project',
+]);
 
 /** Live, actionable, and not still sitting in the inbox. An unclarified capture
  *  belongs to triage — offering it here would be asking the same question twice,
  *  in a surface whose whole promise is that it has already decided for you. */
-function isCandidate(n: NodeState): boolean {
+function isCandidate(n: NodeState, nowIso: string, zone: string): boolean {
   if (n.trashed || n.mergedInto) return false;
   if (NOT_ACTIONABLE.has(n.kind)) return false;
   // On the Menu is a surface, not a demand (law 1 clause c). Never volunteered.
   if (n.onMenu) return false;
   // Captured but not yet routed = triage's, not ours.
   if (n.captured && n.route === null) return false;
+  // A spent or expired resume card is a thread already picked up, or one that
+  // went cold. Either way it is not still waiting for you.
+  if (n.resumeSpent) return false;
   // DONE AND NOT RECURRING = finished. The gate re-clocks a `done.marked` to
   // keep the node non-silent (law 1 does not exempt completed work), so without
-  // this a finished one-off keeps its clock and is offered again for ever —
-  // caught by the smoke walk. An UPKEEP is the opposite case: `lastDone` is the
-  // decay primitive's input, and it becomes askable again on its own schedule,
-  // which is exactly what pressure computes.
-  const recurring = n.intervalDays != null && n.comfortWindowDays != null;
+  // this a finished one-off keeps its clock and is offered again for ever.
+  //
+  // "Recurring" is asked of the SAME predicate that computes pressure. Two
+  // different guards (`!= null` here, `<= 0` there) disagreed about an interval
+  // of 0: it counted as recurring, so the finished-check let it through, but its
+  // pressure was null, so it rode a stale cure clock in the `ready` tier for
+  // ever and marking it done did nothing. An item that can be neither completed
+  // nor dismissed is the exact failure this app exists to prevent.
+  const recurring = pressureOf(n, nowIso, zone) !== null;
   if (n.lastDone != null && !recurring) return false;
   return true;
 }
 
-/** The soonest clock that represents a real demand. `park` is deliberately not
- *  here: a parked thing is being held away from you on purpose. */
-const demandClock = (n: NodeState): { kind: string; at: string } | null => {
-  const c = n.clocks.due ?? n.clocks.start ?? n.clocks.suspense ?? n.clocks.review ?? null;
-  return c ? { kind: c.kind, at: c.at } : null;
-};
+/**
+ * Has ANY demanding clock come round? `park` is deliberately excluded: a parked
+ * thing is being held away from you on purpose.
+ *
+ * This asks about every clock, not a favourite one. The first version read
+ * `due ?? start ?? suspense ?? review` — a precedence by KIND, not by time —
+ * while claiming to be "the soonest clock". So an item created today (gate-
+ * clocked for review today) that was then given a due date next month showed
+ * only its `due`, read as "not arrived", and **vanished from the work surface
+ * entirely** while the coverage gauge still read 0 silent. Work disappearing is
+ * the worst thing this app can do, so the question is now asked of all of them.
+ */
+const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
+  Object.values(n.clocks).some(c =>
+    c != null && c.kind !== 'park' && isValidIso(c.at) &&
+    calendarDaysBetween(nowIso, c.at, zone) <= 0);
 
 /** A hard date is `due` or `suspense` — the immovable kinds. A `review` clock is
  *  the app's own "bring this back", which is soft by construction. */
@@ -87,19 +114,27 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
   const items: NextUpItem[] = [];
 
   for (const n of state.nodes.values()) {
-    if (!isCandidate(n)) continue;
+    if (!isCandidate(n, nowIso, zone)) continue;
 
     const p = pressureOf(n, nowIso, zone);
-    const clock = demandClock(n);
-    const daysToClock = clock ? calendarDaysBetween(nowIso, clock.at, zone) : null;
-    const arrived = daysToClock !== null && daysToClock <= 0;
+    const arrived = arrivedClock(n, nowIso, zone);
 
-    if (n.kind === 'resume-card') {
-      items.push({ node: n, reason: 'resume', pressure: p, words: 'where you left off' });
-      continue;
-    }
+    // A hard date outranks everything, INCLUDING a resume card — the tier test
+    // comes first for every kind. A resume card carrying an arrived due date was
+    // previously misfiled as tier 2 purely because its branch ran first.
     if (arrived && hasHardDate(n)) {
       items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here' });
+      continue;
+    }
+    if (n.kind === 'resume-card') {
+      // A resume card still has to be DUE. Without this a card parked until
+      // Christmas led the list in July, above everything — and one with no clock
+      // at all was offered for ever. `demandClock`'s own comment said a parked
+      // thing is held away from you on purpose; the resume branch used to skip
+      // that check entirely.
+      if (arrived) {
+        items.push({ node: n, reason: 'resume', pressure: p, words: 'where you left off' });
+      }
       continue;
     }
     if (p !== null && p >= 0) {
@@ -107,7 +142,10 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
       continue;
     }
     if (arrived) {
-      items.push({ node: n, reason: 'ready', pressure: p, words: 'back with you today' });
+      // "Back with you today" was a falsehood for any clock older than today —
+      // and gate cure clocks never move, so that was the NORMAL case, not an
+      // edge one (Doctrine §5: no copy the data does not support).
+      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting' });
       continue;
     }
     // Not yet asking for anything. Correct outcome: it stays quiet.
@@ -156,15 +194,49 @@ export function nextUp(state: State, nowIso: string, zone: string, cycle = 0): N
   };
 }
 
-/** Build-plan item 20: Upkeep chips — the recurring things that have come round,
- *  most insistent first. Separate from Next-up because an Upkeep is a different
- *  promise: small, repeating, and never a failure to have not done yet. */
+/**
+ * Build-plan item 20: Upkeep chips — the recurring things that have come round,
+ * most insistent first. Separate from Next-up because an Upkeep is a different
+ * promise: small, repeating, and never a failure to have not done yet.
+ *
+ * Separate PROJECTION, but the same eligibility. The first version filtered only
+ * on kind and trashed, so it volunteered an upkeep sitting on the Menu — which
+ * Next-up correctly refuses, because the Menu is a surface and not a demand
+ * (law 1 clause c) — and an unclarified inbox upkeep that still belonged to
+ * triage. A surface that is exempt from the exclusions is not a second view of
+ * the data; it is a hole in them.
+ */
 export function upkeepChips(state: State, nowIso: string, zone: string, minPressure = 0): NextUpItem[] {
   return [...state.nodes.values()]
-    .filter(n => n.kind === 'upkeep' && !n.trashed && !n.mergedInto)
+    .filter(n => n.kind === 'upkeep' && isCandidate(n, nowIso, zone))
     .map(n => ({ node: n, pressure: pressureOf(n, nowIso, zone) }))
     .filter((x): x is { node: NodeState; pressure: number } =>
-      x.pressure !== null && x.pressure >= minPressure)
+      x.pressure !== null && Number.isFinite(x.pressure) && x.pressure >= minPressure)
     .sort((a, b) => b.pressure - a.pressure || (a.node.id < b.node.id ? -1 : 1))
     .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again' }));
+}
+
+/**
+ * What the work surface should actually render: Next-up with the chip items
+ * REMOVED from it.
+ *
+ * A ready upkeep qualifies for both projections, and the first version rendered
+ * both sections from the same state with no dedup — so the same title appeared
+ * twice on one screen, with the same words and two separate Done buttons writing
+ * to the same node. For a COGA-informed surface whose entire promise is "one
+ * thing", showing the one thing twice is a defect, not a redundancy.
+ */
+export function workSurface(state: State, nowIso: string, zone: string, cycle = 0): {
+  up: NextUp; chips: NextUpItem[];
+} {
+  const chips = upkeepChips(state, nowIso, zone);
+  const chipIds = new Set(chips.map(c => c.node.id));
+  const queue = nextUpQueue(state, nowIso, zone).filter(i => !chipIds.has(i.node.id));
+  if (queue.length === 0) return { up: { head: null, behind: [], total: 0 }, chips };
+  const start = ((cycle % queue.length) + queue.length) % queue.length;
+  const rotated = [...queue.slice(start), ...queue.slice(0, start)];
+  return {
+    up: { head: rotated[0] ?? null, behind: rotated.slice(1, 1 + BEHIND_CAP), total: queue.length },
+    chips,
+  };
 }

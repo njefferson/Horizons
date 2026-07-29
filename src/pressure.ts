@@ -24,7 +24,7 @@
 // PURE. `now` is an argument, like everywhere else.
 
 import type { NodeState } from './fold.ts';
-import { calendarDaysBetween } from './time.ts';
+import { calendarDaysBetween, isValidIso } from './time.ts';
 
 /**
  * Continuous pressure for an item that carries the primitive, or `null` for one
@@ -48,8 +48,18 @@ import { calendarDaysBetween } from './time.ts';
  * pressure. That is exactly what dividing by the item's own window expresses.
  */
 export function pressureOf(n: NodeState, nowIso: string, zone: string): number | null {
-  if (n.intervalDays == null || n.comfortWindowDays == null) return null;
-  if (n.intervalDays <= 0 || n.comfortWindowDays <= 0) return null;
+  // `Number.isFinite`, not `<= 0`: NaN passes every comparison (`NaN <= 0` is
+  // false), so a malformed payload used to sail through the guard and produce a
+  // NaN pressure — which then poisoned the sort comparators and fell through
+  // every branch of pressureWords to the LOUDEST phrase in the app. An item with
+  // no valid cadence shouting "been a good while" is precisely the shame surface
+  // ADR-0010 exists to refuse. Infinity is excluded for the same reason.
+  if (!Number.isFinite(n.intervalDays) || !Number.isFinite(n.comfortWindowDays)) return null;
+  if (n.intervalDays! <= 0 || n.comfortWindowDays! <= 0) return null;
+  // A stored date that is not a real instant must not throw out of a projection
+  // and take the app down with it.
+  if (n.lastDone != null && !isValidIso(n.lastDone)) return null;
+  if (!isValidIso(nowIso)) return null;
 
   // Never done is READY, not infinitely late. An item you have not got to yet
   // has not accumulated insistence — it is simply available. Anything else would
@@ -60,7 +70,7 @@ export function pressureOf(n: NodeState, nowIso: string, zone: string): number |
   // Calendar days, not elapsed milliseconds: "every 7 days" means seven of the
   // user's days, and a DST changeover must not add an hour of pressure (V-13).
   const elapsed = calendarDaysBetween(n.lastDone, nowIso, zone);
-  return (elapsed - n.intervalDays) / n.comfortWindowDays;
+  return (elapsed - n.intervalDays!) / n.comfortWindowDays!;
 }
 
 /** True once an item has come round again. The ONLY name this state has. */
@@ -75,7 +85,9 @@ export const isReadyAgain = (p: number | null): boolean => p !== null && p >= 0;
  * ("11 days late") only reads as an accusation.
  */
 export function pressureWords(p: number | null): string {
-  if (p === null) return '';
+  // `null` AND non-finite: a NaN used to fall through every comparison below to
+  // the last line — the loudest phrase — for an item with no valid cadence.
+  if (p === null || !Number.isFinite(p)) return '';
   if (p < -0.5) return 'settled';
   if (p < 0) return 'coming round';
   if (p < 1) return 'ready again';

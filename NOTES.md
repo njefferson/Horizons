@@ -253,6 +253,38 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **The Phase 3 audit (three skeptics) found a defect that could brick the
+  app, and it shipped as 0.5.1 the same day.** 96 unit tests now, all 8 gates green.
+  · **Severe, and live in production when found:** one malformed date anywhere in the log
+  threw `RangeError` out of the render path — which runs *before* capture's submit listener
+  is attached. A form with no submit listener does a **native GET navigation**, so anything
+  typed in that state was cleared and destroyed with no error, permanently, across reloads.
+  The data was intact and unreachable. It was a **regression** introduced by the V-13 fix:
+  the old `friendly()` divided milliseconds and degraded to the harmless string
+  "Invalid Date". Three locks now — `isValidIso` at every caller, the gate refusing
+  non-instant dates at the door, and try/catch around every render including the first.
+  · **Un-completable items:** two guards disagreed about an interval of 0, so an item could
+  ride a stale cure clock for ever while Done did nothing. One predicate now.
+  · **Vanishing work:** `due ?? start ?? suspense ?? review` was a precedence by *kind*
+  named "soonest", so an item with a review-today and a due-next-month dropped off the
+  surface entirely. Any demanding clock now counts.
+  · **Law 4:** goals, areas, outcomes and projects were offered as the next thing to do,
+  with a Done button. The runway is the only workspace.
+  · Chips ignored the Menu and inbox exclusions (law 1 clause c); a ready upkeep rendered
+  **twice** on one screen with two Done buttons; the gauge counted trashed nodes its own
+  list omitted; NaN cadence produced the *loudest* phrase in the app; resume cards could
+  never retire; focus stranded on `<body>`; failures were announced only to screen readers
+  ([F-08](ACCESSIBILITY.md)).
+  · **Two of my own gate checks were proven THEATER** and rebuilt: "the completed thing is
+  no longer offered" passed with the fix deleted, and its comment falsely credited the smoke
+  walk; "every held item is listed" only asserted `rows > 0` and passed with the list
+  truncated to one. Both now ask the question that matters.
+  · **Two false claims of mine corrected:** ADR-0030 said ranking "already knows where
+  resume cards go" (nothing could retire one); `time.ts` justified its DST shortcut with
+  "transitions happen between 01:00 and 03:00 in every zone", which an enumeration of all
+  15,887 IANA transitions 1990–2040 disproved — Nuuk and Scoresbysund shift at 23:00, and
+  Santiago falls back over midnight. The overlap is now resolved to the later instant and
+  checked against an independent bisection oracle over 10,220 zone-days.
 - **2026-07-29** — **Phase 3 (work mode) is building on `staging`: the app is now worth
   opening in the morning (0.5.0 CAPABILITY, [ADR-0030](docs/adr/0030-work-mode.md)).**
   It opens with **one thing to do**, chosen by a fixed precedence — hard landscape >

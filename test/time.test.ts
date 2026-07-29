@@ -9,7 +9,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { endOfLocalDay, localDayKey, calendarDaysBetween, localParts } from '../src/time.ts';
+import { endOfLocalDay, localDayKey, calendarDaysBetween, localParts, isValidIso } from '../src/time.ts';
+import { admit } from '../src/gate.ts';
+import { emptyState } from '../src/fold.ts';
 
 const DENVER = 'America/Denver';
 
@@ -31,6 +33,60 @@ test('end of local day lands at 23:59:59 wall time, in every zone tried', () => 
     const p = localParts(end, tz);
     assert.deepEqual([p.hour, p.minute, p.second], [23, 59, 59], `${tz} reads 23:59:59`);
   }
+});
+
+/** An INDEPENDENT oracle: bisect the epoch for the last instant whose local day
+ *  key still matches. It shares no arithmetic with time.ts — no offsets, no
+ *  formatters in common — so agreeing with it is evidence, not a tautology. */
+const trueEndOfDay = (dayKey: string, tz: string): number => {
+  const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const [y, m, d] = dayKey.split('-').map(Number) as [number, number, number];
+  let lo = Date.UTC(y, m - 1, d) - 36 * 3_600_000;
+  let hi = Date.UTC(y, m - 1, d) + 36 * 3_600_000;
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (fmt.format(new Date(mid)) <= dayKey) lo = mid; else hi = mid;
+  }
+  return lo;
+};
+
+test('end of local day is the LAST second of that day — including where 23:59:59 is ambiguous or absent', () => {
+  // The earlier version of this suite asserted "reads 23:59:59 in every zone",
+  // which is not the real contract and is FALSE in two zones: America/Nuuk and
+  // America/Scoresbysund shift at local 23:00 -> 00:00, so on those days
+  // 23:59:59 does not exist at all. Meanwhile Santiago and Nuuk fall back OVER
+  // midnight, so 23:59:59 happens twice and picking the first ended the day an
+  // hour early, once a year. The invariant that actually matters is: the instant
+  // returned is inside the named local day, and within its final second.
+  const zones = ['America/Santiago', 'America/Nuuk', 'America/Scoresbysund', 'America/Coyhaique',
+    DENVER, 'Africa/Cairo', 'Australia/Lord_Howe', 'Pacific/Chatham', 'Pacific/Kiritimati',
+    'Australia/Sydney', 'Asia/Tehran', 'Europe/London', 'UTC'];
+  let checked = 0;
+  for (const tz of zones) {
+    for (let day = 0; day < 730; day++) {                   // all of 2026 and 2027
+      const probe = new Date(Date.UTC(2026, 0, 1) + day * 86_400_000).toISOString();
+      const key = localDayKey(probe, tz);
+      const got = Date.parse(endOfLocalDay(probe, tz));
+      assert.equal(localDayKey(new Date(got).toISOString(), tz), key, `${tz} ${key}: inside its own day`);
+      const truth = trueEndOfDay(key, tz);
+      assert.ok(got <= truth && truth - got < 1000,
+        `${tz} ${key}: got ${new Date(got).toISOString()}, true end ${new Date(truth).toISOString()}`);
+      checked++;
+    }
+  }
+  assert.ok(checked > 9000, `swept ${checked} zone-days`);
+});
+
+test('the two named DST pathologies, called out by name', () => {
+  // Fall back over midnight: 23:59:59 occurs twice; the day ends at the second.
+  const santiago = endOfLocalDay('2026-04-04T12:00:00.000Z', 'America/Santiago');
+  assert.equal(Date.parse(santiago), trueEndOfDay('2026-04-04', 'America/Santiago') - 999,
+    'Santiago ends its day at the LATER of the two 23:59:59s');
+  // Spring forward at 23:00: 23:59:59 never happens, and the day ends at 22:59:59.
+  const nuuk = endOfLocalDay('2026-03-28T12:00:00.000Z', 'America/Nuuk');
+  assert.equal(localDayKey(nuuk, 'America/Nuuk'), '2026-03-28', 'still inside the 28th');
+  assert.ok(Date.parse(nuuk) <= trueEndOfDay('2026-03-28', 'America/Nuuk'),
+    'and never past the end of it, though 23:59:59 does not exist that day');
 });
 
 test('plusDays counts calendar days across a DST changeover, not 86.4M ms', () => {
@@ -89,4 +145,33 @@ test('endOfLocalDay is idempotent — the end of a day is in that day', () => {
     const end = endOfLocalDay('2026-07-29T02:30:00.000Z', tz);
     assert.equal(endOfLocalDay(end, tz), end, `${tz}: applying it twice changes nothing`);
   }
+});
+
+test('bad input degrades or is refused — it never throws out of a projection (audit, severe)', () => {
+  // One malformed stored date used to throw RangeError out of the render path,
+  // which runs before capture's submit listener is attached — and a form with no
+  // submit listener does a NATIVE GET NAVIGATION, clearing the input and
+  // destroying the typed thought with no error at all. The data was intact and
+  // permanently unreachable. Three locks now: isValidIso at the callers, the
+  // gate refusing bad dates, and try/catch around every render.
+  assert.equal(isValidIso('2026-08-32T00:00:00.000Z'), false, 'a 32nd of August is not an instant');
+  assert.equal(isValidIso('whenever'), false);
+  assert.equal(isValidIso(''), false);
+  assert.equal(isValidIso(null), false);
+  assert.equal(isValidIso(undefined), false);
+  assert.equal(isValidIso(12345), false, 'a number is not an ISO string');
+  assert.equal(isValidIso('2026-07-29T18:00:00.000Z'), true);
+});
+
+test('the gate refuses a date that is not a real instant, so it cannot land at all', () => {
+  const bad = {
+    id: 'x1', vault: 'personal', at: '2026-07-29T18:00:00.000Z', device: 'd0', seq: 0,
+    kind: 'clock.set', node: 'N', payload: { clockKind: 'due', at: 'whenever', source: 'import' },
+  } as unknown as Parameters<typeof admit>[0][number];
+  assert.throws(() => admit([bad], emptyState()), /not a real instant/,
+    'the door is shut on the whole class');
+
+  const badEnvelope = { ...bad, at: 'nonsense', payload: { clockKind: 'due', at: '2026-07-29T18:00:00.000Z', source: 't' } } as typeof bad;
+  assert.throws(() => admit([badEnvelope], emptyState()), /not a real instant/,
+    'including the envelope’s own timestamp');
 });

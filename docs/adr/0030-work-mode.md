@@ -29,13 +29,27 @@ and a DST changeover adds no pressure.
 | 1 | Hard landscape (`due`/`suspense` arrived) | An appointment does not negotiate with a plant that wants watering |
 | 2 | Resume cards | Picking up a thread beats a cold start, and cold starts are the whole problem |
 | 3 | Pressure, highest first | The decay primitive |
-| 4 | Anything else whose clock arrived | It said it would come back today |
+| 4 | Anything else whose clock arrived | It said it would come back |
 
-Ranking already knows where resume cards go, though Phase 4 creates them — so
-they land correctly the day they exist rather than needing this file reopened.
+"Whose clock arrived" means **any** demanding clock (`park` excluded), not a
+favourite one. Reading `due ?? start ?? suspense ?? review` was a precedence by
+*kind* wearing the name "soonest": an item gate-clocked for review today and then
+given a due date next month showed only its `due`, read as not-arrived, and
+**vanished from the work surface entirely** while the gauge still read 0 silent.
+Work disappearing is the worst thing this app can do.
+
 The order is **total** (ties broken by id), so the same state always produces the
 same list; a surface that reshuffles between renders cannot be trusted to have
 chosen.
+
+**Correction (0.5.1).** This record originally claimed ranking "already knows
+where resume cards go… rather than needing this file reopened". That was false
+and the audit proved it: `resume.card.spent` and `resume.card.expired` were not
+folded at all, so no card could ever retire; a card with no clock was offered for
+ever; one parked until Christmas led the list in July; and a card carrying a real
+date was misfiled below tier 1 purely because its branch ran first. All four are
+fixed, and the retirement latch is folded — but the honest statement is that the
+tier is *reserved and tested*, not that the feature was free.
 
 **3 · "Not this" records nothing.** No event, no field, no persistence — the
 cycle index lives in memory and dies with the page.
@@ -46,6 +60,9 @@ threshold is a *parameter of the projection*, not a stored value.
 
 **5 · The coverage gauge is a button.** Its number is a claim; tapping it opens
 the itemised list — every held item and when it returns — that backs the claim.
+Both read **one** definition (`heldNodes`): the gauge previously counted trashed
+and merged nodes the list omitted, so it said "3 held" over a list of 2. A claim
+the user is invited to open must check out, or it is worse than no claim.
 
 ## Why
 

@@ -329,6 +329,23 @@ Status: **FIXED (0.5.0)** — a global `[hidden] { display: none !important }` n
 leads `app.css`, so no future `display` rule can reintroduce it, and the smoke
 walk asserts the list starts closed and that `aria-expanded` tracks it.
 
+### F-08 · Finishing the last item stranded focus on `<body>`; failures were announced but invisible
+Found: 2026-07-29 · Phase 3 adversarial audit
+Rule: WCAG 2.4.3 Focus Order; Doctrine §5 (honesty) for the second half
+Detail: two defects in the same surface. (1) `work.ts` moved focus only
+`if (!REGION.hidden)` — but the region hides *precisely because* the last item was
+completed, so finishing the final thing left focus on `<body>`. `clarify.ts`
+already handled the identical case with a fallback to the capture line; work mode
+did not copy it across, and neither did the a11y gate, so the one check that would
+have caught it was the one not written. (2) A failed write was reported only into
+`#nextup-live`, which is `visually-hidden` (measured 0×0) — a sighted user tapped
+Done, saw nothing change, and had no way to learn the write had failed, while
+capture puts the identical failure in the visible `#status`.
+Status: **FIXED (0.5.1)** — `restoreFocus()` falls back to `#capture` when the
+region hides, and failures are written to both the live region and the visible
+status line. An in-flight guard also stops a double-tap recording the same action
+twice.
+
 Format:
 
 ```

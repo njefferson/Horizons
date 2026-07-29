@@ -14,7 +14,8 @@
 
 import type { Session } from './session.ts';
 import type { AppEvent } from '../events.ts';
-import { nextUp, upkeepChips, type NextUpItem } from '../nextup.ts';
+import { heldNodes } from '../gate.ts';
+import { workSurface, type NextUpItem } from '../nextup.ts';
 import { pressureWords } from '../pressure.ts';
 import { calendarDaysBetween } from '../time.ts';
 
@@ -65,32 +66,66 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
   // app promised not to keep.
   let cycle = 0;
   let current: NextUpItem | null = null;
+  // One write at a time. Without this a double-tap wrote done.marked twice for
+  // the same node — the log recording an action the user took once, twice.
+  // Capture solves the same double-tap by clearing its input synchronously
+  // (app.ts); this surface has no input to clear, so it holds a flag.
+  let busy = false;
+  /** Ids declined this session. In memory only — nothing about a skip is ever
+   *  written down, which is the whole point (ADR-0030). */
+  const declined = new Set<string>();
+
+  // Failures must be VISIBLE, not only announced. #nextup-live is
+  // visually-hidden, so a sighted user tapped Done, saw nothing change, and had
+  // no way to learn the write failed — while capture puts the identical failure
+  // in the visible #status. Say it in both places.
+  const say = (msg: string, alsoVisible = false): void => {
+    LIVE.textContent = msg;
+    if (alsoVisible) {
+      const status = document.querySelector<HTMLElement>('#status');
+      if (status) status.textContent = msg;
+    }
+  };
 
   const nowIso = (): string => new Date(now()).toISOString();
 
+  /** Put focus somewhere real after an action removes the control it was on. The
+   *  region hides precisely BECAUSE the last item was completed, so the guard has
+   *  to have an else — without one, finishing the last thing stranded focus on
+   *  <body> (WCAG 2.4.3). clarify.ts already did this correctly; this file did
+   *  not copy it across, and neither did the a11y gate. */
+  const restoreFocus = (): void => {
+    if (!REGION.hidden) HEADING.focus();
+    else document.querySelector<HTMLElement>('#capture')?.focus();
+  };
+
   const markDone = async (): Promise<void> => {
-    if (!current) return;
+    if (!current || busy) return;
+    busy = true;
     const node = current.node.id;
     const label = current.node.title;
     try {
       await session.commit(ctx => doneEvents(ctx, node));
-      LIVE.textContent = `Done: ${label}.`;
-      // A completed item should not be replaced by the same one; the fold has
-      // moved it, so the next refresh naturally offers the next thing.
-      cycle = 0;
+      say(`Done: ${label}.`);
     } catch (err) {
-      LIVE.textContent = `Couldn’t record that — ${(err as Error).message}`;
+      say(`Couldn’t record that — ${(err as Error).message}`, true);
+    } finally {
+      busy = false;
     }
-    onChange();
-    refresh();
-    if (!REGION.hidden) HEADING.focus();
+    // A render bug must not contradict a landed write (the lesson app.ts records).
+    try { onChange(); refresh(); } catch { /* the next load renders it */ }
+    restoreFocus();
   };
 
   const skip = (): void => {
-    cycle += 1;                       // nothing else happens. That is the point.
+    // Remember WHICH items were declined, not how many times. A numeric index
+    // over a changing queue threw the user back to the top the moment anything
+    // completed, and handed them the item they declined first.
+    if (current) declined.add(current.node.id);
+    cycle += 1;
     refresh();
-    LIVE.textContent = current ? `Showing ${current.node.title} instead.` : 'Nothing else is asking.';
-    if (!REGION.hidden) HEADING.focus();
+    say(current ? `Showing ${current.node.title} instead.` : 'Nothing else is asking.');
+    restoreFocus();
   };
 
   doneBtn.addEventListener('click', () => void markDone());
@@ -116,7 +151,17 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
   function refresh(): void {
     const state = session.state();
     const iso = nowIso();
-    const up = nextUp(state, iso, session.zone, cycle);
+    // workSurface removes the chip items from Next-up, so a ready upkeep is not
+    // rendered twice on one screen with two Done buttons writing to one node.
+    const { up: all, chips: ups } = workSurface(state, iso, session.zone, 0);
+    // Prefer something not yet declined this session; if everything has been,
+    // start again from the top rather than showing nothing.
+    const fresh = [all.head, ...all.behind].filter(Boolean)
+      .filter(i => !declined.has((i as NextUpItem).node.id)) as NextUpItem[];
+    const head = fresh[0] ?? all.head;
+    const behind = (fresh.length > 1 ? fresh.slice(1) : all.behind)
+      .filter(i => i.node.id !== head?.node.id);
+    const up = { head, behind, total: all.total };
     current = up.head;
 
     if (up.head) {
@@ -143,8 +188,8 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
       BEHIND.replaceChildren();
     }
 
-    // Upkeep chips (item 20).
-    const ups = upkeepChips(state, iso, session.zone);
+    // Upkeep chips (item 20) — already computed above, and already removed from
+    // the Next-up queue.
     UPKEEP.hidden = ups.length === 0;
     CHIPS.replaceChildren(...ups.map(item => {
       const li = el('li');
@@ -164,9 +209,8 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
     }));
 
     // The coverage list (item 21) — the gauge's claim, itemised and checkable.
-    const held = [...state.nodes.values()]
-      .filter(n => !n.trashed && !n.mergedInto)
-      .sort((a, b) => (a.id < b.id ? 1 : -1));
+    // Both read `heldNodes`, so opening the claim can never contradict it.
+    const held = [...heldNodes(state)].sort((a, b) => (a.id < b.id ? 1 : -1));
     COVERAGE.replaceChildren(...held.map(n => {
       const li = el('li', 'coverage-item');
       li.append(el('span', 'coverage-title', n.title || '(untitled)'));

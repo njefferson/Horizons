@@ -29,6 +29,21 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.5.1',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      'Fixed a fault that could stop Quietkeep opening at all. If a single date in your data was malformed, the app failed to start and — worse — anything you typed while it was in that state was lost silently. Your writing was always safe on the device; it just could not be reached. It now starts regardless, and refuses to record a broken date in the first place.',
+      'Something you finished can no longer come back as though you had not done it, and an item can no longer get into a state where neither finishing nor dismissing it did anything.',
+      'Work can no longer disappear from the day’s list because it had two dates on it.',
+      'The same thing is never shown to you twice on one screen.',
+      'Tapping to see everything you are holding now lists exactly as many things as the count claims.',
+      'If saving fails, you are told so where you can see it, rather than only being told by a screen reader.',
+      'Finishing the last thing on the list leaves the keyboard somewhere sensible instead of nowhere.',
+      'Areas and goals are no longer offered as though they were a task you could tick off.',
+    ],
+  },
+  {
     triplet: '0.5.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

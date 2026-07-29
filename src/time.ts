@@ -40,6 +40,20 @@ export interface LocalParts {
   hour: number; minute: number; second: number;
 }
 
+/**
+ * Is this a real instant? `Intl.formatToParts` throws `RangeError: Invalid time
+ * value` on an invalid Date, and every projection here feeds it unvalidated
+ * payload data — so one malformed `at` in the log (a hand-edited import, a
+ * partially corrupt file) threw out of the work surface, which is constructed
+ * BEFORE capture's handlers are registered, and killed the whole app with the
+ * data intact and unreachable. Capture is the one thing that must always work.
+ *
+ * Callers that read stored dates must check this first; the gate refuses new
+ * events carrying anything else, so this is the belt for data already landed.
+ */
+export const isValidIso = (iso: unknown): iso is string =>
+  typeof iso === 'string' && Number.isFinite(Date.parse(iso));
+
 /** The wall-clock reading a person in `tz` would see at this instant. */
 export function localParts(iso: string, tz: string): LocalParts {
   const p: Record<string, string> = {};
@@ -68,16 +82,48 @@ function offsetMsAt(instantMs: number, tz: string): number {
  * Two passes, because the offset depends on the instant we are solving for: the
  * first guess uses the offset at the naive instant, the second uses the offset
  * at the corrected one, which is the fixed point everywhere except inside a DST
- * transition. In the spring-forward gap the named wall time does not exist and
- * this lands on the far side of the jump; in the autumn overlap it resolves
- * deterministically to one of the two. Neither matters for the only wall times
- * this app names — 23:59:59, and midnight — since transitions happen between
- * 01:00 and 03:00 in every zone that has them.
+ * transition.
+ *
+ * **A previous version of this comment claimed transitions "happen between 01:00
+ * and 03:00 in every zone that has them", and used that to wave the edge cases
+ * away. That is simply false** — an audit enumerated all 15,887 offset
+ * transitions in the 418 IANA zones from 1990–2040 and found several that cross
+ * 23:59:59, the one wall time this function is actually asked for:
+ * `America/Nuuk` and `America/Scoresbysund` shift at local 23:00→00:00,
+ * `America/Santiago` and `America/Coyhaique` fall back over midnight, and
+ * `Africa/Cairo` transitions at 23:59:59 too. The conclusion survived; the
+ * reasoning did not, and a false justification is worse than none because the
+ * next reader trusts it.
+ *
+ * So the cases are handled rather than dismissed:
+ *
+ * - **Autumn overlap** (the wall time happens twice): resolve to the LATER
+ *   instant, by taking the smaller of the offsets either side. The end of a day
+ *   is its last second, and picking the earlier one ended the day an hour early,
+ *   once a year, in Santiago and Nuuk.
+ * - **Spring-forward gap** (the wall time never happens): the fixed point lands
+ *   on the far side of the jump, which is the first instant of the following
+ *   local time — still inside the day it names, which is what callers rely on.
  */
 function instantFromWallTime(p: LocalParts, tz: string): string {
   const naive = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
   let ms = naive - offsetMsAt(naive, tz);
   ms = naive - offsetMsAt(ms, tz);
+  // Overlap resolution: if the hour after this instant carries a different
+  // offset, the named wall time is ambiguous; the smaller offset is the later
+  // instant, which is the one that genuinely ends the day.
+  const alt = offsetMsAt(ms + 3_600_000, tz);
+  const here = offsetMsAt(ms, tz);
+  if (alt !== here) {
+    const candidate = naive - Math.min(here, alt);
+    // Only accept it if it still reads as the wall time we asked for — in a gap
+    // it will not, and the fixed point above is the right answer there.
+    const back = localParts(new Date(candidate).toISOString(), tz);
+    if (back.hour === p.hour && back.minute === p.minute && back.second === p.second &&
+        back.day === p.day && back.month === p.month && back.year === p.year) {
+      ms = candidate;
+    }
+  }
   return new Date(ms).toISOString();
 }
 
