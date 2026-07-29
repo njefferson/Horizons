@@ -11,7 +11,9 @@
 //   node tools/smoke.mjs
 
 import { chromium } from 'playwright-core';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { serve } from './serve.mjs';
 import { CURRENT } from '../src/ui/changelog.ts';
 
@@ -945,6 +947,91 @@ try {
   is((await tpage.locator('#calendar-note').textContent())?.startsWith('Sent.'), true,
     'and the surface confirms only after the file was handed over');
   await tpage.click('#about-close');
+
+  // --- Bringing a copy back -------------------------------------------------
+  // The app could export a whole log and had no way to read one back, so a new
+  // device meant starting again. This is the surface people reach for after
+  // something has already gone wrong, so it is walked for real: a genuine export
+  // taken from this store, a hostile file refused, and a replacement that
+  // actually lands and survives a reload.
+  console.log('\nBringing a copy back — the way in, which the way out needed');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#import-file');
+  is(await tpage.locator('#import-actions').isVisible(), false,
+    'nothing destructive is reachable before a file has been read');
+
+  // A real export of the CURRENT store, taken through the app's own button.
+  const [backup] = await Promise.all([
+    tpage.waitForEvent('download'),
+    tpage.click('#export'),
+  ]);
+  const backupPath = await backup.path();
+  const backupJson = JSON.parse(readFileSync(backupPath, 'utf8'));
+  const heldBefore = await tpage.locator('#cards .card').count();
+
+  // A file that is not an export at all must be refused with a sentence, and
+  // must not reveal the destructive control.
+  const junk = join(tmpdir(), 'quietkeep-not-an-export.json');
+  writeFileSync(junk, JSON.stringify({ hello: 'world' }));
+  await tpage.setInputFiles('#import-file', junk);
+  await tpage.waitForTimeout(250);
+  const junkNote = await tpage.locator('#import-note').textContent();
+  is(/not a Quietkeep export/i.test(junkNote || ''), true,
+    `a file that is not an export says so ("${junkNote}")`);
+  is(await tpage.locator('#import-actions').isVisible(), false,
+    'and "Replace everything" stays out of reach');
+
+  // A file the app WROTE must be described, with the numbers stated.
+  await tpage.setInputFiles('#import-file', backupPath);
+  await tpage.waitForTimeout(250);
+  const goodNote = await tpage.locator('#import-note').textContent();
+  is(new RegExp(`holds ${heldBefore} thing`).test(goodNote || ''), true,
+    `it says what is in the file, in things (${heldBefore}) not just records ("${goodNote}")`);
+  is(/replaces the/.test(goodNote || ''), true, 'and says plainly that this replaces what is here');
+  is(await tpage.locator('#import-actions').isVisible(), true, 'only now is the replacement offered');
+
+  // Now REPLACE, with a file that differs from the current store, so "it landed"
+  // is distinguishable from "nothing happened" — the check that would otherwise
+  // pass on an import that did nothing at all.
+  await tpage.click('#about-close');
+  await tpage.fill('#capture', 'written after the backup was taken');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForTimeout(250);
+  const heldAfterExtra = await tpage.locator('#cards .card').count();
+  is(heldAfterExtra, heldBefore + 1, 'the store now differs from the file');
+
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#import-file');
+  await tpage.setInputFiles('#import-file', backupPath);
+  await tpage.waitForTimeout(250);
+  await tpage.click('#import-go');
+  // The surface reloads itself, because every projection was built from a store
+  // that no longer exists.
+  await tpage.waitForTimeout(1200);
+  await tpage.waitForSelector('body[data-ready=true]');
+  const heldRestored = await tpage.locator('#cards .card').count();
+  is(heldRestored, heldBefore,
+    `the copy replaced what was here (${heldAfterExtra} -> ${heldRestored}, file held ${heldBefore})`);
+  const restoredText = await tpage.locator('#cards').textContent();
+  is((restoredText || '').includes('written after the backup was taken'), false,
+    'and what was written after the backup is genuinely gone — it replaced, it did not merge');
+
+  // It survives a reload, which is the whole point: the data is on the device,
+  // not in the page.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#cards .card').count(), heldBefore, 'and it is still there after a reload');
+
+  // The new log says it was seeded from a file — a store that came from a copy
+  // should be able to say so.
+  const seeded = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'import.seeded').length);
+    });
+  });
+  is(seeded, 1, 'and the new log records that it was seeded from a copy');
 
   console.log('\nThe badge — a glance at the icon, and a number that can reach zero');
   const badge = await tpage.evaluate(async () => {

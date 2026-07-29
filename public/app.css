@@ -335,6 +335,36 @@ button.ghost {
  * alarm, and nothing on this surface shouts. */
 .replan-error { margin: 0.25rem 0 0; color: var(--ink); font-weight: 600; }
 
+/* --- bringing a copy back -------------------------------------------------
+ * A real <input type="file">, not a styled button driving a hidden one: this is
+ * the surface someone reaches for after something has already gone wrong, and
+ * the platform's own picker is the part most likely to still work. It needs
+ * explicit sizing, because the default control is well under the 44px floor.
+ */
+#import-file {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.5rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+#import-file::file-selector-button {
+  min-height: 2.25rem;
+  margin-right: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: calc(var(--radius) / 2);
+  font: inherit;
+  cursor: pointer;
+}
+
 /* A column, not a grid. At 320px and 200% zoom a two-up layout of options this
  * wordy overflows horizontally, and the page body must never scroll sideways —
  * the failure the triage actions already paid for once. */

@@ -220,6 +220,26 @@
     <button id="export" type="button" class="ghost">Export a copy</button>
   </div>
 
+  <h3 class="about-section">Bringing a copy back</h3>
+  <p class="about-p">
+    Moving to a new device, or restoring after something went wrong. Choose an
+    exported file and Quietkeep will tell you what is in it before anything
+    changes.
+  </p>
+  <!-- Deliberately a plain file input with a real <label>, not a styled button
+       driving a hidden one: on iPadOS the hidden-input trick loses the Files
+       app entry point in some configurations, and this is the surface that
+       exists for the day something has already gone wrong. -->
+  <label class="detail-label" for="import-file">Choose an exported file</label>
+  <input id="import-file" type="file" accept="application/json,.json">
+  <p id="import-note" class="storage-note" role="status" aria-live="polite"></p>
+  <!-- Hidden until a file has been read and described. Nothing destructive is
+       reachable before the person has been told what it would do. -->
+  <div id="import-actions" class="about-actions" hidden>
+    <button id="import-backup" type="button">Save what is here first</button>
+    <button id="import-go" type="button" class="ghost">Replace everything</button>
+  </div>
+
   <h3 class="about-section">Reminders that reach you</h3>
   <p class="about-p">
     Quietkeep can only bring something back while it is open. Send what you are

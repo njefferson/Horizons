@@ -21,8 +21,9 @@
 //   npm run a11y        (exits non-zero on any failure)
 
 import { chromium } from 'playwright-core';
-import { existsSync } from 'node:fs';
+import { existsSync, writeFileSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { serve } from './serve.mjs';
 
@@ -47,6 +48,11 @@ const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
+  // Bringing a copy back. The label and the picker are always there; the note
+  // and the two actions only appear once a file has been read, so they get
+  // their own state below rather than being registered here where they would
+  // match nothing visible.
+  '#import-file', 'label[for="import-file"]',
   '.note-triplet', '.note-kind', '.note-list li', '.about-p', '.about-p a',
 ];
 const REGISTRY = {
@@ -100,6 +106,11 @@ const REGISTRY = {
   // the text that gets forgotten, and it appears at the moment a person is
   // already stuck.
   'replan sheet, refused': ['#replan-sheet-error', '#replan-sheet-title', '.replan-when'],
+  // A file has been chosen and described. This is the state that carries the
+  // destructive control, so it is the one most worth measuring — and the note
+  // above it is the sentence someone reads before replacing everything they
+  // have.
+  'import, file chosen': ['#import-note', '#import-backup', '#import-go'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -414,6 +425,26 @@ try {
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
     await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar']);
+
+    // The import surface with a file chosen — the state that carries the
+    // destructive control. An empty log is a perfectly valid export (a new user
+    // who exports immediately has one), so it is the smallest file that reaches
+    // this state honestly, without faking the app's own output.
+    // Written OUTSIDE the repo. A fixture inside the tree survives a failed run
+    // and can be swept into a commit by a wholesale `git add` — which has
+    // happened in this repo once already, and is in the hub's LESSONS.
+    const validExport = join(tmpdir(), 'quietkeep-a11y-import-fixture.json');
+    writeFileSync(validExport, JSON.stringify({
+      format: 'planner-log', version: 1, at: new Date().toISOString(),
+      scope: 'all', encrypted: false, logJsonl: '', snapshot: null,
+    }));
+    await page.setInputFiles('#import-file', validExport);
+    await page.waitForSelector('#import-actions:not([hidden])');
+    await auditContrast(page, 'import, file chosen', theme);
+    await auditAxe(page, 'import, file chosen', theme);
+    await auditTargets(page, 'import, file chosen', theme);
+    await auditFocusRings(page, 'import, file chosen', theme, ['#import-file', '#import-backup', '#import-go']);
+    rmSync(validExport, { force: true });
 
     // State 5: B-04's hardest case — 320px at 200% text — WITH the dialog
     // open. The dialog is its own scroll container, so page-level overflow

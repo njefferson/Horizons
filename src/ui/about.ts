@@ -12,9 +12,11 @@
 // always there. The first-run state lives in the kv store, not the log — whether
 // someone has seen a dialog is not part of their history.
 
-import { requestPersistence } from '../ids.ts';
+import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
-import { exportAll, exportFilename } from '../portability.ts';
+import { exportAll, exportFilename, inspectExport, importSeedingFresh } from '../portability.ts';
+import { heldNodes } from '../gate.ts';
+import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
@@ -87,7 +89,12 @@ export async function mountAbout(session: Session): Promise<void> {
       ['Asked for', first ? new Date(first).toLocaleString() : r.persisted ? 'just now' : '—'],
       ['Room available', r.quotaMb == null ? 'unknown' : `${r.quotaMb.toLocaleString()} MB`],
       ['Used by Quietkeep', r.usageMb == null ? 'unknown' : `${r.usageMb} MB`],
-      ['Things held', String(session.state().nodes.size)],
+      // `heldNodes`, NOT `nodes.size`. The gauge on the main screen says
+      // "N held" from `heldNodes`, and this row says "Things held" — the same
+      // words about the same store, and they disagreed by however many things
+      // had been let go, because `nodes.size` counts the trashed and the merged.
+      // One definition, or the app is telling two stories about one number.
+      ['Things held', String(heldNodes(session.state()).length)],
     ];
     body.replaceChildren(...rows.flatMap(([k, v]) => [el('dt', undefined, k), el('dd', undefined, v)]));
 
@@ -193,28 +200,37 @@ export async function mountAbout(session: Session): Promise<void> {
   // handed to the browser first, the event is committed after, and every
   // failure is said out loud (§5). Each file carries every EARLIER export's
   // record; its own lands one export later.
+  /** Build the file, hand it over, THEN record it — one definition, used by the
+   *  Export button and by the backup offered before an import. The backup path
+   *  is the one that matters most: it runs seconds before the store is replaced,
+   *  and a second copy of this logic would be a second chance to get that
+   *  ordering wrong. */
+  const deliverExport = async (scope: string, ext: string): Promise<void> => {
+    const at = new Date().toISOString();
+    const file = await exportAll(session.store, at, scope);
+    const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = exportFilename(scope, at, false, ext);
+    document.body.append(a);
+    a.click();
+    a.remove();
+    // Long grace: on iPadOS the share sheet holds the URL open while the user
+    // decides where the file goes.
+    setTimeout(() => URL.revokeObjectURL(url), 120_000);
+
+    await session.commit((ctx) => [{
+      id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+      kind: 'export.written', node: null,
+      payload: { at, scope, encrypted: false },
+    } as AppEvent]);
+  };
+
   exp.addEventListener('click', async () => {
     exp.disabled = true;
     try {
-      const at = new Date().toISOString();
-      const file = await exportAll(session.store, at);
-      const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = exportFilename('all', at, false);
-      document.body.append(a);
-      a.click();
-      a.remove();
-      // Long grace: on iPadOS the share sheet holds the URL open while the user
-      // decides where the file goes.
-      setTimeout(() => URL.revokeObjectURL(url), 120_000);
-
-      await session.commit((ctx) => [{
-        id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
-        kind: 'export.written', node: null,
-        payload: { at, scope: 'all', encrypted: false },
-      } as AppEvent]);
+      await deliverExport('all', 'json');
       noteOut.textContent = 'Exported. The file is on its way to your Files app or downloads.';
     } catch (err) {
       noteOut.textContent = `The export failed — nothing left your device. (${(err as Error).message})`;
@@ -223,6 +239,122 @@ export async function mountAbout(session: Session): Promise<void> {
       void paintStorage().catch(() => {});
     }
   });
+
+  // --- bringing a copy back ------------------------------------------------
+  //
+  // The app could hand you your whole log and had no way to read one back, so a
+  // new device meant starting again and the export button produced a file
+  // nothing could consume. For an app with no accounts and no server, that is
+  // not a missing feature — it is the "your data is yours" promise with no exit.
+  //
+  // The flow is CHOOSE, then be TOLD, then CONFIRM. Import replaces everything
+  // (law 9: seeds fresh, never merges), so nothing destructive is reachable
+  // until the file has been read and described, and a backup of what is about
+  // to be replaced is offered first and listed first.
+  const importFile = document.querySelector<HTMLInputElement>('#import-file');
+  const importNote = document.querySelector<HTMLElement>('#import-note');
+  const importActions = document.querySelector<HTMLElement>('#import-actions');
+  const importGo = document.querySelector<HTMLButtonElement>('#import-go');
+  const importBackup = document.querySelector<HTMLButtonElement>('#import-backup');
+
+  if (importFile && importNote && importActions && importGo && importBackup) {
+    // Held between choosing and confirming. Parsed ONCE: re-reading the file at
+    // confirm time would let it change underneath the description the person
+    // just agreed to.
+    let staged: ExportFile | null = null;
+
+    const resetImport = (): void => {
+      staged = null;
+      importActions.hidden = true;
+    };
+
+    importFile.addEventListener('change', async () => {
+      resetImport();
+      const chosen = importFile.files?.[0];
+      if (!chosen) { importNote.textContent = ''; return; }
+      importNote.textContent = 'Reading it…';
+      let summary;
+      let parsed: unknown;
+      try {
+        parsed = JSON.parse(await chosen.text());
+      } catch {
+        importNote.textContent = 'That file is not readable as an export. Nothing has changed.';
+        return;
+      }
+      summary = inspectExport(parsed);
+      if (summary.refusals.length > 0) {
+        // The refusal is the whole message. It already ends by saying nothing
+        // was touched, because at this point nothing has been.
+        importNote.textContent = `${summary.refusals[0]} Nothing has changed.`;
+        return;
+      }
+      staged = parsed as ExportFile;
+      const made = summary.at ? new Date(summary.at).toLocaleString() : 'an unknown time';
+      // The SAME definition the file was measured with (`inspectExport` counts
+      // `heldNodes`). Counting `nodes.size` here made the two halves of one
+      // sentence disagree — "that file holds 8 things … replaces the 9 things on
+      // this device", about a file exported from this device moments earlier.
+      // A person comparing those numbers before a destructive action deserves
+      // them to be the same kind of number (audit, found by the smoke walk).
+      const here = heldNodes(session.state()).length;
+      // Both numbers, plainly. "412 events" means nothing to a person; "37
+      // things" is the number they can check against what they remember.
+      importNote.textContent =
+        `That file holds ${summary.items} thing${summary.items === 1 ? '' : 's'} ` +
+        `(${summary.events} record${summary.events === 1 ? '' : 's'}), saved ${made}. ` +
+        `Bringing it in replaces the ${here} thing${here === 1 ? '' : 's'} on this device. ` +
+        'Nothing is merged — this is a replacement.';
+      importActions.hidden = false;
+      importBackup.focus();
+    });
+
+    importBackup.addEventListener('click', async () => {
+      importBackup.disabled = true;
+      try {
+        await deliverExport('all', 'json');
+        importNote.textContent =
+          'Saved. That copy is on its way to your Files app or downloads — keep it somewhere ' +
+          'you can find it before replacing what is here.';
+      } catch (err) {
+        importNote.textContent = `Could not save a copy — ${(err as Error).message}. Nothing has been replaced.`;
+      } finally {
+        importBackup.disabled = false;
+      }
+    });
+
+    importGo.addEventListener('click', async () => {
+      if (!staged) return;
+      importGo.disabled = true;
+      importBackup.disabled = true;
+      try {
+        await importSeedingFresh(session.store, staged);
+        // Record it IN THE NEW LOG. A store seeded from a file should say so —
+        // and it is written after the reset on purpose, so it survives.
+        //
+        // Appended directly rather than through `session.commit`: the session's
+        // folded state is now stale by a whole store, and committing through it
+        // would fold this event onto the state of data that no longer exists and
+        // write that as a snapshot.
+        const at = new Date().toISOString();
+        const seq = await session.store.nextSeq(session.device);
+        await session.store.append([{
+          id: ulid(Date.now()), vault: session.vault, at, device: session.device, seq,
+          kind: 'import.seeded', node: null,
+          payload: { fromExport: staged.at, at },
+        } as AppEvent]);
+        importNote.textContent = 'Brought back. Reloading so everything reads from the new copy…';
+        // A full reload, deliberately. Every surface holds a projection of the
+        // old store; re-rendering them one by one would be a long list of places
+        // to get wrong, and the one place this must not be clever is the path
+        // people reach for after something has already gone wrong.
+        setTimeout(() => location.reload(), 400);
+      } catch (err) {
+        importNote.textContent = `${(err as Error).message}`;
+        importGo.disabled = false;
+        importBackup.disabled = false;
+      }
+    });
+  }
 
   document.querySelector('#about-close')?.addEventListener('click', () => dialog.close());
 

@@ -280,6 +280,32 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **The way back in (0.10.0 CAPABILITY).** The app could hand you
+  your entire log and had **no way to read one back**. `importSeedingFresh` existed,
+  was tested, and had no surface at all — so moving to a new device meant starting
+  again, and the Export button produced a file nothing could open. For an app with
+  no accounts and no server, that is not a missing feature; it is the "your data is
+  yours" promise with no exit.
+  · **Choose, be told, confirm.** `inspectExport` reads a file and describes it
+  **without touching anything** — how many things, how many records, when it was
+  made — and the destructive control does not appear until it has. It **never
+  throws**: a corrupt or hostile file is an answer, not an exception, and this is
+  the surface people reach for when something has already gone wrong.
+  · **One definition.** `importSeedingFresh` re-asks the same function at the
+  destructive boundary rather than trusting that the surface looked. The failure
+  it prevents is a panel saying "37 things, ready" and the import then refusing,
+  which is worse than either answer alone because the person has already decided.
+  · **Saving a copy of what is here is offered first and listed first**, because
+  import replaces and never merges (law 9) — and the app says so in those words.
+  · **Found by the smoke walk, not by reasoning**: the panel's "Things held" used
+  `nodes.size` while the gauge on the screen behind it used `heldNodes`, so one
+  sentence read *"that file holds 8 things … replaces the 9 things on this
+  device"* about a file exported from that device seconds earlier. Same words,
+  two numbers, differing by whatever had been let go. Both now use `heldNodes`.
+  · 178 tests, all 8 gates green, both themes. Four §6 deliberate-failure proofs;
+  one (`items` counting every node) **stayed green on the first attempt** and got
+  a real test before it counted.
+  · Lands on `staging`; waits for Noah's word.
 - **2026-07-29** — **A date that has gone by is a decision, not a row (0.9.0 CAPABILITY,
   [ADR-0034](docs/adr/0034-replan-cards-are-computed.md)).** `CLAUDE.md` has claimed since
   the beginning that product law 3 "carries teeth in code". **It did not.** `fold` had no
