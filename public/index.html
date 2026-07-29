@@ -91,7 +91,7 @@
     remember to look.
   </p>
 
-  <ul id="cards" class="cards" tabindex="-1"></ul>
+  <div id="cards" class="cards" tabindex="-1"></div>
 </main>
 
 <!-- The detail sheet: what turns a triage loop into a planner. Everything here
@@ -99,6 +99,16 @@
 <dialog id="detail" aria-labelledby="detail-title">
   <h2 id="detail-title" class="detail-title"></h2>
   <p id="detail-state" class="detail-state"></p>
+
+  <div class="detail-group">
+    <label class="detail-label" for="detail-name">What it says</label>
+    <div class="detail-row">
+      <input id="detail-name" type="text" autocomplete="off" spellcheck="true"
+             enterkeyhint="done" aria-describedby="detail-name-hint">
+      <button id="detail-rename" type="button">Save</button>
+    </div>
+    <p id="detail-name-hint" class="detail-hint">Fix a typo, or say it better.</p>
+  </div>
 
   <div class="detail-group">
     <label class="detail-label" for="detail-date">Give it a date</label>

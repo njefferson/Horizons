@@ -62,6 +62,8 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0028](0028-public-capture-surfaces.md) | URL/share/shortcut capture entrances; strict CSP | Accepted |
 | [0029](0029-triage-model.md) | Triage: optional heat pass, forced-choice clarify, each route self-terminating | Accepted |
 | [0030](0030-work-mode.md) | Work mode: pressure formula, fixed precedence, a skip that records nothing | Accepted |
+| [0031](0031-node-renamed.md) | `node.renamed` — the first addition to the closed vocabulary | Accepted |
+| [0032](0032-held-list-grouped.md) | What you are holding is grouped, and can be ticked off in place | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

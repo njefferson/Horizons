@@ -47,6 +47,20 @@ export function endOfDayKey(dayKey: string, zone: string): string {
   return endOfLocalDay(probe, zone, drift);
 }
 
+/**
+ * Fixing what you wrote. The one gap that needed the closed vocabulary opened
+ * (ADR-0031) — a title is a first-class fact, and `node.field.set` would have
+ * stored a shadow title under `n.fields` that no surface ever reads.
+ *
+ * An empty title is refused here rather than written: a nameless card is not a
+ * correction, it is a thing you can no longer identify.
+ */
+export function renameEvents(ctx: StampContext, node: string, title: string): AppEvent[] {
+  const clean = title.trim();
+  if (!clean) return [];
+  return [base(ctx, 'node.renamed', node, { title: clean })];
+}
+
 /** "This is due Thursday." A real, hard date — the immovable kind that Next-up
  *  ranks above everything computed. */
 export const setDueEvents = (ctx: StampContext, node: string, dayKey: string): AppEvent[] =>

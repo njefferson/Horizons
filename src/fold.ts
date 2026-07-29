@@ -185,6 +185,14 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         }
         break;
       }
+      // Renaming competes with capture.recorded / node.created for the SAME
+      // stamped key, so a stale rename can never beat a newer title and a replay
+      // is deterministic. It is not silent-risk: a title carries no coverage.
+      case 'node.renamed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['title'], o)) { n.title = e.payload.title; n.stamps['title'] = o; }
+        break;
+      }
       case 'node.kind.changed': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.to; n.stamps['kind'] = o; }

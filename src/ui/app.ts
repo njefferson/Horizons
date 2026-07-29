@@ -16,6 +16,8 @@ import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
+import { doneEvents } from './work.ts';
+import { heldGroups, heldStatus } from '../held.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -26,52 +28,81 @@ const $ = <T extends HTMLElement>(sel: string): T => {
   return el;
 };
 
-/** Newest first. Capture order is the only order this surface claims. */
-const captured = (s: Session): NodeState[] =>
-  [...s.state().nodes.values()]
-    .filter(n => !n.trashed)
-    .sort((a, b) => (a.id < b.id ? 1 : -1));
-
-function render(session: Session, openDetail?: (n: NodeState) => void): void {
+/**
+ * What you are holding, grouped (src/held.ts). Each item is a row with two real
+ * controls: open it, or check it off. The card used to be one big button, which
+ * is why it could not gain a second one — a button inside a button is invalid.
+ */
+function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: (id: string) => void): void {
   const list = $('#cards');
-  const items = captured(session);
+  const nowIso = new Date(now()).toISOString();
+  const groups = heldGroups(session.state(), nowIso, session.zone);
 
-  list.replaceChildren(...items.map(node => {
-    const li = document.createElement('li');
+  // A real heading and a real list per group. The first version made the heading
+  // an <li> with role="presentation", which strips the listitem role and leaves a
+  // <ul> containing a non-listitem — axe flagged it as a serious `list` violation,
+  // and it is one: the grouping would have been invisible to a screen reader.
+  const rows: HTMLElement[] = [];
+  for (const group of groups) {
+    const head = document.createElement('h3');
+    head.className = 'group-head';
+    // A heading, not a badge and not a count of things undone (law 5).
+    head.textContent = group.title;
+    rows.push(head);
 
-    // The whole card is the control. Anything you are holding can be opened and
-    // changed — a date, a repeat, an undo — which is what makes this a planner
-    // rather than a list you can only read.
-    const card = document.createElement('button');
-    card.type = 'button';
-    card.className = 'card';
+    const ul = document.createElement('ul');
+    ul.className = 'cards-group';
+    ul.setAttribute('aria-label', group.title);
+    rows.push(ul);
 
-    const title = document.createElement('span');
-    title.className = 'card-title';
-    // textContent, never innerHTML: captured text is stored as text and never
-    // interpreted, which is what makes /capture?text= safe from a hostile link
-    // (ADR-0008).
-    title.textContent = node.title;
+    for (const node of group.items) {
+      const li = document.createElement('li');
+      li.className = 'card';
 
-    const when = document.createElement('span');
-    when.className = 'card-when';
-    const clock = node.clocks.due ?? node.clocks.review ?? node.clocks.start;
-    // Every item states its own status in words — the text channel of B-01, so
-    // nothing here depends on seeing a colour.
-    when.textContent = clock ? `returns ${friendly(clock.at, session.zone)}` : 'held';
+      const open = document.createElement('button');
+      open.type = 'button';
+      open.className = 'card-open';
 
-    card.append(title, when);
-    if (openDetail) card.addEventListener('click', () => openDetail(node));
-    li.append(card);
-    return li;
-  }));
+      const title = document.createElement('span');
+      title.className = 'card-title';
+      // textContent, never innerHTML: captured text is stored as text and never
+      // interpreted, which is what makes /capture?text= safe from a hostile link
+      // (ADR-0008).
+      title.textContent = node.title;
 
-  $('#empty').hidden = items.length > 0;
+      const when = document.createElement('span');
+      when.className = 'card-when';
+      // Every item states its own status in words — the text channel of B-01, so
+      // nothing here depends on seeing a colour. A finished thing says "done"
+      // rather than reporting the cure clock it happens to still carry.
+      when.textContent = heldStatus(node, nowIso, session.zone);
+
+      open.append(title, when);
+      if (openDetail) open.addEventListener('click', () => openDetail(node));
+      li.append(open);
+
+      // Check it off without opening anything — what makes this a todo list.
+      // Not offered for what is already done, or for what triage still owns.
+      if (onDone && !node.lastDone && !(node.captured && node.route === null)) {
+        const done = document.createElement('button');
+        done.type = 'button';
+        done.className = 'card-done';
+        done.textContent = 'Done';
+        done.setAttribute('aria-label', `Done: ${node.title}`);
+        done.addEventListener('click', () => onDone(node.id));
+        li.append(done);
+      }
+      ul.append(li);
+    }
+  }
+
+  list.replaceChildren(...rows);
+  $('#empty').hidden = groups.length > 0;
 
   // The gauge reads as text first and the number is the information (B-02).
   const { silent, total } = coverageGauge(session.state());
-  // The gauge is a button now: its number is a claim, and the claim opens into
-  // the itemised list that backs it (build-plan item 21).
+  // The gauge is a button: its number is a claim, and the claim opens into the
+  // itemised list that backs it (build-plan item 21).
   $('#gauge').textContent =
     total === 0 ? 'nothing held yet' : `${total} held · ${silent} silent · see each`;
 }
@@ -116,7 +147,15 @@ async function main(): Promise<void> {
   let work: { refresh(): void } = { refresh() {} };
   let triage: { refresh(): void } = { refresh() {} };
 
-  const rerender = (): void => render(session, n => detail.open(n));
+  // ONE render closure, used everywhere. Two call sites used to invoke
+  // `render(session)` bare — the URL-capture path and its undo — which silently
+  // dropped `openDetail`, so after a link capture no card opened its sheet.
+  const markDone = (id: string): void => {
+    void session.commit(ctx => doneEvents(ctx, id))
+      .catch((err: Error) => { status.textContent = `Couldn’t record that — ${err.message}`; })
+      .finally(() => { try { refreshAll(); } catch { /* renders on next load */ } });
+  };
+  const rerender = (): void => render(session, n => detail.open(n), markDone);
   const refreshAll = (): void => { rerender(); work.refresh(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
@@ -139,7 +178,7 @@ async function main(): Promise<void> {
   // Each is a public surface, so each does the ONE thing it may — create a single
   // unclarified item — with a visible confirm and undo; none can set a clock,
   // route, complete, or delete. Text is stored as text and shown with textContent.
-  await handleUrlEntrances(session, status, input);
+  await handleUrlEntrances(session, status, input, rerender);
   triage.refresh();
 
   // Per keystroke. An interruption mid-capture is the EXPECTED case for this
@@ -219,7 +258,7 @@ function composeShared(title: string, text: string, url: string): string {
 
 /** The three URL entrances. Captures at most once, offers an undo, and scrubs
  *  the query from the address bar so a refresh cannot re-fire it. */
-async function handleUrlEntrances(session: Session, status: HTMLElement, input: HTMLInputElement): Promise<void> {
+async function handleUrlEntrances(session: Session, status: HTMLElement, input: HTMLInputElement, rerender: () => void): Promise<void> {
   const params = new URLSearchParams(location.search);
   const clean = location.pathname + location.hash;
 
@@ -253,7 +292,7 @@ async function handleUrlEntrances(session: Session, status: HTMLElement, input: 
     return;
   }
 
-  render(session);
+  rerender();
 
   // Visible confirm with an undo — a drive-by capture is never silent and never
   // permanent. Undo trashes the one node this created and nothing else.
@@ -271,7 +310,7 @@ async function handleUrlEntrances(session: Session, status: HTMLElement, input: 
         kind: 'node.trashed', node: capturedNode,
         payload: { reason: 'undo url-capture' },
       } as AppEvent]);
-      render(session);
+      rerender();
       status.textContent = 'Undone.';
     } catch (err) {
       status.textContent = `Couldn’t undo — ${(err as Error).message}`;

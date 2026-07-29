@@ -353,10 +353,34 @@ button.ghost {
   gap: 0.5rem;
 }
 
+.group-head {
+  /* A heading for a group, never a badge and never a count of things undone. */
+  margin: 1rem 0 0.25rem;
+  color: var(--ink-soft);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+.cards > .group-head:first-child { margin-top: 0; }
+.cards-group {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+/* The card is a ROW with two controls — open it, or check it off. It used to be
+   one big button, which is why it could not gain a second one: a button inside a
+   button is invalid HTML. */
 .card {
-  /* A real <button>, full width, so anything you hold can be opened and changed.
-     Styled as a card; still a control, still keyboard-reachable, still ≥44px. */
-  width: 100%;
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+.card-open {
+  flex: 1 1 auto;
+  min-width: 0;
   min-height: var(--target);
   font: inherit;
   color: inherit;
@@ -375,6 +399,17 @@ button.ghost {
   border-radius: var(--radius);
 }
 
+.card-done {
+  flex: 0 0 auto;
+  min-height: var(--target);
+  padding: 0 0.9rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
 .card-title { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 
 .card-when {

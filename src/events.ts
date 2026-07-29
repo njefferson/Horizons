@@ -60,6 +60,7 @@ type Ev<K extends string, P> = Stamp & { kind: K; node: NodeId | null; payload: 
 export type NodeCreated      = Ev<'node.created',      { nodeKind: NodeKind; title: string; parent?: NodeId; provenance?: Provenance }>;
 export type NodeKindChanged  = Ev<'node.kind.changed', { from: NodeKind; to: NodeKind }>;
 export type NodeFieldSet     = Ev<'node.field.set',    { field: string; value: unknown }>;
+export type NodeRenamed      = Ev<'node.renamed',      { title: string }>;
 export type NodeParented     = Ev<'node.parented',     { parent: NodeId; priorParent?: NodeId }>;
 export type NodeUnparented   = Ev<'node.unparented',   { priorParent: NodeId }>;
 export type NodeTrashed      = Ev<'node.trashed',      { reason?: string }>;
@@ -169,7 +170,7 @@ export type AmnestyOffered   = Ev<'amnesty.offered',    { scope: string }>;
 export type AmnestyAccepted  = Ev<'amnesty.accepted',   { scope: string }>;
 
 export type AppEvent =
-  | NodeCreated | NodeKindChanged | NodeFieldSet | NodeParented | NodeUnparented
+  | NodeCreated | NodeKindChanged | NodeFieldSet | NodeRenamed | NodeParented | NodeUnparented
   | NodeTrashed | NodeUntrashed | NodeMerged
   | ClockSet | ClockCleared | UpkeepIntervalSet | DoneMarked | DoneUnmarked
   | AnchorDefined | AnchorFired | ReplanRaised | ReplanResolved | ParkSet
@@ -194,7 +195,7 @@ export type EventKind = AppEvent['kind'];
 
 /** The closed list, at runtime. An unlisted kind is rejected at the boundary. */
 export const EVENT_KINDS = [
-  'node.created','node.kind.changed','node.field.set','node.parented','node.unparented',
+  'node.created','node.kind.changed','node.field.set','node.renamed','node.parented','node.unparented',
   'node.trashed','node.untrashed','node.merged',
   'clock.set','clock.cleared','upkeep.interval.set','done.marked','done.unmarked',
   'anchor.defined','anchor.fired','replan.raised','replan.resolved','park.set',

@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.7.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'What you are holding is now sorted into plain groups — not sorted yet, ready now, coming up, later, on the Menu, and done — instead of one long list. Nothing is counted or scored; they are just headings, so you can see the shape of it at a glance.',
+      'You can tick something off straight from the list, without opening it first.',
+      'You can fix what you wrote. Open anything and correct the words — useful when a thought went down fast and came out sideways.',
+      'Something you have finished now says so, rather than claiming it is coming back to you today.',
+      'Fixed: after adding something from a link, the items in your list quietly stopped opening when tapped until the next change.',
+    ],
+  },
+  {
     triplet: '0.6.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

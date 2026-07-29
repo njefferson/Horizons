@@ -57,7 +57,7 @@ const REGISTRY = {
     '#capture-form button[type=submit]',
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a',
   ],
-  'with cards': ['.card-title', '.card-when', '#status'],
+  'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
   // shows the six routes, each a label over a hint. Every visible pair is
   // audited — the hint is the lowest-contrast text on the surface, so it is
@@ -68,12 +68,13 @@ const REGISTRY = {
   // Work mode. The "why" lines and the behind-list are the lowest-contrast text
   // on these surfaces, so they are named rather than left to axe alone.
   'next up': ['#nextup-heading', '.nextup-title', '.nextup-why', '.nextup-count',
-    '#nextup-done', '#nextup-skip', '#gauge'],
+    '#nextup-done', '#nextup-skip', '#gauge', '.card-done'],
   'coverage open': ['#gauge', '.coverage-title', '.coverage-when'],
   // The detail sheet. The hint and the inline labels are the lowest-contrast
   // text on it, and the number inputs are the smallest targets.
   'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
-    '.detail-hint', '#detail-date', '#detail-every', '#detail-date-set', '#detail-close'],
+    '.detail-hint', '#detail-name', '#detail-date', '#detail-every', '#detail-rename',
+    '#detail-date-set', '#detail-close'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -271,6 +272,10 @@ try {
     await auditContrast(page, 'with cards', theme);
     await auditAxe(page, 'with cards', theme);
     await auditTargets(page, 'with cards', theme);
+    // Only .card-open exists here: an unrouted capture belongs to triage and is
+    // deliberately given no Done control. The tick-off button is audited in the
+    // 'next up' state below, once the item has been routed and can be completed.
+    await auditFocusRings(page, 'with cards', theme, ['#cards .card-open']);
 
     // State 3b: the triage surface. Capturing a card left an unrouted node, so
     // the heat pass is already showing. Audit it, then take the heat tap to
@@ -303,7 +308,7 @@ try {
     await auditContrast(page, 'next up', theme);
     await auditAxe(page, 'next up', theme);
     await auditTargets(page, 'next up', theme);
-    await auditFocusRings(page, 'next up', theme, ['#nextup-done', '#nextup-skip', '#gauge']);
+    await auditFocusRings(page, 'next up', theme, ['#nextup-done', '#nextup-skip', '#gauge', '#cards .card-done']);
 
     await page.click('#gauge');
     await page.waitForSelector('#coverage:not([hidden])');
@@ -312,7 +317,7 @@ try {
     await auditTargets(page, 'coverage open', theme);
 
     // State 3e: the detail sheet — the surface that makes this a planner.
-    await page.click('#cards .card');
+    await page.click('#cards .card-open');
     await page.waitForSelector('#detail[open]');
     await auditContrast(page, 'detail sheet', theme);
     await auditAxe(page, 'detail sheet', theme);

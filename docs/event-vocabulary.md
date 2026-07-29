@@ -92,6 +92,7 @@ inspect and either complete or refuse. See [ADR-0011](adr/0011-no-silent-nodes-g
 | `node.created` | `nodeKind, title, parent?, provenance` | **yes — gated** |
 | `node.kind.changed` | `from, to` | **yes — gated** (an `action` demoted to `aspiration` loses its clock) |
 | `node.field.set` | `field, value` — exactly one field | no |
+| `node.renamed` | `title` | no — renaming removes no coverage |
 | `node.parented` | `parent, priorParent?` | **yes — gated** (re-homing under an unclocked parent orphans the node) |
 | `node.unparented` | `priorParent` | **yes — gated** |
 | `node.trashed` | `reason?` | **yes — gated** — trashing a parent must not orphan its children (ADR-0011) |

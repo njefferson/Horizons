@@ -443,7 +443,7 @@ try {
   console.log('\nDetail sheet — a planner, not just a list');
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
-  await tpage.click('#cards .card');
+  await tpage.click('#cards .card-open');
   await tpage.waitForSelector('#detail[open]');
   is(await tpage.locator('#detail').isVisible(), true, 'tapping something you hold opens its sheet');
   const sheetTitle = await tpage.locator('#detail-title').textContent();
@@ -502,6 +502,87 @@ try {
 
   await tpage.click('#detail-close');
   is(await tpage.locator('#detail').isVisible(), false, 'the sheet closes');
+
+  // --- The todo list: groups, inline check-off, rename (Phase 3.5) ---------
+  console.log('\nThe todo list — grouped, and you can tick things off');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const headings = await tpage.locator('.group-head').allTextContents();
+  is(headings.length > 0, true, `what you are holding is grouped ("${headings.join('", "')}")`);
+  is(headings.every(h => /^(Not sorted yet|Ready now|Coming up|Later|On the Menu|Done)$/.test(h)), true,
+    'every heading is one of the six, in words');
+  // No score, no count of things undone anywhere in the list (law 5).
+  is(/\b\d+\s*(left|remaining|to go|streak)\b/i.test(headings.join(' ')), false,
+    'and no heading keeps score');
+
+  // The list must never drop something it is holding: rows === the gauge's number.
+  const rowCount = await tpage.locator('#cards .card').count();
+  const gaugeClaim = Number((await tpage.locator('#gauge').textContent() || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  is(rowCount, gaugeClaim, `every held item is shown (${rowCount} rows vs "${gaugeClaim} held")`);
+
+  console.log('\nThe todo list — tick something off without opening it');
+  const doneBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
+  });
+  const tickTitle = await tpage.locator('#cards .card:has(.card-done) .card-title').first().textContent();
+  await tpage.locator('#cards .card-done').first().click();
+  await tpage.waitForTimeout(180);
+  const doneAfter = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
+    });
+  });
+  is(doneAfter, doneBefore + 1, `ticking it off recorded exactly one done.marked ("${tickTitle}")`);
+  const doneGroupText = await tpage.evaluate(() => {
+    const heads = [...document.querySelectorAll('.group-head')];
+    const done = heads.find(h => h.textContent === 'Done');
+    if (!done) return '';
+    const out = [];
+    for (let el = done.nextElementSibling; el && !el.classList.contains('group-head'); el = el.nextElementSibling) {
+      out.push(el.textContent);
+    }
+    return out.join(' | ');
+  });
+  is(doneGroupText.includes(tickTitle || '\u0000'), true, 'and it moved into Done');
+  is(/returns|today|tomorrow/.test(doneGroupText.split('|').find(t => t.includes(tickTitle)) || ''), false,
+    'where it no longer claims to be coming back');
+
+  console.log('\nThe todo list — rename fixes what you wrote');
+  await tpage.click('#cards .card-open');
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-name', 'renamed by the smoke walk');
+  await tpage.click('#detail-rename');
+  await tpage.waitForTimeout(180);
+  const renames = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'node.renamed'));
+    });
+  });
+  is(renames.length, 1, 'one node.renamed was recorded');
+  is(renames[0]?.payload?.title, 'renamed by the smoke walk', 'with the new title');
+  await tpage.click('#detail-close');
+  is((await tpage.locator('#cards').textContent())?.includes('renamed by the smoke walk'), true,
+    'and the card says it now');
+
+  console.log('\nThe todo list — cards still open after a link capture (regression)');
+  // handleUrlEntrances used to call render() bare, dropping openDetail, so every
+  // card silently stopped opening its sheet until the next re-render.
+  await tpage.goto(`${url}?text=${encodeURIComponent('from a link')}`, { waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForSelector('#cards .card-open');
+  await tpage.click('#cards .card-open');
+  await tpage.waitForSelector('#detail[open]', { timeout: 3000 }).catch(() => {});
+  is(await tpage.locator('#detail').isVisible(), true,
+    'a card opens its sheet even after a URL capture re-rendered the list');
+  await tpage.click('#detail-close');
 
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');

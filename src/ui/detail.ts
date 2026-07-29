@@ -20,7 +20,7 @@ import { localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
 import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
-  undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents,
+  undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
 } from './detail-intents.ts';
 import { doneEvents } from './work.ts';
 
@@ -32,13 +32,15 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const title = q('#detail-title');
   const state = q('#detail-state');
   const date = q<HTMLInputElement>('#detail-date');
+  const name = q<HTMLInputElement>('#detail-name');
   const every = q<HTMLInputElement>('#detail-every');
   const slack = q<HTMLInputElement>('#detail-slack');
   const live = q('#detail-live');
   const hint = q('#detail-repeat-hint');
-  if (!dlg || !title || !state || !date || !every || !slack || !live || !hint) {
+  if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
     return { open() {} };
   }
+  const NAME = name;
   const DLG = dlg, TITLE = title, STATE = state, DATE = date, EVERY = every, SLACK = slack, LIVE = live;
 
   let current: NodeState | null = null;
@@ -89,6 +91,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
 
     // Seed the date box with the date it already has, so "Set" is an edit rather
     // than a blank slate you have to re-derive.
+    NAME.value = n.title;
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
@@ -116,6 +119,17 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const v = Number(el.value);
     return Number.isFinite(v) && Number.isInteger(v) && v > 0 ? v : null;
   };
+
+  const doRename = (): void => {
+    const next = NAME.value.trim();
+    if (!next) { say('It needs to say something.'); return; }
+    if (next === current?.title) { say('That is what it already says.'); return; }
+    void run(ctx => renameEvents(ctx, current!.id, next), `Now reads "${next}".`);
+  };
+  btn('#detail-rename')?.addEventListener('click', doRename);
+  NAME.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); doRename(); }
+  });
 
   btn('#detail-date-set')?.addEventListener('click', () => {
     const key = DATE.value;

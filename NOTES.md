@@ -205,12 +205,14 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.4.0` (`87dbeb9`), promoted 2026-07-29** — Noah's explicit "Promote and
-  continue", onto a fully green staging: **spine run 31 opened and watched, all 13 steps
-  success**, after the Phase 2 adversarial audit's findings were fixed. A real §7 pass,
-  verified by fetch (`origin/main` == `origin/staging` == `87dbeb9`).
-  `quietkeep.pages.dev` now serves triage — the heat pass and the six clarify routes.
-  Prior real §7 passes: 0.3.0 (`d4b40f7`, run 28), 0.2.4 (`265c9f0`, run 25).
+- **`main` is at `0.6.0` (`392372f`), promoted 2026-07-29** — Noah's "Promote and keep
+  going", onto watched-green spine run 38; deploy run 35 confirmed production serves it.
+  This promote carried **0.5.1**, which fixed a fault that was live on his device: one
+  malformed date threw out of the render path before capture's submit handler was
+  attached, so the form fell back to a native GET navigation and destroyed typed text
+  silently. Earlier real §7 passes: `87dbeb9` (0.4.0, run 31), `d4b40f7` (0.3.0, run 28),
+  `265c9f0` (0.2.4, run 25).
+  Every one of those was verified by fetch and by opening the run, never inferred (V-10).
 - **Repo:** `njefferson/Quietkeep` (renamed 2026-07-28). Branches `staging` and `main` only; ignore any
   harness `claude/*` branch (Doctrine §11).
 - **Deploy:** Cloudflare Pages, project `quietkeep`, live. The credential is stored as
@@ -241,8 +243,8 @@ That error cost the Perennial round.
   `tools/brand.mjs`, which is a CI gate and was made to fail once before being trusted. The
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
 - **Code:** Phase 0 spine, Phase 1 (shell, Dump surface, ⓘ panel, export, public capture
-  surfaces + CSP), Phase 2 (triage), Phase 3 (work mode). `main` is at 0.4.0; `staging`
-  carries Phase 3 (0.5.0) on top, unpromoted.
+  surfaces + CSP), Phase 2 (triage), Phase 3 (work mode), Phase 3.5 (detail sheet, the
+  grouped todo list, rename). `main` is at 0.6.0; `staging` carries 0.7.0 on top.
   `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`, both live.
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
@@ -253,6 +255,34 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **What you are holding is a todo list now (0.7.0 CAPABILITY,
+  [ADR-0031](docs/adr/0031-node-renamed.md), [ADR-0032](docs/adr/0032-held-list-grouped.md)).**
+  Noah: *"have a todo list of some sort maybe soon?"*
+  · **Grouped**: Not sorted yet · Ready now · Coming up · Later · On the Menu · Done.
+  Computed, stored nowhere, empty groups not rendered, and **no counts and no score** —
+  they are headings, not a tally of things undone (law 5). **Totality is the load-bearing
+  property**: every held node lands in exactly one group and the groups sum to the same
+  number the coverage gauge claims, proven over a 60-node fuzz.
+  · **Tick it off in place.** The card became a row with two controls; it had been one
+  large button, which is why it could not gain a second (a button inside a button is
+  invalid HTML).
+  · **Rename** — the first addition to the closed vocabulary since it was written, so it
+  cost an ADR rather than being absorbed quietly. `node.field.set` was the obvious reuse
+  and is wrong: fold writes it to `n.fields`, never `n.title`, so it would store a shadow
+  title no surface reads — the log lying rather than merely silent.
+  · **An honesty fix**: a finished item keeps the gate's cure clock, and the list reported
+  that as "returns today". It says `done` now.
+  · **A real defect fixed**: `handleUrlEntrances` and its undo called `render()` bare,
+  dropping `openDetail`, so after a link capture no card opened its sheet until the next
+  re-render. Smoke asserts tappability after a URL capture, made to fail first.
+  · **The a11y gate caught two more in my own work**: a group heading as an `<li
+  role="presentation">` strips the listitem role and leaves a `<ul>` holding a
+  non-listitem (serious axe `list` violation — the grouping would have been invisible to a
+  screen reader), and `.card-done` was registered in a state where it does not exist, which
+  the registry correctly refused as "matches nothing visible" rather than passing blind.
+  · **ADR rule 4 applied to myself**: the first draft was one record covering rename *and*
+  the list. "If it needs 'and', it is two records" — so it is two.
+  · 109 tests, all 8 gates green. Lands on `staging`; waits for the audit and Noah's word.
 - **2026-07-29** — **Phase 3.5: the app is a planner now, not a triage loop (0.6.0
   CAPABILITY).** Tap anything you are holding and a detail sheet opens: give it a real
   date or take one off, make it repeat (its own interval AND its own comfort window),

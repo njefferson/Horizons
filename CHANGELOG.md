@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.7.0 — CAPABILITY
+
+*2026-07-29*
+
+- What you are holding is now sorted into plain groups — not sorted yet, ready now, coming up, later, on the Menu, and done — instead of one long list. Nothing is counted or scored; they are just headings, so you can see the shape of it at a glance.
+- You can tick something off straight from the list, without opening it first.
+- You can fix what you wrote. Open anything and correct the words — useful when a thought went down fast and came out sideways.
+- Something you have finished now says so, rather than claiming it is coming back to you today.
+- Fixed: after adding something from a link, the items in your list quietly stopped opening when tapped until the next change.
+
 ## 0.6.0 — CAPABILITY
 
 *2026-07-29*
