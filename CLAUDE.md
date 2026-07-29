@@ -75,6 +75,13 @@ read it **before** writing any UI. Pressure and decay never ride on hue; the
 contrast gate is computed in CI and exits non-zero, and new foreground/background
 pairs are added to the gate in the same commit that introduces them.
 
+## No tables, anywhere (Doctrine §2)
+Markdown tables do not render on Noah's iPad — they arrive as pipes and dashes
+and the content is lost. **Never put one in anything he reads**: chat, commit
+messages, PR bodies, `NOTES.md`, `CHANGELOG.md`, plan files, or anything under
+`docs/`. Headed lists or one fact per line instead. The repo was converted in
+full on 2026-07-29; do not reintroduce one.
+
 ## Repo metadata (manual, confirm — see Doctrine §10)
 Description / website / topics / social-preview are GitHub-UI steps the session
 token cannot perform. List the exact values and ask Noah to confirm each; never
