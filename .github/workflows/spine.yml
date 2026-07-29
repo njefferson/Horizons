@@ -57,6 +57,12 @@ jobs:
       - name: Rendered accessibility
         run: npm run a11y
 
+      # ADR-0036: the default build's guarantee is that the BROWSER refuses to
+      # let it reach another host. That is one line of _headers, so it is gated —
+      # it is exactly the kind of thing that erodes quietly.
+      - name: Network posture
+        run: npm run headers:check
+
       # The vocabulary is a closed list and "overdue"/"streak" are banned
       # outright (ADR-0010). A grep is the cheapest possible gate.
       - name: No banned vocabulary

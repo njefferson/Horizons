@@ -289,6 +289,43 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **Two builds, one branch — and the gate that makes the default's
+  promise real ([ADR-0036](docs/adr/0036-two-builds-one-branch.md),
+  [ADR-0037](docs/adr/0037-sync-design.md)).** Noah asked for two apps: Quietkeep,
+  always local-only, and a sync variant — *"Quietkeep is always the default"* —
+  and asked how the industry does it.
+  · **The industry answer**: overwhelmingly one codebase with sync as an opt-in
+  module (Obsidian + Obsidian Sync, Standard Notes, Joplin). Two long-lived
+  branches is the rare shape, and where it exists it is usually a governance split
+  between different maintainers, not a privacy toggle.
+  · **So: two Cloudflare sites, two builds, ONE branch.** The argument that
+  settled it is concrete rather than aesthetic — 0.10.1 fixed a CRITICAL defect
+  where a validated import file could destroy a store and then fail. On two
+  branches that needs applying twice, and **the copy carrying a missed
+  cherry-pick longer is the one with more exposure.**
+  · **The guarantee is already in `public/_headers` and nobody had noticed.**
+  `connect-src 'self'` means the default build **cannot reach another host — the
+  browser refuses**, whatever code is in the bundle. That is enforcement, not
+  discipline, and it is a far stronger promise than "sync is switched off".
+  · **`tools/headers.mjs` is a new gate**, because that guarantee is one line and
+  one line erodes quietly: a font host, a debug endpoint, a report collector.
+  Proven by breaking it four ways — widening `connect-src` to a relay, a font
+  CDN, removing `connect-src` so it is inherited rather than stated, and a
+  `report-uri` — **all four went red**.
+  · The sync design itself is recorded but **not built**. ADR-0037 names the
+  three things that still need Noah's word: the doctrine wording (a sync id is
+  account-shaped, and "no accounts, no server" stays true only of the default
+  build), re-running V-03 against Apple's own documentation if push is ever
+  added, and whether this is a **VERSION** — which is his call and is not
+  inferred from diff size.
+  · Sync at the visibility boundaries, not in the background: leaving the app
+  uploads, opening it pulls. True background execution buys only "current before
+  you open it", and costs push, an install, an entitlement and V-03.
+  · The exposure is written out in full in ADR-0037 rather than summarised — what
+  a relay can never see, and what it unavoidably can: **when you use the app, how
+  often, and from where.** For this audience that is the shape of your day, and it
+  is stated at that weight rather than minimised.
+
 - **2026-07-29** — **Two devices (0.11.0 CAPABILITY,
   [ADR-0035](docs/adr/0035-multi-device-shard-union.md)).** Noah: *"It should be
   opt-in for multi-device sync, and I will want to have my personal copies sync

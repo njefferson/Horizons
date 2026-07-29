@@ -67,6 +67,8 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0033](0033-calendar-export-t1.md) | The calendar file is all-day events with a relative alarm (T1) | Accepted |
 | [0034](0034-replan-cards-are-computed.md) | Replan cards are computed, and only hard clocks raise them | Accepted |
 | [0035](0035-multi-device-shard-union.md) | Two devices, by folding in a shard — opt-in, additive, no server | Accepted |
+| [0036](0036-two-builds-one-branch.md) | Two builds from one branch; the default cannot sync and the browser enforces it | Accepted |
+| [0037](0037-sync-design.md) | Quietkeep Sync — a relay that cannot read, gated against accident | Accepted (design) |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.
