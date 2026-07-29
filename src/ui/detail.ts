@@ -27,6 +27,7 @@ import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
 import { makeContainerEvents, parentEvents, unparentEvents } from './detail-intents.ts';
 import { linkPersonEvents, closeWaitingEvents } from './detail-intents.ts';
 import { setTrackRoleEvents, setSuspenseEvents } from './detail-intents.ts';
+import { setSaveForEvents } from './detail-intents.ts';
 import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting } from '../people.ts';
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
@@ -280,6 +281,22 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // "On its own" only when there is something to come out of, and the promote
     // to a container only when it is not one already — the same rule as every
     // other control here: never offer what this item cannot do.
+    // Save-for numbers, only for a Menu item in that category — a target on
+    // something you are not saving for is a field with nothing to mean.
+    const saveGroup = q('#detail-savefor-group');
+    if (saveGroup) {
+      const isSaveFor = n.onMenu === 'save-for';
+      saveGroup.hidden = !isSaveFor;
+      if (isSaveFor) {
+        const t = q<HTMLInputElement>('#detail-save-target');
+        const v = q<HTMLInputElement>('#detail-save-saved');
+        // Do NOT clobber what someone is part-way through typing — the same
+        // rule the rename box already carries, for the same reason.
+        if (t && document.activeElement !== t) t.value = n.saveTarget != null ? String(n.saveTarget) : '';
+        if (v && document.activeElement !== v) v.value = n.saveSaved != null ? String(n.saveSaved) : '';
+      }
+    }
+
     show('#detail-unparent', Boolean(n.parent));
     show('#detail-make-project', !isContainer(n) && !n.trashed);
     // The track role and the answer-owed date belong to containers only: a role
@@ -414,6 +431,21 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const key = q<HTMLInputElement>('#detail-suspense')?.value ?? '';
     if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) { say('Pick a date first.'); return; }
     void run(ctx => setSuspenseEvents(ctx, current!.id, key), `Answer owed by ${key}.`);
+  });
+
+  btn('#detail-save-set')?.addEventListener('click', () => {
+    if (!current) return;
+    // An empty box means "not said", not zero. `Number('')` is 0, which would
+    // silently record that a thing costs nothing.
+    const read = (sel: string): number | null => {
+      const el = q<HTMLInputElement>(sel);
+      const raw = (el?.value ?? '').trim();
+      if (raw === '') return null;
+      const num = Number(raw);
+      return Number.isFinite(num) && num >= 0 ? num : null;
+    };
+    void run(ctx => setSaveForEvents(ctx, current!.id, read('#detail-save-target'), read('#detail-save-saved')),
+      'Noted.');
   });
 
   btn('#detail-close')?.addEventListener('click', () => DLG.close());

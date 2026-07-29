@@ -190,6 +190,14 @@
     <ul id="upkeep-chips" class="chips"></ul>
   </section>
 
+  <!-- The Menu (law 6: demand-free by construction). BEHIND A CONTROL, like the
+       coverage gauge — a wish list that greets you is a demand list. It carries
+       no clocks, nothing accrues, and no save-for shows a bar or a percentage:
+       a bar is a machine for implying you are behind. -->
+  <button id="menu-open" class="gauge" type="button" aria-expanded="false"
+          aria-controls="menu" hidden></button>
+  <section id="menu" class="menu" aria-labelledby="menu-open" hidden></section>
+
   <h2 class="section">What you are holding</h2>
   <!-- Tappable: the gauge's number is a claim, and the claim is checkable —
        every item and the date it comes back. -->
@@ -364,6 +372,27 @@
       on the other thing and a length here, it stays quiet.
     </p>
     <ul id="detail-feeds-list" class="detail-feeds"></ul>
+  </div>
+
+  <!-- Save-for numbers. Shown only for a Menu item in that category — a target
+       on something you are not saving for is a field with nothing to mean. Two
+       numbers, both by hand; the app derives nothing about anybody's money. -->
+  <div class="detail-group" id="detail-savefor-group" hidden>
+    <span class="detail-label" id="detail-savefor-label">Saving for it</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-savefor-label">
+      <label class="detail-inline" for="detail-save-target">costs</label>
+      <input id="detail-save-target" type="number" min="0" step="0.01"
+             inputmode="decimal" aria-describedby="detail-savefor-hint">
+      <label class="detail-inline" for="detail-save-saved">put by</label>
+      <input id="detail-save-saved" type="number" min="0" step="0.01"
+             inputmode="decimal" aria-describedby="detail-savefor-hint">
+      <button id="detail-save-set" type="button">Save</button>
+    </div>
+    <p id="detail-savefor-hint" class="detail-hint">
+      Either can be left empty. Nothing here counts down, works out a date, or
+      says how you are doing &mdash; it holds the two numbers so you don&rsquo;t
+      have to.
+    </p>
   </div>
 
   <div class="detail-group">

@@ -107,6 +107,10 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // The Menu (law 6). The money line is the lowest-contrast text and it is the
+  // whole of what a save-for says. There is NO bar and no colour keyed to the
+  // numbers anywhere on this surface, and that absence is the measurement.
+  'menu open': ['#menu-open', '.menu-cat', '.menu-item', '.menu-title'],
   // Coming back (law 8). The reassurance is the CONTENT, so it gets full ink;
   // the counts beneath it are the lesser fact and sit in the quiet token. There
   // is nothing here keyed to how long you were away — no colour, no threshold —
@@ -516,6 +520,27 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3e1: the Menu. Reached by routing something to Someday, which is the
+    // only way anything gets there.
+    await page.fill('#capture', 'a book to read');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForSelector('#triage:not([hidden]) .route');
+    for (let i = 0; i < 12; i++) {
+      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
+      await page.click('#triage-actions .route');
+      await page.waitForTimeout(120);
+    }
+    await page.locator('#triage-actions .route', { hasText: 'Someday' }).first().click();
+    await page.waitForTimeout(300);
+    await page.waitForSelector('#menu-open:not([hidden])');
+    await page.click('#menu-open');
+    await page.waitForSelector('#menu:not([hidden])');
+    await auditContrast(page, 'menu open', theme);
+    await auditAxe(page, 'menu open', theme);
+    await auditTargets(page, 'menu open', theme);
+    await auditFocusRings(page, 'menu open', theme, ['#menu-open', '.menu-item']);
+    await page.click('#menu-open');           // closed again, so later states are clean
 
     // State 3e2: coming back. Reached by ageing the whole log, which is the only
     // honest way — `lastActivityAt` is a maximum, so one backdated event proves

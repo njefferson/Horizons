@@ -340,3 +340,22 @@ export const setSuspenseEvents = (
   kind: 'suspense.set', node,
   payload: { at: endOfDayKey(dayKey, ctx.zone), ...(label ? { label } : {}) },
 } as AppEvent];
+
+/**
+ * The two numbers on a save-for.
+ *
+ * Both by hand, per the vocabulary's own note — *"target, saved — both manual"*.
+ * The app derives nothing here: a number it worked out would be a projection
+ * about somebody's money, which is not a thing it knows anything about, and a
+ * projected date would turn a wish into a commitment nobody made.
+ *
+ * `null` for either is a legal, ordinary answer. A save-for with no target is a
+ * perfectly good wish, and requiring a number before you may want something
+ * would be the app deciding what counts as a real plan.
+ */
+export const setSaveForEvents = (
+  ctx: StampContext, node: string, target: number | null, saved: number | null,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'save-for.updated', node, payload: { target, saved },
+} as AppEvent];

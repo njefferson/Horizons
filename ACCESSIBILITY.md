@@ -245,6 +245,23 @@ disappears on activation and focus must not fall to `<body>` (WCAG 2.4.3) — th
 same fix `clarify.ts` and `work.ts` already carry, applied at the point the
 control was written rather than after an audit found it.
 
+### B-18 · The Menu and save-for (0.19.0)
+`.menu-money` is `--ink-soft` on `--surface` and is the whole of what a save-for
+says. Registered in both themes along with the category headings, the items and
+the opening control.
+
+**There is no bar, no percentage, and no colour keyed to the numbers.** The smoke
+gate asserts the absence structurally — no `<progress>`, no `role="progressbar"`,
+no percentage width in the rendered markup — because this is the one accessibility
+question on the surface that a contrast check cannot answer. A progress bar is a
+machine for implying you are behind, on the one part of the app that by law 6
+cannot ask for anything.
+
+The Menu is **closed on arrival, every time**, and does not remember being open.
+That is a COGA decision before it is a preference one: a surface that greets you
+with a list of things you wanted is indistinguishable, on a bad morning, from a
+list of things you owe.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

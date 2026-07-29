@@ -1781,6 +1781,114 @@ try {
   is(await tpage.locator('#comms').isVisible(), false,
     'and it does not come straight back \u2014 it comes round on its own');
 
+  // --- The Menu, and a save-for (law 6: demand-free by construction) -------
+  // `menu.item.added` has carried a category from a closed list since the first
+  // draft and NOTHING read it — every Menu item went into one undifferentiated
+  // bucket, so the category was collected and discarded. `save-for.updated` was
+  // never folded, so the one category with numbers could not carry any.
+  console.log('\nThe Menu \u2014 things you want, none of which are asking');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // DRAIN FIRST. `routeOne` routes whatever card is showing, and earlier
+  // sections leave items in the inbox — so "capture then routeOne" sent somebody
+  // else's item to Someday and the tripod was never on the Menu at all, which is
+  // what the walk then failed to find.
+  while (await tpage.locator('#triage:not([hidden]) .route').count() > 0) {
+    await routeOne('Next action');
+  }
+  await tpage.fill('#capture', 'a decent tripod');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Someday');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // BEHIND A CONTROL. A wish list that greets you is a demand list.
+  is(await tpage.locator('#menu').isVisible(), false,
+    'the Menu is not open on arrival \u2014 it does not greet you');
+  const menuLine = await tpage.locator('#menu-open').textContent();
+  is(/Nothing here is asking\./.test(menuLine || ''), true,
+    `and the control says so in as many words ("${menuLine}")`);
+  // Idempotent: the Menu stays open across a detail sheet, so a bare click later
+  // in this walk CLOSED it and the next wait timed out. Toggles need a helper,
+  // not an assumption about what the last step left behind.
+  const openMenu = async () => {
+    if (await tpage.locator('#menu').isVisible()) return;
+    await tpage.click('#menu-open');
+    await tpage.waitForSelector('#menu:not([hidden])');
+  };
+  await openMenu();
+  is(await tpage.locator('#menu .menu-cat').count() > 0, true,
+    'opening it groups things by what they are for');
+  is(await tpage.getAttribute('#menu-open', 'aria-expanded'), 'true',
+    'and says so to a screen reader');
+
+  // A save-for carries two numbers, by hand, and no bar.
+  await tpage.locator('#menu .menu-item', { hasText: 'a decent tripod' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-savefor-group').isVisible(), false,
+    'a "someday" is not a thing you are saving for, so there are no numbers to set');
+  await tpage.click('#detail-close');
+
+  // Move it into save-for through the log, then check the sheet offers the
+  // numbers and the Menu shows them.
+  await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const all = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    // THE TRIPOD SPECIFICALLY. Earlier sections route things to "Someday" and
+    // "Reference", so the last menu.item.added is somebody else's — the first
+    // version of this took it and then asserted against the wrong row.
+    const capture = all.find(e => (e.kind === 'capture.recorded' || e.kind === 'node.created')
+      && (e.payload?.text === 'a decent tripod' || e.payload?.title === 'a decent tripod'));
+    const added = all.find(e => e.kind === 'menu.item.added' && e.node === capture?.node);
+    if (!added) return;
+    const store = db.transaction('events', 'readwrite').objectStore('events');
+    store.add({ id: 'smoke-savefor', vault: added.vault, at: new Date().toISOString(),
+      device: 'smoke', seq: 900100, kind: 'menu.item.added', node: added.node,
+      payload: { category: 'save-for' } });
+    await new Promise((res) => { store.transaction.oncomplete = res; });
+  });
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await openMenu();
+  await tpage.locator('#menu .menu-item', { hasText: 'a decent tripod' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-savefor-group').isVisible(), true,
+    'now it offers the two numbers');
+  await tpage.fill('#detail-save-target', '300');
+  await tpage.fill('#detail-save-saved', '120');
+  await tpage.click('#detail-save-set');
+  await tpage.waitForTimeout(350);
+  await tpage.click('#detail-close');
+  await openMenu();
+  const money = await tpage.locator('#menu .menu-item', { hasText: 'a decent tripod' })
+    .locator('.menu-money').first().textContent();
+  is(money, '\u00a3120 put by of \u00a3300. \u00a3180 to go.',
+    `two numbers and the difference ("${money}")`);
+  // THE LOAD-BEARING ONE. No bar, no percentage, no projected date, anywhere.
+  const menuHtml = await tpage.locator('#menu').innerHTML();
+  is(/<progress|role="progressbar"|width:\s*\d+%/.test(menuHtml), false,
+    'and there is no bar of any kind \u2014 a bar implies you are behind');
+  const menuText = await tpage.evaluate(() => document.querySelector('#menu')?.innerText ?? '');
+  is(/%|percent|on track|behind|at this rate/i.test(menuText), false,
+    'and nothing scores you on how the saving is going');
+
+  // An empty box means "not said", not zero.
+  await tpage.locator('#menu .menu-item', { hasText: 'a decent tripod' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-save-target', '');
+  await tpage.click('#detail-save-set');
+  await tpage.waitForTimeout(350);
+  await tpage.click('#detail-close');
+  await openMenu();
+  const money2 = await tpage.locator('#menu .menu-item', { hasText: 'a decent tripod' })
+    .locator('.menu-money').first().textContent();
+  is(money2, '\u00a3120 put by.',
+    `clearing the target unsays it rather than recording that it costs nothing ("${money2}")`);
+
   // --- Coming back after being away (law 8) --------------------------------
   // `lapse.migration.ran`, `reentry.greeted` and `amnesty.offered`/`.accepted`
   // have been in the vocabulary from the first draft, with the bound written into

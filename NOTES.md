@@ -165,7 +165,9 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 
 ### Should — v1.5
 
-Menu with save-for gauges · ~~Rest mode + auto re-entry (7-day default)~~
+~~Menu with save-for gauges~~ **(done, 0.19.0 — the category on
+`menu.item.added` had been collected and discarded since the first draft, and
+`save-for.updated` was never folded)** · ~~Rest mode + auto re-entry (7-day default)~~
 **(done, 0.18.0 — [ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md); the
 re-entry vocabulary had been complete and unreachable since the first draft)** ·
 bother

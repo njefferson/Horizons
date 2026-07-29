@@ -1005,3 +1005,24 @@ dialog, dialog * { overflow-wrap: anywhere; }
 .reentry-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .reentry-actions button { min-height: var(--target); max-width: 100%;
   white-space: normal; overflow-wrap: anywhere; }
+
+/* --- the Menu (law 6: demand-free) ---------------------------------------- */
+.menu { margin: 0 0 1.25rem; padding: 0; }
+.menu-cat { margin: 0.75rem 0 0.35rem; font-size: 0.9375rem; color: var(--ink-soft);
+  font-weight: 600; }
+.menu-list { list-style: none; margin: 0; padding: 0;
+  display: flex; flex-direction: column; gap: 0.35rem; }
+.menu-item {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  width: 100%; min-height: var(--target); padding: 0.5rem 0.75rem; text-align: left;
+  color: var(--ink); background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); font: inherit; cursor: pointer;
+}
+.menu-title { overflow-wrap: anywhere; }
+/* Two numbers and the difference. There is deliberately NO bar and no
+   percentage here, and no colour that changes as the numbers do — a bar is a
+   machine for implying you are behind, on the one surface in this app that is
+   structurally incapable of nagging. */
+.menu-money { color: var(--ink-soft); font-size: 0.875rem; }
+#detail-save-target, #detail-save-saved { min-height: var(--target); width: 6rem; }
+#detail-save-set { min-height: var(--target); }

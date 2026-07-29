@@ -46,6 +46,12 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /** For a `save-for` Menu item: what it costs and what is put by. Either may be
+   *  null — a save-for with no target is an ordinary wish, and demanding a number
+   *  before you may want something would be the app deciding what counts as a
+   *  real plan. Never derived: both are set by hand, per the vocabulary. */
+  saveTarget: number | null;
+  saveSaved: number | null;
   /** For a project: `execute` (you do it) or `track` (you carry it, someone else
    *  does it). Null until anyone has said, which means execute by default —
    *  stated rather than stored, so an unanswered question is not a decision. */
@@ -212,7 +218,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
       resumeFor: null, resumeCue: null, interruptedFocus: null, interruptedAt: null,
       people: [], waitingOn: null, waitingFor: null, waitingSince: null, waitingOutcome: null,
-      role: null, opr: null,
+      role: null, opr: null, saveTarget: null, saveSaved: null,
       lastReplan: null,
       feeds: [],
       leadDays: null,
@@ -380,6 +386,19 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         if (wins(n.stamps['waiting'], o)) {
           n.waitingOutcome = e.payload.outcome ?? 'closed';
           n.stamps['waiting'] = o;
+        }
+        break;
+      }
+      // Both numbers set by hand, per the vocabulary's own note ("target, saved
+      // — both manual"). A number this app derived would be a projection about
+      // somebody's money, which is not a thing it knows anything about.
+      case 'save-for.updated': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['save-for'], o)) {
+          const t = e.payload.target, v = e.payload.saved;
+          n.saveTarget = typeof t === 'number' && Number.isFinite(t) ? t : null;
+          n.saveSaved = typeof v === 'number' && Number.isFinite(v) ? v : null;
+          n.stamps['save-for'] = o;
         }
         break;
       }

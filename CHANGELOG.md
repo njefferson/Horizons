@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.19.0 — CAPABILITY
+
+*2026-07-29*
+
+- The Menu is a place now, not just a heading. Things you have put there are grouped by what they are for — Read, Try, Go, Make, Look into, Save for — instead of sitting in one undifferentiated pile.
+- **It is behind a button and it is closed when you arrive.** A list of things you want that greets you every morning is a list of things you owe. The button says how many, and says plainly that none of them are asking.
+- A category you have nothing in is not shown. An empty "Go" is not a gap to fill; it is a thing you have not wished for.
+- Something you are saving for can now hold two numbers: what it costs and what you have put by. "£120 put by of £300. £180 to go."
+- **There is no bar, no percentage, and no date worked out from how fast you are saving.** A bar is a machine for implying you are behind, and this is the one part of Quietkeep that structurally cannot ask you for anything.
+- Both numbers are yours to set and either can be left empty. Clearing one unsays it rather than recording that something costs nothing.
+- Nothing on the Menu carries a clock, and putting a number on a wish does not turn it into a deadline.
+
 ## 0.18.0 — CAPABILITY
 
 *2026-07-29*

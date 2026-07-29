@@ -71,6 +71,8 @@ export function deserialiseState(raw: unknown): State {
       waitingOutcome: n.waitingOutcome ?? null,
       role: n.role ?? null,
       opr: n.opr ?? null,
+      saveTarget: n.saveTarget ?? null,
+      saveSaved: n.saveSaved ?? null,
       lastReplan: n.lastReplan ?? null,
       // MUTABLE fields must be copied on deserialise as well as on clone. A
       // shared array between a snapshot and running state is how a fold rewrote

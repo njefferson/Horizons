@@ -24,6 +24,7 @@ import { heldGroups, heldStatus } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
 import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
 import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
+import { menuGroups, menuCount, menuWords, saveForWords, MENU_WORDS } from '../menu.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -135,6 +136,61 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
 
   list.replaceChildren(...rows);
   $('#empty').hidden = groups.length > 0;
+
+  // The Menu (law 6). BEHIND A CONTROL — a wish list that greets you is a demand
+  // list, and the Menu is the one surface in this app structurally incapable of
+  // nagging. The button states the count and says plainly that none of it is
+  // asking; the list itself only exists once you have opened it.
+  try {
+    const st = session.state();
+    const total = menuCount(st);
+    const openBtn = document.querySelector<HTMLButtonElement>('#menu-open');
+    const region = document.querySelector<HTMLElement>('#menu');
+    if (openBtn && region) {
+      openBtn.hidden = total === 0;
+      openBtn.textContent = menuWords(total);
+      if (total === 0) {
+        region.hidden = true;
+        openBtn.setAttribute('aria-expanded', 'false');
+      }
+      const rows: HTMLElement[] = [];
+      for (const g of menuGroups(st)) {
+        const h = document.createElement('h3');
+        h.className = 'menu-cat';
+        h.textContent = `${g.title} · ${g.items.length}`;
+        rows.push(h);
+        const ul = document.createElement('ul');
+        ul.className = 'menu-list';
+        ul.setAttribute('aria-label', g.title);
+        for (const n of g.items) {
+          const li = document.createElement('li');
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'menu-item';
+          const t = document.createElement('span');
+          t.className = 'menu-title';
+          t.textContent = n.title || '(untitled)';
+          b.append(t);
+          // Two numbers and their difference. No bar, no percentage, no
+          // projected date — a bar is a machine for implying you are behind.
+          const money = saveForWords({ node: n, target: n.saveTarget, saved: n.saveSaved });
+          if (money) {
+            const m = document.createElement('span');
+            m.className = 'menu-money';
+            m.textContent = money;
+            b.append(m);
+          }
+          if (openDetail) b.addEventListener('click', () => openDetail(n));
+          li.append(b);
+          ul.append(li);
+        }
+        rows.push(ul);
+      }
+      region.replaceChildren(...rows);
+    }
+  } catch {
+    // A surface. It must never take the list down with it.
+  }
 
   // The track portfolio. What you carry rather than do — a name, a date you owe
   // an answer, and whether it has moved. No health word anywhere: "at risk" and
@@ -380,6 +436,17 @@ async function main(): Promise<void> {
   // would be activity, and the greeting would report an absence of zero to
   // somebody who has been gone a fortnight.
   try { reentry = mountReentry(session, now, refreshAll); } catch { /* a surface */ }
+
+  // The Menu opens and closes. Closed on arrival, every time — it is demand-free
+  // and a surface that remembers it was open is a surface that greets you.
+  const menuBtn = document.querySelector<HTMLButtonElement>('#menu-open');
+  const menuRegion = document.querySelector<HTMLElement>('#menu');
+  menuBtn?.addEventListener('click', () => {
+    if (!menuRegion) return;
+    const open = menuRegion.hidden;
+    menuRegion.hidden = !open;
+    menuBtn.setAttribute('aria-expanded', String(open));
+  });
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).
