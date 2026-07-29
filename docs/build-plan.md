@@ -128,7 +128,9 @@ The first point the app is worth opening in the morning.
 19. Capped list of 5 behind it.
 20. Upkeep chips above threshold.
 21. Coverage gauge — tappable, showing each item's return date.
-22. Comms-sweep chip on focus-exit ramps.
+22. ~~Comms-sweep chip on focus-exit ramps.~~ **Done, 0.17.0.** Deferred out of
+    Phase 3 with a reason (it needed focus ramps, Phase 4); those shipped in
+    0.14.0, so the reason was spent.
 
 ### Phase 4 — Focus and resumption
 

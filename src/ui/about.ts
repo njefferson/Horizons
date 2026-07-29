@@ -16,6 +16,8 @@ import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
 import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
 import { statusReport, renderReport, periodWords, type ReportFormat } from '../delta.ts';
+import { commsNode } from '../comms.ts';
+import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
 import { heldNodes } from '../gate.ts';
 import type { ExportFile } from '../portability.ts';
@@ -192,6 +194,44 @@ export async function mountAbout(session: Session): Promise<void> {
       // NOT paintCalendar() here: it would immediately overwrite the confirmation
       // the user needs to read. Freshness is handled when the panel opens.
     }
+  });
+
+  // --- the comms sweep, opt-in ----------------------------------------------
+  // OFF until asked for. A planner that arrives having decided you should check
+  // your messages twice a day has made a decision about your working life that
+  // it was not asked to make.
+  const commsNote = document.querySelector<HTMLElement>('#comms-note');
+  const paintComms = (): void => {
+    const on = commsNode(session.state()) !== null;
+    const start = document.querySelector<HTMLButtonElement>('#comms-start');
+    const stop = document.querySelector<HTMLButtonElement>('#comms-stop');
+    if (start) start.hidden = on;
+    if (stop) stop.hidden = !on;
+  };
+  paintComms();
+  document.querySelector<HTMLButtonElement>('#comms-start')?.addEventListener('click', () => {
+    void (async () => {
+      try {
+        await session.commit(ctx => startCommsSweepEvents(ctx, ctx.id()));
+        if (commsNote) commsNote.textContent = 'On. You will be offered one pass when you come out of working on something — never in the middle of it.';
+      } catch (err) {
+        if (commsNote) commsNote.textContent = `That did not work. (${(err as Error).message})`;
+      }
+      paintComms();
+    })();
+  });
+  document.querySelector<HTMLButtonElement>('#comms-stop')?.addEventListener('click', () => {
+    const n = commsNode(session.state());
+    if (!n) return;
+    void (async () => {
+      try {
+        await session.commit(ctx => stopCommsSweepEvents(ctx, n.id));
+        if (commsNote) commsNote.textContent = 'Stopped. Nothing will offer it again.';
+      } catch (err) {
+        if (commsNote) commsNote.textContent = `That did not work. (${(err as Error).message})`;
+      }
+      paintComms();
+    })();
   });
 
   // --- the status report ----------------------------------------------------

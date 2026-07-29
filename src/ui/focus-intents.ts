@@ -13,6 +13,8 @@ import type { AppEvent, NodeKind } from '../events.ts';
 import type { State } from '../fold.ts';
 import type { StampContext } from './session.ts';
 import { cleanTitle } from './detail-intents.ts';
+import { endOfLocalDay } from '../time.ts';
+import { COMMS_FIELD, COMMS_INTERVAL_DAYS, COMMS_COMFORT_DAYS } from '../comms.ts';
 
 const base = (ctx: StampContext, kind: string, node: string | null, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -152,3 +154,47 @@ const liveCardsFor = (state: State, nodeId: string): string[] =>
 
 const hasLiveCardFor = (state: State, nodeId: string): boolean =>
   liveCardsFor(state, nodeId).length > 0;
+
+/**
+ * Turn something on: the comms sweep.
+ *
+ * Built from events that already exist. It is an ordinary upkeep node carrying
+ * one marker field — a field and not a new kind, because it behaves exactly like
+ * an upkeep in every respect that matters, and a new kind would mean teaching
+ * every projection in the app about a thing they already know how to handle.
+ *
+ * Off until you ask for it. A planner that arrives having decided you should
+ * check your messages twice a day has made a decision about your working life
+ * that it was not asked to make.
+ */
+export function startCommsSweepEvents(ctx: StampContext, node: string): AppEvent[] {
+  return [
+    base(ctx, 'node.created', node, { nodeKind: 'upkeep' as NodeKind, title: 'a pass through your messages' }),
+    base(ctx, 'node.field.set', node, { field: COMMS_FIELD, value: true }),
+    base(ctx, 'upkeep.interval.set', node, {
+      intervalDays: COMMS_INTERVAL_DAYS, comfortWindowDays: COMMS_COMFORT_DAYS,
+    }),
+    // Due when the interval says, not this evening. The gate would otherwise
+    // cure the creation with a same-day clock — legal, and wrong.
+    base(ctx, 'clock.set', node, {
+      clockKind: 'review', at: endOfLocalDay(ctx.at, ctx.zone, COMMS_INTERVAL_DAYS), source: 'comms:start',
+    }),
+    // THE RHYTHM STARTS NOW, and this is not a cosmetic choice.
+    //
+    // `pressureOf` reads a never-completed upkeep as pressure 0 — ready — so
+    // without this the sweep was due the instant you turned it on, while the
+    // clock set directly above said tomorrow. Two facts about one node
+    // disagreeing is the exact class of defect this codebase keeps finding, and
+    // here it would mean the first thing the feature ever did was interrupt you
+    // for saying yes to it.
+    //
+    // Recording it as just-swept is also simply true: you are at your desk
+    // reading a settings panel, so you have almost certainly just looked.
+    base(ctx, 'done.marked', node, { at: ctx.at }),
+  ];
+}
+
+/** Stop offering it. `node.trashed` and not a deletion: it happened, the log
+ *  says so, and turning something off is a decision worth being able to see. */
+export const stopCommsSweepEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'node.trashed', node, { reason: 'comms:stopped' })];

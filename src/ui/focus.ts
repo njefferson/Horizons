@@ -12,6 +12,7 @@
 import type { Session } from './session.ts';
 import type { NodeState } from '../fold.ts';
 import { focusView, focusWords, interruptWords, resumeCards } from '../focus.ts';
+import { commsChip } from '../comms.ts';
 import {
   startFocusEvents, endFocusEvents, interruptEvents, resumeEvents, cleanCue,
 } from './focus-intents.ts';
@@ -70,9 +71,30 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
     if (thenFocusHeading && !REGION.hidden) HEAD?.focus();
   };
 
+  /**
+   * The focus-exit ramp.
+   *
+   * `surfacing` is TRUE only in the moment after a session ends — held here, in
+   * memory, and never as an event. It is a property of this sitting, not of your
+   * history: persisting it would mean the chip greeting you on a cold start
+   * tomorrow morning, which is precisely the arriving-unbidden behaviour the
+   * whole design refuses. It is cleared by the next thing you do.
+   */
+  let surfacing = false;
+
+  function paintComms(): void {
+    const region = document.querySelector<HTMLElement>('#comms');
+    const words = document.querySelector<HTMLElement>('#comms-words');
+    if (!region || !words) return;
+    const chip = commsChip(session.state(), new Date(now()).toISOString(), session.zone, surfacing);
+    region.hidden = chip === null;
+    words.textContent = chip?.words ?? '';
+  }
+
   function refresh(): void {
     const v = focusView(session.state(), new Date(now()).toISOString());
     REGION.hidden = v.node === null;
+    paintComms();
     if (!v.node) {
       if (tick) { clearInterval(tick); tick = null; }
       return;
@@ -106,6 +128,7 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
   q<HTMLButtonElement>('#focus-done')?.addEventListener('click', () => {
     const id = session.state().focus?.node;
     if (!id) return;
+    surfacing = true;
     void run(ctx => [
       ...doneEvents(ctx, id),
       ...endFocusEvents(ctx, session.state(), 'completed'),
@@ -114,6 +137,7 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
 
   q<HTMLButtonElement>('#focus-stop')?.addEventListener('click', () => {
     if (!sheet || !cue) {
+      surfacing = true;
       void run(ctx => endFocusEvents(ctx, session.state(), 'abandoned'), 'Stopped. It is waiting for you.');
       return;
     }
@@ -128,6 +152,7 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
     // `abandoned`, and the word never reaches a person. It is the vocabulary's
     // term for "you stopped without finishing", and the surface says "Stopped.
     // It is waiting for you." — which is what actually happened.
+    surfacing = true;
     void run(ctx => endFocusEvents(ctx, session.state(), 'abandoned', words),
       'Stopped. It is waiting for you.');
   });
@@ -137,6 +162,20 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
       q<HTMLButtonElement>('#focus-sheet-stop')?.click();
     }
   });
+
+  const lowerRamp = (): void => { surfacing = false; paintComms(); };
+  q<HTMLButtonElement>('#comms-done')?.addEventListener('click', () => {
+    const n = session.state().nodes.get(commsChip(session.state(),
+      new Date(now()).toISOString(), session.zone, surfacing)?.node.id ?? '');
+    if (!n) { lowerRamp(); return; }
+    surfacing = false;
+    void run(ctx => doneEvents(ctx, n.id), 'Good. It comes round again on its own.');
+  });
+  // "Not now" writes NOTHING. Declining is not an event, because an event is a
+  // record and a record of every time you did not do something is the ledger
+  // this app exists to not keep (law 5). It comes round on the ordinary decay,
+  // exactly as if you had never been asked.
+  q<HTMLButtonElement>('#comms-later')?.addEventListener('click', lowerRamp);
 
   refresh();
 
@@ -152,6 +191,7 @@ export function mountFocus(session: Session, now: () => number, onChange: () => 
         void run(ctx => resumeEvents(ctx, session.state(), c.card.id, c.target.id),
           `Back on ${c.target.title || 'it'}.`, true);
       } else {
+        surfacing = false;
         void run(ctx => startFocusEvents(ctx, session.state(), node.id),
           `Working on ${node.title || 'it'}.`, true);
       }

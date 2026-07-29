@@ -107,6 +107,12 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // The comms sweep on the focus-exit ramp. Its line is an OFFER, stated in
+  // `--ink` rather than a quieter token — it is the content of the surface, not
+  // an aside — and there is no badge, no count and no colour anywhere on it.
+  'comms ramp': ['#comms-heading', '.comms-words', '#comms-done', '#comms-later'],
+  // Its opt-in, in the panel. Off until asked for.
+  'comms opt-in': ['#comms-start', '.about-p', '.about-caveat', '.about-section'],
   // The track portfolio. The facts line is the lowest-contrast text and it is the
   // whole content of the row — who, when an answer is owed, what is outstanding.
   // There is no colour here that means "at risk" and there will not be one: a hue
@@ -504,6 +510,47 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3f-: the comms sweep. Turned on through the panel, made due the way
+    // the smoke walk does it, then reached the only way it can be reached — by
+    // coming out of a focus session.
+    await page.click('#open-about');
+    await page.waitForSelector('#comms-start:not([hidden])');
+    await auditContrast(page, 'comms opt-in', theme);
+    await auditTargets(page, 'comms opt-in', theme);
+    await auditFocusRings(page, 'comms opt-in', theme, ['#comms-start']);
+    await page.click('#comms-start');
+    await page.waitForTimeout(350);
+    await page.click('#about-close');
+    await page.evaluate(async () => {
+      const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+      const all = await new Promise((res) => {
+        const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+        tx.onsuccess = () => res(tx.result);
+      });
+      const created = all.find(e => e.kind === 'node.field.set' && e.payload?.field === 'comms-sweep');
+      if (!created) return;
+      const older = new Date(Date.now() - 6 * 86400000).toISOString();
+      const store = db.transaction('events', 'readwrite').objectStore('events');
+      for (const e of all) if (e.kind === 'done.marked' && e.node === created.node) store.delete(e.id);
+      store.add({ id: 'a11y-comms', vault: created.vault, at: older, device: 'a11y', seq: 900001,
+        kind: 'done.marked', node: created.node, payload: { at: older } });
+      await new Promise((res) => { store.transaction.oncomplete = res; });
+    });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForSelector('body[data-ready=true]');
+    await page.locator('#cards .card-focus').first().click();
+    await page.waitForSelector('#focus:not([hidden])');
+    await page.click('#focus-stop');
+    await page.waitForSelector('#focus-sheet[open]');
+    await page.click('#focus-sheet-stop');
+    await page.waitForSelector('#comms:not([hidden])');
+    await auditContrast(page, 'comms ramp', theme);
+    await auditAxe(page, 'comms ramp', theme);
+    await auditTargets(page, 'comms ramp', theme);
+    await auditFocusRings(page, 'comms ramp', theme, ['#comms-done', '#comms-later']);
+    await page.click('#comms-later');
+    await page.waitForTimeout(250);
 
     // State 3f0: carrying. Reached the way a person reaches it — make a container,
     // then say somebody else is doing it.

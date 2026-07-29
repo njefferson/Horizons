@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.17.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Messages arrive all day and attention does not divide. If you want it, Quietkeep now offers a single pass through them **at the moment you come out of working on something** \u2014 when looking costs least.',
+      '**Never while you are in the middle of anything.** A prompt that can turn up at any moment is a notification wearing different clothes, and it would be the exact interruption this is meant to replace.',
+      'It is off unless you ask for it, in the (i) panel. A planner that arrives having decided you should check your messages twice a day has made a decision about your working life it was not asked to make.',
+      'Saying "not now" writes nothing at all. Not a record, not a mark, nothing \u2014 it comes round again exactly as if it had never asked.',
+      'It counts nothing. Quietkeep cannot see your messages and never will, and there is no number here for anyone to feel bad about.',
+      'Turning it on does not immediately interrupt you for having turned it on. The rhythm starts from that moment.',
+    ],
+  },
+  {
     triplet: '0.16.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

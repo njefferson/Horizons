@@ -111,7 +111,8 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 - **Work mode, complete.** Single computed Next-up card (hard landscape >
   resume cards > pressure rank; "not this" cycles freely with no penalty),
   capped list of 5 behind it, Upkeep chips above threshold, coverage gauge,
-  comms-sweep chip.
+  ~~comms-sweep chip~~ **(done, 0.17.0 — build-plan item 22, deferred out of Phase 3
+  because it needed focus ramps; those shipped in 0.14.0)**.
 - **Dump + clarify + heat pass.** Zero-chrome capture; one card at a time with
   forced-choice routing; two-tap hot/cold.
 - ~~**Interrupt/pin + focus anchor**, with auto-paired resume cards.~~ **Done, 0.14.0** — `focus.started`/`focus.ended`/`interrupt.captured`/`resume.card.*` had been in the vocabulary since the first draft, `nextup` ranked resume cards SECOND, and nothing could create one: an entire ranking tier ordering an empty set. The card is written **at the interruption**, not at `focus.ended` ([ADR-0039](docs/adr/0039-focus-and-the-way-back.md)).

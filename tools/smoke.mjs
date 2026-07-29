@@ -1659,6 +1659,128 @@ try {
   is(/\b(overdue|late|missed|streak|failed|wasted|distracted)s?\b/i.test(focusText), false,
     'and none of it carries a rebuke for having been interrupted');
 
+  // --- The comms sweep, on the focus-exit ramp -----------------------------
+  // Build-plan item 22, deferred out of Phase 3 with the reason recorded at the
+  // time: "needs focus ramps, which are Phase 4". They shipped in 0.14.0.
+  console.log('\nComing up for air \u2014 one pass, and only on the way out');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#comms').isVisible(), false,
+    'nobody asked for a sweep, so there is none');
+
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#comms-start');
+  is(await tpage.locator('#comms-stop').isHidden(), true,
+    'and nothing to stop, because nothing is running');
+  await tpage.click('#comms-start');
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#comms-start').isHidden(), true, 'on');
+  await tpage.click('#about-close');
+
+  // THE ONE THAT MATTERS. Turning it on must not immediately interrupt you for
+  // having said yes — and it must not appear anywhere except the ramp.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#comms').isVisible(), false,
+    'saying yes does not itself interrupt you');
+
+  await tpage.locator('#cards .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  is(await tpage.locator('#comms').isVisible(), false,
+    'and nothing appears while you are working \u2014 that is the interruption it replaces');
+  await tpage.click('#focus-stop');
+  await tpage.waitForSelector('#focus-sheet[open]');
+  await tpage.click('#focus-sheet-stop');
+  await tpage.waitForTimeout(400);
+  // Not due yet (turning it on counts as a pass), so coming out offers nothing.
+  is(await tpage.locator('#comms').isVisible(), false,
+    'coming out does not conjure a sweep that is not due \u2014 both conditions, not either');
+
+  // Make it due by moving its last pass back through the app's own log, then
+  // come out of a session again.
+  await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const all = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    const created = all.find(e => e.kind === 'node.field.set' && e.payload?.field === 'comms-sweep');
+    const older = new Date(Date.now() - 6 * 86400000).toISOString();
+    // Turning it on records a pass (that is the fix that stopped it interrupting
+    // you for saying yes), and LWW is on `at` FIRST — so simply ADDING an older
+    // done.marked can never win, and the first version of this fixture quietly
+    // changed nothing. The creation-time pass is removed as well, which produces
+    // exactly the honest state being simulated: a sweep that has been running a
+    // while and was last used six days ago.
+    const store = db.transaction('events', 'readwrite').objectStore('events');
+    for (const e of all) {
+      if (e.kind === 'done.marked' && e.node === created.node) store.delete(e.id);
+    }
+    store.add({
+      id: 'smoke-comms-backdate', vault: created.vault, at: older, device: 'smoke', seq: 900001,
+      kind: 'done.marked', node: created.node, payload: { at: older },
+    });
+    await new Promise((res, rej) => {
+      store.transaction.oncomplete = res;
+      store.transaction.onerror = () => rej(store.transaction.error);
+    });
+  });
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#comms').isVisible(), false, 'still nothing on arrival');
+  await tpage.locator('#cards .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  await tpage.click('#focus-stop');
+  await tpage.waitForSelector('#focus-sheet[open]');
+  await tpage.click('#focus-sheet-stop');
+  await tpage.waitForSelector('#comms:not([hidden])');
+  const commsLine = await tpage.locator('#comms-words').textContent();
+  is(/Last pass through your messages was \d+ days ago\./.test(commsLine || ''), true,
+    `and NOW it offers one, saying how long ("${commsLine}")`);
+  is(/\b\d+\s+(messages?|emails?|unread)\b/i.test(commsLine || ''), false,
+    'counting nothing it cannot see');
+
+  // Declining writes NOTHING. A record of every time you did not do something is
+  // the ledger this app exists to not keep.
+  const eventsBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  await tpage.click('#comms-later');
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#comms').isVisible(), false, 'saying not now puts it away');
+  const eventsAfter = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(eventsAfter, eventsBefore, `and writes nothing at all (${eventsBefore} events, unchanged)`);
+
+  // Having a look records it, and it stops being offered.
+  await tpage.locator('#cards .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  await tpage.click('#focus-stop');
+  await tpage.waitForSelector('#focus-sheet[open]');
+  await tpage.click('#focus-sheet-stop');
+  await tpage.waitForSelector('#comms:not([hidden])');
+  is(true, true, 'declining did not retire it — it is offered again, as if never asked');
+  await tpage.click('#comms-done');
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#comms').isVisible(), false, 'a look puts it away');
+  await tpage.locator('#cards .card-focus').first().click();
+  await tpage.waitForSelector('#focus:not([hidden])');
+  await tpage.click('#focus-stop');
+  await tpage.waitForSelector('#focus-sheet[open]');
+  await tpage.click('#focus-sheet-stop');
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#comms').isVisible(), false,
+    'and it does not come straight back \u2014 it comes round on its own');
+
   // --- Two devices (ADR-0035) ----------------------------------------------
   // A SECOND browser context: its own IndexedDB, its own device id, its own
   // captures. Anything less would be testing the function, not the feature —

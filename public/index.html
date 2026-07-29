@@ -104,6 +104,21 @@
     <p id="focus-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- The comms-sweep chip on the focus-exit ramp (build-plan item 22, deferred
+       out of Phase 3 for exactly this reason: it needed focus ramps).
+       It appears when you come out of a focus session and NOWHERE ELSE. A chip
+       that can arrive at any moment is a notification wearing different clothes,
+       and it would be the very interruption it exists to consolidate. -->
+  <section id="comms" class="comms" aria-labelledby="comms-heading" hidden>
+    <h2 id="comms-heading" class="section" tabindex="-1">Coming up for air</h2>
+    <p id="comms-words" class="comms-words"></p>
+    <div class="comms-actions">
+      <button id="comms-done" type="button">I have had a look</button>
+      <button id="comms-later" type="button" class="ghost">Not now</button>
+    </div>
+    <p id="comms-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
   <!-- The track portfolio (v1 Must). Some work you do; some you CARRY. What you
        hold is a name, a date you owe an answer, and whether it has moved. No
        health word anywhere — "at risk" and "slipping" are this app grading
@@ -417,6 +432,23 @@
     carrying your work between your own devices.
     <strong>Replace everything</strong> throws away what is here and uses the copy
     instead &mdash; that is the one for a device you are setting up again.
+  </p>
+
+  <h3 class="about-section">One pass through your messages</h3>
+  <p class="about-p">
+    Messages arrive all day and attention does not divide. If you turn this on,
+    Quietkeep offers a single pass through them at the moment you come out of
+    working on something &mdash; when looking costs least &mdash; and never while
+    you are in the middle of anything.
+  </p>
+  <div class="about-actions">
+    <button id="comms-start" type="button" class="ghost">Offer me a sweep</button>
+    <button id="comms-stop" type="button" class="ghost">Stop offering it</button>
+  </div>
+  <p id="comms-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    It is off unless you ask for it, it counts nothing, and skipping one is not
+    a failure. Quietkeep cannot see your messages and never will.
   </p>
 
   <h3 class="about-section">Telling someone where things are</h3>

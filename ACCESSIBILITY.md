@@ -210,6 +210,23 @@ refused, and when printing. The first is the one that matters — a permission
 failure must put the text in front of the person rather than lose it with an
 apology, and it therefore has to be as readable as any other text in the app.
 
+### B-16 · The comms sweep (0.17.0)
+`.comms-words` is `--ink`, not the quieter hint token: it is the whole content of
+the surface, not an aside. Registered in both themes, along with the two controls
+and the opt-in in the panel.
+
+**There is no badge, no count, and no colour on this surface.** An unread count
+is the most effective piece of shame-by-arithmetic in software; this app cannot
+see your messages and would not report a number if it could. The words are an
+offer and a duration, and the test asserts the absence of seven specific
+formulations (`unread`, `waiting for you`, `still not`, `inbox zero`, …) plus any
+"N messages" pattern.
+
+Accessibility here is mostly a matter of *when* rather than contrast: the chip
+renders only on the focus-exit ramp, so it never steals attention or moves focus
+during a task. Declining writes nothing, so the surface has no state that
+accumulates and nothing that can build up to be faced later.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.
