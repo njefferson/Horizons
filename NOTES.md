@@ -433,6 +433,28 @@ decided by a session.**
 
 ### Log
 
+- **2026-07-29 (evening, second promote)** — **`main` fast-forwarded to `44478be` on
+  Noah's "Promote"**, carrying 0.21.0 (today on paper) and **0.21.1 (the way out of the (i)
+  panel)**. Spine run 88 watched green on that exact commit before the fast-forward.
+  · **0.21.1 is a device fix Noah reported TWICE**, and the second report is the interesting
+  one. The first got a `position: sticky` header, which is correct, which every engine in CI
+  honours, and which does not hold on his iPad. **I reproduced the intended behaviour
+  perfectly at three viewports** — that is precisely why the first fix was not a fix. When a
+  mechanism verifies clean everywhere you can look and the report persists, the answer is to
+  **remove the dependency, not to keep testing the mechanism**.
+  · **Two bugs were introduced by the fix and caught before shipping**, both of which passed a
+  casual look: `#about { display: flex }` outranks the UA's `dialog:not([open]) { display:
+  none }`, so the panel closed and stayed on screen — a worse version of the bug being fixed;
+  and `<input type="file">` fires a **bubbling** `cancel`, so the new Esc handler shut the
+  panel the moment a file was chosen. The first was caught by asserting `checkVisibility()`
+  rather than trusting `close()`; the second by the smoke walk.
+  · **The underlying cause was length.** The panel rendered every release note at once and
+  measured 17,000–25,000px. Fixing the header without that would have left it unusable to
+  read. This is worth remembering as a shape: *the positioning complaint was a symptom, and
+  the thing generating it was a surface nobody had measured.*
+  · New gates are written against the **property** — "the way out is reachable from anywhere
+  in the panel" — not against sticky, so they hold whatever CSS achieves it next.
+
 - **2026-07-29 (evening)** — **`main` fast-forwarded to `be7a6a5` on Noah's "Promote"**,
   carrying 0.17.1 (the audit fixes), 0.18.0 (rest mode) and 0.19.0 (the Menu and save-for).
   **Spine run 81 was watched green on that exact commit before the fast-forward** (V-10).
