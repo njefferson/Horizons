@@ -1,0 +1,191 @@
+// Sealing what goes to the relay (sync stage 2, ADR-0037).
+//
+// **The relay must never be able to read anything.** That is not a feature of the
+// server's good behaviour — it is a property of what reaches it. So everything
+// that leaves a device is sealed here first, and the relay stores opaque bytes it
+// could not interpret if it wanted to.
+//
+// AES-256-GCM via WebCrypto. Authenticated, so tampering is detected rather than
+// decrypted into something plausible; and **a fresh random IV for every seal**,
+// because IV reuse under GCM is not a weakness, it is a total break — two
+// messages under one IV leak their XOR and the authentication key with them.
+//
+// ## What the relay learns, stated exactly
+//
+// - the **sync id**, which is derived from the key by one-way hash — so holding
+//   the id gives no route to the key, and pairing transfers only the key;
+// - a **blob length**, and the fact that a device wrote at some time.
+//
+// It does not learn device ids, event counts, titles, dates, or how much you
+// write — because **the summary is sealed too**, not just the events. An
+// unencrypted summary would hand the relay a per-device write-rate graph, which
+// is telemetry by another name and this project does not have telemetry.
+//
+// ## Losing the key loses nothing permanent
+//
+// Every device keeps its own complete local log; the relay is a transport, not a
+// store of record (ADR-0037). So a lost key costs you the ability to exchange
+// until you pair again — it cannot cost you your work. A sync design where a lost
+// key loses data would violate law 9 outright.
+
+const AES = 'AES-GCM';
+const KEY_BITS = 256;
+const IV_BYTES = 12;          // 96 bits, the GCM standard and what WebCrypto wants
+
+/** The format marker. Present so a future change can be read alongside this one
+ *  rather than replacing it — data is never lost to updates. */
+export const SEAL_VERSION = 1;
+
+export interface Sealed {
+  v: number;
+  /** Base64 IV. Fresh for every single seal. */
+  iv: string;
+  /** Base64 ciphertext, authentication tag included by GCM. */
+  ct: string;
+}
+
+const enc = new TextEncoder();
+const dec = new TextDecoder();
+
+const subtle = (): SubtleCrypto => {
+  const c = globalThis.crypto;
+  if (!c?.subtle) {
+    // Stated rather than swallowed. The one honest failure mode here is a context
+    // with no WebCrypto, and sync must refuse to start rather than pretend.
+    throw new Error('this browser has no WebCrypto, so nothing can be sealed');
+  }
+  return c.subtle;
+};
+
+const b64 = (b: ArrayBuffer | Uint8Array): string => {
+  const bytes = b instanceof Uint8Array ? b : new Uint8Array(b);
+  let s = '';
+  for (const byte of bytes) s += String.fromCharCode(byte);
+  return btoa(s);
+};
+
+const unb64 = (s: string): Uint8Array => {
+  const raw = atob(s);
+  const out = new Uint8Array(raw.length);
+  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i);
+  return out;
+};
+
+// --- the key ---------------------------------------------------------------
+
+/** A fresh key. Extractable, because pairing a second device means handing the
+ *  key over — a non-extractable key would be safer and would make the feature
+ *  impossible. */
+export async function newKey(): Promise<CryptoKey> {
+  return subtle().generateKey({ name: AES, length: KEY_BITS }, true, ['encrypt', 'decrypt']);
+}
+
+/** The key as text, for pairing. This string IS the secret: anything holding it
+ *  can read every exchange, and nothing else can. */
+export async function exportKey(key: CryptoKey): Promise<string> {
+  return b64(await subtle().exportKey('raw', key));
+}
+
+/** Back from text. Refuses anything that is not a 256-bit key rather than
+ *  producing a working-looking object from a truncated paste. */
+export async function importKey(raw: string): Promise<CryptoKey> {
+  let bytes: Uint8Array;
+  try {
+    bytes = unb64(raw.trim());
+  } catch {
+    throw new Error('that is not a pairing key');
+  }
+  if (bytes.length !== KEY_BITS / 8) {
+    throw new Error(`a pairing key is ${KEY_BITS / 8} bytes; that one is ${bytes.length}`);
+  }
+  return subtle().importKey('raw', bytes, { name: AES }, true, ['encrypt', 'decrypt']);
+}
+
+/**
+ * The sync id, derived from the key by SHA-256.
+ *
+ * One-way and deterministic. Both devices compute the same id from the same key
+ * without ever sending it anywhere, and the relay — which only ever sees the id —
+ * gets no route back to the key. It also means **pairing transfers exactly one
+ * secret**: no id to type alongside it, and no way to be paired to the right id
+ * with the wrong key.
+ */
+export async function syncId(key: CryptoKey): Promise<string> {
+  const raw = await subtle().exportKey('raw', key);
+  const digest = await subtle().digest('SHA-256', raw);
+  // Hex, and only the first 128 bits: an id is a name, not a second secret, and a
+  // shorter one is easier to show someone when something has gone wrong.
+  return [...new Uint8Array(digest).slice(0, 16)]
+    .map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// --- sealing ---------------------------------------------------------------
+
+/**
+ * Seal a value.
+ *
+ * A FRESH random IV every time, and that is the single most important line in
+ * this file. Reusing an IV under GCM leaks the XOR of both plaintexts and the
+ * authentication key with them — it is a total break, not a degradation.
+ */
+export async function seal(key: CryptoKey, value: unknown): Promise<Sealed> {
+  const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
+  const ct = await subtle().encrypt({ name: AES, iv }, key, enc.encode(JSON.stringify(value)));
+  return { v: SEAL_VERSION, iv: b64(iv), ct: b64(ct) };
+}
+
+/**
+ * Open a sealed value, or throw.
+ *
+ * **It fails closed.** A wrong key, a tampered blob or a truncated one all throw
+ * rather than returning something partial — GCM's authentication tag is checked
+ * before any plaintext is produced, so there is no half-decrypted state to leak
+ * into a fold. A sync that could apply half a message would be worse than one
+ * that refuses.
+ */
+export async function open(key: CryptoKey, sealed: unknown): Promise<unknown> {
+  const bad = malformedSeal(sealed);
+  if (bad) throw new Error(bad);
+  const s = sealed as Sealed;
+  let plain: ArrayBuffer;
+  try {
+    plain = await subtle().decrypt({ name: AES, iv: unb64(s.iv) }, key, unb64(s.ct));
+  } catch {
+    // Deliberately ONE message for every cause, carrying no number and no
+    // fragment of the blob. Distinguishing "wrong key" from "tampered" — or even
+    // leaking a size — tells an attacker which of the two they achieved.
+    throw new Error('that could not be opened with this key');
+  }
+  try {
+    return JSON.parse(dec.decode(plain));
+  } catch {
+    throw new Error('it opened but did not contain what was expected');
+  }
+}
+
+/**
+ * Is this even a sealed blob? It arrives from a relay, so it is INPUT.
+ *
+ * Checked before any crypto call, because passing arbitrary shapes into
+ * `subtle.decrypt` is how a surface ends up reporting a DOMException at somebody
+ * who wanted to know whether their phone was up to date.
+ */
+export function malformedSeal(x: unknown): string | null {
+  if (x === null || typeof x !== 'object' || Array.isArray(x)) return 'that is not a sealed message';
+  const s = x as Partial<Sealed>;
+  if (s.v !== SEAL_VERSION) {
+    return s.v === undefined
+      ? 'that is not a sealed message'
+      // Named rather than refused generically: a NEWER version means the other
+      // device is ahead, which is a thing to say plainly, not an error.
+      : `that was sealed by a newer version of Quietkeep (format ${String(s.v)})`;
+  }
+  if (typeof s.iv !== 'string' || !s.iv) return 'a sealed message carries an iv';
+  if (typeof s.ct !== 'string' || !s.ct) return 'a sealed message carries contents';
+  return null;
+}
+
+/** What the relay is handed, and nothing more — used by the tests to assert the
+ *  claim rather than merely state it. */
+export const relaySees = (id: string, sealed: Sealed): Record<string, unknown> =>
+  ({ id, v: sealed.v, iv: sealed.iv, ct: sealed.ct });
