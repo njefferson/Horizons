@@ -304,6 +304,44 @@ an empty ballot box so the page can be used with a pen — deliberately not a
 control that reports anything back, which the honesty line on the card says in
 words.
 
+### B-21 · The way out of the (i) panel (0.21.1) — reported twice
+**Noah, on device, twice.** The panel's header was `position: sticky` inside the
+dialog's own scroll container. That is correct, every engine in CI honours it,
+and it did **not** hold on his iPad: the header scrolled away with the content,
+so both ways out sat at the extremes of a panel thousands of pixels long.
+
+The dependency was **removed rather than debugged**, because I cannot test the
+engine that broke it. `#about[open]` is a flex column that does not scroll;
+`.about-body` is the only thing that moves. The header cannot scroll away because
+it is not inside the box that scrolls. That needs no support from any engine and
+cannot regress on one.
+
+**The close is now wired first, before anything that can fail.** It used to be
+attached ~490 lines into `mountAbout`, after the patch notes, storage, import,
+comms and report wiring — so every one of those had to succeed for the modal to
+be closeable, and `app.ts` swallows a throw from that function silently. A dialog
+you cannot leave is the worst failure this panel has available, and it was the
+last thing made possible.
+
+**Two bugs were introduced by this fix and caught before shipping**, both worth
+recording because both passed a casual look:
+- `#about { display: flex }` beats the UA's `dialog:not([open]) { display: none }`
+  on specificity, so the panel closed correctly and **stayed on screen** — a worse
+  version of the bug being fixed. Caught by asserting `checkVisibility()` after
+  the close instead of trusting `close()`.
+- `<input type="file">` fires a **bubbling** `cancel` event when its chooser is
+  dismissed, so a new Esc handler on the dialog shut the whole panel the moment
+  anybody chose a file to import. Caught by the smoke walk within minutes.
+
+Both now have gates: the walk asserts the panel is genuinely gone after a close,
+that the X is still on screen after scrolling to the bottom, that nothing sits on
+top of it, and that choosing a file does not close the panel.
+
+**The panel's length was the underlying cause and is fixed too.** It rendered
+every release note at once and measured 17,000–25,000px. Fixing the header's
+position without that would have left it just as unusable to read. Older releases
+are folded behind one control; nothing is removed.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

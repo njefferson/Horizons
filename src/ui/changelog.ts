@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.21.1',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      '**The X on the (i) panel stays where you can reach it.** It was pinned to the top of the panel, and on the iPad it scrolled away with everything else \u2014 so both ways out ended up at the very top and the very bottom of a panel thousands of pixels long. It no longer moves at all, because it is no longer inside the part that scrolls.',
+      '**And the panel is not thousands of pixels long any more.** It was showing every release note ever written, all at once. Now it shows what changed this time, with everything older one tap away.',
+      'Escape closes it too, on a keyboard.',
+      'Sorry \u2014 you told me about this one twice.',
+    ],
+  },
+  {
     triplet: '0.21.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

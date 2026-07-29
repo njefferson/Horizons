@@ -70,19 +70,69 @@ export async function mountAbout(session: Session): Promise<void> {
   const noteOut = document.querySelector<HTMLElement>('#storage-note');
   const notes = document.querySelector<HTMLElement>('#patch-notes');
   const version = document.querySelector<HTMLElement>('#version');
-  if (!dialog || !open || !intro || !body || !ask || !exp || !notes || !version || !noteOut) return;
+  if (!dialog) return;
+
+  // THE WAY OUT IS WIRED FIRST, before anything that can fail.
+  //
+  // It used to be attached ~490 lines below, after the patch notes, storage,
+  // import, comms and report wiring — so every one of those had to succeed for
+  // the modal to be closeable, and `app.ts` swallows a throw from this function
+  // silently. A dialog you cannot leave is the worst failure this panel has
+  // available to it, and it was the last thing to be made possible.
+  //
+  // Both controls, and `cancel` so a keyboard Esc is never the only route.
+  const shut = (): void => { try { dialog.close(); } catch { dialog.removeAttribute('open'); } };
+  document.querySelector('#about-dismiss')?.addEventListener('click', shut);
+  document.querySelector('#about-close')?.addEventListener('click', shut);
+  // `e.target === dialog` IS LOAD-BEARING. `<input type="file">` fires its own
+  // `cancel` event when the file chooser is dismissed, and that event BUBBLES —
+  // so an unguarded listener here caught the file picker's cancel and shut the
+  // whole panel the moment anybody chose a file to import. Found by the smoke
+  // walk within minutes of being written, on the surface people reach for after
+  // something has already gone wrong.
+  dialog.addEventListener('cancel', (e) => { if (e.target === dialog) shut(); });
+  // A programmatic showModal has no opener to hand focus back to, so the return
+  // is explicit — and it goes to capture, because that is what this app is for.
+  dialog.addEventListener('close', () => {
+    document.querySelector<HTMLInputElement>('#capture')?.focus();
+  });
+
+  if (!open || !intro || !body || !ask || !exp || !notes || !version || !noteOut) return;
 
   version.textContent = CURRENT.triplet;
 
   // --- patch notes ---------------------------------------------------------
-  notes.replaceChildren(...RELEASES.flatMap((r) => {
+  //
+  // The CURRENT release is shown; everything before it is folded away behind one
+  // control. Rendering the lot made this panel **seventeen to twenty-five
+  // thousand pixels tall** — measured, not estimated — which is the reason a way
+  // out was ever far from a thumb in the first place. Fixing the header's
+  // position without fixing that would have left the panel just as unusable to
+  // read, and history nobody asked for is not a reason to make today's notes
+  // hard to reach.
+  //
+  // Nothing is removed. It is one tap away and it says how many.
+  const noteBlock = (r: typeof RELEASES[number]): HTMLElement[] => {
     const h = el('h3', 'note-head');
     h.append(el('span', 'note-triplet', r.triplet));
     h.append(el('span', 'note-kind', r.kind.toLowerCase()));
     const ul = el('ul', 'note-list');
     ul.append(...r.notes.map((n) => el('li', undefined, n)));
     return [h, ul];
-  }));
+  };
+  const [latest, ...older] = RELEASES;
+  const rendered: HTMLElement[] = latest ? noteBlock(latest) : [];
+  if (older.length > 0) {
+    const d = document.createElement('details');
+    d.className = 'note-older';
+    const sum = document.createElement('summary');
+    sum.textContent = older.length === 1
+      ? 'One earlier release'
+      : `${older.length} earlier releases`;
+    d.append(sum, ...older.flatMap(noteBlock));
+    rendered.push(d);
+  }
+  notes.replaceChildren(...rendered);
 
   // --- storage -------------------------------------------------------------
   const paintStorage = async (): Promise<void> => {
@@ -558,18 +608,8 @@ export async function mountAbout(session: Session): Promise<void> {
     });
   }
 
-  // Two ways out, both real buttons. The one at the bottom is where a reader who
-  // has worked down the panel expects it; the sticky one at the top is the one
-  // that matters, because the panel is thousands of pixels tall and Esc is not
-  // available to a thumb on an iPad.
-  document.querySelector('#about-close')?.addEventListener('click', () => dialog.close());
-  document.querySelector('#about-dismiss')?.addEventListener('click', () => dialog.close());
-
-  // A programmatic showModal has no opener to hand focus back to, so the return
-  // is explicit — and it goes to capture, because that is what this app is for.
-  dialog.addEventListener('close', () => {
-    document.querySelector<HTMLInputElement>('#capture')?.focus();
-  });
+  // (The two ways out and the focus return are wired at the TOP of this function,
+  // before anything that can throw. See the note there.)
 
   // Open immediately, fill after — a button that stalls while it awaits storage
   // is exactly the kind of gap this app exists to be free of.

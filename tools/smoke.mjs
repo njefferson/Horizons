@@ -1146,6 +1146,11 @@ try {
   await tpage.waitForSelector('#import-file');
   await tpage.setInputFiles('#import-file', backupPath);
   await tpage.waitForTimeout(250);
+  // A REGRESSION GUARD, and it earned its place immediately. `<input type=file>`
+  // fires a bubbling `cancel` when its chooser is dismissed, so an Esc handler
+  // on the dialog closed the whole panel the moment a file was chosen.
+  is(await tpage.evaluate(() => document.querySelector('#about').open), true,
+    'choosing a file does not close the panel out from under you');
   await tpage.click('#import-go');
   // The surface reloads itself, because every projection was built from a store
   // that no longer exists.
@@ -1786,6 +1791,79 @@ try {
   // called window.print() against the live page: the output was the About
   // dialog, the app behind it, and whatever the screen layout did under print
   // media. The button worked and the result was unusable.
+  // --- The way out of the panel (Noah, on device, TWICE) -------------------
+  // The header was `position: sticky` inside the dialog's own scroll container.
+  // Correct, honoured by every engine in CI, and it did not hold on his iPad:
+  // the bar scrolled away with the content and both ways out ended up at the
+  // extremes of a panel thousands of pixels tall.
+  //
+  // The dependency is gone rather than debugged — the dialog is a flex column
+  // that does not scroll and the body is the only thing that moves. These checks
+  // are about the PROPERTY, not the mechanism, so they hold whatever CSS is used
+  // to achieve it.
+  console.log('\nThe way out of the panel \u2014 reachable from anywhere in it');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about-body');
+
+  is(await tpage.evaluate(() => {
+    const d = document.querySelector('#about');
+    return d.scrollHeight <= d.clientHeight + 1;
+  }), true, 'the dialog itself does not scroll \u2014 only its body does');
+
+  // Scroll to the very bottom and check the X is STILL where a thumb can reach.
+  const xReach = await tpage.evaluate(() => {
+    const body = document.querySelector('#about-body');
+    body.scrollTop = 999999;
+    const x = document.querySelector('#about-dismiss');
+    const r = x.getBoundingClientRect();
+    const hit = document.elementFromPoint(Math.round(r.left + r.width / 2), Math.round(r.top + r.height / 2));
+    return {
+      scrolled: body.scrollTop > 0,
+      onScreen: r.top >= 0 && r.bottom <= window.innerHeight,
+      top: Math.round(r.top),
+      hit: hit ? (hit.id || hit.tagName) : 'NONE',
+    };
+  });
+  is(xReach.scrolled, true, 'the panel really did scroll');
+  is(xReach.onScreen, true, `and the way out is still on screen (top ${xReach.top}px)`);
+  is(xReach.hit, 'about-dismiss', 'and nothing is sitting on top of it');
+
+  // AND IT ACTUALLY CLOSES. `close()` succeeding is not the same as the panel
+  // going away: `#about { display: flex }` beats the UA's `dialog:not([open])
+  // { display: none }` on specificity, so the dialog closed and stayed on
+  // screen — a worse version of the bug being fixed, caught only by asking the
+  // browser whether it was still visible.
+  await tpage.click('#about-dismiss');
+  await tpage.waitForTimeout(200);
+  const shut = await tpage.evaluate(() => {
+    const d = document.querySelector('#about');
+    return { open: d.open, visible: d.checkVisibility() };
+  });
+  is(shut.open, false, 'the X closes the panel');
+  is(shut.visible, false, 'and the panel is actually GONE, not merely marked closed');
+  is(await tpage.evaluate(() => document.activeElement?.id), 'capture',
+    'and focus comes back to capture');
+
+  // The other way out, at the bottom, still works too.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about-body');
+  await tpage.click('#about-close');
+  await tpage.waitForTimeout(200);
+  is(await tpage.evaluate(() => document.querySelector('#about').checkVisibility()), false,
+    'and so does the one at the bottom');
+
+  // The panel is no longer thousands of pixels tall, which is why the way out
+  // was ever far from a thumb.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about-body');
+  const panelH = await tpage.evaluate(() => document.querySelector('#about-body').scrollHeight);
+  is(panelH < 9000, true, `the panel is readable rather than a scroll of history (${panelH}px)`);
+  is(await tpage.locator('.note-older').count(), 1,
+    'older releases are one tap away, not removed');
+  await tpage.click('#about-close');
+
   console.log('\nToday on paper \u2014 and a print that prints the right thing');
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');

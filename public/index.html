@@ -471,6 +471,17 @@
     <button id="about-dismiss" type="button" class="about-x" aria-label="Close">&times;</button>
   </div>
 
+  <!-- THE SCROLL CONTAINER. The panel used to scroll as a whole with a
+       `position: sticky` header riding along, and on Noah's iPad the header
+       went with it — so both ways out ended up at the extremes of a panel
+       thousands of pixels tall (Noah, on device, twice).
+
+       Now the dialog is a flex column that does not scroll at all: the bar is
+       a fixed-size row and THIS is the only thing that moves. It needs no
+       sticky support from anybody — the header cannot scroll away because it
+       is not inside the scrolling box. -->
+  <div id="about-body" class="about-body">
+
   <!-- Shown only on the first run. Everything below it is always here. -->
   <div id="about-intro" class="intro" hidden>
     <p><strong>Quietkeep holds what you put down, and brings it back.</strong>
@@ -614,6 +625,7 @@
 
   <div class="about-actions">
     <button id="about-close" type="button" class="ghost">Close</button>
+  </div>
   </div>
 </dialog>
 

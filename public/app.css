@@ -607,14 +607,38 @@ dialog {
 dialog::backdrop { background: rgb(0 0 0 / 0.5); }
 dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 
-/* The always-reachable way out. `position: sticky` inside the dialog's own
- * scroll container, so it rides along however far down the patch notes you are.
- * It carries the dialog's own background, or the text it scrolls over shows
- * through it. */
+/* THE ALWAYS-REACHABLE WAY OUT, and it no longer depends on `position: sticky`.
+ *
+ * It was sticky inside the dialog's own scroll container — which is correct, and
+ * which every engine here honours, and which did NOT hold on Noah's iPad: the
+ * header scrolled away with the content and both ways out ended up at the
+ * extremes of a panel thousands of pixels tall. Reported twice.
+ *
+ * So the dependency is gone rather than debugged. `#about` is a flex column that
+ * does not scroll; `.about-body` is the only thing that moves. The bar cannot
+ * scroll away because it is not inside the box that scrolls. That needs no
+ * support from any engine and cannot regress. */
+/* `[open]` IS LOAD-BEARING. A bare `#about { display: flex }` beats the UA's
+ * `dialog:not([open]) { display: none }` on specificity, so the panel closed
+ * correctly and stayed on screen anyway — a worse version of the bug this is
+ * fixing. Caught by measuring `checkVisibility()` after the close rather than
+ * trusting that `close()` had done it. */
+#about[open] {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;          /* the BODY scrolls, never the dialog */
+}
+.about-body {
+  flex: 1 1 auto;
+  min-height: 0;             /* without this a flex child refuses to shrink */
+  overflow-y: auto;
+  /* The dialog's own padding moved here so the scrollbar sits at the edge and
+     the bar spans the full width. */
+  margin: 0 -1.25rem -1.25rem;
+  padding: 0 1.25rem 1.25rem;
+}
 .about-bar {
-  position: sticky;
-  top: 0;
-  z-index: 1;
+  flex: none;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -622,6 +646,7 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
   margin: -1.25rem -1.25rem 0.75rem;
   padding: 1.25rem 1.25rem 0.5rem;
   background: var(--surface);
+  border-bottom: 1px solid var(--line);
 }
 .about-bar h2 { margin: 0; }
 /* A sticky header can hide the thing you just moved focus to — WCAG 2.2's
@@ -1098,4 +1123,14 @@ dialog, dialog * { overflow-wrap: anywhere; }
   /* Never break a section across pages if it can be helped. */
   .print-block { break-inside: avoid; }
   @page { margin: 15mm; }
+}
+
+/* Older releases, folded. Rendering every release at once made the About panel
+   17,000–25,000px tall — the reason a way out was ever far from a thumb. */
+.note-older > summary {
+  min-height: var(--target);
+  display: flex;
+  align-items: center;
+  color: var(--ink);
+  cursor: pointer;
 }
