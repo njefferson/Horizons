@@ -20,6 +20,7 @@ import {
 import { fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
 import { wouldCycle } from './dependencies.ts';
+import { wouldParentCycle } from './tree.ts';
 
 export class GateRejection extends Error {
   // Explicit fields, not constructor parameter properties — Node's
@@ -247,6 +248,27 @@ export function admit(
       if (wouldCycle(before, e.node, feeds)) {
         throw new GateRejection(
           'that would make two things each wait for the other', e);
+      }
+    }
+
+    // A parent must be a real, live node, and must not close a loop. The same
+    // reasoning as the dependency edge above, and a harder consequence: a cyclic
+    // PARENT graph makes every ancestor walk infinite, and those run inside fold
+    // consumers, exports and renders. `src/tree.ts` walks defensively so a shard
+    // that delivers half a loop cannot hang the app — but the loop must never be
+    // writable from here, or the defence becomes the behaviour.
+    if (e.kind === 'node.parented') {
+      const parent = (e.payload as { parent?: unknown }).parent;
+      if (typeof parent !== 'string' || !parent) {
+        throw new GateRejection('a parenting must name what it goes under', e);
+      }
+      if (!e.node) throw new GateRejection('a parenting must belong to a node', e);
+      const target = before.nodes.get(parent);
+      if (!target || target.trashed || target.mergedInto) {
+        throw new GateRejection(`nothing here to put it under: ${parent}`, e);
+      }
+      if (wouldParentCycle(before, e.node, parent)) {
+        throw new GateRejection('that would put a thing inside itself', e);
       }
     }
 

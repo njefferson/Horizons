@@ -114,6 +114,28 @@ first version (rings/placeholder/targets removed) it produced 23 failures — se
 F-02. **Watched green in CI**, per V-10's rule that a gate nobody has watched
 pass is a file; the observed run is recorded in NOTES.md's log.
 
+### B-12 · Containment and Review (0.13.0)
+Two surfaces added, both audited in the same commit that introduced them.
+
+**Review** (`#review`) carries no colour of its own. Its rows use the same
+`--ink`-on-`--bg` and `--ink-soft`-on-`--bg` pairs as every other list in the
+app, measured at **13.94:1** and **6.48:1** light, **and its heading at 15.73:1**.
+That is the point rather than an economy: this is the surface that tells you
+something is structurally wrong, and it must not be the one place the app raises
+its voice. There is no alert colour here to check, and the *absence* is the
+measurement (law 5, and B-01's rule that nothing rides on hue).
+
+**`#detail-place`** — the line stating what a thing is part of — is `--ink`, not
+the quieter `--ink-soft` used for hints. A structural fact is not an aside. It is
+registered under its own gate state, `detail sheet, inside something`, because it
+renders **only** when the node has a parent; put in the base sheet's registry it
+matched nothing and the gate said so, which is the registry rule in B-08 working
+rather than a thing to route around. Measured 15.73:1 light, 13.28:1 dark.
+
+**`#detail-parent`** shares `#detail-feeds`' rule exactly, so the sheet's two
+structural selects cannot drift into looking like different kinds of control.
+Both are `min-height: var(--target)`; targets pass at 44px in both themes.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

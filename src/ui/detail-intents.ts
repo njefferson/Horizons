@@ -17,6 +17,7 @@
 import type { AppEvent, MenuCategory, NodeKind } from '../events.ts';
 import type { StampContext } from './session.ts';
 import { endOfLocalDay, localDayKey } from '../time.ts';
+import { CONTAINER_DEFAULT } from '../tree.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -210,4 +211,52 @@ export const releaseFeedsEvents = (
 ): AppEvent[] => [{
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
   kind: 'dependency.released', node, payload: { feeds },
+} as AppEvent];
+
+/**
+ * "This is bigger than one step."
+ *
+ * The act that turns a captured line into something that can HOLD work. Until
+ * this existed the app had a parent field nothing could set, so law 4 had no
+ * levels to push down through and Review's stalled half could never fire.
+ *
+ * `project` and not `outcome`, deliberately: an outcome is a stated result, and
+ * naming the result is a separate act of thinking. A control that picked one for
+ * you would be putting words in your mouth at the exact moment you were trying
+ * to find them.
+ *
+ * Silent-risk — a kind change can strip a role — so the gate cures it. That is
+ * its job, not this module's.
+ */
+export const makeContainerEvents = (
+  ctx: StampContext, node: string, fromKind: NodeKind,
+): AppEvent[] =>
+  fromKind === CONTAINER_DEFAULT ? [] : [{
+    id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+    kind: 'node.kind.changed', node, payload: { from: fromKind, to: CONTAINER_DEFAULT },
+  } as AppEvent];
+
+/**
+ * Put something under something else.
+ *
+ * `priorParent` is carried because the vocabulary asks for it and because a log
+ * that says only where a thing went cannot answer where it came from — and
+ * "where did this used to live" is a question people actually ask after a
+ * reorganisation they half remember.
+ */
+export const parentEvents = (
+  ctx: StampContext, node: string, parent: string, priorParent?: string | null,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'node.parented', node,
+  payload: { parent, ...(priorParent ? { priorParent } : {}) },
+} as AppEvent];
+
+/** Take it back out. It stands on its own again — and because losing a parent is
+ *  silent-risk, the gate gives it a clock of its own in the same transaction. */
+export const unparentEvents = (
+  ctx: StampContext, node: string, priorParent?: string | null,
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'node.unparented', node, payload: { ...(priorParent ? { priorParent } : {}) },
 } as AppEvent];

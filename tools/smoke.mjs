@@ -1244,6 +1244,100 @@ try {
     'and stops offering a link that already exists');
   await tpage.click('#detail-close');
 
+  // --- Containment and Review (law 4, and the exceptions surface) ----------
+  // The app had a parent field from the first fold and NOTHING could set one, so
+  // everything was flat and Review's stalled half could never fire in the real
+  // app at all. Both halves are walked here, through the app's own controls,
+  // because a projection with no path to it is a unit test wearing a feature's
+  // clothes.
+  console.log('\nWhat holds what — and the review that only speaks when something is broken');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#review').isVisible(), false,
+    'nothing is structurally broken, so the review is not on the page at all');
+
+  await tpage.fill('#capture', 'the quarterly report');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Next action');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.locator('#cards .card:has-text("the quarterly report") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  // Before it is a container there is nothing in this app to put anything under,
+  // and the picker says exactly that rather than inviting a choice it cannot honour.
+  const emptyPicker = await tpage.locator('#detail-parent option').allTextContents();
+  // A LITERAL 1 — the placeholder and nothing else. Comparing the length to
+  // itself is the self-referential theatre an audit already found twice here.
+  is(emptyPicker.length, 1, `the picker offers no parents yet (${emptyPicker.join(', ')})`);
+  is(await tpage.locator('#detail-parent').isDisabled(), true,
+    'and it is disabled rather than offering an empty choice');
+  await tpage.click('#detail-make-project');
+  await tpage.waitForTimeout(300);
+  is(await tpage.locator('#detail-make-project').isHidden(), true,
+    'and once it is one, the control that makes it one is gone');
+  const kidsNote = await tpage.locator('#detail-children').textContent();
+  is(/nothing is under this yet/i.test(kidsNote || ''), true,
+    `the container says it is empty, on its own sheet ("${kidsNote}")`);
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // THE POINT OF REVIEW: a container with nothing under it looks perfectly fine
+  // on every other surface in the app. It is a row in the list like any other.
+  await tpage.waitForSelector('#review:not([hidden])');
+  const reviewCount = await tpage.locator('#review-count').textContent();
+  is(reviewCount, 'One thing needs a look.', `it says how many, plainly (got "${reviewCount}")`);
+  is(await tpage.locator('.review-open').count(), 1, 'one exception, one row');
+  is(await tpage.locator('.review-title').first().textContent(), 'the quarterly report',
+    'and it names the thing that has stalled');
+  is(await tpage.locator('.review-why').first().textContent(), 'nothing under it yet',
+    'and says what is wrong with it, without blame');
+  const reviewText = await tpage.evaluate(() =>
+    document.querySelector('#review')?.innerText ?? '');
+  is(/\b(overdue|late|missed|streak|failed|behind|neglect)s?\b/i.test(reviewText), false,
+    'no rebuke anywhere on the surface that tells you something is wrong');
+
+  // Now fix it the way the app says to — put real work under it — and watch the
+  // surface leave. An exceptions list that cannot reach zero is a nag.
+  await tpage.locator('#cards .card:has-text("draft the brief") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  const parentOptions = await tpage.locator('#detail-parent option').allTextContents();
+  is(parentOptions.includes('the quarterly report'), true,
+    `the container is offered as a parent (${parentOptions.join(', ')})`);
+  is(parentOptions.includes('draft the brief'), false, 'and never itself');
+  await tpage.selectOption('#detail-parent', { label: 'the quarterly report' });
+  await tpage.click('#detail-parent-set');
+  await tpage.waitForTimeout(300);
+  const placeLine = await tpage.locator('#detail-place').textContent();
+  is(placeLine, 'Part of the quarterly report.',
+    `the sheet says where it now sits ("${placeLine}")`);
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#review').isVisible(), false,
+    'and the review is gone — it can reach zero, so it is not a nag');
+
+  // THE OTHER HALF: it did not go quiet by being filed away. Law 4 says levels
+  // push DOWN — a thing put under something else is still your work, still on a
+  // clock, still on the list. Filing as a way to lose things is the failure this
+  // whole app is a rebuttal to.
+  const stillListed = await tpage.locator('#cards .card-title').allTextContents();
+  is(stillListed.includes('draft the brief'), true,
+    'and what was put under it is still right there on the list, not filed away');
+
+  // A parenting is silent-risk, so the log must show the gate covering it.
+  const parentLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.map(e => ({ kind: e.kind, node: e.node, payload: e.payload })));
+    });
+  });
+  const parented = parentLog.filter(e => e.kind === 'node.parented');
+  is(parented.length, 1, 'one node.parented was recorded');
+  is(typeof parented[0]?.payload?.parent, 'string', 'naming what it went under');
+
   // --- Two devices (ADR-0035) ----------------------------------------------
   // A SECOND browser context: its own IndexedDB, its own device id, its own
   // captures. Anything less would be testing the function, not the feature —

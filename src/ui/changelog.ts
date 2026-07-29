@@ -29,6 +29,21 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.13.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Bigger things can now hold smaller ones. Open anything and say "this is bigger than one step", and it becomes something other work can sit under \u2014 the report, and the three things that actually make it happen.',
+      'Nothing is filed away out of reach. Whatever you put under something else is still on your list and still comes back to you on its own. This app does not have a place where things go quiet.',
+      'A new "Worth a look" appears when something is structurally broken \u2014 and only then. Most of the time it is not on the page at all, because most of the time nothing is wrong.',
+      'The thing it catches is the expensive one: a bigger piece of work with no actual next step under it. That looks perfectly ordinary everywhere else in the app, and nothing happens for weeks.',
+      'It also catches anything that lost what it belonged to, which can happen when you bring in a copy from another device.',
+      'It shows at most three at a time and says how many there really are. Coming back after a fortnight should not be a wall.',
+      'It is a count, never a score. Nothing here says you are late, and nothing here congratulates you for an empty list \u2014 an empty one simply is not there.',
+      'You cannot put a thing inside itself, or inside something already under it. That is refused as you try, and the picker never offers it in the first place.',
+    ],
+  },
+  {
     triplet: '0.12.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

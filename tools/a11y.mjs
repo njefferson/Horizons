@@ -91,10 +91,26 @@ const REGISTRY = {
     '#detail-date-set', '#detail-close',
     // The dependency picker. A <select> and a number box are the two smallest
     // targets on the densest surface in the app.
-    '#detail-feeds', '#detail-lead', '#detail-feeds-set'],
+    '#detail-feeds', '#detail-lead', '#detail-feeds-set',
+    // Containment (law 4). `#detail-place` is the sheet's answer to "where does
+    // this sit" and it is stated as ordinary `--ink`, not a quieter token —
+    // structural facts are not asides.
+    '#detail-parent', '#detail-parent-set', '#detail-make-project'],
+  // The same sheet once something IS inside something. `#detail-place` renders
+  // ONLY here, so it lives in its own registry entry rather than in the base
+  // sheet — where it matched nothing and the gate said so, which is the check
+  // working. It is stated as ordinary `--ink`, not a quieter token: a structural
+  // fact is not an aside.
+  'detail sheet, inside something': ['#detail-place', '#detail-title', '.detail-label',
+    '#detail-parent', '#detail-parent-set', '#detail-close'],
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // Review, exceptions only. Its rows are the app telling you something is
+  // structurally wrong, so they must be as calm as everything else — same ink
+  // tokens, no alert colour to check, and that absence is the point.
+  'review': ['#review-heading', '.review-count', '.review-open',
+    '.review-title', '.review-why'],
   'replan': ['#replan-heading', '.replan-count', '.replan-open',
     '.replan-card-title', '.replan-card-when'],
   // The sheet. The option hints are the lowest-contrast text in the app after
@@ -435,6 +451,59 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3g: containment and Review (law 4). A container with nothing under
+    // it is the app's quietest failure — it reads as an ordinary row everywhere
+    // else — so the surface that finally says so must be as calm as the rest of
+    // the app. There is no alert colour here to measure, and that absence is the
+    // measurement.
+    // A SECOND item, because containment needs two things: one to hold, one to
+    // be held. The walk had exactly one card, so `.nth(1)` waited thirty seconds
+    // for something that was never going to exist.
+    await page.fill('#capture', 'a bigger piece of work');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForSelector('#triage:not([hidden]) .route');
+    for (let i = 0; i < 12; i++) {
+      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
+      await page.click('#triage-actions .route');       // Hot — advances to clarify
+      await page.waitForTimeout(120);
+    }
+    await page.locator('#triage-actions .route', { hasText: 'Next action' }).first().click();
+    await page.waitForTimeout(250);
+
+    await page.click('#cards .card-open');
+    await page.waitForSelector('#detail[open]');
+    await page.click('#detail-make-project');
+    await page.waitForTimeout(250);
+    await page.click('#detail-close');
+    await page.waitForSelector('#review:not([hidden])');
+    await auditContrast(page, 'review', theme);
+    await auditAxe(page, 'review', theme);
+    await auditTargets(page, 'review', theme);
+    await auditFocusRings(page, 'review', theme, ['.review-open']);
+
+    // And the sheet once something IS inside something — the only state in which
+    // `#detail-place` renders at all. Left out, the one line that states a
+    // structural fact would go permanently unmeasured, which is exactly the hole
+    // an audit found behind `.replan-context`.
+    // The SECOND card. The first is the container just made, and a container's
+    // own picker excludes itself — so reusing it audited an empty picker and
+    // reported the state as unauditable, which is the guard below working.
+    await page.locator('#cards .card-open').nth(1).click();
+    await page.waitForSelector('#detail[open]');
+    const canParent = await page.locator('#detail-parent option').count();
+    if (canParent > 1) {
+      await page.selectOption('#detail-parent', { index: 1 });
+      await page.click('#detail-parent-set');
+      await page.waitForTimeout(250);
+      await page.waitForSelector('#detail-place:not([hidden])');
+      await auditContrast(page, 'detail sheet, inside something', theme);
+      await auditAxe(page, 'detail sheet, inside something', theme);
+      await auditTargets(page, 'detail sheet, inside something', theme);
+    } else {
+      fail(`${theme}: nothing could be put under anything — the containment state went unaudited`);
+    }
+    await page.click('#detail-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

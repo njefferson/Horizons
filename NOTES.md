@@ -115,12 +115,12 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 - **Dump + clarify + heat pass.** Zero-chrome capture; one card at a time with
   forced-choice routing; two-tap hot/cold.
 - **Interrupt/pin + focus anchor**, with auto-paired resume cards.
-- **Dependency dates + replan.** `feeds →` (project, suspense) + lead estimate,
+- ~~**Dependency dates + replan.**~~ **Done, 0.12.0.** `feeds →` (project, suspense) + lead estimate,
   computed latest-start, buffer burn, auto-replan on miss (law 3).
 - **Track portfolio + delta report.** The work half: OPR, suspenses, status
   output to clipboard/Markdown/print/CSV.
 - **Person lens.**
-- **Stalled/orphan detection** (the exceptions-first Review surface).
+- ~~**Stalled/orphan detection** (the exceptions-first Review surface).~~ **Done, 0.13.0** — and it needed *containment* built first: the parent field had existed since the first fold with no control able to set one, so nothing in the app could stall. [ADR-0038](docs/adr/0038-containment-and-exceptions-review.md).
 - **T0 + T1 notifications.** Permission + badge + glance surfaces; `.ics` export
   with `RRULE`/`VALARM` so the OS calendar does the notifying.
 

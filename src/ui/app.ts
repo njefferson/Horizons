@@ -19,6 +19,7 @@ import { mountDetail } from './detail.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
+import { reviewExceptions, reviewWords } from '../review.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -110,6 +111,38 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
 
   list.replaceChildren(...rows);
   $('#empty').hidden = groups.length > 0;
+
+  // Review — exceptions only. Rendered from the same `render` pass as the list,
+  // because it is a fact about the list and nothing else needs to co-ordinate.
+  try {
+    const rv = reviewExceptions(session.state());
+    const region = document.querySelector<HTMLElement>('#review');
+    const count = document.querySelector<HTMLElement>('#review-count');
+    const list = document.querySelector<HTMLElement>('#review-list');
+    if (region && count && list) {
+      region.hidden = rv.total === 0;
+      count.textContent = rv.total === 0 ? '' : reviewWords(rv.total, rv.shown.length);
+      list.replaceChildren(...rv.shown.map(x => {
+        const li = document.createElement('li');
+        li.className = 'review-item';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'review-open';
+        const t = document.createElement('span');
+        t.className = 'review-title';
+        t.textContent = x.node.title || '(untitled)';
+        const w = document.createElement('span');
+        w.className = 'review-why';
+        w.textContent = x.words;
+        b.append(t, w);
+        if (openDetail) b.addEventListener('click', () => openDetail(x.node));
+        li.append(b);
+        return li;
+      }));
+    }
+  } catch {
+    // A surface. It must never take the list down with it.
+  }
 
   // The gauge reads as text first and the number is the information (B-02).
   const { silent, total } = coverageGauge(session.state());

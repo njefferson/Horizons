@@ -75,6 +75,15 @@
     <p id="replan-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- Review, as EXCEPTIONS ONLY (v1 Must). Never a list of your work — only
+       what is structurally broken, and absent entirely when nothing is. An
+       empty review says so by not being here, never by congratulating anyone. -->
+  <section id="review" class="review" aria-labelledby="review-heading" hidden>
+    <h2 id="review-heading" class="section" tabindex="-1">Worth a look</h2>
+    <p id="review-count" class="review-count"></p>
+    <ul id="review-list" class="review-list"></ul>
+  </section>
+
   <!-- Next up: one thing, chosen for you, with a short capped list behind it.
        Hidden when nothing is asking — an empty morning says so. -->
   <section id="nextup" class="nextup" aria-labelledby="nextup-heading" hidden>
@@ -174,6 +183,29 @@
       How long it can go before it asks again. A plant and a phone call do not
       need the same patience.
     </p>
+  </div>
+
+  <!-- Containment (law 4: levels push down). The app had a parent field and no
+       way to set one, so everything was flat and Review's stalled half could
+       never fire. The picker offers only legal parents — never itself, never
+       something already below it — because a control that offers an option it
+       then refuses is a control that lies about what it does. -->
+  <div class="detail-group">
+    <p id="detail-place" class="detail-hint"></p>
+    <label class="detail-label" for="detail-parent">What is this part of?</label>
+    <div class="detail-row">
+      <select id="detail-parent"></select>
+      <button id="detail-parent-set" type="button">Put it under</button>
+      <button id="detail-unparent" type="button" class="ghost">On its own</button>
+    </div>
+    <div class="detail-row">
+      <button id="detail-make-project" type="button" class="ghost">This is bigger than one step</button>
+    </div>
+    <p id="detail-parent-hint" class="detail-hint">
+      Bigger things hold smaller ones. Nothing is filed away out of reach &mdash;
+      whatever is under here still comes back to you on its own.
+    </p>
+    <ul id="detail-children" class="detail-feeds"></ul>
   </div>
 
   <!-- The dependency edge (build-plan item 27). "What breaks if I do not do

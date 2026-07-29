@@ -817,3 +817,33 @@ dialog, dialog * { overflow-wrap: anywhere; }
   color: var(--ink); background: var(--surface); border: 2px solid var(--line);
   border-radius: var(--radius); padding: 0.25rem 0.5rem; }
 #detail-lead { min-height: var(--target); width: 5rem; }
+
+/* --- containment: what holds what (law 4) --------------------------------- */
+/* The picker shares #detail-feeds' rule so the two structural selects on this
+   sheet cannot drift into looking like different kinds of control. */
+#detail-parent { min-height: var(--target); flex: 1 1 8rem; min-width: 0; font: inherit;
+  color: var(--ink); background: var(--surface); border: 2px solid var(--line);
+  border-radius: var(--radius); padding: 0.25rem 0.5rem; }
+/* Where it sits, stated before the control that changes it — you should know
+   the answer before you are asked to alter it. */
+#detail-place { margin: 0 0 0.5rem; color: var(--ink); font-weight: 600; }
+
+/* --- review: exceptions only ---------------------------------------------- */
+.review {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.review > .section { margin-top: 0; }
+.review-count { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.review-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.review-open {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  width: 100%; min-height: var(--target); padding: 0.5rem 0.75rem; text-align: left;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--radius); font: inherit; cursor: pointer;
+}
+.review-title { overflow-wrap: anywhere; }
+.review-why { color: var(--ink-soft); font-size: 0.875rem; }

@@ -24,7 +24,9 @@ import {
 } from './detail-intents.ts';
 import { doneEvents } from './work.ts';
 import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
+import { makeContainerEvents, parentEvents, unparentEvents } from './detail-intents.ts';
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
+import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
 
 export interface DetailUI { open(node: NodeState): void }
 
@@ -42,11 +44,15 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const feedsSel = q<HTMLSelectElement>('#detail-feeds');
   const leadInput = q<HTMLInputElement>('#detail-lead');
   const feedsList = q('#detail-feeds-list');
+  const parentSel = q<HTMLSelectElement>('#detail-parent');
+  const placeLine = q('#detail-place');
+  const kidsList = q('#detail-children');
   if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
     return { open() {} };
   }
   const NAME = name;
   const FEEDS = feedsSel, LEAD = leadInput, FEEDS_LIST = feedsList;
+  const PARENT = parentSel, PLACE = placeLine, KIDS = kidsList;
   const DLG = dlg, TITLE = title, STATE = state, DATE = date, EVERY = every, SLACK = slack, LIVE = live;
 
   let current: NodeState | null = null;
@@ -105,6 +111,51 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
+
+    // Containment (law 4). Where it sits, what may hold it, and what it holds.
+    if (PARENT && PLACE && KIDS) {
+      const st = session.state();
+      const legal = legalParents(st, n);
+      const keep = PARENT.value;
+      PARENT.replaceChildren(...[
+        Object.assign(document.createElement('option'), {
+          value: '',
+          // The empty option's words change with what is actually possible. A
+          // fixed "pick one" over an empty list tells someone to do something
+          // the app cannot let them do yet.
+          textContent: legal.length ? 'pick something' : 'nothing to put it under yet',
+        }),
+        ...legal.map(t => Object.assign(document.createElement('option'), {
+          value: t.id, textContent: t.title || '(untitled)',
+        })),
+      ]);
+      if (legal.some(t => t.id === keep)) PARENT.value = keep;
+      PARENT.disabled = legal.length === 0;
+
+      const place = placeWords(st, n);
+      PLACE.textContent = place ?? '';
+      PLACE.hidden = !place;
+
+      // What it holds, shown on the sheet of the thing that holds it — because
+      // "is anything actually under this" is the question Review answers from
+      // the outside, and someone looking at the container deserves the same
+      // answer without being sent anywhere.
+      const kids = childrenOf(st, n.id);
+      KIDS.replaceChildren(...kids.map(k => {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const label = document.createElement('span');
+        label.textContent = k.title || '(untitled)';
+        li.append(label);
+        return li;
+      }));
+      if (isContainer(n) && kids.length === 0) {
+        const li = document.createElement('li');
+        li.className = 'detail-feed-words';
+        li.textContent = 'Nothing is under this yet.';
+        KIDS.append(li);
+      }
+    }
 
     // The dependency edge (build-plan item 27). The picker offers only nodes it
     // could legally feed — live, not itself, and not one that would close a
@@ -168,6 +219,11 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     show('#detail-promote', Boolean(n.onMenu));
     show('#detail-trash', !n.trashed);
     show('#detail-untrash', n.trashed);
+    // "On its own" only when there is something to come out of, and the promote
+    // to a container only when it is not one already — the same rule as every
+    // other control here: never offer what this item cannot do.
+    show('#detail-unparent', Boolean(n.parent));
+    show('#detail-make-project', !isContainer(n) && !n.trashed);
   }
 
   /** A positive whole number, or null. A blank or nonsense box must not become
@@ -235,6 +291,26 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (lead === null) { say('How many days does this take? A whole number, at least 1.'); return; }
     const title = session.state().nodes.get(target)?.title || 'it';
     void run(ctx => declareFeedsEvents(ctx, current!.id, target, lead), `Linked to ${title}.`);
+  });
+
+  btn('#detail-parent-set')?.addEventListener('click', () => {
+    if (!PARENT || !current) return;
+    const target = PARENT.value;
+    if (!target) { say('Pick what it is part of first.'); return; }
+    const title = session.state().nodes.get(target)?.title || 'it';
+    const prior = current.parent;
+    void run(ctx => parentEvents(ctx, current!.id, target, prior), `Now part of ${title}.`);
+  });
+  btn('#detail-unparent')?.addEventListener('click', () => {
+    if (!current) return;
+    const prior = current.parent;
+    void run(ctx => unparentEvents(ctx, current!.id, prior),
+      'On its own again — it still comes back to you.');
+  });
+  btn('#detail-make-project')?.addEventListener('click', () => {
+    if (!current) return;
+    void run(ctx => makeContainerEvents(ctx, current!.id, current!.kind),
+      'It can hold other things now.');
   });
 
   btn('#detail-close')?.addEventListener('click', () => DLG.close());
