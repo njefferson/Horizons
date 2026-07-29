@@ -1,7 +1,47 @@
 # ADR-0037 · Quietkeep Sync — a relay that cannot read, gated so it cannot be turned on by accident
 
 **Status:** Accepted (design) · **Date:** 2026-07-29 · Noah's decision
-· **Three items still need his word, listed under Consequences.**
+· **All three open items answered by Noah, 2026-07-29 — see "Noah's answers".**
+
+## Noah's answers, 2026-07-29
+
+1. **The doctrine wording — "make it right."** Done, and it went further than a
+   wording tweak: [Doctrine §1](https://github.com/njefferson/noahjefferson/blob/main/DOCTRINE.md)
+   now says the DEFAULT of every app keeps the promise absolutely, and any sibling
+   that trades a piece of it away is a **separate product with its own honest
+   claim** — the default is never weakened to accommodate it. The sharpest of the
+   six rules it added: *an id is account-shaped and must be called what it is.*
+   Do not say "no account" because the word was technically avoided.
+2. **No push. Exchange when the app opens, and it just works.** His words:
+   *"Exchange when it opens and just works."* This is a **much smaller build than
+   the one this ADR was scoped for** and it removes the entire push tier:
+   - no notification permission, no subscription, no VAPID keys, no waking a
+     device, and **V-03 is no longer on the path** (it gated push only);
+   - the relay becomes a pure transport with no ability to initiate anything.
+   The earlier reading — that he wanted push — came from him saying he did not
+   want to think about it. That reason is about **his data being current wherever
+   he picks up**, which exchange-on-open delivers completely. Push is a different
+   want (*a reminder reaching him when Quietkeep is shut*), it is still the job
+   the calendar export does today, and **V-14 remains unverified** for it.
+3. **NOT a version.** *"No version until I've ensured it actually all works."*
+   Consistent with his v1 ruling. Sessions do not number this.
+
+## The constraint that shapes everything, stated plainly
+
+**Exchange-on-open requires a server.** Two devices cannot discover one another
+without one, and Safari does not ship the File System Access pickers that would
+let [ADR-0003](0003-folder-mirror.md)'s folder mirror do this with no server at
+all. So the relay is not a convenience — it is the only available transport, and
+it is the first server this project has ever had.
+
+**What keeps the promise intact anyway:** every device keeps its own complete
+local log. The relay is a **transport, not a store of record**. That is what makes
+end-to-end encryption safe here — if the key is ever lost, nothing permanent is
+lost, because no device was ever depending on the relay for its own data. A sync
+design where losing a key loses your work would violate law 9 outright; this one
+cannot, by construction.
+
+
 
 ## Decision
 
