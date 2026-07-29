@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.7.1 — ITERATION
+
+*2026-07-29*
+
+- A card could show one date while being filed under another — it now tells you about whichever date will actually bring it back to you.
+- Something far in the future now says which year, so next September and September in ten years no longer look the same.
+- Something set aside until a date now says when it comes back, instead of just “held”.
+- Renaming refuses a title made only of invisible characters, which used to leave a blank card you could no longer identify, and very long titles are trimmed so one thing cannot bury the rest.
+
 ## 0.7.0 — CAPABILITY
 
 *2026-07-29*

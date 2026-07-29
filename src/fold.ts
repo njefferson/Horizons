@@ -186,8 +186,16 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         break;
       }
       // Renaming competes with capture.recorded / node.created for the SAME
-      // stamped key, so a stale rename can never beat a newer title and a replay
-      // is deterministic. It is not silent-risk: a title carries no coverage.
+      // stamped key, so a stale rename can never beat a newer title. Not
+      // silent-risk: a title carries no coverage (the gate refuses a rename of a
+      // node that does not exist, so it cannot mint one either).
+      //
+      // HONEST LIMIT, since an earlier version of this comment overclaimed: two
+      // events sharing an exact (at, device, seq) tie are resolved by processing
+      // order, so an incremental fold and a full replay could in principle
+      // disagree about which title wins. `nextSeq` and the device tiebreak make
+      // that tie unreachable today — but "a replay is deterministic" was too
+      // strong a thing to write, and the next reader would have trusted it.
       case 'node.renamed': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['title'], o)) { n.title = e.payload.title; n.stamps['title'] = o; }

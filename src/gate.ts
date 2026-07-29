@@ -199,6 +199,17 @@ export function admit(
       throw new GateRejection(`node ${e.node} already exists — a creation event cannot land on it`, e);
     }
 
+    // A rename is an EDIT, so its subject must already exist. Without this,
+    // `ensureNode` mints a default node for the rename — and because `cureFor`
+    // switches on the CAUSE's kind and not on whether the cause has anything to
+    // do with the node it is curing, an unrelated silent-risk event in the same
+    // batch adopts the ghost and clocks it. The result is a node the user never
+    // created, carrying a title from a rename, landing in "Ready now" (audit).
+    // Alone it is caught by the belt-and-braces delta check; batched it was not.
+    if (e.kind === 'node.renamed' && (!e.node || !before.nodes.get(e.node))) {
+      throw new GateRejection('cannot rename a node that does not exist', e);
+    }
+
     if (e.kind === 'node.merged') {
       const into = (e.payload as { into?: unknown }).into;
       const target = typeof into === 'string' ? before.nodes.get(into) : undefined;

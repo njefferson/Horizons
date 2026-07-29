@@ -59,6 +59,25 @@ no streak, and Done sits last and quiet because it is a record, not a reward
   sheet until the next re-render. Every render goes through one closure now, and
   the smoke walk asserts tappability *after* a URL capture (made to fail first).
 
+## Corrections (found by the adversarial audit, fixed before promote)
+
+- **The status line named the wrong clock.** `heldGroups` grouped on the soonest
+  demanding clock while `heldStatus` printed the *first* clock in insertion order,
+  so a card filed under "Later" on a due date nine days out could print a review
+  date four hundred days out — reachable through the real intents (capture →
+  route → repeat monthly → set a due date). `soonestDemand` now returns the clock,
+  not just a day count, so the grouping and the words name the same thing. The
+  suite gained the property that would have caught it in one line: **for every
+  item, the status it prints must match the group it sits in.**
+- **The group boundary was off by one between the two functions** (`<= SOON_DAYS`
+  against `< SOON_DAYS`), so the last day of "Coming up" printed a date.
+- **A far-future date printed no year** — "Sep 1" for 2036 is indistinguishable
+  from this September, in an app whose job is telling you when a thing returns.
+- **A parked item said "held".** A park is not a demand and must never make
+  something Ready now, but it *is* a return date, and the surface can say so:
+  "parked until Thu". Saying "held" about a thing coming back tomorrow tells the
+  user less than the app knows.
+
 ## What would overturn it
 
 If the six groups turn out to be five or seven in real use, that is a change to

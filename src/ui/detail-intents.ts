@@ -52,13 +52,38 @@ export function endOfDayKey(dayKey: string, zone: string): string {
  * (ADR-0031) — a title is a first-class fact, and `node.field.set` would have
  * stored a shadow title under `n.fields` that no surface ever reads.
  *
- * An empty title is refused here rather than written: a nameless card is not a
+ * An unusable title is refused here rather than written: a nameless card is not a
  * correction, it is a thing you can no longer identify.
+ *
+ * `trim()` alone was NOT enough, and the first version of this claimed otherwise.
+ * It strips ECMAScript whitespace only, so a title made entirely of zero-width
+ * spaces, control characters or combining marks sailed through and rendered as an
+ * empty card (audit). Control and format characters are removed outright — they
+ * cannot be seen, and a bidi override can make a title display as something other
+ * than what is stored.
  */
+export const TITLE_MAX = 500;
+
 export function renameEvents(ctx: StampContext, node: string, title: string): AppEvent[] {
-  const clean = title.trim();
+  const clean = cleanTitle(title);
   if (!clean) return [];
   return [base(ctx, 'node.renamed', node, { title: clean })];
+}
+
+/** The one definition of a usable title, shared by every writer. Returns '' when
+ *  what is left could not be read or identified. */
+export function cleanTitle(raw: string): string {
+  const stripped = raw
+    // \p{Cc} control, \p{Cf} format (zero-width, bidi overrides, soft hyphen)
+    .replace(/[\p{Cc}\p{Cf}]/gu, '')
+    .trim();
+  if (!stripped) return '';
+  // Nothing left that a person could actually see: combining marks and
+  // whitespace alone are not a name.
+  if ([...stripped].every(c => /[\p{White_Space}\p{Mn}\p{Me}]/u.test(c))) return '';
+  // A cap, so one card cannot be thousands of lines tall and push the rest of the
+  // list off the screen. Generous: this is a title, not an essay.
+  return stripped.length > TITLE_MAX ? stripped.slice(0, TITLE_MAX).trim() : stripped;
 }
 
 /** "This is due Thursday." A real, hard date — the immovable kind that Next-up

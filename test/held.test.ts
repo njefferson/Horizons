@@ -12,7 +12,7 @@ import { fold, emptyState, type State } from '../src/fold.ts';
 import { heldNodes, coverageGauge, admit, gateOptionsFor } from '../src/gate.ts';
 import { heldGroups, heldStatus, SOON_DAYS } from '../src/held.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
-import { renameEvents } from '../src/ui/detail-intents.ts';
+import { renameEvents, TITLE_MAX } from '../src/ui/detail-intents.ts';
 import type { AppEvent } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
 
@@ -190,4 +190,123 @@ test('node.renamed is NOT silent-risk — a title carries no coverage', async ()
   const { isSilentRisk } = await import('../src/events.ts');
   assert.equal(isSilentRisk('node.renamed'), false,
     'declared in the vocabulary as Silent? = no, and the code agrees');
+});
+
+
+// --- audit fixes (Phase 3.5 adversarial pass) -------------------------------
+
+/** The one-line property that would have caught the status/group disagreement.
+ *  A card's words and the heading it sits under must describe the same thing. */
+const GROUP_ALLOWS: Record<string, RegExp> = {
+  unsorted: /^not sorted yet$/,
+  ready: /^(ready now|today)$/,
+  soon: /^(tomorrow|in \d+ days)$/,
+  later: /^(held|parked until .+|back now|\w{3} \d+(, \d{4})?)$/,
+  menu: /^on the Menu$/,
+  done: /^done$/,
+};
+
+const at = (days: number): string => new Date(Date.parse(NOW) + days * 86_400_000).toISOString();
+const clockKind = (id: string, kind: string, days: number): AppEvent =>
+  ev('clock.set', id, { clockKind: kind, at: at(days), source: 't' });
+
+test('the status a card prints always agrees with the group it is filed under', () => {
+  // Two clocks on one node is what broke this: heldGroups grouped on the soonest
+  // while heldStatus printed the FIRST in insertion order, so a card grouped on a
+  // due date nine days out printed a review date four hundred days out.
+  const cases: [string, AppEvent[]][] = [
+    ['review-far + due-soon', [ev('node.created', 'A', { nodeKind: 'action', title: 'a' }),
+      clockKind('A', 'review', 40), clockKind('A', 'due', 7)]],
+    ['review-farther + due-nine', [ev('node.created', 'B', { nodeKind: 'action', title: 'b' }),
+      clockKind('B', 'review', 400), clockKind('B', 'due', 9)]],
+    ['start-passed + due-far', [ev('node.created', 'C', { nodeKind: 'action', title: 'c' }),
+      clockKind('C', 'start', -5), clockKind('C', 'due', 60)]],
+    ['exactly the boundary', [ev('node.created', 'D', { nodeKind: 'action', title: 'd' }),
+      clockKind('D', 'due', SOON_DAYS)]],
+    ['park only', [ev('node.created', 'E', { nodeKind: 'action', title: 'e' }),
+      clockKind('E', 'park', 3)]],
+    ['park plus a real demand', [ev('node.created', 'F', { nodeKind: 'action', title: 'f' }),
+      clockKind('F', 'park', 1), clockKind('F', 'due', 2)]],
+  ];
+  for (const [label, events] of cases) {
+    const s = st(...events);
+    for (const g of heldGroups(s, NOW, TZ)) {
+      for (const n of g.items) {
+        const words = heldStatus(n, NOW, TZ);
+        assert.match(words, GROUP_ALLOWS[g.key]!,
+          `${label}: filed under "${g.title}" but the card says "${words}"`);
+      }
+    }
+  }
+});
+
+test('the words name the SOONEST clock, not whichever was written first', () => {
+  const s = st(ev('node.created', 'A', { nodeKind: 'action', title: 'a' }),
+    clockKind('A', 'review', 400), clockKind('A', 'due', 9));
+  const expected = new Date(at(9)).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: TZ });
+  assert.equal(heldStatus(s.nodes.get('A')!, NOW, TZ), expected,
+    'it names the clock that will actually bring it back');
+});
+
+test('a far-future date says which year', () => {
+  const s = st(ev('node.created', 'F', { nodeKind: 'action', title: 'f' }),
+    ev('clock.set', 'F', { clockKind: 'due', at: '2036-09-02T12:00:00.000Z', source: 't' }));
+  assert.match(heldStatus(s.nodes.get('F')!, NOW, TZ), /2036/,
+    '"Sep 1" alone is indistinguishable from this September');
+});
+
+test('a parked thing says when it comes back, rather than just "held"', () => {
+  const s = st(ev('node.created', 'P', { nodeKind: 'action', title: 'p' }), clockKind('P', 'park', 3));
+  const words = heldStatus(s.nodes.get('P')!, NOW, TZ);
+  assert.match(words, /^parked until /, `says it is parked ("${words}")`);
+  assert.equal(heldGroups(s, NOW, TZ)[0]!.key, 'later', 'and a park never makes something Ready now');
+});
+
+// --- rename hardening ------------------------------------------------------
+
+test('a title that renders as nothing is refused - zero-width, control, combining', () => {
+  // trim() strips ECMAScript whitespace only, so all of these used to sail
+  // through and produce a blank, unidentifiable card (audit).
+  const unusable = [
+    '\u200b\u200b',
+    '\u200c\u2060\u00ad',
+    '\u0000\u0007',
+    '\u202e\u202d',
+    '\u0301\u0301',
+    '   \t\n  ',
+    '',
+  ];
+  for (const bad of unusable) {
+    assert.deepEqual(renameEvents(ctx(), 'N', bad), [], `${JSON.stringify(bad)} is not a name`);
+  }
+  const ok = renameEvents(ctx(), 'N', '  call​ the dentist  ')[0]!;
+  assert.equal((ok.payload as { title: string }).title, 'call the dentist',
+    'but a real title gets through, cleaned of the invisible parts');
+});
+
+test('a title is capped, so one card cannot bury the list', () => {
+  const long = renameEvents(ctx(), 'N', 'x'.repeat(10_000))[0]!;
+  assert.equal((long.payload as { title: string }).title.length, TITLE_MAX);
+});
+
+test('the gate refuses a rename of a node that does not exist - even batched (audit)', () => {
+  const opts = gateOptionsFor(TZ);
+  const ghost = { id: 'g0', vault: 'personal', at: NOW, device: 'd0', seq: seq++,
+    kind: 'node.renamed', node: 'GHOST', payload: { title: 'I was never created' } } as AppEvent;
+  assert.throws(() => admit([ghost], emptyState(), opts), /does not exist/, 'alone');
+
+  // Batched with an unrelated capture, the other event's cure used to adopt the
+  // ghost and clock it, landing a node the user never created in "Ready now".
+  const real = { id: 'g1', vault: 'personal', at: NOW, device: 'd0', seq: seq++,
+    kind: 'capture.recorded', node: 'REAL', payload: { text: 'milk', source: 'quick', sourceTags: [] } } as AppEvent;
+  assert.throws(() => admit([ghost, real], emptyState(), opts), /does not exist/, 'and batched');
+});
+
+test('a capture newer than a rename wins - the direction the first test never checked', () => {
+  // ADR-0031 claimed the suite proved LWW "against the capture that named it";
+  // every fold in it was rename-vs-rename. This is the missing direction.
+  const ren = ev('node.renamed', 'N', { title: 'RENAME' }, '2026-07-01T00:00:00.000Z');
+  const cap = ev('capture.recorded', 'N', { text: 'CAPTURE', source: 'quick', sourceTags: [] }, '2026-07-20T00:00:00.000Z');
+  assert.equal(fold([ren, cap]).nodes.get('N')!.title, 'CAPTURE', 'newer capture wins');
+  assert.equal(fold([cap, ren]).nodes.get('N')!.title, 'CAPTURE', 'in either arrival order');
 });

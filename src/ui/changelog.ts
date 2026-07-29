@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.7.1',
+    kind: 'ITERATION',
+    date: '2026-07-29',
+    notes: [
+      'A card could show one date while being filed under another — it now tells you about whichever date will actually bring it back to you.',
+      'Something far in the future now says which year, so next September and September in ten years no longer look the same.',
+      'Something set aside until a date now says when it comes back, instead of just “held”.',
+      'Renaming refuses a title made only of invisible characters, which used to leave a blank card you could no longer identify, and very long titles are trimmed so one thing cannot bury the rest.',
+    ],
+  },
+  {
     triplet: '0.7.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

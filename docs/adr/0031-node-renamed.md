@@ -35,12 +35,30 @@ list is closed" only means something if opening it costs a decision.
 
 ## Consequences
 
-- `test/held.test.ts` proves LWW against the capture that named it (in three
-  arrival orders), the snapshot round-trip, and that an empty or whitespace title
-  is refused rather than written — a nameless card is not a correction, it is a
-  thing you can no longer identify.
+- `test/held.test.ts` proves LWW in both directions — rename-beats-rename across
+  arrival orders, and a newer capture beating an older rename — plus the snapshot
+  round-trip.
+- **A title that would render as nothing is refused.** `trim()` alone was not
+  enough and the first version of this record wrongly claimed it was: it strips
+  ECMAScript whitespace only, so a title made of zero-width spaces, control
+  characters, bidi overrides or bare combining marks was accepted and produced a
+  blank, unidentifiable card (audit). `cleanTitle` now removes `\p{Cc}` and
+  `\p{Cf}` outright, refuses anything with nothing visible left, and caps length
+  at `TITLE_MAX` so one card cannot bury the list. The held list also gained the
+  `'(untitled)'` fallback every other surface already had.
+- **The gate refuses a rename of a node that does not exist.** `ensureNode` would
+  otherwise mint one, and because `cureFor` switches on the *cause's* kind rather
+  than on whether the cause concerns the node being cured, an unrelated
+  silent-risk event in the same batch adopted the ghost and clocked it — landing a
+  node the user never created in "Ready now" with a title from a rename. Alone it
+  was caught by the belt-and-braces delta check; batched it was not.
 - It asserts `isSilentRisk('node.renamed') === false`, so the vocabulary's
   declared answer and the code cannot drift apart.
+- **Honest limit on determinism:** two events sharing an exact `(at, device, seq)`
+  tie are resolved by processing order, so an incremental fold and a full replay
+  could in principle disagree about which title wins. `nextSeq` and the device
+  tiebreak make that tie unreachable today, but `fold.ts` claimed outright that
+  "a replay is deterministic" for this case, and that was too strong to write.
 - The detail sheet gains a text row seeded with the current title, so renaming is
   an edit rather than a blank box you must retype from memory.
 

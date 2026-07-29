@@ -68,7 +68,9 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       // textContent, never innerHTML: captured text is stored as text and never
       // interpreted, which is what makes /capture?text= safe from a hostile link
       // (ADR-0008).
-      title.textContent = node.title;
+      // `|| '(untitled)'` like every other surface — the held list was the one
+      // place a blank title rendered as an unlabelled, unidentifiable card.
+      title.textContent = node.title || '(untitled)';
 
       const when = document.createElement('span');
       when.className = 'card-when';
@@ -88,7 +90,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
         done.type = 'button';
         done.className = 'card-done';
         done.textContent = 'Done';
-        done.setAttribute('aria-label', `Done: ${node.title}`);
+        done.setAttribute('aria-label', `Done: ${node.title || '(untitled)'}`);
         done.addEventListener('click', () => onDone(node.id));
         li.append(done);
       }

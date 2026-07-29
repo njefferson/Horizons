@@ -30,16 +30,45 @@ export interface HeldGroup {
  *  the horizon a person can actually hold in their head. */
 export const SOON_DAYS = 7;
 
-/** The soonest instant any demanding clock will bring this back, or null.
- *  `park` is excluded: a parked thing is being held away from you on purpose. */
-function soonestDemand(n: NodeState, zone: string, nowIso: string): number | null {
-  let best: number | null = null;
+/**
+ * The soonest demanding clock — the CLOCK, not just its distance.
+ *
+ * Returning only a day count was a real defect: the status line then picked a
+ * clock of its own (the first in insertion order) and printed ITS date, so a card
+ * grouped on a due date nine days out could print the review date four hundred
+ * days out. Grouping and words must name the same clock or the card states a
+ * date the data does not support (Doctrine §5) — the exact class ADR-0032 exists
+ * to have fixed.
+ *
+ * `park` is excluded from DEMAND: a parked thing is being held away from you on
+ * purpose, so it must not make something "Ready now". It is reported separately.
+ */
+function soonestDemand(n: NodeState, zone: string, nowIso: string): { days: number; at: string } | null {
+  let best: { days: number; at: string } | null = null;
   for (const c of Object.values(n.clocks)) {
     if (!c || c.kind === 'park' || !isValidIso(c.at)) continue;
     const days = calendarDaysBetween(nowIso, c.at, zone);
-    if (best === null || days < best) best = days;
+    if (best === null || days < best.days) best = { days, at: c.at };
   }
   return best;
+}
+
+/** A park is not a demand, but it is still a return, and the surface should be
+ *  able to say so rather than calling a thing coming back tomorrow "held". */
+function parkedUntil(n: NodeState): string | null {
+  const p = n.clocks.park;
+  return p && isValidIso(p.at) ? p.at : null;
+}
+
+/** A date a year or more away must say which year. "Sep 1" for 2036 is
+ *  indistinguishable from this September, in an app whose whole job is telling
+ *  you when something comes back. */
+function dateWords(at: string, zone: string, days: number): string {
+  return new Date(at).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric',
+    ...(Math.abs(days) >= 365 ? { year: 'numeric' } : {}),
+    timeZone: zone,
+  });
 }
 
 /**
@@ -65,10 +94,10 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
     if (n.lastDone) { buckets.done.push(n); continue; }
     if (n.onMenu) { buckets.menu.push(n); continue; }
     if (n.captured && n.route === null) { buckets.unsorted.push(n); continue; }
-    const days = soonestDemand(n, zone, nowIso);
-    if (days === null) { buckets.later.push(n); continue; }   // held, but nothing asking
-    if (days <= 0) { buckets.ready.push(n); continue; }
-    if (days <= SOON_DAYS) { buckets.soon.push(n); continue; }
+    const soon = soonestDemand(n, zone, nowIso);
+    if (soon === null) { buckets.later.push(n); continue; }   // held, but nothing asking
+    if (soon.days <= 0) { buckets.ready.push(n); continue; }
+    if (soon.days <= SOON_DAYS) { buckets.soon.push(n); continue; }
     buckets.later.push(n);
   }
 
@@ -96,14 +125,24 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   if (n.lastDone) return 'done';
   if (n.onMenu) return 'on the Menu';
   if (n.captured && n.route === null) return 'not sorted yet';
-  const days = soonestDemand(n, zone, nowIso);
-  if (days === null) return 'held';
+  const soon = soonestDemand(n, zone, nowIso);
+  if (soon === null) {
+    // Nothing is demanding it — but a park is still a return date, and saying
+    // "held" about something coming back tomorrow tells the user less than the
+    // app knows.
+    const park = parkedUntil(n);
+    if (!park) return 'held';
+    const d = calendarDaysBetween(nowIso, park, zone);
+    if (d <= 0) return 'back now';
+    if (d === 1) return 'parked until tomorrow';
+    return `parked until ${dateWords(park, zone, d)}`;
+  }
+  const { days, at } = soon;
   if (days < 0) return 'ready now';
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';
-  if (days < SOON_DAYS) return `in ${days} days`;
-  const clock = Object.values(n.clocks).find(c => c && c.kind !== 'park' && isValidIso(c.at));
-  return clock
-    ? new Date(clock.at).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: zone })
-    : 'held';
+  // `<=`, matching the group boundary exactly. They disagreed by one, so the last
+  // day of "Coming up" printed a date instead of "in 7 days".
+  if (days <= SOON_DAYS) return `in ${days} days`;
+  return dateWords(at, zone, days);
 }
