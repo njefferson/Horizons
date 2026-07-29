@@ -124,3 +124,54 @@ test('heat and route survive a snapshot round-trip (audit: snapshots were lossy)
   assert.equal(n.route, 'someday', 'route survived');
   assert.deepEqual(n.sourceTags, ['boss'], 'sourceTags survived');
 });
+
+// --- audit fixes -----------------------------------------------------------
+
+const raw = (kind: string, node: string, payload: unknown): AppEvent =>
+  ({ id: `raw-${seq}`, vault: 'personal', at, device: 'd0', seq: seq++, kind, node, payload } as AppEvent);
+
+test('the inbox is captures only — a person / bother / anchor never pollutes clarify (audit)', () => {
+  // Membership keyed on route===null alone counted ANY unrouted live node. The
+  // `captured` latch is what actually defines an inbox item.
+  const s = fold([
+    raw('person.created', 'P', { name: 'Ada' }),
+    raw('bother.received', 'B', { text: 'the printer again' }),
+    raw('anchor.defined', 'K', { name: 'Morning' }),
+    raw('capture.recorded', 'C', { text: 'a real thought', source: 'quick', sourceTags: [] }),
+  ]);
+  assert.deepEqual(unclarified(s).map(n => n.id), ['C'], 'only the capture is unclarified');
+  assert.equal(needsHeat(s).length, 1, 'and only the capture needs heat');
+  assert.equal(inboxGauge(s).unclarified, 1, 'the gauge is not inflated by non-captures');
+  assert.equal(nextToClarify(s)!.id, 'C', 'the card shown is never a person');
+});
+
+test('a pre-Phase-2 snapshot upgrades without crashing, and its captures still appear (audit: data lost to updates)', () => {
+  let s = capture(emptyState(), 'A', 'first');
+  s = capture(s, 'B', 'second');   // two items — the single-item tests hid the crash
+  // Simulate a snapshot cut BEFORE Phase 2: strip the fields it never stored.
+  const legacy = JSON.parse(JSON.stringify(serialiseState(s))) as { nodes: Record<string, unknown>[] };
+  for (const n of legacy.nodes) { delete n['captured']; delete n['sourceTags']; delete n['heat']; delete n['route']; }
+  const restored = deserialiseState(legacy);
+  // Before the fix this threw "Cannot read properties of undefined (reading 'includes')".
+  assert.doesNotThrow(() => unclarified(restored), 'the clarify queue does not throw on a legacy node');
+  assert.equal(unclarified(restored).length, 2, 'legacy captures are treated as captures and still show');
+  assert.deepEqual(restored.nodes.get('A')!.sourceTags, [], 'sourceTags backfilled to []');
+  assert.equal(restored.nodes.get('A')!.captured, true, 'captured backfilled to true for a legacy node');
+});
+
+test('sourceTags honours copy-on-write — a derived mutation cannot rewrite history (audit)', () => {
+  let s1 = capture(emptyState(), 'N', 'a thing', ['boss']);
+  const s2 = write(s1, heatEvents(ctx(), 'N', 'hot'));   // touches N → clones it
+  const a1 = s1.nodes.get('N')!.sourceTags;
+  const a2 = s2.nodes.get('N')!.sourceTags;
+  assert.notEqual(a1, a2, 'the clone got its own sourceTags array, not an alias of the base');
+  a2.push('__mutated__');
+  assert.deepEqual(s1.nodes.get('N')!.sourceTags, ['boss'], 'the base node (history) is untouched');
+});
+
+test('capture does not alias the log event payload array (audit)', () => {
+  const payloadTags = ['boss'];
+  const s = fold([raw('capture.recorded', 'N', { text: 'x', source: 'quick', sourceTags: payloadTags })]);
+  payloadTags.push('__mutated_via_log__');   // mutate the "immutable" log event
+  assert.deepEqual(s.nodes.get('N')!.sourceTags, ['boss'], 'live state did not share the log payload array');
+});

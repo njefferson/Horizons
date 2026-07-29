@@ -34,7 +34,21 @@ export function deserialiseState(raw: unknown): State {
     eventCount: number;
   };
   return {
-    nodes: new Map(r.nodes.map(n => [n.id, n])),
+    // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
+    // an updated app reads nodes with `sourceTags === undefined` and the clarify
+    // queue throws on `.includes` — the update breaking the inbox, which the
+    // "data is never lost to updates" law forbids (audit). `captured ?? true` is
+    // correct for legacy data: before Phase 2 the ONLY node-creating event a
+    // shipped surface emitted was capture.recorded, so every stored node was a
+    // capture. A Phase-2+ snapshot sets `captured` explicitly, so `?? true`
+    // never overrides a real `false`.
+    nodes: new Map(r.nodes.map(n => [n.id, {
+      ...n,
+      sourceTags: n.sourceTags ?? [],
+      heat: n.heat ?? null,
+      route: n.route ?? null,
+      captured: n.captured ?? true,
+    }])),
     vaults: new Map(r.vaults),
     devices: new Set(r.devices),
     seqByDevice: new Map(r.seqByDevice),

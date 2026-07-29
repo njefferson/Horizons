@@ -219,7 +219,7 @@ button.ghost {
   justify-content: space-between;
   gap: var(--gap);
   flex-wrap: wrap;
-  margin: 0 0 1rem;
+  margin: 0.75rem 0 0;
   padding: 0.5rem 0.75rem;
   background: var(--bg);
   border: 1px solid var(--line);
@@ -274,7 +274,11 @@ button.ghost {
 .card-title { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 
 .card-when {
-  flex: 0 0 auto;
+  /* Shrink-and-wrap, not fixed: at 320px/200% a longer status than "returns
+     today" (e.g. a dated "returns Thu 30 Jul") must wrap within the card, not
+     push the page sideways. The card already wraps this onto its own line. */
+  flex: 0 1 auto;
+  min-width: 0;
   color: var(--ink-soft);
   font-size: 0.9375rem;
   /* The status is words. Nothing here depends on seeing a colour, and there is

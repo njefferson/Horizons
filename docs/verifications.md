@@ -531,6 +531,30 @@ preview build — and the Pages project had **no production deployment at all**,
 was created with `--production-branch=main` while `main` still had no `public/`. The apex
 worked as soon as production existed. Every observation fits; nothing else changed.
 
+---
+
+## V-13 · Same-day clocks use end-of-UTC-day, not the user's local day — **known limitation**
+**Status: KNOWN, NOT YET FIXED** · found by the Phase 2 audit, 2026-07-29
+
+The gate's capture cure-clock (`endOfDay`) and the do-now / same-day route clock
+(`clockToday` in `triage-intents.ts`) both stamp `setUTCHours(23,59,59)`, i.e. the
+end of the **UTC** calendar day, not the end of the *user's local* day. Off the UTC
+meridian the "returns today" clock therefore lands on the wrong local day: for a
+user east of UTC it can read as tomorrow; for Denver (UTC−6/−7) a capture made
+after ~18:00 local is clocked to a time that has already passed in UTC terms and
+reads as a dated "returns \<day\>". The Phase 2 a11y gate caught the downstream
+symptom — a longer card status than "returns today" overflowed the card at
+320px/200%, now fixed by letting `.card-when` wrap.
+
+**Why recorded, not patched now:** this is pre-existing in the gate and
+cross-cutting (every clock in the app derives its "day" this way), so a correct fix
+is a single timezone-aware `endOfLocalDay(now, tz)` primitive threaded through the
+gate and the intents — a deliberate change with its own tests, not a one-line patch
+buried in a triage commit. It has **no bearing on law 1**: the node is clocked
+either way, never silent — only the *label's day* is wrong. The binding correctness
+test is a device reading on Noah's iPad (America/Denver), which V-00 already owns.
+Tracked as an open question for the timezone pass.
+
 > **A correction, and it matters more than the finding.** This row previously read that the
 > likelier cause was the device being on LTE rather than Wi-Fi. **Noah was on LTE for every
 > one of those tests.** I inferred a network change from a status-bar icon in a screenshot,

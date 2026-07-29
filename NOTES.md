@@ -266,12 +266,31 @@ That error cost the Perennial round.
   its capture clock, and when that clock is also stripped it is `clock.cleared`'s cure that
   holds — both asserted, both made to fail first. `fold` learned
   `heat`/`route`/`sourceTags` (LWW-stamped; snapshot round-trip tested after the audit's lossy
-  finding). 40 unit tests; the smoke walk now captures six, drains the heat pass, routes all
-  six ways and reads `0 silent` from the held gauge; a11y renders both passes in both themes.
+  finding). The smoke walk captures six, drains the heat pass, routes all six ways and reads
+  `0 silent` from the held gauge; a11y renders both passes in both themes.
   A 320px/200% overflow the triage grid introduced was caught by the a11y gate and fixed
-  (`minmax(min(9rem,100%),1fr)`). **Lands on `staging`, waits for the adversarial audit and
-  Noah's word — not promoted.** The 0.3.0 promote to `main` was a real §7 pass (verified by
+  (`minmax(min(9rem,100%),1fr)`). The 0.3.0 promote to `main` was a real §7 pass (verified by
   fetch), Noah's earlier "Promote and continue" this session.
+- **2026-07-29** — **The Phase 2 adversarial audit ran (four skeptics) and it earned its
+  keep.** Every finding was fixed on `staging` before any promote (45 unit tests now, all
+  gates green):
+  · **Crash on upgrade (live):** a pre-Phase-2 snapshot has no `sourceTags`, and the clarify
+  queue threw on `.includes` with 2+ inbox items — the update breaking the inbox, which the
+  data law forbids. `deserialiseState` now backfills the Phase-2 fields; `captured ?? true` is
+  correct for legacy data.
+  · **Inbox pollution:** membership was keyed on `route === null`, so any unrouted node (a
+  person, a bother, a Menu-promoted action) would enter clarify and hard-fail its routes. Added
+  a `captured` provenance latch; the inbox is captures-not-yet-routed only.
+  · **`sourceTags` holed copy-on-write** (aliased the base node and the log payload) — now
+  cloned on write and copied on store.
+  · **Focus fell to `<body>` after every triage tap** (WCAG 2.4.3) — now moved to the prompt;
+  the a11y gate activates a route and asserts it, made to fail first.
+  · **do-now timer** mis-attached to the next card and could drop its outcome or double-commit —
+  now in its own region, `finish()` idempotent, starts only on a landed route.
+  · **Gate theater:** `.includes('0 silent')` is true for "10 silent" — now parses the number.
+  · Documented (not patched): the same-day clock uses end-of-**UTC**-day ([V-13](docs/verifications.md)).
+  **Phase 2 stays on `staging` and waits for Noah's on-device pass and his explicit
+  "promote".**
 - **2026-07-27** — Repo bootstrapped (Doctrine §13 items 1–4). Verification pass
   run and recorded. v1 frozen. Event vocabulary defined. 19 ADRs written. The
   three docs generated. Build plan written. No application code.

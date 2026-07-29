@@ -315,6 +315,24 @@ try {
       `${theme}/320px @ 200%: capture is ${cap.w}x${cap.h} — still a usable target`);
     await auditAxe(page, 'page @ 320/200', theme);
 
+    // A-5: focus must survive activating a card. Programmatic focus + a real
+    // Enter routes the item; the button vanishes, and focus must land on a real
+    // element (the prompt, or capture once the inbox is clear), never <body>.
+    // auditFocusRings cannot see this — it blurs and Tabs from scratch, and never
+    // activates a control to see where focus goes afterward.
+    await page.evaluate(() => document.querySelector('#triage-actions .route')?.focus());
+    await page.keyboard.press('Enter');
+    // Wait for the async route to settle (the inbox had one item, so the surface
+    // hides and focus should return to capture) — reading focus synchronously
+    // would catch the still-focused button before the commit re-rendered.
+    await page.waitForSelector('#triage', { state: 'hidden' });
+    const afterAct = await page.evaluate(() => ({
+      tag: document.activeElement?.tagName ?? 'NONE',
+      id: document.activeElement?.id ?? '',
+    }));
+    (afterAct.id === 'capture' ? pass : fail)(
+      `${theme}/triage: focus returns to capture after the last card is routed (on ${afterAct.id || afterAct.tag}, not <body>)`);
+
     await ctx.close();
   }
 } finally {

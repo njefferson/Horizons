@@ -31,6 +31,13 @@ const bad = (m) => { failures.push(m); console.error(`  FAIL  ${m}`); };
 const is = (actual, expected, what) =>
   actual === expected ? ok(`${what}: ${actual}`) : bad(`${what}: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
 
+// The held gauge reads "N held · M silent". Parse M — `.includes('0 silent')` is
+// substring-weak: it is also true for "10 silent" and "100 silent" (audit).
+const silentCount = (gaugeText) => {
+  const m = /·\s*(\d+)\s+silent/.exec(gaugeText || '');
+  return m ? Number(m[1]) : NaN;
+};
+
 const { server, url } = await serve(ROOT);
 const browser = await chromium.launch(launchOpts);
 
@@ -112,7 +119,7 @@ try {
 
   console.log('\nLaw 1 — no silent nodes');
   const gauge = await page.locator('#gauge').textContent();
-  is(gauge?.includes('0 silent'), true, `gauge reads 0 silent ("${gauge}")`);
+  is(silentCount(gauge), 0, `gauge reads 0 silent ("${gauge}")`);
 
   console.log('\nText is text, never interpreted');
   await page.fill('#capture', '<img src=x onerror="globalThis.__pwned=1">');
@@ -259,6 +266,10 @@ try {
     document.querySelector('#triage-prompt')?.textContent?.startsWith('Clarify'));
   is((await tpage.locator('#triage-prompt').textContent())?.startsWith('Clarify (hot)'), true,
     'heat recorded, and clarify now shows the item as hot');
+  // A tap removes the button it was on; focus must not fall to <body> (WCAG
+  // 2.4.3). After the heat pass it rests on the prompt of the next card.
+  is(await tpage.evaluate(() => document.activeElement?.id), 'triage-prompt',
+    'focus is kept on the surface after a triage tap, never dropped to <body>');
 
   console.log('\nTriage — the six routes, each terminating on its own');
   // The clarify buttons are label+hint; match by their visible label. Route in
@@ -289,6 +300,9 @@ try {
   is((await tpage.locator('#triage-gauge').textContent()), 'Inbox clear.',
     'the inbox clears and the surface hides itself');
   is(await tpage.locator('.card').count(), 5, 'trash removed exactly its own node; the other five remain held');
+  // With the surface gone, focus returns to the capture line, not <body>.
+  is(await tpage.evaluate(() => document.activeElement?.id), 'capture',
+    'clearing the inbox returns focus to capture, never to <body>');
 
   console.log('\nTriage — every route left its terminal event in the log');
   await tpage.click('#open-about');
@@ -298,6 +312,9 @@ try {
   const kindCount = (k) => tlog.filter((e) => e.kind === k).length;
   is(kindCount('heat.set'), 6, 'six heat.set events — one per item');
   is(kindCount('clarify.routed'), 6, 'six clarify.routed events — one per route');
+  const routesSeen = tlog.filter(e => e.kind === 'clarify.routed').map(e => e.payload?.route).sort().join(',');
+  is(routesSeen, 'do-now,next-action,reference,someday,trash,waiting-for',
+    'all six distinct routes were recorded — not six of the same');
   is(kindCount('node.trashed'), 1, 'trash committed node.trashed');
   is(tlog.some((e) => e.kind === 'node.kind.changed' && e.payload?.to === 'waiting-for'), true,
     'waiting-for changed the node kind, not just its clock');
@@ -307,7 +324,7 @@ try {
   await tpage.click('#about-close');
   // The load-bearing invariant on the real write path, read from the app's own
   // projection: after routing every way, nothing the UI touched is silent.
-  is((await tpage.locator('#gauge').textContent())?.includes('0 silent'), true,
+  is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'law 1 holds across all six routes — the held gauge reads 0 silent');
 
   console.log('\nTriage — no page errors');

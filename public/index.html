@@ -46,9 +46,14 @@
        inbox is clear. Announced in its own live region. -->
   <section id="triage" class="triage" aria-labelledby="triage-prompt" hidden>
     <p id="triage-gauge" class="triage-gauge"></p>
-    <h2 id="triage-prompt" class="triage-prompt"></h2>
+    <!-- tabindex=-1 so focus can land here after a card is replaced: activating a
+         route removes the button, and focus must not fall to <body> (WCAG 2.4.3). -->
+    <h2 id="triage-prompt" class="triage-prompt" tabindex="-1"></h2>
     <p id="triage-card" class="triage-card"></p>
     <div id="triage-actions" class="triage-actions"></div>
+    <!-- The do-now timer lives here, OUTSIDE the card, so advancing the carousel
+         never orphans a running two-minute countdown or drops its outcome. -->
+    <div id="triage-donow"></div>
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 

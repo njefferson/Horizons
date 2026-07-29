@@ -290,6 +290,31 @@ the reference stress viewport.
 Status: **FIXED in 0.2.3** — `#status` and every dialog descendant wrap with
 `overflow-wrap: anywhere`; the gate now asserts page AND dialog overflow ≤1px.
 
+### F-05 · Focus fell to `<body>` after every triage tap
+Found: 2026-07-29 · Phase 2 adversarial audit
+Rule: WCAG 2.4.3 Focus Order
+Detail: the clarify surface rebuilds its buttons with `replaceChildren` on every
+heat/route tap, removing the control the user just activated; nothing moved focus,
+so a keyboard or screen-reader user was dumped to `<body>` and had to Tab back down
+after each of up to twelve taps — in a flow whose whole point is "keyboard-first,
+one card at a time". `auditFocusRings` could not see it: it blurs and Tabs from
+scratch and never activates a control to see where focus lands.
+Status: **FIXED (0.4.0, pre-promote)** — focus moves to the prompt heading
+(`tabindex=-1`), or to the capture line once the inbox is clear; the prompt, not the
+first route, so an accidental double-activation cannot fire Trash. `a11y.mjs` now
+activates a route and asserts focus is not `<body>`, made to fail first.
+
+### F-06 · A dated card status overflowed the card at 320px/200%
+Found: 2026-07-29 · Phase 2 a11y gate (downstream of [V-13](docs/verifications.md))
+Rule: WCAG 1.4.10 Reflow
+Detail: `.card-when` was `flex: 0 0 auto` — fixed to its content width, never
+wrapping. When the same-day clock reads a dated "returns \<day\>" rather than the
+short "returns today" (the end-of-UTC-day issue, V-13), the label was wide enough to
+push the page ~6px sideways at the reference stress viewport.
+Status: **FIXED (0.4.0, pre-promote)** — `.card-when` is `flex: 0 1 auto; min-width:0`
+so it shrinks and wraps within the card on its own line; the gate asserts page
+overflow ≤1px in this state.
+
 Format:
 
 ```

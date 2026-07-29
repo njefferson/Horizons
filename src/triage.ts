@@ -13,21 +13,27 @@ import type { Heat } from './events.ts';
 /** Capture order is the only order the inbox claims, and ULIDs sort by time. */
 const byCaptureOrder = (a: NodeState, b: NodeState): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
 
-/** A live captured item that has not been routed yet. Trashed and merged nodes
- *  are gone; a routed node has left the inbox by definition. */
+/** A live CAPTURED item that has not been routed yet. Trashed and merged nodes
+ *  are gone; a routed node has left the inbox by definition. The `captured`
+ *  latch is load-bearing: without it the predicate would count ANY unrouted live
+ *  node — a person, an anchor, a bother, a promoted Menu item — as "unclarified",
+ *  offering it clarify routes that would then hard-fail on a demand-free node
+ *  (audit). The inbox is captures-not-yet-routed, nothing else. */
 const isInboxItem = (n: NodeState): boolean =>
-  !n.trashed && !n.mergedInto && n.route === null;
+  n.captured && !n.trashed && !n.mergedInto && n.route === null;
 
 /**
- * The clarify queue: everything still unrouted, oldest first — but an item whose
- * capture carried the `boss` tag runs one step hotter, because a thing the boss
- * asked for that is sitting unclarified is the most expensive kind to lose
- * (build-plan item 16). "One step hotter" = it sorts ahead of same-age items,
- * not ahead of everything, so the queue still drains in roughly capture order.
+ * The clarify queue: captured-not-yet-routed, boss-tagged first, then oldest
+ * first within each tier. A thing the boss asked for that is sitting unclarified
+ * is the most expensive kind to lose (build-plan item 16), so it jumps the queue.
+ * This is a two-tier priority — all boss items ahead of all non-boss items — not
+ * a within-age nudge; the tests lock that behaviour.
  */
 export function unclarified(state: State): NodeState[] {
   const items = [...state.nodes.values()].filter(isInboxItem);
-  const boss = (n: NodeState): number => (n.sourceTags.includes('boss') ? 0 : 1);
+  // Defensive `?? []`: the snapshot path backfills sourceTags, but a projection
+  // must not throw on a malformed node even so.
+  const boss = (n: NodeState): number => ((n.sourceTags ?? []).includes('boss') ? 0 : 1);
   return items.sort((a, b) => boss(a) - boss(b) || byCaptureOrder(a, b));
 }
 

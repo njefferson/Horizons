@@ -36,6 +36,11 @@ export interface NodeState {
   /** Retained from capture so clarify ordering can run a `boss`-tagged item
    *  hotter (build-plan item 16). */
   sourceTags: string[];
+  /** True once the node entered as a capture (or interrupt-capture). This is
+   *  what makes it an INBOX item — the clarify queue is captures-not-yet-routed,
+   *  NOT "any unrouted node", so a person/anchor/bother/promoted-Menu node never
+   *  pollutes triage. A latch: set true at genesis, never cleared. */
+  captured: boolean;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -111,7 +116,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       id, vault, kind: 'action', title: '', parent: null,
       trashed: false, mergedInto: null, clocks: {}, onMenu: null,
       lastDone: null, comfortWindowDays: null, intervalDays: null,
-      heat: null, route: null, sourceTags: [],
+      heat: null, route: null, sourceTags: [], captured: false,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -124,6 +129,10 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       clocks: { ...n.clocks },
       fields: { ...n.fields },
       stamps: { ...n.stamps },
+      // sourceTags is the one mutable-array structural field; the top-level spread
+      // would alias it, holing copy-on-write for it alone (audit: a derived-state
+      // mutation would rewrite base history). Clone it like the other containers.
+      sourceTags: [...n.sourceTags],
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -185,13 +194,18 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       // what it is for.
       case 'capture.recorded': {
         const n = ensureNode(s, e.node!, e.vault, touched);
+        n.captured = true;   // a latch, not LWW — genesis of an inbox item
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
-        if (wins(n.stamps['sourceTags'], o)) { n.sourceTags = e.payload.sourceTags ?? []; n.stamps['sourceTags'] = o; }
+        // Copy the payload array — storing the log event's array by reference
+        // holes copy-on-write (audit): a later mutation of live state would
+        // rewrite an "immutable" log event, and vice versa.
+        if (wins(n.stamps['sourceTags'], o)) { n.sourceTags = [...(e.payload.sourceTags ?? [])]; n.stamps['sourceTags'] = o; }
         break;
       }
       case 'interrupt.captured': {
         const n = ensureNode(s, e.node!, e.vault, touched);
+        n.captured = true;   // an interrupt-capture is an inbox item too
         if (wins(n.stamps['kind'], o)) { n.kind = 'action'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
         break;

@@ -7,10 +7,13 @@
 // gone.
 //
 // What makes a forgotten terminal event safe is NOT the gate's clarify.routed cure
-// (which never fires — a node is always already covered by the time it is routed;
-// see ADR-0029 and test/triage.test.ts). It is that a captured node is covered
-// from capture onward and clarify.routed removes no coverage, so a bare route
-// leaves it under its capture clock, never silent.
+// (which is unreachable on the real write paths — a captured node is always
+// already covered by the time routeEvents runs, and clarify.routed removes no
+// coverage; see ADR-0029 and test/triage.test.ts). It is that a captured node is
+// covered from capture onward, so a bare route leaves it under its capture clock,
+// never silent. (The cure IS reachable in the abstract — a bare clarify.routed at
+// a never-created node id mints a silent node the cure then clocks — which is why
+// it is kept; it just never fires for a route built here.)
 //
 // These build events; they never touch the store. `app.ts` hands them to
 // `session.commit`, which runs them through the gate.
