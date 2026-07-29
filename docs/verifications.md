@@ -642,6 +642,40 @@ being treated as one was a cache.
 
 ---
 
+## V-14 · Does the OS calendar actually fire a Quietkeep alarm with the app closed?
+**Status: NOT VERIFIED — and it is the only verification that counts for T1**
+· raised 2026-07-29 with 0.8.0
+
+The whole point of [T1](adr/0007-notification-tiers.md) is that the reminder
+arrives **when Quietkeep is not running**. Everything CI can prove about it is
+upstream of that claim:
+
+| Checked | By what | What it does NOT prove |
+|---|---|---|
+| the file is well-formed RFC 5545 | `test/ics.test.ts`, an independent unfold | that a calendar app accepts it |
+| one `VALARM` per `VEVENT` | unit + smoke | that the alarm ever fires |
+| the date is the reader's local day | oracle-tested `localDayKey` (V-13) | that iOS agrees |
+| `TRIGGER;RELATED=START:PT9H` is emitted | unit | that it resolves to **09:00 local** rather than 09:00 UTC, or midnight, or not at all |
+
+**The device reading needed**, on Noah's iPad, which is the reference platform:
+1. Export from Quietkeep, open the `.ics`, add it to the calendar.
+2. Confirm the event lands on the **right day** — not a day either side.
+3. **Close Quietkeep entirely** and confirm a notification arrives at 09:00 local.
+4. Re-export after changing a date, re-import, and confirm the event is **updated
+   rather than duplicated** — the stable-`UID` claim in
+   [ADR-0033](adr/0033-calendar-export-t1.md).
+
+Until step 3 is observed, **T1 is built but unproven**, and nothing should describe
+Quietkeep as reminding anyone. The changelog wording for 0.8.0 says the calendar
+reminds you, which is a claim about the calendar's behaviour rather than the app's
+— if step 3 fails, that copy is wrong and goes first.
+
+**Why it is recorded rather than assumed:** [V-10](#v-10) is the standing lesson
+that running a thing is not the same as watching it, and this is the same shape at
+one remove — generating a correct file is not the same as a reminder arriving.
+
+---
+
 ## Standing note on instruments
 
 Two lessons from sibling apps apply to every future row here:
