@@ -29,6 +29,21 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.20.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'You can now put down something that is on your mind but **is not a task** \u2014 "the thing with the roof" \u2014 without first inventing a next step for it. Being made to write a worry as a task is how you end up with steps you will never do, on a list you are supposed to trust.',
+      '**The first question is whose it is, not what you are going to do about it.** Asking for a next action first is what makes people make one up.',
+      'Three answers: mine to do something about, mine to keep an eye on, or **not mine to carry**.',
+      '"Not mine to carry" is a real answer and it is honoured completely. It is let go, it is not parked, and **it does not come back "just to check"**. An app that quietly re-raises what you released is one that did not believe you.',
+      '"Mine to do something about" sends it to your inbox, and only then are you asked what the actual next step is.',
+      '"Mine to keep an eye on" parks it and brings it back in a week. Nothing to do in the meantime, and nothing carried in your head either.',
+      'One at a time. It says how many are there and shows you exactly one \u2014 a list of worries is a worse thing to look at than any single worry on it.',
+      'Nothing here calls it a problem, or you a worrier, and letting something go gets the plainest sentence in the app rather than a congratulation.',
+    ],
+  },
+  {
     triplet: '0.19.0',
     kind: 'CAPABILITY',
     date: '2026-07-29',

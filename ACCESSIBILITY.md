@@ -262,6 +262,25 @@ That is a COGA decision before it is a preference one: a surface that greets you
 with a list of things you wanted is indistinguishable, on a bad morning, from a
 list of things you owe.
 
+### B-19 · The bother flow (0.20.0)
+`.bother-choice-hint` is the lowest-contrast text on the surface and it is
+load-bearing: it states what each answer will DO. A forced choice with unlabelled
+consequences is a guess, and this is the one question the whole flow turns on.
+Registered in both themes, with the entry line and its placeholder.
+
+**All three choices are styled identically.** "Not mine to carry" is not a lesser
+option, is not a destructive-action red, and must not look like either — it is an
+ordinary answer with an ordinary appearance, and the visual equality is the
+argument. Any future styling that distinguishes it would say something the
+product does not.
+
+The three stacked choices, each a label over a hint, are audited at 320px and
+200% as their own overflow case — the same treatment as the replan sheet, which
+has the same shape and is the wordiest surface in the app.
+
+The entry point is a closed `<details>`. The place you go to name a worry must
+not itself be a prompt to find one.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

@@ -1026,3 +1026,37 @@ dialog, dialog * { overflow-wrap: anywhere; }
 .menu-money { color: var(--ink-soft); font-size: 0.875rem; }
 #detail-save-target, #detail-save-saved { min-height: var(--target); width: 6rem; }
 #detail-save-set { min-height: var(--target); }
+
+/* --- bothers: the thing that isn't a task --------------------------------- */
+/* A <details>, closed by default. It sits under capture and asks nothing of you
+   until you open it — the entry point for a worry must not itself be a prompt to
+   find one. */
+.bother-entry { margin: 0 0 1rem; }
+#bother-summary {
+  min-height: var(--target); display: flex; align-items: center;
+  color: var(--ink-soft); font-size: 0.9375rem; cursor: pointer;
+}
+#bother-text { min-height: var(--target); flex: 1 1 6rem; min-width: 0; font: inherit; }
+#bother-text::placeholder { color: var(--ink); opacity: 1; }
+.bother {
+  margin: 0 0 1.5rem; padding: 1rem;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.bother-count { margin: 0 0 0.5rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.bother-prompt { margin: 0 0 0.5rem; font-size: 1.125rem; font-weight: 600; }
+/* The worry itself, in the user's own words, at full weight. It is the thing
+   being decided about and it should not be the quietest text on the card. */
+.bother-card { margin: 0 0 0.85rem; color: var(--ink); overflow-wrap: anywhere; }
+.bother-actions { display: flex; flex-direction: column; gap: 0.5rem; }
+.bother-choice {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  width: 100%; min-height: var(--target); padding: 0.5rem 0.75rem; text-align: left;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--radius); font: inherit; cursor: pointer;
+}
+.bother-choice-label { font-weight: 600; }
+/* The consequence of each choice. A forced choice with unlabelled outcomes is a
+   guess, and this is the one question the whole flow turns on. All three are
+   styled identically — "not mine to carry" is not a lesser option and must not
+   look like one. */
+.bother-choice-hint { color: var(--ink-soft); font-size: 0.875rem; }

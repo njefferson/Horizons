@@ -1781,6 +1781,94 @@ try {
   is(await tpage.locator('#comms').isVisible(), false,
     'and it does not come straight back \u2014 it comes round on its own');
 
+  // --- Bothers: the thing that is not a task -------------------------------
+  // `bother.received`, `bother.owned` and `bother.routed` have been in the
+  // vocabulary from the first draft, with cures in the gate — "bother must
+  // terminate in a route or a park" — and nothing could emit any of them.
+  console.log('\nSomething on your mind \u2014 and the option almost no planner has');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#bother').isVisible(), false,
+    'nothing is on your mind, so nothing asks');
+
+  await tpage.click('#bother-summary');
+  await tpage.fill('#bother-text', 'my brother\u2019s job situation');
+  await tpage.click('#bother-form button[type=submit]');
+  await tpage.waitForSelector('#bother:not([hidden])');
+  is(await tpage.locator('#bother-card').textContent(), 'my brother\u2019s job situation',
+    'it takes the worry as written, with no next action invented for it');
+  const prompt = await tpage.locator('#bother-prompt').textContent();
+  is(prompt, 'Whose is this?',
+    `and the FIRST question is whose it is, not what you will do ("${prompt}")`);
+  is(await tpage.locator('.bother-choice').count(), 3, 'three answers');
+  const hints = await tpage.locator('.bother-choice-hint').allTextContents();
+  is(hints.every(h => h.trim().length > 0), true,
+    `each says what it will do (${hints.join(' | ')})`);
+
+  // THE ONE THAT MATTERS. "Not mine to carry" must be honoured completely: not
+  // parked, not sent to triage, not brought back "just to check".
+  const beforeIds = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'bother.received').map(e => e.node));
+    });
+  });
+  await tpage.locator('.bother-choice', { hasText: 'Not mine to carry' }).first().click();
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#bother').isVisible(), false, 'it is done with, in one tap');
+
+  const gone = await tpage.evaluate(async (id) => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res({
+        owned: tx.result.filter(e => e.kind === 'bother.owned').map(e => e.payload?.ownership),
+        routed: tx.result.filter(e => e.kind === 'bother.routed').length,
+        parked: tx.result.filter(e => e.kind === 'park.set' && e.node === id).length,
+        trashed: tx.result.filter(e => e.kind === 'node.trashed' && e.node === id).length,
+      });
+    });
+  }, beforeIds[beforeIds.length - 1]);
+  is(gone.owned.includes('not-mine-to-carry'), true, 'the answer is recorded as given');
+  is(gone.routed, 1, 'and the flow terminated, as the vocabulary requires');
+  is(gone.parked, 0, 'NOT parked \u2014 it does not come back "just to check"');
+  is(gone.trashed, 1, 'let go, explicitly');
+
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#bother').isVisible(), false,
+    'and it is still gone after a reload \u2014 a release taken back is worse than none');
+  const heldText = await tpage.locator('#cards').textContent();
+  is((heldText || '').includes('brother'), false, 'it is not on your list either');
+
+  // "Mine to do something about" becomes ordinary work and joins the inbox.
+  // DRAIN FIRST: triage shows one card at a time, so with earlier items still
+  // queued the roof was genuinely in the inbox and simply not the card on
+  // screen — the assertion below is about the surface, so the surface has to be
+  // showing the thing it is about.
+  while (await tpage.locator('#triage:not([hidden]) .route').count() > 0) {
+    await routeOne('Next action');
+  }
+  await tpage.click('#bother-summary');
+  await tpage.fill('#bother-text', 'the thing with the roof');
+  await tpage.click('#bother-form button[type=submit]');
+  await tpage.waitForSelector('#bother:not([hidden])');
+  await tpage.locator('.bother-choice', { hasText: 'Mine to do something about' }).first().click();
+  await tpage.waitForTimeout(400);
+  is(await tpage.locator('#bother').isVisible(), false, 'the flow ends');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const triageText = await tpage.evaluate(() => document.querySelector('#triage')?.innerText ?? '');
+  is(triageText.includes('the thing with the roof'), true,
+    'and NOW it is asked what the next step is \u2014 which is the second question, not the first');
+
+  const botherText = await tpage.evaluate(() =>
+    (document.querySelector('#bother')?.innerText ?? '') + ' ' +
+    (document.querySelector('#bother-entry')?.innerText ?? ''));
+  is(/\b(problem|anxiet|stress|overwhelm|calm down|don.t worry)\b/i.test(botherText), false,
+    'and none of it names the thing a problem, or you a worrier');
+
   // --- The Menu, and a save-for (law 6: demand-free by construction) -------
   // `menu.item.added` has carried a category from a closed list since the first
   // draft and NOTHING read it — every Menu item went into one undifferentiated

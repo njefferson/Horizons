@@ -38,6 +38,40 @@
     <button type="submit">Hold it</button>
   </form>
 
+  <!-- Naming a worry (v1.5). NOT a task, and deliberately not the same box:
+       being told to enter "the thing with the roof" as a task is what makes
+       people invent a next action they will not do. -->
+  <details id="bother-entry" class="bother-entry">
+    <summary id="bother-summary">Something on your mind that isn&rsquo;t a task?</summary>
+    <form id="bother-form" autocomplete="off">
+      <label class="visually-hidden" for="bother-text">What is on your mind?</label>
+      <div class="detail-row">
+        <input id="bother-text" type="text" enterkeyhint="done" autocomplete="off"
+               autocapitalize="sentences" spellcheck="true"
+               placeholder="the thing with the roof" aria-describedby="bother-entry-hint">
+        <button type="submit">Put it down</button>
+      </div>
+      <p id="bother-entry-hint" class="detail-hint">
+        You do not have to know what to do about it. That is the next question,
+        and it is not the first one.
+      </p>
+    </form>
+  </details>
+
+  <!-- The flow. One at a time, like triage — a list of worries is a worse object
+       than any single worry on it. It asks WHOSE IT IS before it asks anything
+       else, because asking what you will do about it first is what makes people
+       invent an answer. -->
+  <section id="bother" class="bother" aria-labelledby="bother-prompt" hidden>
+    <p id="bother-count" class="bother-count"></p>
+    <!-- tabindex=-1 so focus can land here after answering removes the control
+         it was on (WCAG 2.4.3). -->
+    <h2 id="bother-prompt" class="bother-prompt" tabindex="-1"></h2>
+    <p id="bother-card" class="bother-card"></p>
+    <div id="bother-actions" class="bother-actions"></div>
+    <p id="bother-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
   <!-- A live region, so a screen-reader user learns the write landed without
        hunting for it. It reports what already happened, never a prediction. -->
   <p id="status" role="status" aria-live="polite" class="status"></p>

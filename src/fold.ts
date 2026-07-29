@@ -46,6 +46,12 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /** For a `bother`: whose it is, once that has been said, and whether the flow
+   *  has terminated. `botherRouted` is a LATCH — a bother leaves the flow once
+   *  and does not re-enter it, because being asked the same question twice about
+   *  the same worry is the thing the flow exists to stop. */
+  ownership: string | null;
+  botherRouted: boolean;
   /** For a `save-for` Menu item: what it costs and what is put by. Either may be
    *  null — a save-for with no target is an ordinary wish, and demanding a number
    *  before you may want something would be the app deciding what counts as a
@@ -219,6 +225,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       resumeFor: null, resumeCue: null, interruptedFocus: null, interruptedAt: null,
       people: [], waitingOn: null, waitingFor: null, waitingSince: null, waitingOutcome: null,
       role: null, opr: null, saveTarget: null, saveSaved: null,
+      ownership: null, botherRouted: false,
       lastReplan: null,
       feeds: [],
       leadDays: null,
@@ -392,6 +399,28 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       // Both numbers set by hand, per the vocabulary's own note ("target, saved
       // — both manual"). A number this app derived would be a projection about
       // somebody's money, which is not a thing it knows anything about.
+      case 'bother.owned': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['ownership'], o)) { n.ownership = e.payload.ownership; n.stamps['ownership'] = o; }
+        break;
+      }
+      // A latch, like `captured`. Once a worry has been through the flow it does
+      // not go back in — being asked the same question twice about the same
+      // thing is exactly what the flow exists to stop.
+      case 'bother.routed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        n.botherRouted = true;
+        // Routing it to the inbox is what MAKES it an inbox item. `captured` is
+        // the latch the clarify queue reads, and a bother never sets it at
+        // genesis — deliberately, because a worry must not be asked "what is the
+        // next step" before it has been asked whose it is.
+        //
+        // Without this the choice hint promised "it goes to your inbox" and
+        // nothing arrived: the kind changed and triage, which asks about
+        // `captured`, never saw it (smoke).
+        if ((e.payload as { route?: string }).route === 'inbox') n.captured = true;
+        break;
+      }
       case 'save-for.updated': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['save-for'], o)) {

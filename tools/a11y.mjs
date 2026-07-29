@@ -107,6 +107,16 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // The bother flow. The choice hints are the lowest-contrast text and they are
+  // load-bearing: they say what each answer will DO, and a forced choice with
+  // unlabelled consequences is a guess. All three choices are styled identically
+  // on purpose — "not mine to carry" is not a lesser option and must not look
+  // like one.
+  'bother': ['#bother-prompt', '.bother-card', '.bother-choice',
+    '.bother-choice-label', '.bother-choice-hint'],
+  'bother entry': ['#bother-summary', '#bother-text',
+    { sel: '#bother-text', pseudo: '::placeholder' },
+    '#bother-form button[type=submit]', '.detail-hint'],
   // The Menu (law 6). The money line is the lowest-contrast text and it is the
   // whole of what a save-for says. There is NO bar and no colour keyed to the
   // numbers anywhere on this surface, and that absence is the measurement.
@@ -520,6 +530,33 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3d2: a worry, and the question it is asked first.
+    await page.click('#bother-summary');
+    await page.waitForSelector('#bother-text');
+    await auditContrast(page, 'bother entry', theme);
+    await auditTargets(page, 'bother entry', theme);
+    await auditFocusRings(page, 'bother entry', theme, ['#bother-text', '#bother-summary']);
+    await page.fill('#bother-text', 'the thing with the roof');
+    await page.click('#bother-form button[type=submit]');
+    await page.waitForSelector('#bother:not([hidden])');
+    await auditContrast(page, 'bother', theme);
+    await auditAxe(page, 'bother', theme);
+    await auditTargets(page, 'bother', theme);
+    await auditFocusRings(page, 'bother', theme, ['.bother-choice']);
+    // Three stacked choices, each a label over a hint, at 320px and 200%.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const botherOver = await page.evaluate(() => {
+      const d = document.querySelector('#bother');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (botherOver <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: bother flow horizontal overflow ${botherOver}px (must be ≤1)`);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.locator('.bother-choice', { hasText: 'Not mine to carry' }).first().click();
+    await page.waitForTimeout(300);
 
     // State 3e1: the Menu. Reached by routing something to Someday, which is the
     // only way anything gets there.
