@@ -223,24 +223,18 @@ decided by a session.**
 
 ### Open
 
-- **Q-10**
-  - Question: **Nothing in this app scopes a projection by vault.** `heldNodes`, Next up, the person lens, the portfolio and the status report all read every node in the store regardless of vault. In practice a session opens exactly one vault so it has never shown, but the vault split is a stated feature and two vaults would currently bleed into one another on every surface. Raised by the 0.17.1 audit while probing the report.
-  - Blocking: No — one vault is in use, and the report is no worse than any other surface.
-  - Status: **Open.** Deliberately not fixed in the audit: making the status report the single vault-aware surface would be a worse inconsistency than the one it fixed. It is one decision applied everywhere, or nowhere, and it wants Noah's word on whether the second vault is real.
-
-**Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
-App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
-classes 9 and 42 was **not run, by reasoning rather than omission**: trademark protects
-against confusion in commerce, and a free app licensed against being sold is not in
-commerce. [V-04](docs/verifications.md) records that as a decision, not a gap.
-
-**Standing rule on names** ([V-04](docs/verifications.md)): ask *"is this name taken in
-software?"*, unscoped, **before** anything else and before showing Noah a candidate. Asking
-*"is another planner called this?"* returns a confident empty result for an occupied name.
-That error cost the Perennial round.
+*(Nothing open.)*
 
 ### Closed
 
+- **Q-10**
+  - Question: Nothing in this app scopes a projection by vault. Should it?
+  - Noah, 2026-07-29: *"The second vault is likely for home tasks... Does it separate work tasks a different way already?"*
+  - Answer, in two parts. **First, the fact:** no. The vault is hard-coded to `personal` in `session.ts`, there is **no control anywhere to create or switch one** (zero references in `index.html`), and no projection filters by it. Every event carries the field and nothing has ever read it. There is no work/home separation in this app by that mechanism or any other name for it.
+  - **What does separate things, as of this morning:** containment (0.13.0). A "Work" project or area and a "Home" one, with things put under them. That is real, it is shipped, and Noah can use it today.
+  - **Recommendation, and it is against building the vault:** what he is describing wants a **lens** — a filter you switch on and off over one list — and not a partition. A hard vault split forces Next up to pick a side, and *"one thing, chosen for you"* across the whole of someone's life is the app's central promise. Two vaults are two apps, and then you have to remember to check both, which is exactly the failure this app exists to prevent. A lens keeps one queue underneath and one coverage gauge that still reads zero.
+  - **Binding constraint if a lens is built:** law 1 does not bend for it. A thing filtered out of view still has its clock and still comes back — a filter may change what you are looking at and may never change what the app is holding. Anything else is an archive with a friendlier name (law 3).
+  - Status: **Closed as a decision not to build vaults.** The `vault` field stays in the log (it costs nothing, it is already in every event, and removing it would be a destructive schema change for no gain). A Home/Work lens is a candidate for v1.5 whenever Noah wants it; he has containment in the meantime.
 - **Q-06**
   - Question: The astro app's naming was inconsistent — repo and URL said `clear-horizons`, the hub displayed **"Astro Planner"**, and the name Noah chose appeared nowhere a visitor saw.
   - Answer: **"Astro Planner will be named Clear Horizons."** Noah, 2026-07-29. The app itself already used the name throughout (title, og tags, manifest); only the hub's two entries were stale, and both are fixed (`noahjefferson` @ `004fddd`). Nothing in the `clear-horizons` repo needed changing.
