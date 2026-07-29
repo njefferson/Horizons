@@ -199,10 +199,12 @@ test('node.renamed is NOT silent-risk — a title carries no coverage', async ()
  *  A card's words and the heading it sits under must describe the same thing. */
 const GROUP_ALLOWS: Record<string, RegExp> = {
   unsorted: /^not sorted yet$/,
-  // "needs a new plan" is a live thing, so it belongs under Ready now — but it
-  // must not say "ready now", because a date that went by has already ruled out
-  // the answer those words invite (law 3).
-  ready: /^(ready now|today|needs a new plan)$/,
+  ready: /^(ready now|today)$/,
+  // Its own heading, and the row says the same words. Under "Ready now" these
+  // read as ordinary work, which is the one answer a passed date has already
+  // ruled out — and the replan surface directly above is asking something else
+  // about the very same items (law 3).
+  replan: /^needs a new plan$/,
   soon: /^(tomorrow|in \d+ days)$/,
   later: /^(held|parked until .+|back now|\w{3} \d+(, \d{4})?)$/,
   menu: /^on the Menu$/,

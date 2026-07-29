@@ -513,7 +513,7 @@ try {
   await tpage.waitForSelector('body[data-ready=true]');
   const headings = await tpage.locator('.group-head').allTextContents();
   is(headings.length > 0, true, `what you are holding is grouped ("${headings.join('", "')}")`);
-  is(headings.every(h => /^(Not sorted yet|Ready now|Coming up|Later|On the Menu|Done)$/.test(h)), true,
+  is(headings.every(h => /^(Not sorted yet|Needs a new plan|Ready now|Coming up|Later|On the Menu|Done)$/.test(h)), true,
     'every heading is one of the six, in words');
   // No score, no count of things undone anywhere in the list (law 5).
   is(/\b\d+\b/.test(headings.join(' ')), false,
@@ -649,6 +649,153 @@ try {
   is(await tpage.locator('#detail').isVisible(), true,
     'a card opens its sheet even after a URL capture re-rendered the list');
   await tpage.click('#detail-close');
+
+  // --- Dates that have gone by (product law 3, ADR-0012/ADR-0034) ----------
+  // The claim under test is NOT "a card appears". It is that a passed date stops
+  // being offered as ordinary work and becomes a decision instead — one item,
+  // one question — and that every option is forward-facing.
+  console.log('\nDates that have gone by — a decision, not a row');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#replan').isVisible(), false,
+    'nothing has gone by yet, so the surface is not there at all');
+
+  // A row that offers "Done" is exactly a live, routed, off-Menu item — the same
+  // set replan considers — so this picks a legitimate subject rather than an
+  // inbox item triage still owns.
+  const lapsedTitle = await tpage.locator('#cards .card:has(.card-done) .card-title').first().textContent();
+  await tpage.locator('#cards .card:has(.card-done) .card-open').first().click();
+  await tpage.waitForSelector('#detail[open]');
+  const pastKey = await tpage.evaluate(() =>
+    new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10));
+  await tpage.fill('#detail-date', pastKey);
+  await tpage.click('#detail-date-set');
+  await tpage.waitForTimeout(180);
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.waitForSelector('#replan:not([hidden])');
+  is(await tpage.locator('#replan').isVisible(), true,
+    `a date five days behind raises a decision ("${lapsedTitle}")`);
+  const replanCount = await tpage.locator('#replan-count').textContent();
+  is(/gone by/.test(replanCount || ''), true,
+    `it says how many, plainly ("${replanCount}")`);
+  is((await tpage.locator('.replan-card-when').first().textContent())?.length > 0, true,
+    'and each row states how long ago, in words');
+
+  // THE LOAD-BEARING ONE. Next up must no longer offer it: "a real date, and it
+  // is here" is the answer that date has already ruled out, and showing both is
+  // one item asked two different questions.
+  const stillOffered = await tpage.evaluate(() =>
+    [document.querySelector('#nextup-title')?.textContent ?? '',
+     document.querySelector('#nextup-behind')?.textContent ?? '',
+     document.querySelector('#upkeep-chips')?.textContent ?? ''].join(' | '));
+  is(stillOffered.includes(lapsedTitle || ' '), false,
+    'and the work surface stops offering it — one item, one question');
+
+  // Nothing vanished: the list still holds it, and says what it needs.
+  const lapsedRow = await tpage.evaluate((title) => {
+    for (const li of Array.from(document.querySelectorAll('#cards .card'))) {
+      if (li.querySelector('.card-title')?.textContent === title) {
+        return li.querySelector('.card-when')?.textContent ?? '(no status)';
+      }
+    }
+    return '(not in the list)';
+  }, lapsedTitle);
+  is(lapsedRow, 'needs a new plan',
+    `the list still holds it and says what it needs (got "${lapsedRow}")`);
+  // And under its OWN heading. Filed under "Ready now" the row reads as ordinary
+  // work — the very answer the passed date ruled out — while the surface above
+  // asks something else about the same item. One screen, one item, two
+  // questions: the defect the Next-up exclusion prevents, relocated to the list.
+  const lapsedGroup = await tpage.evaluate((title) => {
+    for (const h of Array.from(document.querySelectorAll('.group-head'))) {
+      const list = h.nextElementSibling;
+      if (list?.textContent?.includes(title)) return h.textContent;
+    }
+    return '(not found)';
+  }, lapsedTitle);
+  is(lapsedGroup, 'Needs a new plan',
+    `and files it under its own heading, not "Ready now" (was "${lapsedGroup}")`);
+  // The list must still hold EVERYTHING — the sum of its groups is what the
+  // gauge counts, so a new group must not become a way to drop things.
+  const rowsNow = await tpage.locator('#cards .card').count();
+  const claimNow = Number((await tpage.locator('#gauge').textContent() || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  is(rowsNow, claimNow, `nothing vanished into the new group (${rowsNow} rows vs "${claimNow} held")`);
+
+  // The options. Five, forward-facing, and none of them files a failure.
+  await tpage.locator('.replan-open').first().click();
+  await tpage.waitForSelector('#replan-sheet[open]');
+  is((await tpage.locator('#replan-sheet-title').textContent()), lapsedTitle,
+    'the sheet names the item it is about');
+  const optionText = await tpage.locator('#replan-options').textContent();
+  const optionCount = await tpage.locator('.replan-choice').count();
+  is(optionCount, 4, `four one-tap options (${optionCount})`);
+  is(await tpage.locator('#replan-new-date').count(), 1,
+    'plus a date box, for when you already know when');
+  is(/\b(missed|fail|failed|behind|overdue|late|should have)\b/i.test(optionText || ''), false,
+    'and not one of them files a failure');
+  // Law 5 over the WHOLE visible surface, sheet included — this is the one place
+  // in the app where shame vocabulary would be easiest to write by accident.
+  const replanText = await tpage.evaluate(() =>
+    (document.querySelector('#replan')?.innerText ?? '') + ' ' +
+    (document.querySelector('#replan-sheet')?.innerText ?? ''));
+  is(/\b(overdue|late|missed|streak|failed)s?\b/i.test(replanText), false,
+    'no shame vocabulary anywhere on it');
+
+  // Refusing rather than inventing: "Set" with an empty box must write nothing.
+  const countReplanEvents = () => tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'replan.resolved').length);
+    });
+  });
+  is(await countReplanEvents(), 0, 'no decision has been recorded yet');
+  await tpage.click('.replan-set');
+  await tpage.waitForTimeout(200);
+  is(await countReplanEvents(), 0, 'a new date with no date is refused, not invented');
+  is(await tpage.locator('#replan-sheet').isVisible(), true, 'and the sheet stays open to say so');
+
+  // Resolve it. "Not now" is legitimate and unremarkable (ADR-0012), and it must
+  // take the passed date with it — a Menu item carries no clock by law.
+  await tpage.locator('.replan-choice', { hasText: 'Not now' }).first().click();
+  await tpage.waitForTimeout(250);
+  const resolution = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.map(e => ({ kind: e.kind, node: e.node, payload: e.payload })));
+    });
+  });
+  const resolved = resolution.filter(e => e.kind === 'replan.resolved');
+  is(resolved.length, 1, 'exactly one decision was recorded');
+  is(resolved[0]?.payload?.choice, 'to-menu', 'and it is the one that was chosen');
+  const lapsedNode = resolved[0]?.node;
+  is(resolution.some(e => e.kind === 'clock.cleared' && e.node === lapsedNode &&
+    e.payload?.clockKind === 'due'), true,
+    'the passed date went with it — otherwise the decision decides nothing');
+  is(resolution.some(e => e.kind === 'menu.item.added' && e.node === lapsedNode), true,
+    'and it landed somewhere real: the Menu');
+  is(await tpage.locator('#replan-sheet').isVisible(), false, 'the sheet closes itself');
+  is(await tpage.locator('#replan').isVisible(), false,
+    'and with the last one decided, the surface goes away entirely');
+  const replanFocus = await tpage.evaluate(() => ({
+    tag: document.activeElement?.tagName ?? 'NONE', id: document.activeElement?.id ?? '',
+  }));
+  is(replanFocus.tag !== 'BODY' && replanFocus.tag !== 'NONE', true,
+    `focus lands somewhere real afterwards (on ${replanFocus.id || replanFocus.tag}, not <body>)`);
+  is((await tpage.locator('#status').textContent())?.includes('Menu'), true,
+    'and what happened is announced where it can be both seen and heard');
+  const menuGroup = await tpage.evaluate((title) => {
+    for (const h of Array.from(document.querySelectorAll('.group-head'))) {
+      const list = h.nextElementSibling;
+      if (list?.textContent?.includes(title)) return h.textContent;
+    }
+    return '(not found)';
+  }, lapsedTitle);
+  is(menuGroup, 'On the Menu', `and the list files it as such (was "${menuGroup}")`);
 
   console.log('\nThe calendar — the tier that reminds you when the app is shut');
   await tpage.click('#open-about');

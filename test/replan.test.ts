@@ -13,7 +13,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { fold, emptyState, type State } from '../src/fold.ts';
-import { admit, silentNodes, gateOptionsFor } from '../src/gate.ts';
+import { admit, silentNodes, gateOptionsFor, heldNodes } from '../src/gate.ts';
 import { replanAll, replanCards, replanIds, replanWords, REPLAN_CAP } from '../src/replan.ts';
 import { replanEvents, REPLAN_CHOICES } from '../src/ui/replan-intents.ts';
 import { heldGroups, heldStatus } from '../src/held.ts';
@@ -223,13 +223,42 @@ test('an upkeep already in its rhythm raises nothing, whatever date it carries',
   assert.equal(workSurface(s, NOW, TZ).chips.length, 1, 'and it is still offered, as a chip');
 });
 
-test('nothing vanishes: the list still holds it, and says what it needs', () => {
+test('nothing vanishes: the list still holds it, under its own heading', () => {
   const s = st(node('D', 'file the return'), clock('D', 'due', -4));
-  const all = heldGroups(s, NOW, TZ).flatMap(g => g.items.map(n => n.id));
-  assert.deepEqual(all, ['D'], 'the complete inventory is still complete');
-  assert.equal(heldStatus(s.nodes.get('D')!, NOW, TZ), 'needs a new plan');
-  assert.notEqual(heldStatus(s.nodes.get('D')!, NOW, TZ), 'ready now',
-    '"ready now" invites doing it now, which is the answer the date already ruled out');
+  const groups = heldGroups(s, NOW, TZ);
+  assert.deepEqual(groups.flatMap(g => g.items.map(n => n.id)), ['D'],
+    'the complete inventory is still complete');
+  assert.equal(groups[0]!.key, 'replan');
+  assert.equal(groups[0]!.title, 'Needs a new plan',
+    'under "Ready now" it reads as ordinary work, which the passed date has ruled out');
+  assert.equal(heldStatus(s.nodes.get('D')!, NOW, TZ), 'needs a new plan',
+    'and the row says the same words as its heading — one state, one phrasing');
+});
+
+test('the grouping stays TOTAL — a new group is not a way to drop things', () => {
+  // The sum of the groups is what the coverage gauge counts. If they can differ,
+  // the number and the list are two claims about one thing, and one of them is
+  // wrong. A mixed state, every branch of the loop exercised.
+  const s = st(
+    node('hard'), clock('hard', 'due', -4),
+    node('susp'), clock('susp', 'suspense', -1),
+    node('soft'), clock('soft', 'review', -4),
+    node('today'), clock('today', 'due', 0),
+    node('soon'), clock('soon', 'due', 3),
+    node('later'), clock('later', 'due', 90),
+    node('quiet'),
+    node('menu'), ev('menu.item.added', 'menu', { category: 'read' }),
+    node('done'), ev('done.marked', 'done', { at: NOW }),
+    ev('capture.recorded', 'inbox', { text: 'x', source: 'quick', sourceTags: [] }),
+  );
+  const grouped = heldGroups(s, NOW, TZ).flatMap(g => g.items.map(n => n.id));
+  assert.equal(grouped.length, heldNodes(s).length,
+    'every held node is in exactly one group, and none is in two');
+  assert.deepEqual([...grouped].sort(), heldNodes(s).map(n => n.id).sort(),
+    'and they are the same nodes, not merely the same count');
+  const replanGroup = heldGroups(s, NOW, TZ).find(g => g.key === 'replan');
+  assert.deepEqual(replanGroup!.items.map(n => n.id).sort(), ['hard', 'susp'],
+    'the new group holds exactly what the replan surface raises, and nothing else');
 });
 
 test('the list and the replan surface never describe one item differently', () => {

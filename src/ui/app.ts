@@ -16,6 +16,7 @@ import { mountAbout } from './about.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
+import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
@@ -173,6 +174,7 @@ async function main(): Promise<void> {
   let detail: { open(n: NodeState): void } = { open() {} };
   let work: { refresh(): void } = { refresh() {} };
   let triage: { refresh(): void } = { refresh() {} };
+  let replan: { refresh(): void } = { refresh() {} };
 
   // ONE render closure, used everywhere. Two call sites used to invoke
   // `render(session)` bare — the URL-capture path and its undo — which silently
@@ -210,7 +212,14 @@ async function main(): Promise<void> {
       });
   };
   const rerender = (): void => render(session, n => detail.open(n), markDone);
-  const refreshAll = (): void => { rerender(); work.refresh(); };
+  // The held list AND the replan surface. `workSurface` excludes every id with a
+  // live card, so these two must never be refreshed apart from one another: if
+  // only one re-rendered, resolving a card would return the item to Next-up
+  // while its row was still on screen — one item, two questions, which is
+  // exactly what the exclusion exists to prevent. This is what work.ts is handed
+  // as its onChange, since work refreshes itself afterwards.
+  const rerenderLists = (): void => { rerender(); replan.refresh(); };
+  const refreshAll = (): void => { rerenderLists(); work.refresh(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
 
@@ -218,8 +227,12 @@ async function main(): Promise<void> {
   // or take back a completion (Phase 3.5).
   try { detail = mountDetail(session, now, refreshAll); } catch { /* a surface */ }
 
+  // Dates that have gone by (law 3). Mounted BEFORE work, because work's queue
+  // is defined by what replan is not already asking about.
+  try { replan = mountReplan(session, now, refreshAll); } catch { /* a surface */ }
+
   // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
-  try { work = mountWork(session, now, rerender); } catch { /* a surface */ }
+  try { work = mountWork(session, now, rerenderLists); } catch { /* a surface */ }
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).

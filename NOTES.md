@@ -267,6 +267,37 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **A date that has gone by is a decision, not a row (0.9.0 CAPABILITY,
+  [ADR-0034](docs/adr/0034-replan-cards-are-computed.md)).** `CLAUDE.md` has claimed since
+  the beginning that product law 3 "carries teeth in code". **It did not.** `fold` had no
+  `replan.raised` case at all, so a replan card could not exist in state, and a hard date
+  three days behind you rendered as "ready now" — indistinguishable from something due this
+  afternoon, which is the *past bucket* law 3 forbids, wearing the present tense.
+  · **Only hard clocks raise a card.** The gate writes a `review` cure clock for **every
+  capture**, so counting soft clocks would manufacture one shame surface per captured
+  thought — law 3's forbidden bucket arriving through ADR-0011's front door. Recurring
+  upkeep is carved out for the same reason: law 5 says an upkeep is never a failure to have
+  not done yet, so a plant that wanted water on Tuesday comes round as a chip.
+  · **Computed, never stored, and ADR-0012 could not have both.** It said "the fold
+  generates `replan.raised`" one sentence after "a computed consequence… cannot go stale".
+  `fold` is pure and has no clock, so it structurally cannot do the first; giving it one
+  would break `state = fold(log)` and make the second false. Nothing emits `replan.raised`.
+  ADR-0034 records it; ADR-0012 and the vocabulary are corrected in place rather than
+  quietly rewritten.
+  · **One item, one question.** `workSurface` excludes every id with a live card, chips
+  included. The held list keeps them — the sum of its groups is what the coverage gauge
+  counts — under **its own heading**, because a screenshot showed four of them filed as
+  "Ready now" with Done buttons: the very defect the exclusion prevents, relocated. **No
+  assertion caught that; looking at the render did.**
+  · Five resolutions, none of which files a failure. Each retires the date it resolved —
+  without that the card came straight back, so resolving it resolved nothing, and my own
+  test caught it.
+  · The cap is 3 (law 8) while the exclusion is uncapped, so the view states the **true
+  total** and the list still holds every one. A cap that hides work is a lie by omission.
+  · 163 tests, all 8 gates green, both themes. Four §6 deliberate-failure proofs run
+  against the new smoke checks — drop the exclusion, drop the list branch, stop retiring
+  the date, invent a date for an empty box — and **all four went red**.
+  · Lands on `staging`; waits for the audit and Noah's word.
 - **2026-07-29** — **The app can reach you when it is closed (0.8.0 CAPABILITY,
   [ADR-0033](docs/adr/0033-calendar-export-t1.md)).** This closes a hole in the **thesis**,
   not a missing feature: NOTES says the return "is not a feature — it is the structural

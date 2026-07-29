@@ -278,6 +278,91 @@ button.ghost {
 .coverage-title { overflow-wrap: anywhere; }
 .coverage-when { flex: 0 1 auto; min-width: 0; color: var(--ink-soft); font-size: 0.9375rem; }
 
+/* --- dates that have gone by (law 3) ---------------------------------------
+ *
+ * Deliberately the SAME visual weight as Next up. No red, no border that reads
+ * as an alarm, nothing that says "this is a problem" — a passed date is a
+ * decision to make, not a wall to be shouted at from. Every colour token here is
+ * one already registered against these backgrounds; nothing new is introduced,
+ * so the contrast gate needs no new pair.
+ */
+
+.replan {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+/* `.section` carries a 1.75rem top margin for headings that separate stretches
+ * of the page. Inside a bordered card that reads as dead space above the title. */
+.replan > .section { margin-top: 0; }
+.replan-count { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.replan-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.replan-open {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+.replan-card-title { overflow-wrap: anywhere; }
+.replan-card-when { color: var(--ink-soft); font-size: 0.875rem; }
+
+.replan-when { margin: 0 0 0.25rem; color: var(--ink-soft); }
+.replan-context { margin: 0 0 0.25rem; color: var(--ink-soft); font-size: 0.9375rem; }
+/* The question needs air above it. Butted against the "that date was…" line it
+ * reads as part of the same sentence rather than as the ask. */
+#replan-sheet-ask { margin: 1rem 0 0; }
+
+/* A column, not a grid. At 320px and 200% zoom a two-up layout of options this
+ * wordy overflows horizontally, and the page body must never scroll sideways —
+ * the failure the triage actions already paid for once. */
+.replan-options {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0 1rem;
+}
+.replan-option { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; }
+.replan-choice {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+.replan-choice-hint { color: var(--ink-soft); font-size: 0.875rem; overflow-wrap: anywhere; }
+.replan-option-label { flex: 1 1 100%; }
+.replan-date { min-height: var(--target); flex: 1 1 8rem; min-width: 0; }
+.replan-set { min-height: var(--target); }
+.replan-option-hint { flex: 1 1 100%; color: var(--ink-soft); font-size: 0.875rem; }
+
 /* --- next up and upkeep ---------------------------------------------------- */
 
 .nextup {

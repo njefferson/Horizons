@@ -25,6 +25,22 @@ const base = (ctx: StampContext, kind: string, node: string, payload: unknown): 
 const resolved = (ctx: StampContext, node: string, choice: ReplanChoice): AppEvent =>
   base(ctx, 'replan.resolved', node, { choice });
 
+/** A day key the app is willing to act on. ONE definition, asked by both the
+ *  builder below and the surface — the surface has to know whether a choice can
+ *  be acted on before it commits, and a second regex somewhere else is how the
+ *  two come to disagree about what a date is. */
+const DAY_KEY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** A day the app is willing to act on. A `<input type="date">` yields '' when
+ *  empty or unparseable, so "the box has something in it" is not the question. */
+const isDayKey = (v: string | undefined): v is string => DAY_KEY.test(v ?? '');
+
+/** Can this choice be acted on with what the user has given? Only `new-date`
+ *  can answer no, and it refuses rather than inventing a date — a date the user
+ *  did not choose is the app deciding something it has no business deciding. */
+export const canResolve = (choice: ReplanChoice, newDayKey?: string): boolean =>
+  choice !== 'new-date' || isDayKey(newDayKey);
+
 /**
  * A resolution's full batch.
  *
@@ -82,7 +98,7 @@ export function replanEvents(
       // The one branch that needs an answer from the user. Without a date this
       // would be a resolution that resolves nothing, so it refuses rather than
       // guessing — and the gate would refuse it too, one step later.
-      if (!newDayKey || !/^\d{4}-\d{2}-\d{2}$/.test(newDayKey)) return [];
+      if (!isDayKey(newDayKey)) return [];
       // A new `due` replaces the old one; a passed `suspense` still needs
       // retiring, since the two are different keys.
       const setNew = base(ctx, 'clock.set', node, {

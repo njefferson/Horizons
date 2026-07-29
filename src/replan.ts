@@ -43,8 +43,11 @@ export interface ReplanCard {
   at: string;
   /** How long ago, in whole local days. Stated plainly, never as a rebuke. */
   daysAgo: number;
-  /** What this fed — assembled context, per ADR-0012. Empty until dependencies
-   *  exist (build-plan item 27); the surface says so rather than implying none. */
+  /** What this fed — assembled context, per ADR-0012. Always empty until
+   *  `dependency.declared` exists (build-plan item 27). The surface renders no
+   *  line for it rather than printing "nothing recorded" on every card: that
+   *  would read as a claim this feeds nothing, which is a different statement
+   *  from "the app cannot know yet", and it is not one the data supports. */
   fed: NodeState[];
   /** A downstream commitment this was feeding, if one is known. */
   suspense: string | null;
@@ -142,6 +145,33 @@ export const replanCards = (state: State, nowIso: string, zone: string): ReplanV
  *  never shown twice with two different questions attached to it. */
 export const replanIds = (state: State, nowIso: string, zone: string): Set<string> =>
   new Set(replanAll(state, nowIso, zone).map(c => c.node.id));
+
+/**
+ * The assembled context, in words — the expensive half of ADR-0012, and the part
+ * someone with temporal myopia cannot reconstruct on demand. Null when there is
+ * nothing true to say, because a line reading "nothing recorded" on every card
+ * is noise, and noise on this surface is what makes it a wall.
+ *
+ * Every branch is guarded on what the data actually supports (Doctrine §5). A
+ * commitment that has ALSO gone by must not be announced as "5 days from now" —
+ * `daysLeft` is signed, and printing it unguarded would state a future for a
+ * date already behind you.
+ */
+export function contextWords(card: ReplanCard, zone: string): string | null {
+  // When the passed clock IS the suspense, the card is already about it; saying
+  // it twice in two different phrasings is one item asked two questions.
+  if (card.clockKind === 'suspense') return null;
+  if (card.suspense === null || card.daysLeft === null) return null;
+  if (card.daysLeft < 0) return 'the commitment this fed has gone by too';
+  if (card.daysLeft === 0) return 'the commitment this fed is today';
+  if (card.daysLeft === 1) return 'the commitment this fed is tomorrow';
+  const when = new Date(card.suspense).toLocaleDateString(undefined, {
+    month: 'short', day: 'numeric',
+    ...(card.daysLeft >= 365 ? { year: 'numeric' } : {}),
+    timeZone: zone,
+  });
+  return `the commitment this fed is ${when}, ${card.daysLeft} days from now`;
+}
 
 /** Plain words for how long ago, never a countdown and never a rebuke. The date
  *  went by; that is a fact, and the card exists to ask what to do now. */

@@ -57,6 +57,19 @@
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- Dates that have gone by (product law 3, ADR-0012/ADR-0034). NOT a list of
+       failures — there is no such list in this app. Each row is a live decision,
+       capped at three so returning after a fortnight is not a wall, with the
+       true total stated so the cap is never a lie by omission. -->
+  <section id="replan" class="replan" aria-labelledby="replan-heading" hidden>
+    <!-- tabindex=-1 so focus can land here after resolving a card removes the
+         control it was on (WCAG 2.4.3). -->
+    <h2 id="replan-heading" class="section" tabindex="-1">Needs a new plan</h2>
+    <p id="replan-count" class="replan-count"></p>
+    <ul id="replan-cards" class="replan-cards"></ul>
+    <p id="replan-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  </section>
+
   <!-- Next up: one thing, chosen for you, with a short capped list behind it.
        Hidden when nothing is asking — an empty morning says so. -->
   <section id="nextup" class="nextup" aria-labelledby="nextup-heading" hidden>
@@ -93,6 +106,24 @@
 
   <div id="cards" class="cards" tabindex="-1"></div>
 </main>
+
+<!-- The replan sheet: one passed date, its context, and what to do about it.
+     The options are built in JS from REPLAN_CHOICES so the surface cannot offer
+     an option the intent layer does not implement, or drift from ADR-0012's
+     order. There is deliberately no "mark as missed" — that is filing rather
+     than deciding, and filing is what produces the bucket law 3 forbids. -->
+<dialog id="replan-sheet" aria-labelledby="replan-sheet-title">
+  <h2 id="replan-sheet-title" class="detail-title"></h2>
+  <p id="replan-sheet-when" class="replan-when"></p>
+  <p id="replan-sheet-context" class="replan-context" hidden></p>
+  <p id="replan-sheet-ask" class="detail-label">What should happen to it now?</p>
+  <div id="replan-options" class="replan-options" role="group"
+       aria-labelledby="replan-sheet-ask"></div>
+  <p id="replan-sheet-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  <div class="about-actions">
+    <button id="replan-close" type="button" class="ghost">Close</button>
+  </div>
+</dialog>
 
 <!-- The detail sheet: what turns a triage loop into a planner. Everything here
      is built from events already in the vocabulary. -->

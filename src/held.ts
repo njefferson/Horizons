@@ -18,7 +18,7 @@ import { heldNodes } from './gate.ts';
 import { hasPassedHardClock } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 
-export type HeldGroupKey = 'unsorted' | 'ready' | 'soon' | 'later' | 'menu' | 'done';
+export type HeldGroupKey = 'unsorted' | 'replan' | 'ready' | 'soon' | 'later' | 'menu' | 'done';
 
 export interface HeldGroup {
   key: HeldGroupKey;
@@ -111,17 +111,27 @@ function dateWords(at: string, zone: string, days: number): string {
  *    filed under a heading that implies it is asking for something (law 6).
  *  - **Unsorted next**, because triage owns those and the list should say so
  *    rather than quietly mixing them in with decided work.
+ *  - **Then a passed hard date**, which is a decision rather than a return, and
+ *    must not be filed under a heading that says it is ready to be got on with.
  *  - Then by when it comes back.
  */
 export function heldGroups(state: State, nowIso: string, zone: string): HeldGroup[] {
   const buckets: Record<HeldGroupKey, NodeState[]> = {
-    unsorted: [], ready: [], soon: [], later: [], menu: [], done: [],
+    unsorted: [], replan: [], ready: [], soon: [], later: [], menu: [], done: [],
   };
 
   for (const n of heldNodes(state)) {
     if (n.lastDone) { buckets.done.push(n); continue; }
     if (n.onMenu) { buckets.menu.push(n); continue; }
     if (n.captured && n.route === null) { buckets.unsorted.push(n); continue; }
+    // A hard date that went by gets its OWN heading, and this is not cosmetic.
+    // Filed under "Ready now" the rows read as ordinary work — the same items
+    // the replan surface directly above is asking a different question about,
+    // so one screen showed one item twice with two questions attached. That is
+    // precisely what excluding them from Next-up prevents, relocated. They stay
+    // in the list, because the sum of these groups is what the coverage gauge
+    // counts; only the heading changes, so the list and the surface agree.
+    if (hasPassedHardClock(n, nowIso, zone)) { buckets.replan.push(n); continue; }
     const soon = soonestDemand(n, zone, nowIso);
     if (soon === null) { buckets.later.push(n); continue; }   // held, but nothing asking
     if (soon.days <= 0) { buckets.ready.push(n); continue; }
@@ -135,6 +145,10 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
 
   const ORDER: [HeldGroupKey, string][] = [
     ['unsorted', 'Not sorted yet'],
+    // The same words as the surface above and the same words as the row's own
+    // status, deliberately. Three different phrasings for one state is three
+    // things to learn.
+    ['replan', 'Needs a new plan'],
     ['ready', 'Ready now'],
     ['soon', 'Coming up'],
     ['later', 'Later'],

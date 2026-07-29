@@ -75,6 +75,20 @@ const REGISTRY = {
   'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
     '.detail-hint', '#detail-name', '#detail-date', '#detail-every', '#detail-rename',
     '#detail-date-set', '#detail-close'],
+  // Dates that have gone by. This surface must read as calm, so its contrast is
+  // carried entirely by the ordinary text tokens — there is no alert colour to
+  // check, and that absence is the point (law 3, ADR-0034).
+  'replan': ['#replan-heading', '.replan-count', '.replan-open',
+    '.replan-card-title', '.replan-card-when'],
+  // The sheet. The option hints are the lowest-contrast text in the app after
+  // the route hints, and they are load-bearing: they say what each choice does.
+  // `.replan-context` is deliberately absent — it renders only when there is a
+  // downstream commitment to name, and a registry entry that matches nothing
+  // visible FAILS, which is the behaviour that keeps this list honest.
+  'replan sheet': ['#replan-sheet-title', '.replan-when', '#replan-sheet-ask',
+    '.replan-choice', '.replan-choice-label', '.replan-choice-hint',
+    '.replan-option-label', '.replan-option-hint', '#replan-new-date',
+    '.replan-set', '#replan-close'],
 };
 
 const srgb = (c) => { c /= 255; return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4; };
@@ -334,7 +348,44 @@ try {
       `${theme}/320px @ 200%: detail sheet horizontal overflow ${sheetOverflow}px (must be ≤1)`);
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
+
+    // State 3f: dates that have gone by. Give the open item a date five days
+    // behind, which is the only way to reach this surface — and the sheet that
+    // is already open is the app's own way of doing it, so this exercises the
+    // real path rather than seeding the store from the outside.
+    const pastKey = await page.evaluate(() =>
+      new Date(Date.now() - 5 * 86400000).toISOString().slice(0, 10));
+    await page.fill('#detail-date', pastKey);
+    await page.click('#detail-date-set');
+    await page.waitForTimeout(200);
     await page.click('#detail-close');
+    await page.waitForSelector('#replan:not([hidden])');
+    await auditContrast(page, 'replan', theme);
+    await auditAxe(page, 'replan', theme);
+    await auditTargets(page, 'replan', theme);
+    await auditFocusRings(page, 'replan', theme, ['.replan-open']);
+
+    await page.click('.replan-open');
+    await page.waitForSelector('#replan-sheet[open]');
+    await auditContrast(page, 'replan sheet', theme);
+    await auditAxe(page, 'replan sheet', theme);
+    await auditTargets(page, 'replan sheet', theme);
+    await auditFocusRings(page, 'replan sheet', theme,
+      ['.replan-choice', '#replan-new-date', '.replan-set', '#replan-close']);
+    // The wordiest surface in the app: five options, each a label over a hint,
+    // one of them carrying a date box. If anything overflows sideways at 320px
+    // and 200%, it is this.
+    await page.setViewportSize({ width: 320, height: 568 });
+    await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+    const replanOverflow = await page.evaluate(() => {
+      const d = document.querySelector('#replan-sheet');
+      return d.scrollWidth - d.clientWidth;
+    });
+    (replanOverflow <= 1 ? pass : fail)(
+      `${theme}/320px @ 200%: replan sheet horizontal overflow ${replanOverflow}px (must be ≤1)`);
+    await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.click('#replan-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.
