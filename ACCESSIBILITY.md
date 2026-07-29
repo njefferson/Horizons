@@ -166,6 +166,26 @@ to `.review-count` and `.replan-count`, both of which ARE in the registry. That
 is an **argument, not a measurement** — the same treatment and the same wording
 as `.replan-context`, recorded rather than quietly assumed.
 
+### B-14 · The person lens (0.15.0)
+`.people-why` — *"With Sam for three weeks."* — is the lowest-contrast text on
+the surface and it is load-bearing: it is the fact you use to decide whether to
+mention something. `--ink-soft` on `--bg`, measured in both themes and in the
+registry.
+
+**There is no colour that means "they have had this a while", and there will not
+be.** Duration is stated in words at one weight, and no threshold changes the
+appearance of anything. B-01's rule that nothing rides on hue applies here for a
+second reason as well: a colour aimed at how long someone else has taken is this
+app passing judgement on a third party, which it does not do (law 5).
+
+The surface deliberately shares `.review`'s shape. Both answer *"what is not
+ordinary work right now"*, and two different-looking boxes for the same kind of
+answer is a thing to learn rather than a thing to read.
+
+`#detail-person::placeholder` is `--ink` at full opacity, matching every other
+placeholder in the app after the 0.14.0 finding — a placeholder is text someone
+must read to know what the box wants, so it meets 4.5:1 like any other text.
+
 ### B-09 · Language
 COGA-informed: plain words, one idea per line, no idioms, no shame. Error and
 empty states say what happened and what to do. Nothing is phrased as a rebuke.

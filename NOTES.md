@@ -119,7 +119,7 @@ Moving an item into v1 now is a scope change and needs Noah's word.
   computed latest-start, buffer burn, auto-replan on miss (law 3).
 - **Track portfolio + delta report.** The work half: OPR, suspenses, status
   output to clipboard/Markdown/print/CSV.
-- **Person lens.**
+- ~~**Person lens.**~~ **Done, 0.15.0** — `person.linked`, `waiting.opened` and `waiting.closed` were in the vocabulary and unfolded, so the "Waiting for" route said *someone else owes you this* and never asked who. Unattributed waiting-fors are shown, not hidden: the route is one tap, so unattributed is the commonest kind ([ADR-0040](docs/adr/0040-the-person-lens.md)).
 - ~~**Stalled/orphan detection** (the exceptions-first Review surface).~~ **Done, 0.13.0** — and it needed *containment* built first: the parent field had existed since the first fold with no control able to set one, so nothing in the app could stall. [ADR-0038](docs/adr/0038-containment-and-exceptions-review.md).
 - **T0 + T1 notifications.** Permission + badge + glance surfaces; `.ics` export
   with `RRULE`/`VALARM` so the OS calendar does the notifying.

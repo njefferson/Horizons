@@ -57,6 +57,12 @@ export function deserialiseState(raw: unknown): State {
       resumeCue: n.resumeCue ?? null,
       interruptedFocus: n.interruptedFocus ?? null,
       interruptedAt: n.interruptedAt ?? null,
+      // MUTABLE — copied, like `feeds` directly below.
+      people: [...(n.people ?? [])],
+      waitingOn: n.waitingOn ?? null,
+      waitingFor: n.waitingFor ?? null,
+      waitingSince: n.waitingSince ?? null,
+      waitingOutcome: n.waitingOutcome ?? null,
       lastReplan: n.lastReplan ?? null,
       // MUTABLE fields must be copied on deserialise as well as on clone. A
       // shared array between a snapshot and running state is how a fold rewrote

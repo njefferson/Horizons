@@ -1338,6 +1338,91 @@ try {
   is(parented.length, 1, 'one node.parented was recorded');
   is(typeof parented[0]?.payload?.parent, 'string', 'naming what it went under');
 
+  // --- The person lens -----------------------------------------------------
+  // `person.created`, `person.linked`, `waiting.opened` and `waiting.closed`
+  // have been in the vocabulary from the start; only `person.created` was folded
+  // and nothing could emit even that. So clarify's "Waiting for" route changed a
+  // node's kind to say SOMEONE ELSE OWES YOU THIS and never asked who.
+  console.log('\nWith other people \u2014 what you are owed, and by whom');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  await tpage.fill('#capture', 'the signed form');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Waiting for');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // THE HALF EASIEST TO GET WRONG. The route is one tap and never asks who, so
+  // unattributed is the COMMONEST kind of waiting-for. A lens that showed only
+  // the named ones would be quietly incomplete — worse than wrong, because you
+  // would trust it.
+  await tpage.waitForSelector('#people:not([hidden])');
+  is(await tpage.locator('.people-title').first().textContent(), 'the signed form',
+    'something you are owed shows up before anyone has been named');
+  const unnamed = await tpage.locator('.people-why').first().textContent();
+  is(unnamed, 'Nobody named yet.', `and it says so rather than inventing a name ("${unnamed}")`);
+
+  await tpage.locator('#cards .card:has-text("the signed form") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-person', 'Sam');
+  await tpage.selectOption('#detail-relation', 'waiting-on');
+  await tpage.click('#detail-person-set');
+  await tpage.waitForTimeout(350);
+  const linked = await tpage.locator('#detail-people-list').textContent();
+  is(/Sam/.test(linked || ''), true, `the sheet says who it is with ("${linked}")`);
+  is(await tpage.locator('#detail-waiting-close').count(), 1,
+    'and offers the one action that ends it');
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const named = await tpage.locator('.people-why').first().textContent();
+  is(named, 'With Sam.', `and the lens names them ("${named}")`);
+
+  // ONE Sam, however it is typed. A duplicate splits what you are owed across
+  // two rows for ever.
+  await tpage.fill('#capture', 'the numbers');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeOne('Waiting for');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.locator('#cards .card:has-text("the numbers") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-person', 'sam');            // lower case, same human
+  await tpage.click('#detail-person-set');
+  await tpage.waitForTimeout(350);
+  await tpage.click('#detail-close');
+  const personCount = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'person.created').length);
+    });
+  });
+  is(personCount, 1, `"sam" is the Sam you already have (${personCount} person node)`);
+
+  // It arrived. Off the owed list — and NOT marked done, because a thing
+  // arriving is not a thing finished.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  const owedBefore = await tpage.locator('.people-open').count();
+  await tpage.locator('#cards .card:has-text("the signed form") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.click('#detail-waiting-close');
+  await tpage.waitForTimeout(350);
+  await tpage.click('#detail-close');
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('.people-open').count(), owedBefore - 1,
+    `it arrived, so it is off the owed list (${owedBefore} before)`);
+  is((await tpage.locator('#cards').textContent() || '').includes('the signed form'), true,
+    'but it is still your work \u2014 arriving is not finishing');
+
+  const peopleText = await tpage.evaluate(() =>
+    document.querySelector('#people')?.innerText ?? '');
+  is(/\b(overdue|late|chased|ignored|nagg|failed to)\w*/i.test(peopleText), false,
+    'and none of it keeps score on anyone else\u2019s behalf');
+
   // --- Focus, interruption, and getting the thread back --------------------
   // `focus.started`, `focus.ended`, `interrupt.captured` and the three
   // `resume.card.*` nouns have been in the vocabulary since the first draft.

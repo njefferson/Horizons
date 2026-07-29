@@ -104,6 +104,15 @@
     <p id="focus-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- The person lens (v1 Must). Not filing — "what am I waiting on Sam for" is
+       a question you get asked out loud, in a corridor, with no time to look
+       anything up. The same nodes, sliced the way the question arrives. -->
+  <section id="people" class="people" aria-labelledby="people-heading" hidden>
+    <h2 id="people-heading" class="section" tabindex="-1">With other people</h2>
+    <p id="people-count" class="people-count"></p>
+    <ul id="people-list" class="people-list"></ul>
+  </section>
+
   <!-- Review, as EXCEPTIONS ONLY (v1 Must). Never a list of your work — only
        what is structurally broken, and absent entirely when nothing is. An
        empty review says so by not being here, never by congratulating anyone. -->
@@ -254,6 +263,32 @@
       whatever is under here still comes back to you on its own.
     </p>
     <ul id="detail-children" class="detail-feeds"></ul>
+  </div>
+
+  <!-- Who this is with. Clarify's "Waiting for" route is one tap and never asks
+       who — asking there would make it three. It is asked here instead, and a
+       waiting-for nobody has named stays perfectly usable. -->
+  <div class="detail-group">
+    <label class="detail-label" for="detail-person">Who is this with?</label>
+    <div class="detail-row">
+      <input id="detail-person" type="text" autocomplete="off" spellcheck="false"
+             enterkeyhint="done" placeholder="a name" list="detail-people"
+             aria-describedby="detail-person-hint">
+      <select id="detail-relation" aria-label="How they are involved">
+        <option value="waiting-on">they owe me this</option>
+        <option value="requested-by">they asked for it</option>
+        <option value="opr">they are running it</option>
+        <option value="stakeholder">they care about it</option>
+        <option value="mentioned">they came up</option>
+      </select>
+      <button id="detail-person-set" type="button">Link</button>
+    </div>
+    <datalist id="detail-people"></datalist>
+    <p id="detail-person-hint" class="detail-hint">
+      Nobody has to be named. This is only so you can answer &ldquo;what am I
+      waiting on them for&rdquo; without going looking.
+    </p>
+    <ul id="detail-people-list" class="detail-feeds"></ul>
   </div>
 
   <!-- The dependency edge (build-plan item 27). "What breaks if I do not do

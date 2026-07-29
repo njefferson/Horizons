@@ -260,3 +260,57 @@ export const unparentEvents = (
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
   kind: 'node.unparented', node, payload: { ...(priorParent ? { priorParent } : {}) },
 } as AppEvent];
+
+/**
+ * Say who a piece of work is with.
+ *
+ * Two events, one transaction: the person node if they are new, and the link.
+ * The person is a NODE like everything else — vault-scoped, so the same human in
+ * two vaults is two nodes, deliberately (the vocabulary says so, and it is the
+ * only way a work vault and a personal one can hold the same name without
+ * leaking one into the other).
+ *
+ * For a waiting-for this ALSO opens the wait, which is what makes "how long have
+ * I been owed this" answerable at all. Clarify's route is a single tap and asking
+ * who at that moment would make it three, so the answer is offered here instead —
+ * and a waiting-for nobody has named stays perfectly usable.
+ */
+export function linkPersonEvents(
+  ctx: StampContext, node: string, person: string, relation: string,
+  opts: { createNamed?: string; openWaiting?: boolean; forWhat?: string } = {},
+): AppEvent[] {
+  const out: AppEvent[] = [];
+  const mk = (kind: string, n: string | null, payload: unknown): AppEvent => ({
+    id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+    kind, node: n, payload,
+  } as AppEvent);
+  if (opts.createNamed) out.push(mk('person.created', person, { name: opts.createNamed }));
+  out.push(mk('person.linked', node, { node, person, relation }));
+  if (opts.openWaiting) {
+    out.push(mk('waiting.opened', node, {
+      person, forWhat: opts.forWhat ?? '', since: ctx.at,
+    }));
+  }
+  return out;
+}
+
+/**
+ * It arrived.
+ *
+ * `waiting.closed` is silent-risk and the gate re-clocks it, exactly like a
+ * completion — a thing that stops being owed to you does not stop being yours.
+ *
+ * It does NOT mark the node done, and that is the whole point: a thing arriving
+ * is not a thing finished. The signed form landing on your desk is the moment
+ * the work becomes possible, not the moment it is over. Marking it done here
+ * would file away the very item you were waiting to be able to act on.
+ *
+ * `outcome` says how it ended and never how long it took: this app keeps score
+ * on nobody's behalf, least of all on someone else's.
+ */
+export const closeWaitingEvents = (
+  ctx: StampContext, node: string, outcome = 'arrived',
+): AppEvent[] => [{
+  id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+  kind: 'waiting.closed', node, payload: { outcome },
+} as AppEvent];

@@ -899,3 +899,34 @@ dialog, dialog * { overflow-wrap: anywhere; }
   white-space: normal;
   overflow-wrap: anywhere;
 }
+
+/* --- the person lens: what is with someone else ---------------------------- */
+/* Shares the review surface's shape deliberately. Both answer "what is not
+   ordinary work right now", and two different-looking boxes for the same kind
+   of answer is a thing to learn rather than a thing to read. */
+.people {
+  margin: 1.25rem 0 1.5rem;
+  padding: 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.people > .section { margin-top: 0; }
+.people-count { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+.people-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.people-open {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.15rem;
+  width: 100%; min-height: var(--target); padding: 0.5rem 0.75rem; text-align: left;
+  color: var(--ink); background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--radius); font: inherit; cursor: pointer;
+}
+.people-title { overflow-wrap: anywhere; }
+/* How long, in the quiet token — it is a fact about a date, not a pace and not
+   a rebuke aimed at whoever owes it. Nothing here rides on hue (B-01). */
+.people-why { color: var(--ink-soft); font-size: 0.875rem; }
+#detail-person { min-height: var(--target); flex: 1 1 6rem; min-width: 0; }
+#detail-relation { min-height: var(--target); flex: 1 1 8rem; min-width: 0; font: inherit;
+  color: var(--ink); background: var(--surface); border: 2px solid var(--line);
+  border-radius: var(--radius); padding: 0.25rem 0.5rem; }
+#detail-person::placeholder { color: var(--ink); opacity: 1; }
+#detail-waiting-close { min-height: var(--target); }

@@ -28,7 +28,17 @@ export const NODE_KINDS = [
 export type NodeKind = (typeof NODE_KINDS)[number];
 
 /** Demand-free kinds cannot carry a clock — ever (law 6, ADR-0014). */
-export const DEMAND_FREE_KINDS = ['aspiration', 'pebble'] as const satisfies readonly NodeKind[];
+/**
+ * Kinds satisfied by law 1 clause (a) — **on a surface** — rather than by a
+ * clock, the Menu, or a parent.
+ *
+ * `person` joins in 0.15.0, and the exemption is EARNED rather than asserted: a
+ * person node is a lens onto work, not work, and until the person lens existed
+ * there was no surface to be on, so the exemption would have been law 1 defined
+ * away. Nothing may be added here on the argument that it "isn't really work" —
+ * only on the argument that a surface renders it, and that the surface ships.
+ */
+export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person'] as const satisfies readonly NodeKind[];
 
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
 export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash';

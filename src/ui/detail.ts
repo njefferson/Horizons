@@ -25,8 +25,20 @@ import {
 import { doneEvents } from './work.ts';
 import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
 import { makeContainerEvents, parentEvents, unparentEvents } from './detail-intents.ts';
+import { linkPersonEvents, closeWaitingEvents } from './detail-intents.ts';
+import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting } from '../people.ts';
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
+
+/** The relation words the sheet shows. The stored values are the vocabulary's
+ *  closed set; these are what a person reads. */
+const RELATION_WORDS: Record<string, string> = {
+  'waiting-on': 'they owe me this',
+  'requested-by': 'they asked for it',
+  'opr': 'they are running it',
+  'stakeholder': 'they care about it',
+  'mentioned': 'they came up',
+};
 
 export interface DetailUI { open(node: NodeState): void }
 
@@ -45,6 +57,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const leadInput = q<HTMLInputElement>('#detail-lead');
   const feedsList = q('#detail-feeds-list');
   const parentSel = q<HTMLSelectElement>('#detail-parent');
+  const personInput = q<HTMLInputElement>('#detail-person');
+  const relationSel = q<HTMLSelectElement>('#detail-relation');
+  const peopleData = q<HTMLDataListElement>('#detail-people');
+  const peopleList = q('#detail-people-list');
   const placeLine = q('#detail-place');
   const kidsList = q('#detail-children');
   if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
@@ -53,6 +69,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const NAME = name;
   const FEEDS = feedsSel, LEAD = leadInput, FEEDS_LIST = feedsList;
   const PARENT = parentSel, PLACE = placeLine, KIDS = kidsList;
+  const PERSON = personInput, RELATION = relationSel, PEOPLE = peopleData, PEOPLE_LIST = peopleList;
   const DLG = dlg, TITLE = title, STATE = state, DATE = date, EVERY = every, SLACK = slack, LIVE = live;
 
   let current: NodeState | null = null;
@@ -111,6 +128,46 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
+
+    // Who it is with (the person lens's write side).
+    if (PERSON && PEOPLE && PEOPLE_LIST) {
+      const st = session.state();
+      // The datalist offers names already in this vault, so the second thing you
+      // link to Sam does not become a second Sam through a typo.
+      PEOPLE.replaceChildren(...peopleNodes(st).map(p =>
+        Object.assign(document.createElement('option'), { value: p.title || '' })));
+
+      PEOPLE_LIST.replaceChildren(...n.people.map(l => {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const label = document.createElement('span');
+        const who = st.nodes.get(l.person)?.title || '(unnamed)';
+        label.textContent = `${who} — ${RELATION_WORDS[l.relation] ?? l.relation}`;
+        li.append(label);
+        return li;
+      }));
+
+      // An open waiting-for says how long, in words, and offers the one action
+      // that ends it. A duration, never a verdict: "for three weeks" is a fact
+      // about a date, and this app keeps score on nobody's behalf.
+      if (isOpenWaiting(n)) {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const label = document.createElement('span');
+        const whom = withWhom(st, n);
+        const how = waitingWords(openDays(n, new Date(now()).toISOString(), session.zone));
+        label.textContent = [whom ? `With ${whom}` : 'With someone', how].filter(Boolean).join(' ') + '.';
+        const got = document.createElement('button');
+        got.type = 'button';
+        got.id = 'detail-waiting-close';
+        got.textContent = 'It arrived';
+        got.addEventListener('click', () => {
+          void run(ctx => closeWaitingEvents(ctx, n.id), 'Good — it is with you now.');
+        });
+        li.append(label, got);
+        PEOPLE_LIST.append(li);
+      }
+    }
 
     // Containment (law 4). Where it sits, what may hold it, and what it holds.
     if (PARENT && PLACE && KIDS) {
@@ -311,6 +368,27 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (!current) return;
     void run(ctx => makeContainerEvents(ctx, current!.id, current!.kind),
       'It can hold other things now.');
+  });
+
+  btn('#detail-person-set')?.addEventListener('click', () => {
+    if (!PERSON || !RELATION || !current) return;
+    const name = PERSON.value.trim();
+    if (!name) { say('A name first — or leave it, nobody has to be named.'); return; }
+    const relation = RELATION.value;
+    const st = session.state();
+    // Match an existing person by name before minting a second node for the same
+    // human. Case-insensitive, because "sam" and "Sam" are one person and a
+    // duplicate here would split what you are owed across two rows for ever.
+    const existing = peopleNodes(st).find(p => (p.title || '').toLowerCase() === name.toLowerCase());
+    PERSON.value = '';
+    void run(ctx => {
+      const id = existing?.id ?? ctx.id();
+      return linkPersonEvents(ctx, current!.id, id, relation, {
+        ...(existing ? {} : { createNamed: name }),
+        openWaiting: relation === 'waiting-on',
+        forWhat: current!.title,
+      });
+    }, `With ${name}.`);
   });
 
   btn('#detail-close')?.addEventListener('click', () => DLG.close());

@@ -45,6 +45,24 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /**
+   * Who this is with, and in what capacity.
+   *
+   * A LIST, because one piece of work can involve several people in different
+   * ways — the person who owes it to you is rarely the person who asked for it.
+   * `relation` is the vocabulary's closed set: opr | stakeholder | waiting-on |
+   * requested-by | mentioned.
+   */
+  people: { person: NodeId; relation: string }[];
+  /** For a `waiting-for`: what is owed and since when. `waitingOn` is the person
+   *  node; null means nobody has said who, which is an ordinary state and not a
+   *  defect — the route is one tap and asking who at that moment would make it
+   *  three. */
+  waitingOn: NodeId | null;
+  waitingFor: string | null;
+  waitingSince: ISODateTime | null;
+  /** How a waiting-for ended, once it has. */
+  waitingOutcome: string | null;
   /** For an interrupt captured during a focus session: which node was being
    *  worked on, and when. Together they say which SESSION it belongs to — a
    *  node id alone would make yesterday's interruptions reappear inside today's
@@ -165,6 +183,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       lastDone: null, comfortWindowDays: null, intervalDays: null,
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
       resumeFor: null, resumeCue: null, interruptedFocus: null, interruptedAt: null,
+      people: [], waitingOn: null, waitingFor: null, waitingSince: null, waitingOutcome: null,
       lastReplan: null,
       feeds: [],
       leadDays: null,
@@ -187,6 +206,9 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       // Copied, not aliased. The lesson the hub records: a mutable field needs
       // copy-on-clone, copy-on-store-from-payload AND default-on-deserialise.
       feeds: [...n.feeds],
+      // Same rule, same reason: `people` is a mutable array on a structural
+      // field, so a bare spread would alias it into the base state.
+      people: [...n.people],
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -293,6 +315,37 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['kind'], o)) { n.kind = 'bother'; n.stamps['kind'] = o; }
         if (wins(n.stamps['title'], o)) { n.title = e.payload.text; n.stamps['title'] = o; }
+        break;
+      }
+      // A link is ADDITIVE and idempotent, not LWW: two devices each linking a
+      // different person to the same node must end with both links, and linking
+      // the same person twice must not produce two rows. Last-writer-wins on a
+      // list would silently drop one device's answer.
+      case 'person.linked': {
+        const n = ensureNode(s, e.payload.node ?? e.node!, e.vault, touched);
+        const rel = e.payload.relation;
+        if (!n.people.some(x => x.person === e.payload.person && x.relation === rel)) {
+          n.people = [...n.people, { person: e.payload.person, relation: rel }];
+        }
+        break;
+      }
+      case 'waiting.opened': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['waiting'], o)) {
+          n.waitingOn = e.payload.person ?? null;
+          n.waitingFor = e.payload.forWhat ?? null;
+          n.waitingSince = e.payload.since ?? e.at;
+          n.waitingOutcome = null;      // reopening clears how the last one ended
+          n.stamps['waiting'] = o;
+        }
+        break;
+      }
+      case 'waiting.closed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['waiting'], o)) {
+          n.waitingOutcome = e.payload.outcome ?? 'closed';
+          n.stamps['waiting'] = o;
+        }
         break;
       }
       case 'person.created': {

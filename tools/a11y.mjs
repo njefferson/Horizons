@@ -95,7 +95,8 @@ const REGISTRY = {
     // Containment (law 4). `#detail-place` is the sheet's answer to "where does
     // this sit" and it is stated as ordinary `--ink`, not a quieter token —
     // structural facts are not asides.
-    '#detail-parent', '#detail-parent-set', '#detail-make-project'],
+    '#detail-parent', '#detail-parent-set', '#detail-make-project',
+    '#detail-person', '#detail-relation', '#detail-person-set'],
   // The same sheet once something IS inside something. `#detail-place` renders
   // ONLY here, so it lives in its own registry entry rather than in the base
   // sheet — where it matched nothing and the gate said so, which is the check
@@ -106,6 +107,17 @@ const REGISTRY = {
   // Dates that have gone by. This surface must read as calm, so its contrast is
   // carried entirely by the ordinary text tokens — there is no alert colour to
   // check, and that absence is the point (law 3, ADR-0034).
+  // The person lens. How long something has been with someone is the
+  // lowest-contrast text here and it is load-bearing — it is the fact you use to
+  // decide whether to mention it. Same ink tokens as everything else: there is
+  // no colour that means "they have had this a while", and there will not be.
+  'people': ['#people-heading', '.people-count', '.people-open',
+    '.people-title', '.people-why'],
+  // The sheet's write side. A free-text box with a datalist and a select are the
+  // two smallest targets on it.
+  'detail sheet, with someone': ['#detail-person',
+    { sel: '#detail-person', pseudo: '::placeholder' },
+    '#detail-relation', '#detail-person-set', '.detail-label', '.detail-hint'],
   // Focus. The elapsed line and the interrupt hint are the lowest-contrast text
   // here, and both are load-bearing: one says how long you have been at it, the
   // other says your way back is already saved. Nothing on this surface counts
@@ -475,6 +487,38 @@ try {
     await page.evaluate(() => { document.documentElement.style.fontSize = ''; });
     await page.setViewportSize({ width: 390, height: 844 });
     await page.click('#replan-close');
+
+    // State 3f1: the person lens. Reached the way a person reaches it — route
+    // something to "Waiting for", which is the only way to be owed anything.
+    await page.fill('#capture', 'the signed form');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForSelector('#triage:not([hidden]) .route');
+    for (let i = 0; i < 12; i++) {
+      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
+      await page.click('#triage-actions .route');
+      await page.waitForTimeout(120);
+    }
+    await page.locator('#triage-actions .route', { hasText: 'Waiting for' }).first().click();
+    await page.waitForTimeout(300);
+    await page.waitForSelector('#people:not([hidden])');
+    await auditContrast(page, 'people', theme);
+    await auditAxe(page, 'people', theme);
+    await auditTargets(page, 'people', theme);
+    await auditFocusRings(page, 'people', theme, ['.people-open']);
+
+    // And the sheet's write side, with a name actually attached — the state in
+    // which the linked-people list renders at all.
+    await page.locator('.people-open').first().click();
+    await page.waitForSelector('#detail[open]');
+    await page.fill('#detail-person', 'Sam');
+    await page.click('#detail-person-set');
+    await page.waitForTimeout(300);
+    await auditContrast(page, 'detail sheet, with someone', theme);
+    await auditAxe(page, 'detail sheet, with someone', theme);
+    await auditTargets(page, 'detail sheet, with someone', theme);
+    await auditFocusRings(page, 'detail sheet, with someone', theme,
+      ['#detail-person', '#detail-relation', '#detail-person-set']);
+    await page.click('#detail-close');
 
     // State 3f2: focus. Reached the way a person reaches it — the control on the
     // row — and audited in all three of its states, including the sheet where

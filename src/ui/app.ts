@@ -21,6 +21,7 @@ import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
+import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
 
 const now = () => Date.now();
@@ -132,6 +133,47 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
 
   list.replaceChildren(...rows);
   $('#empty').hidden = groups.length > 0;
+
+  // The person lens. Everything you are owed, longest first, INCLUDING the ones
+  // nobody has put a name to — the route that creates a waiting-for is a single
+  // tap that never asks who, so unattributed is the commonest kind, and dropping
+  // them would make the one surface that lists what you are owed quietly
+  // incomplete.
+  try {
+    const nowIso = new Date(now()).toISOString();
+    const owed = waitingOnAnyone(session.state(), nowIso, session.zone);
+    const region = document.querySelector<HTMLElement>('#people');
+    const count = document.querySelector<HTMLElement>('#people-count');
+    const list = document.querySelector<HTMLElement>('#people-list');
+    if (region && count && list) {
+      region.hidden = owed.length === 0;
+      count.textContent = owed.length === 0 ? '' : peopleWords(owed.length);
+      list.replaceChildren(...owed.map(line => {
+        const li = document.createElement('li');
+        li.className = 'people-item';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'people-open';
+        const t = document.createElement('span');
+        t.className = 'people-title';
+        t.textContent = line.node.title || '(untitled)';
+        const w = document.createElement('span');
+        w.className = 'people-why';
+        const whom = withWhom(session.state(), line.node);
+        const how = waitingWords(line.days);
+        // "With Sam for three weeks." — a duration and never a verdict. When
+        // nobody was named it says so plainly rather than inventing a name or
+        // hiding the row.
+        w.textContent = [whom ? `With ${whom}` : 'Nobody named yet', how].filter(Boolean).join(' ') + '.';
+        b.append(t, w);
+        if (openDetail) b.addEventListener('click', () => openDetail(line.node));
+        li.append(b);
+        return li;
+      }));
+    }
+  } catch {
+    // A surface. It must never take the list down with it.
+  }
 
   // Review — exceptions only. Rendered from the same `render` pass as the list,
   // because it is a fact about the list and nothing else needs to co-ordinate.

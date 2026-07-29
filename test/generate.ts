@@ -7,6 +7,7 @@
 // nearly useless.
 
 import type { AppEvent, NodeKind, VaultId } from '../src/events.ts';
+import { DEMAND_FREE_KINDS } from '../src/events.ts';
 
 /** mulberry32 — small, fast, deterministic. */
 export function rng(seed: number): () => number {
@@ -50,8 +51,16 @@ export function generateEvents(opts: GenOptions): AppEvent[] {
   for (const v of opts.vaults) nodesByVault.set(v, []);
   let nextId = 0;
   const freshId = (prefix: string) => `${prefix}${nextId++}`;
+  // Asked of the SAME list the gate enforces, not a hand-copied pair. The
+  // hand-written version said `aspiration` and `pebble`; adding `person` to
+  // DEMAND_FREE_KINDS left it stale, and the generator started producing logs
+  // the gate refuses — a property test that cannot run is a property nobody is
+  // checking. Two copies of one rule always drift; there is now one.
   const clockable = (ids: readonly string[]) =>
-    ids.filter(id => { const k = kindOf.get(id); return k !== 'aspiration' && k !== 'pebble'; });
+    ids.filter(id => {
+      const k = kindOf.get(id);
+      return !(DEMAND_FREE_KINDS as readonly string[]).includes(k ?? '');
+    });
 
   const t0 = Date.UTC(2026, 0, 1, 9, 0, 0);
   let tick = 0;

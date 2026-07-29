@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.15.0 — CAPABILITY
+
+*2026-07-29*
+
+- Quietkeep can now answer "what am I waiting on Sam for". A new "With other people" shows everything that is with someone else, longest-waiting first — the one worth mentioning when you next see them.
+- **Things nobody has named show up too.** Sending something to "Waiting for" is one tap and never asks who, so most of what you are owed has no name on it. A list that quietly left those out would be worse than wrong, because you would trust it.
+- You can put a name to something whenever you like, in its own sheet, and say how they are involved — they owe you it, they asked for it, they are running it, they care about it, or they just came up.
+- Nobody has to be named. Ever. A thing you are owed works exactly the same without one.
+- It says how long, in plain words — "with Sam for three weeks". That is a fact about a date and nothing more. Nothing here says anyone is late, and nothing counts how many times you have asked.
+- When it arrives, say so. It comes off what you are owed and stays on your list, because a thing arriving is not a thing finished — it is usually the moment the actual work becomes possible.
+- Typing "sam" when you already have a "Sam" links to the Sam you have. One person, one place, however you type it.
+
 ## 0.14.0 — CAPABILITY
 
 *2026-07-29*
