@@ -205,7 +205,10 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.7.1` (`fae1b7a`), promoted 2026-07-29** — Noah's "Promote and
+- **`main` is at `0.7.2` (`0bc4040`), promoted 2026-07-29** — Noah's "Promote and
+  continue", onto watched-green spine run 45. Production serves the grouped todo list,
+  inline tick-off, rename, and the second skeptic's fixes.
+- **Previously `main` was at `0.7.1` (`fae1b7a`)** — Noah's "Promote and
   continue", onto watched-green spine run 42. Production now serves the grouped todo
   list, inline tick-off, rename, and the Phase 3.5 audit fixes.
   · **A file was committed that should not have been.** `git add -A` in the 0.7.1 commit
@@ -264,6 +267,36 @@ That error cost the Perennial round.
 
 ### Log
 
+- **2026-07-29** — **The app can reach you when it is closed (0.8.0 CAPABILITY,
+  [ADR-0033](docs/adr/0033-calendar-export-t1.md)).** This closes a hole in the **thesis**,
+  not a missing feature: NOTES says the return "is not a feature — it is the structural
+  property the whole schema exists to guarantee", and until now that guarantee held only
+  **while the app was open**. Everything built so far depended on Noah remembering to look
+  — which is precisely the capacity the app exists to compensate for.
+  · **T1 per [ADR-0007](docs/adr/0007-notification-tiers.md)**: an `.ics` with `RRULE` and
+  `VALARM`, handed to the OS calendar, which already has notification permission and
+  already runs when this app does not. **No server**, which is part of what this app is.
+  · **All-day events, so the file contains no `VTIMEZONE` and no `TZID` at all** — a clock
+  here is an end-of-local-day instant, and a timed event would fire every reminder at
+  23:59. The alarm is relative (`PT9H`), so the calendar resolves 9am *where the reader
+  is*, without the file naming a zone. Tests pinned to Denver and Kiritimati (+14), as
+  build-plan item 30 requires in so many words.
+  · **One definition of what belongs in it**: the `ready`/`soon`/`later` groups from
+  `held.ts`. A second rule would eventually disagree with the first and leave the user with
+  a calendar quietly contradicting the app.
+  · Escaping and folding are load-bearing, not housekeeping: a share-target capture
+  composes text with **newlines**, and a bare newline terminates a property and corrupts
+  the file. A test feeds it `a;b,c\d\nSUMMARY:INJECTED\nEND:VEVENT` and asserts one event
+  survives. Folding is at 75 **octets** on a code-point boundary.
+  · **T0's badge landed with it**, counting only the `ready` group — a badge showing
+  everything you hold is a number that never falls, which is a nag rather than information.
+  · The button is **never disabled**: with nothing to send it stays reachable and says so
+  when pressed, because a disabled control is invisible to a keyboard user and explains
+  nothing. That change came out of the a11y gate refusing to audit an unreachable ring.
+  · **Still unverified, and it is the only verification that counts**: whether the OS
+  calendar actually fires these alarms on Noah's iPad with the app closed. CI structurally
+  cannot prove it.
+  · 133 tests, all 8 gates green. Lands on `staging`; waits for the audit and Noah's word.
 - **2026-07-29** — **What you are holding is a todo list now (0.7.0 CAPABILITY,
   [ADR-0031](docs/adr/0031-node-renamed.md), [ADR-0032](docs/adr/0032-held-list-grouped.md)).**
   Noah: *"have a todo list of some sort maybe soon?"*

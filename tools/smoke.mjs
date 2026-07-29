@@ -650,6 +650,45 @@ try {
     'a card opens its sheet even after a URL capture re-rendered the list');
   await tpage.click('#detail-close');
 
+  console.log('\nThe calendar — the tier that reminds you when the app is shut');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#calendar');
+  const calNote = await tpage.locator('#calendar-note').textContent();
+  is(/thing(s)? (has|have) a date to send|nothing to send/.test(calNote || ''), true,
+    `it says what it is about to hand over ("${calNote}")`);
+  const [ical] = await Promise.all([
+    tpage.waitForEvent('download'),
+    tpage.click('#calendar'),
+  ]);
+  const icsName = ical.suggestedFilename();
+  is(icsName.startsWith('quietkeep-calendar-') && icsName.endsWith('.ics'), true,
+    `the file is named for what it is ("${icsName}")`);
+  const icsText = readFileSync(await ical.path(), 'utf8');
+  const icsLines = icsText.replace(/\r\n[ \t]/g, '').split('\r\n').filter(Boolean);
+  is(icsLines[0], 'BEGIN:VCALENDAR', 'and it is a calendar');
+  is(icsLines[icsLines.length - 1], 'END:VCALENDAR', 'a complete one');
+  const vevents = icsLines.filter(l => l === 'BEGIN:VEVENT').length;
+  const valarms = icsLines.filter(l => l === 'BEGIN:VALARM').length;
+  is(vevents > 0, true, `it carries ${vevents} event(s)`);
+  is(valarms, vevents, 'every one of which has an alarm — otherwise it reminds nobody');
+  is(icsLines.some(l => l.startsWith('DTSTART;VALUE=DATE:')), true,
+    'all-day dates, so no timezone block can be got wrong');
+  is(icsLines.some(l => l.startsWith('X-WR-CALNAME:') && /as of \d{4}-\d{2}-\d{2}/.test(l)), true,
+    'and it says when it was made, because it is a snapshot');
+  // The completed item from earlier must NOT be in a list of things to come back to.
+  const summaries = icsLines.filter(l => l.startsWith('SUMMARY:')).join(' | ');
+  is(summaries.includes(doneTitle || '\u0000'), false,
+    'nothing already finished is exported as a reminder');
+  const icsKinds = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'export.written' && e.payload?.scope === 'calendar').length);
+    });
+  });
+  is(icsKinds, 1, 'and the hand-off is recorded once, after the file existed');
+  await tpage.click('#about-close');
+
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
   await tctx.close();

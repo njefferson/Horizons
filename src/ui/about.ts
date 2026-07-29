@@ -13,6 +13,7 @@
 // someone has seen a dialog is not part of their history.
 
 import { requestPersistence } from '../ids.ts';
+import { toCalendar, calendarCount } from '../ics.ts';
 import { exportAll, exportFilename } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
@@ -117,6 +118,63 @@ export async function mountAbout(session: Session): Promise<void> {
       await paintStorage();
     } finally {
       ask.disabled = false;
+    }
+  });
+
+  // --- the calendar (T1) -----------------------------------------------------
+  // The tier that actually reminds you. Same deliver-then-record ordering as the
+  // export below, for the same reason: a failed hand-off must never leave the log
+  // asserting that a copy left.
+  const cal = document.querySelector<HTMLButtonElement>('#calendar');
+  const calNote = document.querySelector<HTMLElement>('#calendar-note');
+  const paintCalendar = (): void => {
+    if (!calNote) return;
+    try {
+      const n = calendarCount(session.state(), new Date().toISOString(), session.zone);
+      calNote.textContent = n === 0
+        ? 'Nothing has a date yet, so there is nothing to send.'
+        : `${n} ${n === 1 ? 'thing has' : 'things have'} a date to send.`;
+    } catch {
+      calNote.textContent = '';
+    }
+  };
+  paintCalendar();
+
+  cal?.addEventListener('click', async () => {
+    if (!cal || !calNote) return;
+    // NOT disabled when there is nothing to send. A disabled control is
+    // unreachable by keyboard and explains nothing; this one stays available and
+    // answers when asked, which is the same courtesy the rest of the app extends.
+    const at = new Date().toISOString();
+    if (calendarCount(session.state(), at, session.zone) === 0) {
+      calNote.textContent = 'Nothing has a date yet. Give something a date first, and it can go to your calendar.';
+      return;
+    }
+    cal.disabled = true;
+    try {
+      const text = toCalendar(session.state(), at, session.zone);
+      const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = exportFilename('calendar', at, false, 'ics');
+      document.body.append(a);
+      a.click();
+      a.remove();
+      // Long grace: on iPadOS the share sheet holds the URL open while the user
+      // decides where the file goes.
+      setTimeout(() => URL.revokeObjectURL(url), 120_000);
+
+      await session.commit((ctx) => [{
+        id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+        kind: 'export.written', node: null,
+        payload: { at, scope: 'calendar', encrypted: false },
+      } as AppEvent]);
+      calNote.textContent = 'Sent. Open the file to add it to your calendar — it will remind you at 9am on the day.';
+    } catch (err) {
+      calNote.textContent = `That did not send — nothing left your device. (${(err as Error).message})`;
+    } finally {
+      cal.disabled = false;
     }
   });
 

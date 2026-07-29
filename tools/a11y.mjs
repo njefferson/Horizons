@@ -46,7 +46,7 @@ const pass = (m) => console.log(`  ok    ${m}`);
 const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
-  '#export', '#about-close', '#storage-ask',
+  '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
   '.note-triplet', '.note-kind', '.note-list li', '.about-p', '.about-p a',
 ];
 const REGISTRY = {
@@ -343,7 +343,7 @@ try {
     await auditContrast(page, 'dialog, return visit', theme);
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
-    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export']);
+    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar']);
 
     // State 5: B-04's hardest case — 320px at 200% text — WITH the dialog
     // open. The dialog is its own scroll container, so page-level overflow

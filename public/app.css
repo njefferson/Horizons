@@ -611,3 +611,7 @@ dialog, dialog * { overflow-wrap: anywhere; }
 }
 .detail-inline { color: var(--ink-soft); font-size: 0.9375rem; }
 .detail-hint { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.875rem; }
+
+/* The snapshot caveat: quieter than the offer above it, but never hidden — a
+   calendar that silently goes stale would be the app implying it is live. */
+.about-caveat { color: var(--ink-soft); font-size: 0.9375rem; }

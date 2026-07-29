@@ -62,8 +62,8 @@ export function fromJsonl(jsonl: string): AppEvent[] {
  *  it came from. The `format` field inside the file stays `planner-log`: that
  *  is a data-format identifier, and changing it would orphan every export
  *  already written for zero benefit. */
-export const exportFilename = (scope: string, at: string, encrypted: boolean): string =>
-  `quietkeep-${scope}-${at.replace(/[:.]/g, '-')}${encrypted ? '-encrypted' : ''}.json`;
+export const exportFilename = (scope: string, at: string, encrypted: boolean, ext = 'json'): string =>
+  `quietkeep-${scope}-${at.replace(/[:.]/g, '-')}${encrypted ? '-encrypted' : ''}.${ext}`;
 
 export async function exportAll(store: LogStore, at: string, scope = 'all'): Promise<ExportFile> {
   const events = await store.all();

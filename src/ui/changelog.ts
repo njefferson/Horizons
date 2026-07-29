@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.8.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-29',
+    notes: [
+      'Quietkeep can now tell you about something when it is closed. Send what you are holding to your calendar, and the calendar reminds you at 9am on the day — it already runs when this app does not, so you no longer have to remember to open anything.',
+      'Repeating things go across as real repeats, so the calendar keeps asking on its own rather than needing a fresh copy every time.',
+      'It is a snapshot of the moment you send it, and the app says so plainly. Change a date here afterwards and the calendar will not follow — send a fresh copy when it matters.',
+      'Nothing you have finished, and nothing sitting on the Menu, is ever sent as a reminder.',
+      'On devices that support it, the app icon now shows how many things are ready — and only those, so it is a number that can actually reach zero.',
+    ],
+  },
+  {
     triplet: '0.7.2',
     kind: 'ITERATION',
     date: '2026-07-29',

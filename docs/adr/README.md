@@ -64,6 +64,7 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 | [0030](0030-work-mode.md) | Work mode: pressure formula, fixed precedence, a skip that records nothing | Accepted |
 | [0031](0031-node-renamed.md) | `node.renamed` — the first addition to the closed vocabulary | Accepted |
 | [0032](0032-held-list-grouped.md) | What you are holding is grouped, and can be ticked off in place | Accepted |
+| [0033](0033-calendar-export-t1.md) | The calendar file is all-day events with a relative alarm (T1) | Accepted |
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

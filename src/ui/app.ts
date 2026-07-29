@@ -116,6 +116,22 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   // itemised list that backs it (build-plan item 21).
   $('#gauge').textContent =
     total === 0 ? 'nothing held yet' : `${total} held · ${silent} silent · see each`;
+
+  // T0's badge (ADR-0007): how many things are actually asking, on the app icon,
+  // so a glance at the home screen is informative without opening anything.
+  // Counts the READY group ONLY — a badge showing everything you hold is a number
+  // that never falls, which is a nag rather than information.
+  try {
+    const ready = groups.find(g => g.key === 'ready')?.items.length ?? 0;
+    const nav = navigator as Navigator & {
+      setAppBadge?: (n?: number) => Promise<void>;
+      clearAppBadge?: () => Promise<void>;
+    };
+    if (ready > 0) void nav.setAppBadge?.(ready)?.catch(() => {});
+    else void nav.clearAppBadge?.()?.catch(() => {});
+  } catch {
+    // Unsupported on most platforms today, and never a reason to break a render.
+  }
 }
 
 /** Plain words, one idea, no idioms (B-09). Never a countdown, never a rebuke.
