@@ -205,7 +205,16 @@ That error cost the Perennial round.
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.6.0` (`392372f`), promoted 2026-07-29** — Noah's "Promote and keep
+- **`main` is at `0.7.1` (`fae1b7a`), promoted 2026-07-29** — Noah's "Promote and
+  continue", onto watched-green spine run 42. Production now serves the grouped todo
+  list, inline tick-off, rename, and the Phase 3.5 audit fixes.
+  · **A file was committed that should not have been.** `git add -A` in the 0.7.1 commit
+  swept up `tools/.pz.mjs`, a probe script an auditing subagent had written into the repo
+  while the audit ran. It is in `main`'s **history** (`fafa0ff`), removed from the tree
+  before the promote, and was never in `public/`, so it was never served. No gate caught
+  it, because no gate asks "is every tracked file supposed to be here". Recorded in the
+  hub's LESSONS: a working tree with concurrent writers is not safe to stage wholesale.
+- **Previously `main` was at `0.6.0` (`392372f`), promoted 2026-07-29** — Noah's "Promote and keep
   going", onto watched-green spine run 38; deploy run 35 confirmed production serves it.
   This promote carried **0.5.1**, which fixed a fault that was live on his device: one
   malformed date threw out of the render path before capture's submit handler was
