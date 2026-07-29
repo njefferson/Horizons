@@ -77,6 +77,28 @@ requires breaking one, that is a Doctrine §1 moment: flag it, don't slip it in.
 
 ---
 
+## What VERSION 1 means — Noah, 2026-07-29
+
+> *"I will say we are at version 1 when we have all initial capabilities in place
+> to make this do all the things I specified. It is not a planner app until then,
+> and I will not name version 1 until it is ready."*
+
+**Binding, and it settles the first slot.** The VERSION slot is not reached by a
+big release, a large diff, or a session's judgement that things feel complete. It
+is reached when **every item in the v1 Must list below exists** — and Noah says so.
+
+Two consequences a session must not get wrong:
+
+1. **Do not propose 1.0.0.** Not as a suggestion, not as "this looks like it has
+   reached that level". He has ruled on the criterion; the only thing left is
+   whether the list is done, which is a fact about the list.
+2. **Until then it is not a planner**, in his words, and no copy anywhere may
+   describe it as a finished one. The app says what it does, not what it will do.
+
+Progress toward it is therefore measured against the Must list and nothing else.
+
+---
+
 ## Scope — frozen 2026-07-27
 
 MoSCoW run over the design brief's standing tier proposal. **v1 is frozen.**
