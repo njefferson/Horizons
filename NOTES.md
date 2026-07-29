@@ -218,14 +218,7 @@ decided by a session.**
 
 ### Open
 
-- **Q-06**
-  - Question: **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (in `noahjefferson/public/index.html`, two places — the tile and its data entry). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has?
-  - Blocking: No
-  - Status: **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected.
-- **Q-07**
-  - Question: **The hub undersells the astro app.** the hub tile reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does.
-  - Blocking: No
-  - Status: Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer.
+*(Nothing open.)*
 
 **Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
 App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
@@ -240,6 +233,12 @@ That error cost the Perennial round.
 
 ### Closed
 
+- **Q-06**
+  - Question: The astro app's naming was inconsistent — repo and URL said `clear-horizons`, the hub displayed **"Astro Planner"**, and the name Noah chose appeared nowhere a visitor saw.
+  - Answer: **"Astro Planner will be named Clear Horizons."** Noah, 2026-07-29. The app itself already used the name throughout (title, og tags, manifest); only the hub's two entries were stale, and both are fixed (`noahjefferson` @ `004fddd`). Nothing in the `clear-horizons` repo needed changing.
+- **Q-07**
+  - Question: The hub undersold the astro app — the tile read *"Clear-sky & Seestar target windows"* and never mentioned recording your horizon, which Noah says is the thing no other astro app does.
+  - Answer: **Closed with Q-06.** The tile now reads *"Plan your night against your real treeline, not a flat 0°"*, taken from the app's own README rather than invented.
 - **Q-01**
   - Question: Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial
   - Answer: **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted.
@@ -365,6 +364,16 @@ That error cost the Perennial round.
   before being trusted.
 
 ### Log
+
+- **2026-07-29 (afternoon)** — **`main` fast-forwarded to `c480796`, promoted on Noah's
+  "Promote to main"** — carrying 0.12.0 through 0.17.0 and the docs work. Spine run 72 was
+  opened and **watched green on the staging head before the promote** (V-10); runs 67, 68 and
+  70 had gone **red on the banned-vocabulary gate** after I reported nine gates green locally,
+  and run 71 confirmed the fix. **Every item on the frozen v1 Must list is now built.** That
+  is a statement about the list and not about a version: `NOTES.md`'s own definition of v1 done
+  is the **dogfood gate** — thirty consecutive working days — and day one has not happened.
+  **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
+  the one claim no gate here can settle.
 
 - **2026-07-29** — **Two builds, one branch — and the gate that makes the default's
   promise real ([ADR-0036](docs/adr/0036-two-builds-one-branch.md),
