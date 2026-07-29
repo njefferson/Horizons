@@ -367,6 +367,21 @@ decided by a session.**
 
 ### Log
 
+- **2026-07-29 (evening)** — **`main` fast-forwarded to `be7a6a5` on Noah's "Promote"**,
+  carrying 0.17.1 (the audit fixes), 0.18.0 (rest mode) and 0.19.0 (the Menu and save-for).
+  **Spine run 81 was watched green on that exact commit before the fast-forward** (V-10).
+  · **Promoted to `be7a6a5` and NOT to the branch head, deliberately.** 0.20.0 (the bother
+  flow) landed after his instruction, so it is not what he asked for and it waits for his
+  word like everything else (Doctrine §7). He is using the app today, and dropping an unasked
+  capability on him mid-use is precisely what the staging gate exists to prevent.
+  · Run 80 shows `cancelled` and that is not a failure: the 0.19.0 push was superseded by the
+  Q-10 commit seconds later, and run 81 covers both.
+  · **Q-10 closed** — recommending against building vaults; a lens, not a partition. His
+  containment (0.13.0) already separates work from home if he wants it today.
+  · **0.20.0 is on `staging`.** Sixth vocabulary-complete-but-unreachable capability found
+  and closed. The count of those is now itself worth noticing: it has been the single most
+  productive thing to look for in this codebase, ahead of any kind of code reading.
+
 - **2026-07-29 (late afternoon)** — **0.17.1 (audit fixes) and 0.18.0 (rest mode) on
   `staging`, both watched green: Spine runs 76 and 78.** Rest mode was picked first on the
   reasoning that it is the one v1.5 item that protects the **dogfood gate itself** — thirty
