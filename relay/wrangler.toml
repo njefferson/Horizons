@@ -1,0 +1,27 @@
+# The relay — a separate deployment from Quietkeep, and not part of it.
+#
+# Quietkeep works with this absent, unreachable or shut down forever. It exists
+# for the Sync sibling, which trades away "no server" and therefore gets its own
+# product, its own URL and its own first-run explanation (Doctrine §1).
+#
+# Nothing here is secret: there are no credentials, no account ids and no
+# allowlist, because the relay holds sealed bytes it cannot read and its only
+# credential is a 128-bit id derived from a key it has never seen.
+
+name = "quietkeep-relay"
+main = "worker.ts"
+compatibility_date = "2026-07-01"
+
+# Observability off on purpose. A request log would record the sync ids — which
+# are stable per pairing — and that is a per-household activity trace, which is
+# telemetry by another name and this project does not have telemetry.
+[observability]
+enabled = false
+
+[[kv_namespaces]]
+binding = "CHUNKS"
+# Filled in by whoever deploys it: `npx wrangler kv namespace create CHUNKS`.
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+[placement]
+mode = "smart"

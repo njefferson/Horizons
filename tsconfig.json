@@ -15,5 +15,6 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["src/**/*.ts", "test/**/*.ts"]
+  "//include": "relay/ is the Sync sibling's server adapter. It is typechecked here on purpose — it is not in any bundle and has no test of its own, so tsc is the only thing standing between it and a deploy.",
+  "include": ["src/**/*.ts", "test/**/*.ts", "relay/**/*.ts"]
 }
