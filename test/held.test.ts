@@ -199,7 +199,10 @@ test('node.renamed is NOT silent-risk — a title carries no coverage', async ()
  *  A card's words and the heading it sits under must describe the same thing. */
 const GROUP_ALLOWS: Record<string, RegExp> = {
   unsorted: /^not sorted yet$/,
-  ready: /^(ready now|today)$/,
+  // "needs a new plan" is a live thing, so it belongs under Ready now — but it
+  // must not say "ready now", because a date that went by has already ruled out
+  // the answer those words invite (law 3).
+  ready: /^(ready now|today|needs a new plan)$/,
   soon: /^(tomorrow|in \d+ days)$/,
   later: /^(held|parked until .+|back now|\w{3} \d+(, \d{4})?)$/,
   menu: /^on the Menu$/,
@@ -227,6 +230,13 @@ test('the status a card prints always agrees with the group it is filed under', 
       clockKind('E', 'park', 3)]],
     ['park plus a real demand', [ev('node.created', 'F', { nodeKind: 'action', title: 'f' }),
       clockKind('F', 'park', 1), clockKind('F', 'due', 2)]],
+    // The invariant must cover the replan status too, or it silently stops
+    // covering the one case where the group and the words are most likely to
+    // disagree: a live item whose date is behind it.
+    ['a hard date that went by', [ev('node.created', 'G', { nodeKind: 'action', title: 'g' }),
+      clockKind('G', 'due', -4)]],
+    ['a passed suspense under a far review', [ev('node.created', 'H', { nodeKind: 'action', title: 'h' }),
+      clockKind('H', 'suspense', -1), clockKind('H', 'review', 30)]],
   ];
   for (const [label, events] of cases) {
     const s = st(...events);

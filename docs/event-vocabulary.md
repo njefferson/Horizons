@@ -114,14 +114,18 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 | `done.unmarked` | — | no |
 | `anchor.defined` | `name, recurrence (RRULE)` | no |
 | `anchor.fired` | `anchor, at` | no |
-| `replan.raised` | `passedClock, fed[], suspense, daysLeft` | no |
+| `replan.raised` | `passedClock, fed[], suspense, daysLeft` | no — **and nothing emits it** ([ADR-0034](adr/0034-replan-cards-are-computed.md)) |
 | `replan.resolved` | `choice: compress \| escalate \| renegotiate \| new-date \| to-menu` | **yes — gated** unless the choice sets a clock or lands on the Menu |
 | `park.set` | `returnAt, reason?` | no — a park **always** carries a return clock |
 
 > **There is no `overdue` event, and there never will be.** Not in the schema,
 > not in a payload, not in a variable name. Pressure is computed from
-> `(last_done, comfort_window, now)` and is continuous. A clock that passes
-> produces `replan.raised` — a live card, not a state of failure (laws 3 and 5).
+> `(last_done, comfort_window, now)` and is continuous. A **hard** clock that
+> passes produces a live card, not a state of failure (laws 3 and 5) — computed
+> at render time from the clock and the current time, never written down. A soft
+> clock passing is ordinary operation and produces nothing, or the gate's own
+> cures would manufacture one card per capture
+> ([ADR-0034](adr/0034-replan-cards-are-computed.md)).
 > A reviewer seeing the string `overdue` anywhere in this repo should treat it as
 > a defect report.
 

@@ -49,6 +49,7 @@ export function deserialiseState(raw: unknown): State {
       route: n.route ?? null,
       captured: n.captured ?? true,
       resumeSpent: n.resumeSpent ?? false,
+      lastReplan: n.lastReplan ?? null,
     }])),
     vaults: new Map(r.vaults),
     devices: new Set(r.devices),

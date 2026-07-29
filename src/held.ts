@@ -15,6 +15,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
+import { hasPassedHardClock } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 
 export type HeldGroupKey = 'unsorted' | 'ready' | 'soon' | 'later' | 'menu' | 'done';
@@ -152,6 +153,14 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   if (n.lastDone) return 'done';
   if (n.onMenu) return 'on the Menu';
   if (n.captured && n.route === null) return 'not sorted yet';
+  // A hard date that went by is not "ready now" — that phrasing invites doing it
+  // now, which is the one answer the date already ruled out, and it is the same
+  // words the list uses for something simply waiting. It is a DECISION, and the
+  // replan surface is where it gets made (law 3). Asked of the identical
+  // predicate that raises the card, so the two surfaces cannot describe one item
+  // differently; the earlier guards above match `eligible()` in `replan.ts`, and
+  // `heldNodes` has already excluded the trashed and the merged.
+  if (hasPassedHardClock(n, nowIso, zone)) return 'needs a new plan';
   const soon = soonestDemand(n, zone, nowIso);
   if (soon === null) {
     // Nothing is demanding it — but a park is still a return date, and saying

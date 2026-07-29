@@ -6,7 +6,8 @@
 // arbitrary moment and grows a timezone bug that only shows up in real use.
 
 import type {
-  AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, MenuCategory, NodeId, NodeKind, VaultId,
+  AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, MenuCategory, NodeId, NodeKind,
+  ReplanChoice, VaultId,
 } from './events.ts';
 
 export interface Clock {
@@ -44,6 +45,9 @@ export interface NodeState {
   /** A resume card that has been picked up, or that went cold. Either way the
    *  thread is no longer waiting for you, so it stops being offered. A latch. */
   resumeSpent: boolean;
+  /** The last forward choice made about a passed date (ADR-0012). A record of a
+   *  decision, never a record of a failure. */
+  lastReplan: ReplanChoice | null;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -120,6 +124,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       trashed: false, mergedInto: null, clocks: {}, onMenu: null,
       lastDone: null, comfortWindowDays: null, intervalDays: null,
       heat: null, route: null, sourceTags: [], captured: false, resumeSpent: false,
+      lastReplan: null,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -359,6 +364,15 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.toKind; n.stamps['kind'] = o; }
+        break;
+      }
+
+      // The decision itself. A replan CARD is computed (ADR-0034), but the choice
+      // a person made about it is a fact, and state should be able to answer
+      // "what did I decide about this" without re-reading the whole log.
+      case 'replan.resolved': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['replan'], o)) { n.lastReplan = e.payload.choice; n.stamps['replan'] = o; }
         break;
       }
 

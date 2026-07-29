@@ -24,6 +24,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { pressureOf } from './pressure.ts';
+import { replanIds } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
@@ -217,21 +218,36 @@ export function upkeepChips(state: State, nowIso: string, zone: string, minPress
 }
 
 /**
- * What the work surface should actually render: Next-up with the chip items
- * REMOVED from it.
+ * What the work surface should actually render: Next-up with the chip items and
+ * the replan items REMOVED from it.
  *
  * A ready upkeep qualifies for both projections, and the first version rendered
  * both sections from the same state with no dedup — so the same title appeared
  * twice on one screen, with the same words and two separate Done buttons writing
  * to the same node. For a COGA-informed surface whose entire promise is "one
  * thing", showing the one thing twice is a defect, not a redundancy.
+ *
+ * REPLAN ITEMS ARE REMOVED FOR A DIFFERENT REASON, and it is the sharper one.
+ * An item whose hard date went by qualifies here as `hard-date` — "a real date,
+ * and it is here" — while the replan surface above is asking "should this still
+ * happen, and by when?". Those are not two views of one item; they are two
+ * different questions, and answering the easy one ("do it now") is exactly the
+ * move that produced the passed date. Law 3 says the passed date becomes a
+ * decision, so the decision is the only thing offered.
+ *
+ * The exclusion is UNCAPPED while the replan surface shows at most three. The
+ * remainder are not lost: `heldGroups` is the complete inventory and still
+ * carries them, and the replan surface states the true total, so the cap is
+ * bounded re-entry (law 8) rather than a hiding place.
  */
 export function workSurface(state: State, nowIso: string, zone: string, cycle = 0): {
   up: NextUp; chips: NextUpItem[];
 } {
-  const chips = upkeepChips(state, nowIso, zone);
+  const replanning = replanIds(state, nowIso, zone);
+  const chips = upkeepChips(state, nowIso, zone).filter(c => !replanning.has(c.node.id));
   const chipIds = new Set(chips.map(c => c.node.id));
-  const queue = nextUpQueue(state, nowIso, zone).filter(i => !chipIds.has(i.node.id));
+  const queue = nextUpQueue(state, nowIso, zone)
+    .filter(i => !chipIds.has(i.node.id) && !replanning.has(i.node.id));
   if (queue.length === 0) return { up: { head: null, behind: [], total: 0 }, chips };
   const start = ((cycle % queue.length) + queue.length) % queue.length;
   const rotated = [...queue.slice(start), ...queue.slice(0, start)];

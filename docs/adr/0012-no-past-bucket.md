@@ -32,9 +32,16 @@ bucket this ADR forbids.
 
 ## Consequences
 
-- The fold generates `replan.raised` when a clock passes. It is not a stored
-  state that must be swept — it is a **computed consequence** of a clock and a
-  current time, so it cannot be missed and cannot go stale.
+- A replan is not a stored state that must be swept — it is a **computed
+  consequence** of a clock and a current time, so it cannot be missed and cannot
+  go stale.
+  > **Refined by [ADR-0034](0034-replan-cards-are-computed.md).** This bullet
+  > originally opened "the fold generates `replan.raised` when a clock passes",
+  > which contradicts the rest of its own sentence: `fold` is pure and has no
+  > clock, so it cannot notice that a date passed, and giving it one would make
+  > the same log fold to different states at different moments — stale by
+  > definition. The computed reading is the one that holds; nothing emits
+  > `replan.raised`. ADR-0034 also records which clocks raise a card at all.
 - `replan.resolved` is gated by [ADR-0011](0011-no-silent-nodes-gate.md): the
   chosen option must itself set a clock or land the item on the Menu. There is
   no resolution that produces silence.
