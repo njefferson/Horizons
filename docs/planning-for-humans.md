@@ -7,12 +7,10 @@ finding carries an epistemic tag**, because the strength of the evidence varies
 enormously and pretending otherwise would be dishonest about a subject where
 people have been sold a great deal of confident nonsense.
 
-| Tag | Means |
-|---|---|
-| **established** | Replicated, broadly accepted in the literature. Safe to design on. |
-| **emerging** | Real research, genuinely unsettled. Designed for cautiously and reversibly. |
-| **community-construct** | Named and described by the community it concerns, widely recognised as real experience, **not** a validated clinical construct. Treated as a *description of experience*, never as a mechanism. |
-| **negative finding** | Something once believed that **did not replicate** or does not transfer. These constrain the design by forbidding things. |
+- ****established**** — Replicated, broadly accepted in the literature. Safe to design on.
+- ****emerging**** — Real research, genuinely unsettled. Designed for cautiously and reversibly.
+- ****community-construct**** — Named and described by the community it concerns, widely recognised as real experience, **not** a validated clinical construct. Treated as a *description of experience*, never as a mechanism.
+- ****negative finding**** — Something once believed that **did not replicate** or does not transfer. These constrain the design by forbidding things.
 
 A design decision resting on an `emerging` or `community-construct` finding is
 built so it can be removed. One resting on a `negative finding` is a prohibition,
@@ -355,11 +353,15 @@ which is the correct way to design under this much uncertainty.
 These earn their own section because they are the easiest to violate by accident —
 each corresponds to a feature that would look perfectly reasonable in a spec.
 
-| Finding | Status | What it forbids here |
-|---|---|---|
-| **Ego depletion** — willpower as a depletable resource — failed large-scale replication | **negative finding** | No depletion model. No "you have used your focus today". No discipline or willpower framing anywhere in copy or ranking. Capacity is **self-declared**, never computed from what you have spent. |
-| **Working-memory training does not transfer** to untrained tasks or daily function | **negative finding** | Quietkeep never claims to improve an underlying capacity. No exercises, no scores, no "getting better". It is a prosthesis. Saying otherwise would be selling something that does not work — Doctrine §5. |
-| **"21 days to a habit"** — no evidential basis; Lally's median is ~66 days with an enormous range | **negative finding** | No habit-formation countdown, no automaticity progress bar, no promise of a timeline the data cannot support. |
+- ****Ego depletion** — willpower as a depletable resource — failed large-scale replication**
+  - Status: **negative finding**
+  - What it forbids here: No depletion model. No "you have used your focus today". No discipline or willpower framing anywhere in copy or ranking. Capacity is **self-declared**, never computed from what you have spent.
+- ****Working-memory training does not transfer** to untrained tasks or daily function**
+  - Status: **negative finding**
+  - What it forbids here: Quietkeep never claims to improve an underlying capacity. No exercises, no scores, no "getting better". It is a prosthesis. Saying otherwise would be selling something that does not work — Doctrine §5.
+- ****"21 days to a habit"** — no evidential basis; Lally's median is ~66 days with an enormous range**
+  - Status: **negative finding**
+  - What it forbids here: No habit-formation countdown, no automaticity progress bar, no promise of a timeline the data cannot support.
 
 **Why they are here rather than quietly obeyed:** each of these is a feature
 somebody will eventually propose in good faith, because they all appear in

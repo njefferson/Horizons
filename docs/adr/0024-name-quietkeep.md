@@ -34,13 +34,26 @@ and failed on sound. This is the compound branch, and it clears.
 Cheapest and most-likely-to-kill first. Step 1 exists because Wynts passed every registry
 check and still had to be withdrawn.
 
-| # | Check | Instrument | Result |
-|---|---|---|---|
-| 1 | **Said out loud** | said, and said in a sentence | KWY-ət-keep. Two ordinary words, one stress each, one spelling, one pronunciation. No homophone, no rhyme that bites, nothing one letter away. |
-| 2 | **This repo's own spec** | `grep` — **authoritative** | Clear. "quiet" appears only in prose, "keep" only in ordinary usage. No surface, node kind, event noun, or law is named either. This is the check that killed *Lens*, *Gauge* and *Alignment*. |
-| 3 | **Unscoped name + software** | web search | Nothing named Quietkeep. Nearest returns are SoftwareKeep (a software retailer), Quiet Mind Software, quiet.app, the Quiet Modem Project — none a collision. This is the query shape that was run *wrongly* against Perennial. |
-| 4 | **npm and GitHub** | direct registry query — **authoritative** | `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name. |
-| 5 | **App Store** | **Noah's own device** | *"there is nothing on the App Store that I see near it."* Blocked from a session and proven so ([V-05](../verifications.md)); handed over, and it came back answered. |
+- **1**
+  - Check: **Said out loud**
+  - Instrument: said, and said in a sentence
+  - Result: KWY-ət-keep. Two ordinary words, one stress each, one spelling, one pronunciation. No homophone, no rhyme that bites, nothing one letter away.
+- **2**
+  - Check: **This repo's own spec**
+  - Instrument: `grep` — **authoritative**
+  - Result: Clear. "quiet" appears only in prose, "keep" only in ordinary usage. No surface, node kind, event noun, or law is named either. This is the check that killed *Lens*, *Gauge* and *Alignment*.
+- **3**
+  - Check: **Unscoped name + software**
+  - Instrument: web search
+  - Result: Nothing named Quietkeep. Nearest returns are SoftwareKeep (a software retailer), Quiet Mind Software, quiet.app, the Quiet Modem Project — none a collision. This is the query shape that was run *wrongly* against Perennial.
+- **4**
+  - Check: **npm and GitHub**
+  - Instrument: direct registry query — **authoritative**
+  - Result: `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name.
+- **5**
+  - Check: **App Store**
+  - Instrument: **Noah's own device**
+  - Result: *"there is nothing on the App Store that I see near it."* Blocked from a session and proven so ([V-05](../verifications.md)); handed over, and it came back answered.
 
 **Recorded rather than omitted — the nearest live neighbours:**
 

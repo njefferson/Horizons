@@ -20,11 +20,9 @@ must not be treated as one. ADR-0018 already records why it was rejected.
 
 Three software companies hold the name, and the subdomain is gone:
 
-| Occupant | What it is |
-|---|---|
-| **Perennial Labs, Inc.** | DeFi derivatives protocol, California — **and it is serving `perennial.pages.dev`** |
-| **Perennial Systems** | Web development and fintech consultancy |
-| **Perennial Software** | Security / integration sector |
+- ****Perennial Labs, Inc.**** — DeFi derivatives protocol, California — **and it is serving `perennial.pages.dev`**
+- ****Perennial Systems**** — Web development and fintech consultancy
+- ****Perennial Software**** — Security / integration sector
 
 `perennial.pages.dev` was confirmed taken by Noah on his own device, 2026-07-28. Q-04 is
 answered negatively.

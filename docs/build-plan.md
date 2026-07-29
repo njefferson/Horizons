@@ -24,13 +24,11 @@ abandonment ([`data-constitution.md`](data-constitution.md)).
 > This is a personal app. It is **not for government-furnished equipment** — see
 > [`data-constitution.md`](data-constitution.md).
 
-| | |
-|---|---|
-| **Language** | TypeScript. The event vocabulary is a discriminated union; types are what stop an unlisted `kind` reaching the log. |
-| **Storage** | IndexedDB via Dexie ([ADR-0002](adr/0002-storage-dexie-indexeddb.md)) |
-| **UI** | Decide at build start. Bias to the smallest thing that does real keyboard/focus/dialog semantics well. Whatever it is, it must not fight `<dialog>`, `:focus-visible`, or `rem` sizing (Doctrine §4). |
-| **Deploy** | Cloudflare Pages, `staging` → `main` (Doctrine §7) |
-| **Tests** | Property tests over synthetic logs + headless walk of the built app |
+- ****Language**** — TypeScript. The event vocabulary is a discriminated union; types are what stop an unlisted `kind` reaching the log.
+- ****Storage**** — IndexedDB via Dexie ([ADR-0002](adr/0002-storage-dexie-indexeddb.md))
+- ****UI**** — Decide at build start. Bias to the smallest thing that does real keyboard/focus/dialog semantics well. Whatever it is, it must not fight `<dialog>`, `:focus-visible`, or `rem` sizing (Doctrine §4).
+- ****Deploy**** — Cloudflare Pages, `staging` → `main` (Doctrine §7)
+- ****Tests**** — Property tests over synthetic logs + headless walk of the built app
 
 **Dependencies stay few.** Dexie earns its place because raw IndexedDB's failure
 modes corrupt data rather than throwing. Each further dependency needs that
@@ -194,15 +192,13 @@ Then the thirty days begin.
 **Property tests over synthetic logs** are the highest-value tests here, because
 the invariants are properties rather than examples.
 
-| Property | Asserts |
-|---|---|
-| No silent nodes | For any valid event sequence, fold ⇒ every node satisfies law 1 |
-| Fold determinism | Shuffled shard arrival ⇒ identical state |
-| LWW convergence | Two divergent device logs ⇒ same state on both after union |
-| Round-trip | export → import → identical state |
-| Additive migrations | Every historical log version folds on current code |
-| No banned vocabulary | `overdue`, `late`, `missed`, `streak` absent outside their prohibitions |
-| Gauge honesty | Gauge reads 0 for any gate-produced state — non-zero is a gate bug |
+- **No silent nodes** — For any valid event sequence, fold ⇒ every node satisfies law 1
+- **Fold determinism** — Shuffled shard arrival ⇒ identical state
+- **LWW convergence** — Two divergent device logs ⇒ same state on both after union
+- **Round-trip** — export → import → identical state
+- **Additive migrations** — Every historical log version folds on current code
+- **No banned vocabulary** — `overdue`, `late`, `missed`, `streak` absent outside their prohibitions
+- **Gauge honesty** — Gauge reads 0 for any gate-produced state — non-zero is a gate bug
 
 **Discipline, from the family's record:**
 - **Make each new test fail once** before trusting it.
@@ -262,12 +258,10 @@ and not a field to fill at every bump.
 
 ## 7 · Open before code starts
 
-| | |
-|---|---|
-| **Q-02 — the name** | A new name is wanted. Nothing in the schema, vocabulary, or formats encodes it, so this is copy, not a refactor. Does not block Phase 0. |
-| **Q-04 — Pages subdomain + §10 metadata** | Blocking on deploy. Downstream of the name. |
-| **V-00 — iPadOS persistence** | Needs the real device. Highest-value open check; settle before Phase 8. |
-| **UI approach** | Decide at build start against the §4 constraints above. Touch-first at iPad size. |
-| **Journal key derivation** | Argon2id vs PBKDF2 and its parameters. Record as an ADR when chosen (v1.5 — [ADR-0005](adr/0005-vaults-and-journal-encryption.md)). |
-| **"Stale store" definition** | For the iOS Restore prompt. Must not fire on a device simply used less often ([ADR-0004](adr/0004-ios-path.md)). |
-| **Module offer trigger** | What earns the next module offer. Needs dogfooding, not a guess, and must not become a nag. |
+- ****Q-02 — the name**** — A new name is wanted. Nothing in the schema, vocabulary, or formats encodes it, so this is copy, not a refactor. Does not block Phase 0.
+- ****Q-04 — Pages subdomain + §10 metadata**** — Blocking on deploy. Downstream of the name.
+- ****V-00 — iPadOS persistence**** — Needs the real device. Highest-value open check; settle before Phase 8.
+- ****UI approach**** — Decide at build start against the §4 constraints above. Touch-first at iPad size.
+- ****Journal key derivation**** — Argon2id vs PBKDF2 and its parameters. Record as an ADR when chosen (v1.5 — [ADR-0005](adr/0005-vaults-and-journal-encryption.md)).
+- ****"Stale store" definition**** — For the iOS Restore prompt. Must not fire on a device simply used less often ([ADR-0004](adr/0004-ios-path.md)).
+- ****Module offer trigger**** — What earns the next module offer. Needs dogfooding, not a guess, and must not become a nag.

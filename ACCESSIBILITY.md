@@ -21,12 +21,10 @@ The single decay primitive `(last_done, comfort_window, rising pressure)` drives
 most of what the user sees. Pressure is continuous, and it is carried by **four
 redundant channels**, of which hue is the least important:
 
-| Channel | How pressure is encoded |
-|---|---|
-| **Position** | Higher pressure sorts higher in the list. Order alone conveys the ranking. |
-| **Fill** | A horizontal fill bar, 0–100% of the comfort window. Length is readable with no colour perception at all. |
-| **Luminance** | Fill darkens monotonically as pressure rises. Survives a grayscale render — the pass condition, not a nicety. |
-| **Text** | Every item states its own status in words ("ready again", "ready in 3 days"). |
+- ****Position**** — Higher pressure sorts higher in the list. Order alone conveys the ranking.
+- ****Fill**** — A horizontal fill bar, 0–100% of the comfort window. Length is readable with no colour perception at all.
+- ****Luminance**** — Fill darkens monotonically as pressure rises. Survives a grayscale render — the pass condition, not a nicety.
+- ****Text**** — Every item states its own status in words ("ready again", "ready in 3 days").
 
 Hue may reinforce, never carry. **A grayscale render of any pressure surface
 must remain fully readable.** No pressure surface exists yet (Phase 0/1 ship
@@ -237,23 +235,44 @@ are recorded here rather than in a stylesheet because B-08's rule is that a new
 foreground/background pair joins the gate **in the same commit that introduces
 it**. `tools/brand.mjs` is that gate for these.
 
-| Token | Value | What it is |
-|---|---|---|
-| `--field` | `#F4F1E9` | warm paper — the field the mark sits on |
-| `--wall` | `#33425F` | the sheltering form — a wall, not a marker |
-| `--light` | `#F5C978` | the lit opening. The **only** warm note in the identity |
-| `--type-strong` | `#F7F4EE` | the wordmark |
-| `--type` | `#E9EDF4` | secondary type on dark |
+- **`--field`**
+  - Value: `#F4F1E9`
+  - What it is: warm paper — the field the mark sits on
+- **`--wall`**
+  - Value: `#33425F`
+  - What it is: the sheltering form — a wall, not a marker
+- **`--light`**
+  - Value: `#F5C978`
+  - What it is: the lit opening. The **only** warm note in the identity
+- **`--type-strong`**
+  - Value: `#F7F4EE`
+  - What it is: the wordmark
+- **`--type`**
+  - Value: `#E9EDF4`
+  - What it is: secondary type on dark
 
 **Measured, not eyeballed** — every pair the mark actually renders:
 
-| Pair | Ratio | Needs | Why that threshold |
-|---|---|---|---|
-| wall / field | **8.92:1** | 3:1 | WCAG 1.4.11, non-text graphical object |
-| light / wall | **6.48:1** | 3:1 | same |
-| wordmark / plate | **8.50:1** worst | 4.5:1 | measured against the actual social-preview pixels behind it, at the worst sample |
-| tagline / plate | **8.45:1** worst | 4.5:1 | same |
-| rule / plate | **7.34:1** worst | 3:1 | same |
+- **wall / field**
+  - Ratio: **8.92:1**
+  - Needs: 3:1
+  - Why that threshold: WCAG 1.4.11, non-text graphical object
+- **light / wall**
+  - Ratio: **6.48:1**
+  - Needs: 3:1
+  - Why that threshold: same
+- **wordmark / plate**
+  - Ratio: **8.50:1** worst
+  - Needs: 4.5:1
+  - Why that threshold: measured against the actual social-preview pixels behind it, at the worst sample
+- **tagline / plate**
+  - Ratio: **8.45:1** worst
+  - Needs: 4.5:1
+  - Why that threshold: same
+- **rule / plate**
+  - Ratio: **7.34:1** worst
+  - Needs: 3:1
+  - Why that threshold: same
 
 ### Why the field is light, and why that was not just a taste call
 
@@ -299,29 +318,66 @@ pins to — the matched pair holds on a machine that is not this sandbox.
 B-10 is the identity. These are the **interface** tokens in `public/app.css`,
 which is a separate question — an icon is seen once, a surface is lived in.
 
-| Token | Light | Dark |
-|---|---|---|
-| `--bg` | `#F4F1E9` | `#141A26` |
-| `--surface` | `#FFFFFF` | `#1E2637` |
-| `--ink` | `#1B2333` | `#F2F0EA` |
-| `--ink-soft` | `#4C5670` | `#B3BCCE` |
-| `--line` | `#CFCABD` | `#3A4560` |
-| `--accent` | `#33425F` | `#AFC0DC` |
-| `--warm` | `#7A4E00` | `#F5C978` |
+- **`--bg`**
+  - Light: `#F4F1E9`
+  - Dark: `#141A26`
+- **`--surface`**
+  - Light: `#FFFFFF`
+  - Dark: `#1E2637`
+- **`--ink`**
+  - Light: `#1B2333`
+  - Dark: `#F2F0EA`
+- **`--ink-soft`**
+  - Light: `#4C5670`
+  - Dark: `#B3BCCE`
+- **`--line`**
+  - Light: `#CFCABD`
+  - Dark: `#3A4560`
+- **`--accent`**
+  - Light: `#33425F`
+  - Dark: `#AFC0DC`
+- **`--warm`**
+  - Light: `#7A4E00`
+  - Dark: `#F5C978`
 
 **Measured in both themes**, worst case of the two:
 
-| Pair | Light | Dark | Needs |
-|---|---|---|---|
-| ink / bg | 13.94:1 | 15.29:1 | 4.5:1 |
-| ink / surface | 15.73:1 | 13.28:1 | 4.5:1 |
-| ink-soft / bg | 6.48:1 | 9.13:1 | 4.5:1 |
-| ink-soft / surface | 7.31:1 | 7.93:1 | 4.5:1 |
-| accent / bg | 8.92:1 | 9.45:1 | 3:1 |
-| accent / surface | 10.07:1 | 8.21:1 | 3:1 |
-| warm / surface | 7.20:1 | 9.73:1 | 4.5:1 |
-| warm / bg | 6.38:1 | 11.21:1 | 4.5:1 |
-| line / surface | 3.45:1 | 3.42:1 | 3:1 (WCAG 1.4.11 — it is a control boundary) |
+- **ink / bg**
+  - Light: 13.94:1
+  - Dark: 15.29:1
+  - Needs: 4.5:1
+- **ink / surface**
+  - Light: 15.73:1
+  - Dark: 13.28:1
+  - Needs: 4.5:1
+- **ink-soft / bg**
+  - Light: 6.48:1
+  - Dark: 9.13:1
+  - Needs: 4.5:1
+- **ink-soft / surface**
+  - Light: 7.31:1
+  - Dark: 7.93:1
+  - Needs: 4.5:1
+- **accent / bg**
+  - Light: 8.92:1
+  - Dark: 9.45:1
+  - Needs: 3:1
+- **accent / surface**
+  - Light: 10.07:1
+  - Dark: 8.21:1
+  - Needs: 3:1
+- **warm / surface**
+  - Light: 7.20:1
+  - Dark: 9.73:1
+  - Needs: 4.5:1
+- **warm / bg**
+  - Light: 6.38:1
+  - Dark: 11.21:1
+  - Needs: 4.5:1
+- **line / surface**
+  - Light: 3.45:1
+  - Dark: 3.42:1
+  - Needs: 3:1 (WCAG 1.4.11 — it is a control boundary)
 
 **`--warm` is not the brand warm, and that is the point.** `#F5C978` is a
 *light* — beautiful as a lit opening, unreadable as text on paper. In the light

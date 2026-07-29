@@ -52,22 +52,20 @@ fold in `seq` order regardless of clock skew.
 The `kind` a node *is*, distinct from the event kinds that act on it. Depth is
 flexible; the types are fixed.
 
-| Node kind | Notes |
-|---|---|
-| `action` | Child of an outcome or project. The only thing that appears as a next action. |
-| `outcome` | Any multi-step personal result. *(This is GTD's "project" sense, renamed to avoid colliding with the work-grade `project` below. **Never use the GTD®/Getting Things Done® marks anywhere.**)* |
-| `project` | Work-grade. Optional extended attributes: OPR, stakeholders, suspense list, meeting/decision log, goal link, `role`. |
-| `area` | Ongoing responsibility. Can go dormant; dormancy is a Review exception. |
-| `goal` | Optional OKR-style key results. |
-| `waiting-for` | Owed to you by someone else. |
-| `upkeep` | Carries `interval` + `comfort_window`. The decay primitive's home. |
-| `aspiration` | Menu categories: Read · Try · Go · Make · Research · Save-for. **Cannot carry a clock** (law 6). |
-| `bother` | Free-text worry, pre-triage. Must terminate in a route or a park. |
-| `pebble` | Load, not work. Magnitude `pebble` \| `rock` \| `boulder`. **Cannot carry a clock** (law 6). |
-| `journal` | Payload always encrypted at rest. |
-| `person` | **Vault-scoped** — the same human in two vaults is two nodes, deliberately. |
-| `resume-card` | Generated, short-lived, spent or expired. |
-| `anchor` | A named recurring delta anchor (e.g. the staff call). Deltas compute between firings. |
+- **`action`** — Child of an outcome or project. The only thing that appears as a next action.
+- **`outcome`** — Any multi-step personal result. *(This is GTD's "project" sense, renamed to avoid colliding with the work-grade `project` below. **Never use the GTD®/Getting Things Done® marks anywhere.**)*
+- **`project`** — Work-grade. Optional extended attributes: OPR, stakeholders, suspense list, meeting/decision log, goal link, `role`.
+- **`area`** — Ongoing responsibility. Can go dormant; dormancy is a Review exception.
+- **`goal`** — Optional OKR-style key results.
+- **`waiting-for`** — Owed to you by someone else.
+- **`upkeep`** — Carries `interval` + `comfort_window`. The decay primitive's home.
+- **`aspiration`** — Menu categories: Read · Try · Go · Make · Research · Save-for. **Cannot carry a clock** (law 6).
+- **`bother`** — Free-text worry, pre-triage. Must terminate in a route or a park.
+- **`pebble`** — Load, not work. Magnitude `pebble` | `rock` | `boulder`. **Cannot carry a clock** (law 6).
+- **`journal`** — Payload always encrypted at rest.
+- **`person`** — **Vault-scoped** — the same human in two vaults is two nodes, deliberately.
+- **`resume-card`** — Generated, short-lived, spent or expired.
+- **`anchor`** — A named recurring delta anchor (e.g. the staff call). Deltas compute between firings.
 
 **Cross-cutting fields**, set via `node.field.set` on any node kind:
 
@@ -87,17 +85,32 @@ inspect and either complete or refuse. See [ADR-0011](adr/0011-no-silent-nodes-g
 
 ### A · Node lifecycle
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `node.created` | `nodeKind, title, parent?, provenance` | **yes — gated** |
-| `node.kind.changed` | `from, to` | **yes — gated** (an `action` demoted to `aspiration` loses its clock) |
-| `node.field.set` | `field, value` — exactly one field | no |
-| `node.renamed` | `title` | no — renaming removes no coverage |
-| `node.parented` | `parent, priorParent?` | **yes — gated** (re-homing under an unclocked parent orphans the node) |
-| `node.unparented` | `priorParent` | **yes — gated** |
-| `node.trashed` | `reason?` | **yes — gated** — trashing a parent must not orphan its children (ADR-0011) |
-| `node.untrashed` | — | **yes — gated** |
-| `node.merged` | `into` | **yes — gated** — merge target must exist and live, or children go silent |
+- **`node.created`**
+  - Payload: `nodeKind, title, parent?, provenance`
+  - Silent risk: **yes — gated**
+- **`node.kind.changed`**
+  - Payload: `from, to`
+  - Silent risk: **yes — gated** (an `action` demoted to `aspiration` loses its clock)
+- **`node.field.set`**
+  - Payload: `field, value` — exactly one field
+  - Silent risk: no
+- **`node.renamed`**
+  - Payload: `title`
+  - Silent risk: no — renaming removes no coverage
+- **`node.parented`**
+  - Payload: `parent, priorParent?`
+  - Silent risk: **yes — gated** (re-homing under an unclocked parent orphans the node)
+- **`node.unparented`**
+  - Payload: `priorParent`
+  - Silent risk: **yes — gated**
+- **`node.trashed`**
+  - Payload: `reason?`
+  - Silent risk: **yes — gated** — trashing a parent must not orphan its children (ADR-0011)
+- **`node.untrashed`**
+  - Silent risk: **yes — gated**
+- **`node.merged`**
+  - Payload: `into`
+  - Silent risk: **yes — gated** — merge target must exist and live, or children go silent
 
 `node.trashed` is reversible and is *not* an archive: it records "I decided this
 is not a thing", which is a decision. Law 3 forbids a bucket for things that
@@ -105,18 +118,35 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 
 ### B · Temporal — the decay primitive
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `clock.set` | `clockKind: due \| start \| suspense \| review \| park, at, source` | no — this is the cure |
-| `clock.cleared` | `clockKind` | **yes — gated** |
-| `upkeep.interval.set` | `interval, comfortWindow` | no |
-| `done.marked` | `at` | **yes — gated** (a completed one-off can orphan its parent) |
-| `done.unmarked` | — | no |
-| `anchor.defined` | `name, recurrence (RRULE)` | no |
-| `anchor.fired` | `anchor, at` | no |
-| `replan.raised` | `passedClock, fed[], suspense, daysLeft` | no — **and nothing emits it** ([ADR-0034](adr/0034-replan-cards-are-computed.md)) |
-| `replan.resolved` | `choice: compress \| escalate \| renegotiate \| new-date \| to-menu` | **yes — gated** unless the choice sets a clock or lands on the Menu |
-| `park.set` | `returnAt, reason?` | no — a park **always** carries a return clock |
+- **`clock.set`**
+  - Payload: `clockKind: due | start | suspense | review | park, at, source`
+  - Silent risk: no — this is the cure
+- **`clock.cleared`**
+  - Payload: `clockKind`
+  - Silent risk: **yes — gated**
+- **`upkeep.interval.set`**
+  - Payload: `interval, comfortWindow`
+  - Silent risk: no
+- **`done.marked`**
+  - Payload: `at`
+  - Silent risk: **yes — gated** (a completed one-off can orphan its parent)
+- **`done.unmarked`**
+  - Silent risk: no
+- **`anchor.defined`**
+  - Payload: `name, recurrence (RRULE)`
+  - Silent risk: no
+- **`anchor.fired`**
+  - Payload: `anchor, at`
+  - Silent risk: no
+- **`replan.raised`**
+  - Payload: `passedClock, fed[], suspense, daysLeft`
+  - Silent risk: no — **and nothing emits it** ([ADR-0034](adr/0034-replan-cards-are-computed.md))
+- **`replan.resolved`**
+  - Payload: `choice: compress | escalate | renegotiate | new-date | to-menu`
+  - Silent risk: **yes — gated** unless the choice sets a clock or lands on the Menu
+- **`park.set`**
+  - Payload: `returnAt, reason?`
+  - Silent risk: no — a park **always** carries a return clock
 
 > **There is no `overdue` event, and there never will be.** Not in the schema,
 > not in a payload, not in a variable name. Pressure is computed from
@@ -131,17 +161,33 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 
 ### C · Capture and triage
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `capture.recorded` | `text, source: quick \| share-target \| url-endpoint \| shortcut \| focus-interrupt, sourceTags[]` | **yes — gated** (an unclarified item gets an aggressive same-day clock at write time, not later) |
-| `heat.set` | `heat: hot \| cold` | no |
-| `clarify.routed` | `route: do-now \| next-action \| waiting-for \| someday \| reference \| trash` | **yes — gated** |
-| `do-now.timed` | `startedAt, endedAt, outcome: completed \| abandoned` | no |
-| `bother.received` | `text` | **yes — gated** |
-| `bother.owned` | `ownership: mine-to-solve \| mine-to-track \| not-mine-to-carry` | **yes — gated** |
-| `bother.routed` | `route \| park` | no — the flow **cannot** exit without one of these |
-| `assist.offered` | `rung: template \| workers-ai \| byok \| manual, suggestions[]` | no |
-| `assist.applied` | `accepted[], rejected[]` | no |
+- **`capture.recorded`**
+  - Payload: `text, source: quick | share-target | url-endpoint | shortcut | focus-interrupt, sourceTags[]`
+  - Silent risk: **yes — gated** (an unclarified item gets an aggressive same-day clock at write time, not later)
+- **`heat.set`**
+  - Payload: `heat: hot | cold`
+  - Silent risk: no
+- **`clarify.routed`**
+  - Payload: `route: do-now | next-action | waiting-for | someday | reference | trash`
+  - Silent risk: **yes — gated**
+- **`do-now.timed`**
+  - Payload: `startedAt, endedAt, outcome: completed | abandoned`
+  - Silent risk: no
+- **`bother.received`**
+  - Payload: `text`
+  - Silent risk: **yes — gated**
+- **`bother.owned`**
+  - Payload: `ownership: mine-to-solve | mine-to-track | not-mine-to-carry`
+  - Silent risk: **yes — gated**
+- **`bother.routed`**
+  - Payload: `route | park`
+  - Silent risk: no — the flow **cannot** exit without one of these
+- **`assist.offered`**
+  - Payload: `rung: template | workers-ai | byok | manual, suggestions[]`
+  - Silent risk: no
+- **`assist.applied`**
+  - Payload: `accepted[], rejected[]`
+  - Silent risk: no
 
 `not-mine-to-carry` still produces a node — it lands on the Not Now ledger with a
 `park.set`. Declining to carry something is recorded, not discarded; that is the
@@ -149,37 +195,74 @@ point of the ledger.
 
 ### D · Focus and resumption
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `focus.started` | `node` | no |
-| `focus.ended` | `reason: completed \| switched \| abandoned \| interrupted` | no |
-| `interrupt.captured` | `text, duringFocus: NodeId \| null` | **yes — gated** |
-| `resume.card.created` | `forNode, cue: string \| null` | no |
-| `resume.card.spent` | — | no |
-| `resume.card.expired` | `toReviewQuestion: bool` | no |
+- **`focus.started`**
+  - Payload: `node`
+  - Silent risk: no
+- **`focus.ended`**
+  - Payload: `reason: completed | switched | abandoned | interrupted`
+  - Silent risk: no
+- **`interrupt.captured`**
+  - Payload: `text, duringFocus: NodeId | null`
+  - Silent risk: **yes — gated**
+- **`resume.card.created`**
+  - Payload: `forNode, cue: string | null`
+  - Silent risk: no
+- **`resume.card.spent`**
+  - Silent risk: no
+- **`resume.card.expired`**
+  - Payload: `toReviewQuestion: bool`
+  - Silent risk: no
 
 The five-word *"I was about to…"* cue is `cue`, and it is **skippable** — `null`
 is a valid, unremarkable value, never nagged about.
 
 ### E · Work domain
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `waiting.opened` | `person, forWhat, since` | no |
-| `waiting.closed` | `outcome` | **yes — gated** |
-| `dependency.declared` | `feeds: NodeId, suspense, leadEstimate` | no — **gated**: must name a live target and must not close a loop (build-plan 27) |
-| `dependency.released` | `feeds` | **yes — gated** |
-| `suspense.set` | `at, label?` | no |
-| `project.role.set` | `role: execute \| track` | **yes — gated** (a `track` project emits no next actions — only Waiting-Fors and Upkeep check-ins, so its children must re-home) |
-| `opr.assigned` | `person` | no |
-| `stakeholder.added` / `.removed` | `person` | no |
-| `decision.logged` | `text, at, meeting?` | no |
-| `delta.recorded` | `sinceAnchor \| sinceExport, text` | no |
-| `status.report.exported` | `format: clipboard \| markdown \| print \| csv, scope` | no — this is the provenance "delta since last export" reads from |
-| `request.declined` | `person, what, reason?` | **yes — gated** → Not Now ledger + park |
-| `request.slot.set` | `recurrence` | no |
-| `comms.sweep.scheduled` | `at` | no |
-| `comms.sweep.ran` | `at` | no |
+- **`waiting.opened`**
+  - Payload: `person, forWhat, since`
+  - Silent risk: no
+- **`waiting.closed`**
+  - Payload: `outcome`
+  - Silent risk: **yes — gated**
+- **`dependency.declared`**
+  - Payload: `feeds: NodeId, suspense, leadEstimate`
+  - Silent risk: no — **gated**: must name a live target and must not close a loop (build-plan 27)
+- **`dependency.released`**
+  - Payload: `feeds`
+  - Silent risk: **yes — gated**
+- **`suspense.set`**
+  - Payload: `at, label?`
+  - Silent risk: no
+- **`project.role.set`**
+  - Payload: `role: execute | track`
+  - Silent risk: **yes — gated** (a `track` project emits no next actions — only Waiting-Fors and Upkeep check-ins, so its children must re-home)
+- **`opr.assigned`**
+  - Payload: `person`
+  - Silent risk: no
+- **`stakeholder.added` / `.removed`**
+  - Payload: `person`
+  - Silent risk: no
+- **`decision.logged`**
+  - Payload: `text, at, meeting?`
+  - Silent risk: no
+- **`delta.recorded`**
+  - Payload: `sinceAnchor | sinceExport, text`
+  - Silent risk: no
+- **`status.report.exported`**
+  - Payload: `format: clipboard | markdown | print | csv, scope`
+  - Silent risk: no — this is the provenance "delta since last export" reads from
+- **`request.declined`**
+  - Payload: `person, what, reason?`
+  - Silent risk: **yes — gated** → Not Now ledger + park
+- **`request.slot.set`**
+  - Payload: `recurrence`
+  - Silent risk: no
+- **`comms.sweep.scheduled`**
+  - Payload: `at`
+  - Silent risk: no
+- **`comms.sweep.ran`**
+  - Payload: `at`
+  - Silent risk: no
 
 > The app owns **the schedule of looking**, never the messages themselves. There
 > is no event that touches message content, and there is no integration that
@@ -187,35 +270,68 @@ is a valid, unremarkable value, never nagged about.
 
 ### F · Load and capacity
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `pebble.raised` | `magnitude, affects: NodeId[]` | no — pebbles are demand-free by construction (law 6) |
-| `pebble.settled` | — | no |
-| `capacity.declared` | `level: low \| steady \| sharp \| unsure` | no |
-| `wip.limit.set` | `limit` | no |
-| `estimate.recorded` | `duration, basis: guess \| prior` | no |
+- **`pebble.raised`**
+  - Payload: `magnitude, affects: NodeId[]`
+  - Silent risk: no — pebbles are demand-free by construction (law 6)
+- **`pebble.settled`**
+  - Silent risk: no
+- **`capacity.declared`**
+  - Payload: `level: low | steady | sharp | unsure`
+  - Silent risk: no
+- **`wip.limit.set`**
+  - Payload: `limit`
+  - Silent risk: no
+- **`estimate.recorded`**
+  - Payload: `duration, basis: guess | prior`
+  - Silent risk: no
 
 `estimate.recorded` ships in **v1** even though duration *learning* is v2. The
 feature can be late; the data cannot be backfilled.
 
 ### G · Structure and store
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `vault.created` | `name, domain: work \| personal \| journal` | no |
-| `vault.locked` / `.unlocked` | `method: passphrase` | no |
-| `device.registered` | `device, label` | no |
-| `module.enabled` / `.disabled` | `module` | no |
-| `consent.granted` | `scope, whatLeaves: string, rung` | no |
-| `consent.revoked` | `scope` | no |
-| `snapshot.written` | `upToSeq, reason: periodic \| pre-migration` | no |
-| `schema.migrated` | `from, to` | no |
-| `export.written` | `at, scope, encrypted: bool` | no |
-| `shard.folded` | `fromDevice, taken, skipped, at` | no — another device's copy was folded in ([ADR-0035](adr/0035-multi-device-shard-union.md)) |
-| `import.seeded` | `fromExport, at` | no |
-| `terminology.skin.applied` | `skin, vault` | no |
-| `template.loaded` | `template, source, licence` | no |
-| `shard.compacted` | `device, throughSeq, archivedTo` | no |
+- **`vault.created`**
+  - Payload: `name, domain: work | personal | journal`
+  - Silent risk: no
+- **`vault.locked` / `.unlocked`**
+  - Payload: `method: passphrase`
+  - Silent risk: no
+- **`device.registered`**
+  - Payload: `device, label`
+  - Silent risk: no
+- **`module.enabled` / `.disabled`**
+  - Payload: `module`
+  - Silent risk: no
+- **`consent.granted`**
+  - Payload: `scope, whatLeaves: string, rung`
+  - Silent risk: no
+- **`consent.revoked`**
+  - Payload: `scope`
+  - Silent risk: no
+- **`snapshot.written`**
+  - Payload: `upToSeq, reason: periodic | pre-migration`
+  - Silent risk: no
+- **`schema.migrated`**
+  - Payload: `from, to`
+  - Silent risk: no
+- **`export.written`**
+  - Payload: `at, scope, encrypted: bool`
+  - Silent risk: no
+- **`shard.folded`**
+  - Payload: `fromDevice, taken, skipped, at`
+  - Silent risk: no — another device's copy was folded in ([ADR-0035](adr/0035-multi-device-shard-union.md))
+- **`import.seeded`**
+  - Payload: `fromExport, at`
+  - Silent risk: no
+- **`terminology.skin.applied`**
+  - Payload: `skin, vault`
+  - Silent risk: no
+- **`template.loaded`**
+  - Payload: `template, source, licence`
+  - Silent risk: no
+- **`shard.compacted`**
+  - Payload: `device, throughSeq, archivedTo`
+  - Silent risk: no
 
 **`consent.granted.whatLeaves` is a required human-readable string**, not a flag.
 It is the literal sentence shown to the user, stored so the record of what they
@@ -226,12 +342,18 @@ agreed to survives a copy change (law 10).
 
 ### H · People and journal
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `person.created` | `name` — vault-scoped | no |
-| `person.linked` | `node, person, relation: opr \| stakeholder \| waiting-on \| requested-by \| mentioned` | no |
-| `journal.entry.written` | `ciphertext, iv` — **payload always encrypted** | no |
-| `journal.tag.attached` | `tag` | no |
+- **`person.created`**
+  - Payload: `name` — vault-scoped
+  - Silent risk: no
+- **`person.linked`**
+  - Payload: `node, person, relation: opr | stakeholder | waiting-on | requested-by | mentioned`
+  - Silent risk: no
+- **`journal.entry.written`**
+  - Payload: `ciphertext, iv` — **payload always encrypted**
+  - Silent risk: no
+- **`journal.tag.attached`**
+  - Payload: `tag`
+  - Silent risk: no
 
 > `journal.tag.attached` exists for **co-occurrence rendering only**. There is no
 > sentiment field, no valence, no score, and no event that could carry one
@@ -239,14 +361,24 @@ agreed to survives a copy change (law 10).
 
 ### I · Menu and re-entry
 
-| Event | Payload | Silent? |
-|---|---|---|
-| `menu.item.added` | `category: read \| try \| go \| make \| research \| save-for` | no — the Menu **is** a surface (law 1, clause c) |
-| `menu.item.promoted` | `toKind` | **yes — gated** — a deliberate promotion, never an accrued obligation |
-| `save-for.updated` | `target, saved` — both manual | no |
-| `lapse.migration.ran` | `absenceDays, itemsTriaged` | no |
-| `reentry.greeted` | `absenceDays, shown: {nextUp, triage[≤3], gauge}` | no |
-| `amnesty.offered` / `.accepted` | `scope` | no |
+- **`menu.item.added`**
+  - Payload: `category: read | try | go | make | research | save-for`
+  - Silent risk: no — the Menu **is** a surface (law 1, clause c)
+- **`menu.item.promoted`**
+  - Payload: `toKind`
+  - Silent risk: **yes — gated** — a deliberate promotion, never an accrued obligation
+- **`save-for.updated`**
+  - Payload: `target, saved` — both manual
+  - Silent risk: no
+- **`lapse.migration.ran`**
+  - Payload: `absenceDays, itemsTriaged`
+  - Silent risk: no
+- **`reentry.greeted`**
+  - Payload: `absenceDays, shown: {nextUp, triage[≤3], gauge}`
+  - Silent risk: no
+- **`amnesty.offered` / `.accepted`**
+  - Payload: `scope`
+  - Silent risk: no
 
 > **Naming collision, resolved deliberately.** The brief's user-facing vocabulary
 > calls the lapse ritual *"Migration"*, which collides with schema migration. The

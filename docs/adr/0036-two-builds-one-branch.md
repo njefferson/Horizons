@@ -7,12 +7,18 @@
 Quietkeep ships as **two builds from one branch**, deployed to two Cloudflare
 Pages sites:
 
-| | **Quietkeep** | **Quietkeep Sync** |
-|---|---|---|
-| Default | **yes, always** | no — you go and get it |
-| Sync module in the bundle | **absent** | present |
-| `connect-src` | `'self'` | `'self'` + the relay host, named |
-| Store | its own origin | its own origin |
+- **Default**
+  - Quietkeep: **yes, always**
+  - Quietkeep Sync: no — you go and get it
+- **Sync module in the bundle**
+  - Quietkeep: **absent**
+  - Quietkeep Sync: present
+- **`connect-src`**
+  - Quietkeep: `'self'`
+  - Quietkeep Sync: `'self'` + the relay host, named
+- **Store**
+  - Quietkeep: its own origin
+  - Quietkeep Sync: its own origin
 
 **One `main`. One set of gates. One place to fix a bug.** The difference is a
 build flag and one line of `public/_headers`.

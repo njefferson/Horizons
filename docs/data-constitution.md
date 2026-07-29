@@ -48,11 +48,9 @@ A record:
 
 **Where it lives**
 
-| | |
-|---|---|
-| Primary store | IndexedDB, via Dexie ([ADR-0002](adr/0002-storage-dexie-indexeddb.md)). `localStorage` is **never** used. |
-| Optional mirror | A folder you choose, synced by a service you already use. Chromium desktop only ([ADR-0003](adr/0003-folder-mirror.md)). |
-| Backups | Files you export, wherever you put them ([ADR-0006](adr/0006-backups-and-import.md)). |
+- **Primary store** — IndexedDB, via Dexie ([ADR-0002](adr/0002-storage-dexie-indexeddb.md)). `localStorage` is **never** used.
+- **Optional mirror** — A folder you choose, synced by a service you already use. Chromium desktop only ([ADR-0003](adr/0003-folder-mirror.md)).
+- **Backups** — Files you export, wherever you put them ([ADR-0006](adr/0006-backups-and-import.md)).
 
 **Partitioned by vault** — work, personal, journal. Every event belongs to
 exactly one, and **cross-vault references are forbidden**, not merely

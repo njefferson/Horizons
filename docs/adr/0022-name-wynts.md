@@ -45,14 +45,24 @@ because it is a grep and it is free.
 
 ## What was checked, and by what instrument
 
-| Check | Instrument | Result |
-|---|---|---|
-| npm registry | direct query — authoritative | `wynts`, `wynt`, `wynts-app`, `usewynts` **all free** |
-| GitHub | repo search API — authoritative | one hit, a personal profile-config repo (`Wyntsoyal`). No project. |
-| App Store | web search | **nothing named Wynts**; nothing in productivity |
-| Unscoped name + software | web search | nothing named Wynts |
-| This app's own spec | `grep` | no occurrences — no internal collision |
-| Framework vocabulary | reading | not a term of art anywhere (unlike *Detent*) |
+- **npm registry**
+  - Instrument: direct query — authoritative
+  - Result: `wynts`, `wynt`, `wynts-app`, `usewynts` **all free**
+- **GitHub**
+  - Instrument: repo search API — authoritative
+  - Result: one hit, a personal profile-config repo (`Wyntsoyal`). No project.
+- **App Store**
+  - Instrument: web search
+  - Result: **nothing named Wynts**; nothing in productivity
+- **Unscoped name + software**
+  - Instrument: web search
+  - Result: nothing named Wynts
+- **This app's own spec**
+  - Instrument: `grep`
+  - Result: no occurrences — no internal collision
+- **Framework vocabulary**
+  - Instrument: reading
+  - Result: not a term of art anywhere (unlike *Detent*)
 
 **Not checked, and still owed on Noah's device:** the App Store search from a real
 device, and a USPTO knockout in classes 9 and 42 if he wants one. Both are blocked

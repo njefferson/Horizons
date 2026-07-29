@@ -41,17 +41,15 @@ incapable of letting something go quiet.
 
 ## Documentation
 
-| | |
-|---|---|
-| [`NOTES.md`](NOTES.md) | Source of truth — thesis, the ten product laws, frozen v1 scope, open questions |
-| [`docs/planning-for-humans.md`](docs/planning-for-humans.md) | Why every feature exists, mapped to the finding behind it and how well established that finding is |
-| [`docs/data-constitution.md`](docs/data-constitution.md) | What we store, what we promise, and every way out |
-| [`docs/event-vocabulary.md`](docs/event-vocabulary.md) | The complete event list that all state folds from |
-| [`docs/adr/`](docs/adr/) | Architecture decision records |
-| [`docs/build-plan.md`](docs/build-plan.md) | Architecture and build sequence |
-| [`docs/verifications.md`](docs/verifications.md) | What has been checked, and what only looks checked |
-| [`ACCESSIBILITY.md`](ACCESSIBILITY.md) | Append-only accessibility register |
-| [`CHANGELOG.md`](CHANGELOG.md) | What changed, written for the person using the app. Generated — the app's ⓘ panel shows the same notes |
+- **[`NOTES.md`](NOTES.md)** — Source of truth — thesis, the ten product laws, frozen v1 scope, open questions
+- **[`docs/planning-for-humans.md`](docs/planning-for-humans.md)** — Why every feature exists, mapped to the finding behind it and how well established that finding is
+- **[`docs/data-constitution.md`](docs/data-constitution.md)** — What we store, what we promise, and every way out
+- **[`docs/event-vocabulary.md`](docs/event-vocabulary.md)** — The complete event list that all state folds from
+- **[`docs/adr/`](docs/adr/)** — Architecture decision records
+- **[`docs/build-plan.md`](docs/build-plan.md)** — Architecture and build sequence
+- **[`docs/verifications.md`](docs/verifications.md)** — What has been checked, and what only looks checked
+- **[`ACCESSIBILITY.md`](ACCESSIBILITY.md)** — Append-only accessibility register
+- **[`CHANGELOG.md`](CHANGELOG.md)** — What changed, written for the person using the app. Generated — the app's ⓘ panel shows the same notes
 
 ## Accessibility
 

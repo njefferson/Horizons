@@ -30,45 +30,117 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 
 ## Index
 
-| # | Decision | Status |
-|---|---|---|
-| [0001](0001-event-sourced-log.md) | State is a fold over an append-only event log | Accepted |
-| [0002](0002-storage-dexie-indexeddb.md) | IndexedDB via Dexie; `localStorage` banned | Accepted |
-| [0003](0003-folder-mirror.md) | Optional folder mirror, per-device shards, Chromium desktop only | Accepted |
-| [0004](0004-ios-path.md) | iOS gets manual export/import, not a degraded folder mirror | Accepted |
-| [0005](0005-vaults-and-journal-encryption.md) | Vaults per life-domain; journal encryption ships with the journal | Accepted |
-| [0006](0006-backups-and-import.md) | Immutable timestamped exports; import seeds a fresh store, never merges | Accepted |
-| [0007](0007-notification-tiers.md) | Notification ladder T0 → T3, each tier standing alone | Accepted |
-| [0008](0008-capture-endpoints.md) | Multiple capture entrances; commit before confirm | Accepted |
-| [0009](0009-strategy-modules.md) | Minimal invariant core plus toggleable modules | Accepted |
-| [0010](0010-decay-primitive.md) | One decay primitive for everything temporal; no "overdue" | Accepted |
-| [0011](0011-no-silent-nodes-gate.md) | The no-silent-nodes invariant is enforced at the write boundary | Accepted |
-| [0012](0012-no-past-bucket.md) | A passed clock becomes a live replan card, never an archive row | Accepted |
-| [0013](0013-levels-push-down.md) | Higher horizons project downward; the runway is the only workspace | Accepted |
-| [0014](0014-demand-free-types.md) | Menu items and pebbles cannot carry clocks | Accepted |
-| [0015](0015-ai-never-blocks.md) | Every assisted flow has a working offline rung | Accepted |
-| [0016](0016-gtd-marks-and-original-content.md) | Never use the GTD® marks; all trigger-list content original | Accepted |
-| [0017](0017-licensing.md) | PolyForm Noncommercial 1.0.0 | Accepted |
-| [0019](0019-v1-freeze.md) | v1 scope frozen; the dogfood gate defines done | Accepted |
-| [0018](0018-name-and-slug.md) | Repo slug `Horizons`; subdomain qualified | **Superseded by [0020](0020-name-perennial.md)** |
-| [0020](0020-name-perennial.md) | The name is Perennial — **and the candidate graveyard, which is still current** | **Superseded by [0021](0021-name-reopened.md)** |
-| [0021](0021-name-reopened.md) | Perennial withdrawn; the name is reopened | **Superseded by [0022](0022-name-wynts.md)** |
-| [0022](0022-name-wynts.md) | The name is Wynts — what you need to see | **Superseded by [0023](0023-name-wynts-withdrawn.md)** |
-| [0023](0023-name-wynts-withdrawn.md) | Wynts withdrawn — it sounds like "wince"; the check order | **Superseded by [0024](0024-name-quietkeep.md)** |
-| [0024](0024-name-quietkeep.md) | **The name is Quietkeep** | Accepted |
-| [0025](0025-visual-identity.md) | The mark is drawn as SVG; the social background is generated | Accepted |
-| [0026](0026-ui-and-build.md) | No UI framework; one esbuild type-strip step | Accepted |
-| [0027](0027-cure-stamps.md) | Cures share their cause's stamp; commits are serialized | Accepted |
-| [0028](0028-public-capture-surfaces.md) | URL/share/shortcut capture entrances; strict CSP | Accepted |
-| [0029](0029-triage-model.md) | Triage: optional heat pass, forced-choice clarify, each route self-terminating | Accepted |
-| [0030](0030-work-mode.md) | Work mode: pressure formula, fixed precedence, a skip that records nothing | Accepted |
-| [0031](0031-node-renamed.md) | `node.renamed` — the first addition to the closed vocabulary | Accepted |
-| [0032](0032-held-list-grouped.md) | What you are holding is grouped, and can be ticked off in place | Accepted |
-| [0033](0033-calendar-export-t1.md) | The calendar file is all-day events with a relative alarm (T1) | Accepted |
-| [0034](0034-replan-cards-are-computed.md) | Replan cards are computed, and only hard clocks raise them | Accepted |
-| [0035](0035-multi-device-shard-union.md) | Two devices, by folding in a shard — opt-in, additive, no server | Accepted |
-| [0036](0036-two-builds-one-branch.md) | Two builds from one branch; the default cannot sync and the browser enforces it | Accepted |
-| [0037](0037-sync-design.md) | Quietkeep Sync — a relay that cannot read, gated against accident | Accepted (design) |
+- **[0001](0001-event-sourced-log.md)**
+  - Decision: State is a fold over an append-only event log
+  - Status: Accepted
+- **[0002](0002-storage-dexie-indexeddb.md)**
+  - Decision: IndexedDB via Dexie; `localStorage` banned
+  - Status: Accepted
+- **[0003](0003-folder-mirror.md)**
+  - Decision: Optional folder mirror, per-device shards, Chromium desktop only
+  - Status: Accepted
+- **[0004](0004-ios-path.md)**
+  - Decision: iOS gets manual export/import, not a degraded folder mirror
+  - Status: Accepted
+- **[0005](0005-vaults-and-journal-encryption.md)**
+  - Decision: Vaults per life-domain; journal encryption ships with the journal
+  - Status: Accepted
+- **[0006](0006-backups-and-import.md)**
+  - Decision: Immutable timestamped exports; import seeds a fresh store, never merges
+  - Status: Accepted
+- **[0007](0007-notification-tiers.md)**
+  - Decision: Notification ladder T0 → T3, each tier standing alone
+  - Status: Accepted
+- **[0008](0008-capture-endpoints.md)**
+  - Decision: Multiple capture entrances; commit before confirm
+  - Status: Accepted
+- **[0009](0009-strategy-modules.md)**
+  - Decision: Minimal invariant core plus toggleable modules
+  - Status: Accepted
+- **[0010](0010-decay-primitive.md)**
+  - Decision: One decay primitive for everything temporal; no "overdue"
+  - Status: Accepted
+- **[0011](0011-no-silent-nodes-gate.md)**
+  - Decision: The no-silent-nodes invariant is enforced at the write boundary
+  - Status: Accepted
+- **[0012](0012-no-past-bucket.md)**
+  - Decision: A passed clock becomes a live replan card, never an archive row
+  - Status: Accepted
+- **[0013](0013-levels-push-down.md)**
+  - Decision: Higher horizons project downward; the runway is the only workspace
+  - Status: Accepted
+- **[0014](0014-demand-free-types.md)**
+  - Decision: Menu items and pebbles cannot carry clocks
+  - Status: Accepted
+- **[0015](0015-ai-never-blocks.md)**
+  - Decision: Every assisted flow has a working offline rung
+  - Status: Accepted
+- **[0016](0016-gtd-marks-and-original-content.md)**
+  - Decision: Never use the GTD® marks; all trigger-list content original
+  - Status: Accepted
+- **[0017](0017-licensing.md)**
+  - Decision: PolyForm Noncommercial 1.0.0
+  - Status: Accepted
+- **[0019](0019-v1-freeze.md)**
+  - Decision: v1 scope frozen; the dogfood gate defines done
+  - Status: Accepted
+- **[0018](0018-name-and-slug.md)**
+  - Decision: Repo slug `Horizons`; subdomain qualified
+  - Status: **Superseded by [0020](0020-name-perennial.md)**
+- **[0020](0020-name-perennial.md)**
+  - Decision: The name is Perennial — **and the candidate graveyard, which is still current**
+  - Status: **Superseded by [0021](0021-name-reopened.md)**
+- **[0021](0021-name-reopened.md)**
+  - Decision: Perennial withdrawn; the name is reopened
+  - Status: **Superseded by [0022](0022-name-wynts.md)**
+- **[0022](0022-name-wynts.md)**
+  - Decision: The name is Wynts — what you need to see
+  - Status: **Superseded by [0023](0023-name-wynts-withdrawn.md)**
+- **[0023](0023-name-wynts-withdrawn.md)**
+  - Decision: Wynts withdrawn — it sounds like "wince"; the check order
+  - Status: **Superseded by [0024](0024-name-quietkeep.md)**
+- **[0024](0024-name-quietkeep.md)**
+  - Decision: **The name is Quietkeep**
+  - Status: Accepted
+- **[0025](0025-visual-identity.md)**
+  - Decision: The mark is drawn as SVG; the social background is generated
+  - Status: Accepted
+- **[0026](0026-ui-and-build.md)**
+  - Decision: No UI framework; one esbuild type-strip step
+  - Status: Accepted
+- **[0027](0027-cure-stamps.md)**
+  - Decision: Cures share their cause's stamp; commits are serialized
+  - Status: Accepted
+- **[0028](0028-public-capture-surfaces.md)**
+  - Decision: URL/share/shortcut capture entrances; strict CSP
+  - Status: Accepted
+- **[0029](0029-triage-model.md)**
+  - Decision: Triage: optional heat pass, forced-choice clarify, each route self-terminating
+  - Status: Accepted
+- **[0030](0030-work-mode.md)**
+  - Decision: Work mode: pressure formula, fixed precedence, a skip that records nothing
+  - Status: Accepted
+- **[0031](0031-node-renamed.md)**
+  - Decision: `node.renamed` — the first addition to the closed vocabulary
+  - Status: Accepted
+- **[0032](0032-held-list-grouped.md)**
+  - Decision: What you are holding is grouped, and can be ticked off in place
+  - Status: Accepted
+- **[0033](0033-calendar-export-t1.md)**
+  - Decision: The calendar file is all-day events with a relative alarm (T1)
+  - Status: Accepted
+- **[0034](0034-replan-cards-are-computed.md)**
+  - Decision: Replan cards are computed, and only hard clocks raise them
+  - Status: Accepted
+- **[0035](0035-multi-device-shard-union.md)**
+  - Decision: Two devices, by folding in a shard — opt-in, additive, no server
+  - Status: Accepted
+- **[0036](0036-two-builds-one-branch.md)**
+  - Decision: Two builds from one branch; the default cannot sync and the browser enforces it
+  - Status: Accepted
+- **[0037](0037-sync-design.md)**
+  - Decision: Quietkeep Sync — a relay that cannot read, gated against accident
+  - Status: Accepted (design)
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

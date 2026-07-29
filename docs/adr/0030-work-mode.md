@@ -24,12 +24,18 @@ and a DST changeover adds no pressure.
 
 **2 · Next-up is a fixed precedence, not a tunable score** (`src/nextup.ts`):
 
-| | Tier | Why it sits there |
-|---|---|---|
-| 1 | Hard landscape (`due`/`suspense` arrived) | An appointment does not negotiate with a plant that wants watering |
-| 2 | Resume cards | Picking up a thread beats a cold start, and cold starts are the whole problem |
-| 3 | Pressure, highest first | The decay primitive |
-| 4 | Anything else whose clock arrived | It said it would come back |
+- **1**
+  - Tier: Hard landscape (`due`/`suspense` arrived)
+  - Why it sits there: An appointment does not negotiate with a plant that wants watering
+- **2**
+  - Tier: Resume cards
+  - Why it sits there: Picking up a thread beats a cold start, and cold starts are the whole problem
+- **3**
+  - Tier: Pressure, highest first
+  - Why it sits there: The decay primitive
+- **4**
+  - Tier: Anything else whose clock arrived
+  - Why it sits there: It said it would come back
 
 "Whose clock arrived" means **any** demanding clock (`park` excluded), not a
 favourite one. Reading `due ?? start ?? suspense ?? review` was a precedence by

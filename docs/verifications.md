@@ -12,17 +12,15 @@ a dated resolution beneath it.
 
 **Status vocabulary**
 
-| Status | Means |
-|---|---|
-| `VERIFIED` | Checked, with the evidence named. Safe to build on. |
-| `PARTIAL` | Part of the question is settled; the rest is not. The unsettled part is stated. |
-| `UNVERIFIED` | Not checked, or checked by a method too weak to count. **Not** the same as "probably fine". |
-| `INCONCLUSIVE` | A check was attempted and returned nothing usable. The attempt is recorded so it isn't repeated blindly. |
-| `NEEDS NOAH'S HANDS` | Cannot be checked from a session by any means. Requires real hardware or a real account. |
-| `NOT RUN` | Deliberately deferred, with the reason and the trigger for running it. |
-| `WITHDRAWN` | No longer relevant — scope changed. The row stays so the consideration is on record. |
-| `WORKING` | An observed behaviour is now correct; recorded when the cause is understood well enough to name but the row is about a fixed symptom, not a standing invariant. |
-| `PROVEN` | A one-off fact was demonstrated (e.g. a network limit), with the demonstration named. |
+- **`VERIFIED`** — Checked, with the evidence named. Safe to build on.
+- **`PARTIAL`** — Part of the question is settled; the rest is not. The unsettled part is stated.
+- **`UNVERIFIED`** — Not checked, or checked by a method too weak to count. **Not** the same as "probably fine".
+- **`INCONCLUSIVE`** — A check was attempted and returned nothing usable. The attempt is recorded so it isn't repeated blindly.
+- **`NEEDS NOAH'S HANDS`** — Cannot be checked from a session by any means. Requires real hardware or a real account.
+- **`NOT RUN`** — Deliberately deferred, with the reason and the trigger for running it.
+- **`WITHDRAWN`** — No longer relevant — scope changed. The row stays so the consideration is on record.
+- **`WORKING`** — An observed behaviour is now correct; recorded when the cause is understood well enough to name but the row is about a fixed symptom, not a standing invariant.
+- **`PROVEN`** — A one-off fact was demonstrated (e.g. a network limit), with the demonstration named.
 
 A row may carry a compound status line (e.g. `STEP 1 ANSWERED · step 2 pending`)
 where a single word would hide which half is done. When it does, the halves are
@@ -35,15 +33,13 @@ named explicitly rather than averaged into one label.
 
 ### Measured on Noah's iPad, from the deployed app
 
-| Reading | Value |
-|---|---|
-| Storage API | available |
-| **Persistent right now** | **yes** |
-| First granted | just now (2026-07-28, 12:13) |
-| Quota | **39,322 MB** (~38 GB) |
-| Used | 0.4 MB |
-| Notifications | granted |
-| Events held | 2 |
+- **Storage API** — available
+- ****Persistent right now**** — **yes**
+- **First granted** — just now (2026-07-28, 12:13)
+- **Quota** — **39,322 MB** (~38 GB)
+- **Used** — 0.4 MB
+- **Notifications** — granted
+- **Events held** — 2
 
 **`persist()` returned true**, with notification permission granted first — which is the
 sequence the brief claimed was required. This does not prove the requirement (nobody tried
@@ -187,15 +183,33 @@ being free, this row reopens.**
 
 ### What was run against Quietkeep
 
-| # | Check | Instrument | Result |
-|---|---|---|---|
-| 1 | Said out loud | said, and said in a sentence | KWY-ət-keep. One spelling, one pronunciation. No homophone, no biting rhyme, nothing one letter away. |
-| 2 | This repo's own spec | `grep` — **authoritative** | Clear. "quiet" only in prose, "keep" only in ordinary usage. No surface, node kind, event noun, or law is named either. |
-| 3 | Unscoped name + software | web search | Nothing named Quietkeep. Nearest: SoftwareKeep (retailer), Quiet Mind Software, quiet.app, Quiet Modem Project. |
-| 4 | npm + GitHub | direct registry query — **authoritative** | `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name. |
-| 5 | **App Store** | **Noah's own device, 2026-07-28** | *"there is nothing on the App Store that I see near it."* **Answered.** |
-| 6 | **`quietkeep.pages.dev`** | **Noah's own device, 2026-07-28** | *"Quietkeep.pages.dev is clean."* **Answered** — Q-04 closed, and the subdomain is the one the deploy targets. |
-| — | USPTO classes 9 and 42 | — | **Not run, by reasoning** — see above. Reopens if the app ever stops being free. |
+- **1**
+  - Check: Said out loud
+  - Instrument: said, and said in a sentence
+  - Result: KWY-ət-keep. One spelling, one pronunciation. No homophone, no biting rhyme, nothing one letter away.
+- **2**
+  - Check: This repo's own spec
+  - Instrument: `grep` — **authoritative**
+  - Result: Clear. "quiet" only in prose, "keep" only in ordinary usage. No surface, node kind, event noun, or law is named either.
+- **3**
+  - Check: Unscoped name + software
+  - Instrument: web search
+  - Result: Nothing named Quietkeep. Nearest: SoftwareKeep (retailer), Quiet Mind Software, quiet.app, Quiet Modem Project.
+- **4**
+  - Check: npm + GitHub
+  - Instrument: direct registry query — **authoritative**
+  - Result: `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name.
+- **5**
+  - Check: **App Store**
+  - Instrument: **Noah's own device, 2026-07-28**
+  - Result: *"there is nothing on the App Store that I see near it."* **Answered.**
+- **6**
+  - Check: **`quietkeep.pages.dev`**
+  - Instrument: **Noah's own device, 2026-07-28**
+  - Result: *"Quietkeep.pages.dev is clean."* **Answered** — Q-04 closed, and the subdomain is the one the deploy targets.
+- **—**
+  - Check: USPTO classes 9 and 42
+  - Result: **Not run, by reasoning** — see above. Reopens if the app ever stops being free.
 
 **Known and accepted, recorded rather than omitted:** **Quietstart: AI Day Planner**
 (Google Play) shares the first syllable in the same category — not a collision, but where a
@@ -228,13 +242,21 @@ being run last, or not at all.
 
 *Kept because the method is the transferable part.*
 
-| Check | Instrument | Result |
-|---|---|---|
-| npm registry | direct query — **authoritative** | `wynts`, `wynt`, `wynts-app`, `usewynts` all free |
-| GitHub | repo search API — **authoritative** | one hit, a personal profile-config repo. No project. |
-| App Store | web search only | nothing named Wynts |
-| Unscoped name + software | web search only | nothing named Wynts |
-| This repo's own spec | `grep` | no internal collision |
+- **npm registry**
+  - Instrument: direct query — **authoritative**
+  - Result: `wynts`, `wynt`, `wynts-app`, `usewynts` all free
+- **GitHub**
+  - Instrument: repo search API — **authoritative**
+  - Result: one hit, a personal profile-config repo. No project.
+- **App Store**
+  - Instrument: web search only
+  - Result: nothing named Wynts
+- **Unscoped name + software**
+  - Instrument: web search only
+  - Result: nothing named Wynts
+- **This repo's own spec**
+  - Instrument: `grep`
+  - Result: no internal collision
 
 **Still owed, on Noah's device:** the App Store search from a real device, and a USPTO
 knockout in classes 9 and 42 if wanted. Blocked from a session — proven in V-05, not
@@ -272,11 +294,9 @@ about a name; the
 authoritative registers are the USPTO database and the store indexes. Both were probed
 directly:
 
-| Attempt | Result |
-|---|---|
-| `itunes.apple.com/search` (Apple's public search API), raw request | **403** — gateway CONNECT policy denial |
-| `tmsearch.uspto.gov` ×2 and `developer.uspto.gov`, raw request | **403** — same |
-| Same URLs via the fetch tool, in case it routed differently | **403** — same |
+- **`itunes.apple.com/search` (Apple's public search API), raw request** — **403** — gateway CONNECT policy denial
+- **`tmsearch.uspto.gov` ×2 and `developer.uspto.gov`, raw request** — **403** — same
+- **Same URLs via the fetch tool, in case it routed differently** — **403** — same
 
 The environment's network gateway allows a fixed host list; these are outside it. This is
 an environment restriction, not a capability gap, and it is the same cause as V-05's
@@ -442,13 +462,11 @@ This is [§4's fake-gate finding](../ACCESSIBILITY.md) in a second place: **a ga
 never been observed passing is not a gate, it is a file.** The fix for the class is not
 "be careful with JSON" — it is *watch the run*.
 
-| | |
-|---|---|
-| Runs 1–4 | `failure`, all on `npm ci`, 2026-07-28 |
-| Cause | invalid JSON in `package.json` `scripts` |
-| Fix | `test:only` quotes the glob with `'…'`; `test` chains `npm run test:only` rather than repeating it |
-| Proven locally | `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean. |
-| **Proven in CI** | **Run 5, `721f59e`, `success`** — observed, not assumed. The first green run this workflow has ever had. |
+- **Runs 1–4** — `failure`, all on `npm ci`, 2026-07-28
+- **Cause** — invalid JSON in `package.json` `scripts`
+- **Fix** — `test:only` quotes the glob with `'…'`; `test` chains `npm run test:only` rather than repeating it
+- **Proven locally** — `rm -rf node_modules && npm ci && npm run typecheck && npm run test:only` — clean install, 14/14, exit 0. The banned-vocabulary step run verbatim: clean.
+- ****Proven in CI**** — **Run 5, `721f59e`, `success`** — observed, not assumed. The first green run this workflow has ever had.
 
 > **Addendum, 2026-07-28 evening — the rule was broken by its author the same day.**
 > Run 17 (`102af90`) was **red and unwatched**: a `git add -A` on a docs correction swept
@@ -516,11 +534,15 @@ is not needed.
 
 CI published successfully and Safari could not reach the result — then could.
 
-| URL | What it is | Result on Noah's iPad |
-|---|---|---|
-| `staging.quietkeep.pages.dev` | branch alias of a **preview** deployment | "connection was lost" |
-| `2020c8fe.quietkeep.pages.dev` | hash URL of the **same preview** deployment | same |
-| `quietkeep.pages.dev` | **production**, after the promote | **loads, and the app runs** |
+- **`staging.quietkeep.pages.dev`**
+  - What it is: branch alias of a **preview** deployment
+  - Result on Noah's iPad: "connection was lost"
+- **`2020c8fe.quietkeep.pages.dev`**
+  - What it is: hash URL of the **same preview** deployment
+  - Result on Noah's iPad: same
+- **`quietkeep.pages.dev`**
+  - What it is: **production**, after the promote
+  - Result on Noah's iPad: **loads, and the app runs**
 
 **One variable changed: the project gained its first production deployment.** Same device,
 same network throughout — confirmed by Noah, and it was never mine to assume otherwise.
@@ -650,12 +672,18 @@ The whole point of [T1](adr/0007-notification-tiers.md) is that the reminder
 arrives **when Quietkeep is not running**. Everything CI can prove about it is
 upstream of that claim:
 
-| Checked | By what | What it does NOT prove |
-|---|---|---|
-| the file is well-formed RFC 5545 | `test/ics.test.ts`, an independent unfold | that a calendar app accepts it |
-| one `VALARM` per `VEVENT` | unit + smoke | that the alarm ever fires |
-| the date is the reader's local day | oracle-tested `localDayKey` (V-13) | that iOS agrees |
-| `TRIGGER;RELATED=START:PT9H` is emitted | unit | that it resolves to **09:00 local** rather than 09:00 UTC, or midnight, or not at all |
+- **the file is well-formed RFC 5545**
+  - By what: `test/ics.test.ts`, an independent unfold
+  - What it does NOT prove: that a calendar app accepts it
+- **one `VALARM` per `VEVENT`**
+  - By what: unit + smoke
+  - What it does NOT prove: that the alarm ever fires
+- **the date is the reader's local day**
+  - By what: oracle-tested `localDayKey` (V-13)
+  - What it does NOT prove: that iOS agrees
+- **`TRIGGER;RELATED=START:PT9H` is emitted**
+  - By what: unit
+  - What it does NOT prove: that it resolves to **09:00 local** rather than 09:00 UTC, or midnight, or not at all
 
 **The device reading needed**, on Noah's iPad, which is the reference platform:
 1. Export from Quietkeep, open the `.ics`, add it to the calendar.
@@ -687,11 +715,15 @@ agent proxy answers `403` to the CONNECT, which is a policy decision and not a
 site failure (`curl "$HTTPS_PROXY/__agentproxy/status"` logs the rejection by
 host). So the chain a session can actually observe ends one step short:
 
-| Observed | How | What it does NOT prove |
-|---|---|---|
-| every spine gate passed | the run opened and read step by step (V-10) | that the built artefact is what deploys |
-| Cloudflare Pages accepted the upload | the deploy run's own step, watched green | that the apex URL serves it |
-| the triplet in the commit | `git`, locally | that the **deployed** `sw.js` carries it |
+- **every spine gate passed**
+  - How: the run opened and read step by step (V-10)
+  - What it does NOT prove: that the built artefact is what deploys
+- **Cloudflare Pages accepted the upload**
+  - How: the deploy run's own step, watched green
+  - What it does NOT prove: that the apex URL serves it
+- **the triplet in the commit**
+  - How: `git`, locally
+  - What it does NOT prove: that the **deployed** `sw.js` carries it
 
 **What would close it**, and only Noah can do either: read
 `quietkeep.pages.dev/sw.js` and confirm the cache name matches the released

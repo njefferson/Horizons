@@ -15,14 +15,12 @@ storing a queue:
    commits `clarify.routed{route}` **plus its own terminal event(s)** in a single
    `session.commit`, so the node lands exactly where the route says:
 
-   | Route | Terminal events (all through the gate) |
-   |---|---|
-   | do-now | a same-day `clock.set{review}` + a visible 2-minute timer (UI only, recorded as `do-now.timed{outcome}` when it ends) |
-   | next-action | a `clock.set{review}` one day out |
-   | waiting-for | `node.kind.changed → waiting-for` + a `clock.set{review}` three days out |
-   | someday | `menu.item.added{read}` |
-   | reference | `menu.item.added{read}` |
-   | trash | `node.trashed` |
+- **do-now** — a same-day `clock.set{review}` + a visible 2-minute timer (UI only, recorded as `do-now.timed{outcome}` when it ends)
+- **next-action** — a `clock.set{review}` one day out
+- **waiting-for** — `node.kind.changed → waiting-for` + a `clock.set{review}` three days out
+- **someday** — `menu.item.added{read}`
+- **reference** — `menu.item.added{read}`
+- **trash** — `node.trashed`
 
 The clarify queue is **`captured && route === null`** — a node that entered as a
 capture and has not yet been routed. Ordering is a **two-tier priority**: all

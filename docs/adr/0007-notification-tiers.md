@@ -6,12 +6,22 @@
 
 Four tiers, built in order, each **complete and useful on its own**:
 
-| Tier | What | When | Server |
-|---|---|---|---|
-| **T0** | Notification permission + app badge + glance surfaces | v1 | none |
-| **T1** | `.ics` export with `RRULE` / `VALARM` — the OS calendar notifies | v1 | none |
-| **T2** | Cloudflare Worker cron + Web Push, opt-in | v2 | minimal |
-| **T3** | Native wrap (Capacitor local notifications) — **and the Worker is deleted** | later | none |
+- ****T0****
+  - What: Notification permission + app badge + glance surfaces
+  - When: v1
+  - Server: none
+- ****T1****
+  - What: `.ics` export with `RRULE` / `VALARM` — the OS calendar notifies
+  - When: v1
+  - Server: none
+- ****T2****
+  - What: Cloudflare Worker cron + Web Push, opt-in
+  - When: v2
+  - Server: minimal
+- ****T3****
+  - What: Native wrap (Capacitor local notifications) — **and the Worker is deleted**
+  - When: later
+  - Server: none
 
 T0's permission request is made **at first run, for badge and storage
 persistence**, before any push mechanism exists.

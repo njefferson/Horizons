@@ -26,11 +26,9 @@ and SVG is text, so the identity is diffable and reviewable like everything else
 
 **Three generated icon candidates were rejected, and their failures are the useful part:**
 
-| Candidate | Why not |
-|---|---|
-| Thin spiral | The stroke and its gap both vanish at 48px. Reads as an **@ sign**, and is one frame from a loading spinner. **And it spirals** — see below, which is the disqualifying reason. |
-| Bold loop | The best *idea* of the three — something leaves and returns, which is the product. Same **@ / spinner** collision, a drop shadow that muddies at small sizes and breaks on light surfaces, and **the same spiral problem**. |
-| Lit opening | The right idea and the right bones. But the outer form was **slate on navy**, a luminance step small enough that at 48px the form disappears and only the amber survives; and its silhouette — rounded top, straight sides, flat base — **reads as a headstone**. For an app whose entire promise is that nothing you put in is lost, a grave marker is the worst reading available. |
+- **Thin spiral** — The stroke and its gap both vanish at 48px. Reads as an **@ sign**, and is one frame from a loading spinner. **And it spirals** — see below, which is the disqualifying reason.
+- **Bold loop** — The best *idea* of the three — something leaves and returns, which is the product. Same **@ / spinner** collision, a drop shadow that muddies at small sizes and breaks on light surfaces, and **the same spiral problem**.
+- **Lit opening** — The right idea and the right bones. But the outer form was **slate on navy**, a luminance step small enough that at 48px the form disappears and only the amber survives; and its silhouette — rounded top, straight sides, flat base — **reads as a headstone**. For an app whose entire promise is that nothing you put in is lost, a grave marker is the worst reading available.
 
 The drawn mark keeps the third one's idea and fixes both faults: the wall is a **rounded
 square** — a wall, not a marker — and the arch now appears only in the warm opening.

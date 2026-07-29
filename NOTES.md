@@ -218,10 +218,14 @@ decided by a session.**
 
 ### Open
 
-| # | Question | Blocking? | Status |
-|---|---|---|---|
-| Q-06 | **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (in `noahjefferson/public/index.html`, two places — the tile and its data entry). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has? | No | **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected. |
-| Q-07 | **The hub undersells the astro app.** the hub tile reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does. | No | Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer. |
+- **Q-06**
+  - Question: **The astro app's naming is inconsistent.** Its repo and URL say `clear-horizons`; the hub displays it as **"Astro Planner"** (in `noahjefferson/public/index.html`, two places — the tile and its data entry). The name Noah chose appears nowhere a visitor sees. Does he want the app renamed, or the hub made consistent with the name it already has?
+  - Blocking: No
+  - Status: **Open — Noah asked to have this kept in front of him.** Raise it each session until settled. Its repo is not in this session's scope (Doctrine §11), so the app-side work needs a session with `clear-horizons` selected.
+- **Q-07**
+  - Question: **The hub undersells the astro app.** the hub tile reads *"Clear-sky & Seestar target windows"* and never mentions recording your horizon — which Noah says is the thing no other astro app does.
+  - Blocking: No
+  - Status: Open. One-line site change, hub is in scope, but entangled with Q-06 so it waits on that answer.
 
 **Name availability is settled.** Noah ran both device checks himself on 2026-07-28 — the
 App Store search and `quietkeep.pages.dev` — and both came back clean. A USPTO knockout in
@@ -236,15 +240,27 @@ That error cost the Perennial round.
 
 ### Closed
 
-| # | Question | Answer |
-|---|---|---|
-| Q-01 | Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial | **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted. |
-| Q-03 | Work-vault policy line, given the GFE context | **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27. |
-| Q-05 | Terminology skin default for the work vault | **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped. |
-| Q-08 | How "Wynts" is pronounced | **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad. |
-| Q-02 | The app's name | **Quietkeep.** Noah 2026-07-28: *"I like quietkeep and there is nothing on the App Store that I see near it."* Cleared through all five checks — [ADR-0024](docs/adr/0024-name-quietkeep.md), [V-04](docs/verifications.md). |
-| Q-09 | The four §10 repo-metadata values | **All four set, by Noah, 2026-07-28.** Description, website, topics (he corrected `indexeddb` himself), and the **social preview uploaded**. Per §10 the repo is now *set up* — and his confirmation **is** the verification: a session cannot read this repo's live metadata at all ([V-11](docs/verifications.md)). |
-| Q-04 | Pages subdomain string | **`quietkeep.pages.dev`** — Noah confirmed it clean on his device, 2026-07-28. Production comes off `main`; `staging` gets `staging.quietkeep.pages.dev`, which turns the Doctrine §7 gate into a URL he can open on the iPad. The metadata half of this question is now **Q-09**, because it is a different kind of answer and was hiding behind the subdomain. |
+- **Q-01**
+  - Question: Licence — brief said AGPL, Doctrine §8 says PolyForm Noncommercial
+  - Answer: **PolyForm NC 1.0.0.** Noah 2026-07-27: *"Doctrinal intent is correct."* [ADR-0017](docs/adr/0017-licensing.md) is Accepted.
+- **Q-03**
+  - Question: Work-vault policy line, given the GFE context
+  - Answer: **No GFE context — the app is not for it.** The vault split is a convenience for separating content; what goes in it is the user's judgement, as with any personal app. Noah 2026-07-27.
+- **Q-05**
+  - Question: Terminology skin default for the work vault
+  - Answer: **Neutral vocabulary, skin opt-in.** Noah 2026-07-27. Matches what shipped.
+- **Q-08**
+  - Question: How "Wynts" is pronounced
+  - Answer: **Moot** — the name is withdrawn. The question was the right one; nobody answered it in time to catch that both readings were bad.
+- **Q-02**
+  - Question: The app's name
+  - Answer: **Quietkeep.** Noah 2026-07-28: *"I like quietkeep and there is nothing on the App Store that I see near it."* Cleared through all five checks — [ADR-0024](docs/adr/0024-name-quietkeep.md), [V-04](docs/verifications.md).
+- **Q-09**
+  - Question: The four §10 repo-metadata values
+  - Answer: **All four set, by Noah, 2026-07-28.** Description, website, topics (he corrected `indexeddb` himself), and the **social preview uploaded**. Per §10 the repo is now *set up* — and his confirmation **is** the verification: a session cannot read this repo's live metadata at all ([V-11](docs/verifications.md)).
+- **Q-04**
+  - Question: Pages subdomain string
+  - Answer: **`quietkeep.pages.dev`** — Noah confirmed it clean on his device, 2026-07-28. Production comes off `main`; `staging` gets `staging.quietkeep.pages.dev`, which turns the Doctrine §7 gate into a URL he can open on the iPad. The metadata half of this question is now **Q-09**, because it is a different kind of answer and was hiding behind the subdomain.
 
 ---
 
