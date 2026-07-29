@@ -106,15 +106,16 @@ Moving an item into v1 now is a scope change and needs Noah's word.
 
 ### Must — v1
 
-- **The spine.** Append-only log, fold engine, vaults, export/import,
-  snapshot-before-migrate. Nothing else can be trusted until this is.
-- **Work mode, complete.** Single computed Next-up card (hard landscape >
+- ~~**The spine.** Append-only log, fold engine, vaults, export/import,
+  snapshot-before-migrate.~~ **Done, Phase 0.** Nothing else can be trusted until
+  this is.
+- ~~**Work mode, complete.**~~ **Done, 0.17.0 (the chip was the last piece).** Single computed Next-up card (hard landscape >
   resume cards > pressure rank; "not this" cycles freely with no penalty),
   capped list of 5 behind it, Upkeep chips above threshold, coverage gauge,
   ~~comms-sweep chip~~ **(done, 0.17.0 — build-plan item 22, deferred out of Phase 3
   because it needed focus ramps; those shipped in 0.14.0)**.
-- **Dump + clarify + heat pass.** Zero-chrome capture; one card at a time with
-  forced-choice routing; two-tap hot/cold.
+- ~~**Dump + clarify + heat pass.**~~ **Done, 0.4.0.** Zero-chrome capture; one
+  card at a time with forced-choice routing; two-tap hot/cold.
 - ~~**Interrupt/pin + focus anchor**, with auto-paired resume cards.~~ **Done, 0.14.0** — `focus.started`/`focus.ended`/`interrupt.captured`/`resume.card.*` had been in the vocabulary since the first draft, `nextup` ranked resume cards SECOND, and nothing could create one: an entire ranking tier ordering an empty set. The card is written **at the interruption**, not at `focus.ended` ([ADR-0039](docs/adr/0039-focus-and-the-way-back.md)).
 - ~~**Dependency dates + replan.**~~ **Done, 0.12.0.** `feeds →` (project, suspense) + lead estimate,
   computed latest-start, buffer burn, auto-replan on miss (law 3).
@@ -126,8 +127,23 @@ Moving an item into v1 now is a scope change and needs Noah's word.
   drift ([ADR-0041](docs/adr/0041-carrying-and-the-report.md)).
 - ~~**Person lens.**~~ **Done, 0.15.0** — `person.linked`, `waiting.opened` and `waiting.closed` were in the vocabulary and unfolded, so the "Waiting for" route said *someone else owes you this* and never asked who. Unattributed waiting-fors are shown, not hidden: the route is one tap, so unattributed is the commonest kind ([ADR-0040](docs/adr/0040-the-person-lens.md)).
 - ~~**Stalled/orphan detection** (the exceptions-first Review surface).~~ **Done, 0.13.0** — and it needed *containment* built first: the parent field had existed since the first fold with no control able to set one, so nothing in the app could stall. [ADR-0038](docs/adr/0038-containment-and-exceptions-review.md).
-- **T0 + T1 notifications.** Permission + badge + glance surfaces; `.ics` export
-  with `RRULE`/`VALARM` so the OS calendar does the notifying.
+- ~~**T0 + T1 notifications.**~~ **Done, 0.8.0** (badge 0.11.0). Permission +
+  badge + glance surfaces; `.ics` export with `RRULE`/`VALARM` so the OS calendar
+  does the notifying. **[V-14](docs/verifications.md) is still open and only Noah
+  can close it:** whether an exported `.ics` actually fires an alarm on the iPad
+  with the app shut. Nothing in CI can prove that.
+
+> **Every item on this list is now built, as of 0.17.0 on `staging`.**
+>
+> That is a statement about the list, and it is deliberately not a statement
+> about a version. **Noah alone decides what is a VERSION** and he has said he
+> will not name v1 until he has used it and agrees it does all the things he
+> specified — his ruling is recorded below under *What VERSION 1 means*. Sessions
+> do not propose `1.0.0`, and this line is not a proposal.
+>
+> What is left before that judgement is his to make, not code: the on-device pass
+> (Doctrine §7), and **V-14**, which is the one claim in the whole app that no
+> gate here can settle.
 
 ### Should — v1.5
 
