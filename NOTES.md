@@ -533,6 +533,38 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **The badge is optional, and work comes in from other planners
+  (0.24.0 CAPABILITY).** Noah: *"Make the badge optional as well"* and *"Possible to
+  import an Omnifocus export and really test at scale?"*
+  · **The badge switch lives in `kv`, not in the log.** A badge is a property of an
+  installation — the same person may want it on the iPad and off on the phone — so an
+  event would make one device's preference follow them onto the other, and would add
+  a vocabulary noun for something that is not a fact about their life. Turning it off
+  clears the icon in the SAME breath; a preference that waits for the next render
+  reads as a switch that does not work.
+  · The flag is module state read synchronously, because `render` is synchronous and
+  a storage read on the path between a keystroke and a card appearing is the one
+  thing this app must never make slower.
+  · **`src/taskpaper.ts` reads TaskPaper AND OmniFocus CSV**, sniffed from the
+  content rather than the filename — a file renamed between two apps is the normal
+  case. Not `.ofocus-archive`: zipped XML of somebody's private sync format is a
+  maintenance promise this project should not make, and a text format fails one line
+  at a time instead of all at once.
+  · **Hierarchy is the point.** Projects keep their children (indentation in
+  TaskPaper, a named "Project" column in CSV), and a CSV project named by a child but
+  never listed is CREATED rather than dropped — the alternative loses structure
+  without losing rows, which nobody notices.
+  · Imported dates become `due` and `start` — days somebody chose, so they survive
+  `CALENDAR_KINDS` and give the calendar export something real to carry for the first
+  time. `@flagged`, contexts, estimates and repeats are dropped and NAMED: this app
+  has no priority field on purpose, and a silent discard is a different lie from an
+  invented clock.
+  · 2,000 rows parse, map and admit with nothing silent and every action parented —
+  the scale test checks the parent map still resolves at the end, not just early.
+  · Six proofs: no-immediate-clear and preference-ignored both red the badge tests;
+  tabs-only indentation, project detection after tag stripping, silent tag discard and
+  positional CSV columns each red their own.
+
 - **2026-07-30** — **Two things Noah found on the device (0.23.2 ITERATION).**
   · **The calendar was exporting the app's own clocks as appointments.** Routing to
   Next action sets `clockKind: 'review'` at end of tomorrow — the app's resurfacing

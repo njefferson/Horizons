@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.24.0 — CAPABILITY
+
+*2026-07-30*
+
+- **The number on the app icon is optional.** One button in here turns it off, and it goes off straight away rather than at the next reload. Nothing is lost — the app still holds everything and still tells you inside.
+- **You can bring work in from another planner.** An OmniFocus export — TaskPaper or CSV — or anything else TaskPaper-shaped. Projects keep their contents, and dates you set over there arrive as dates you set here, so they are the sort a calendar can carry.
+- It reads the file and tells you what it found *before* anything is written, including what will not come with it: flags, contexts, estimates and repeats stay behind, because this app has no priority field on purpose.
+- It goes in beside whatever is already there. Saving a copy and starting again from empty first is one section down, if you want a clean run.
+
 ## 0.23.2 — ITERATION
 
 *2026-07-30*

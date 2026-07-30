@@ -13,6 +13,7 @@ import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
+import { loadBadgePreference, paintBadge } from './badge.ts';
 import { CURRENT } from './changelog.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
@@ -325,18 +326,9 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   // so a glance at the home screen is informative without opening anything.
   // Counts the READY group ONLY — a badge showing everything you hold is a number
   // that never falls, which is a nag rather than information. It is the SAME
-  // number the gauge states, from the same variable, so the two cannot disagree.
-  try {
-    const ready = readyNow;
-    const nav = navigator as Navigator & {
-      setAppBadge?: (n?: number) => Promise<void>;
-      clearAppBadge?: () => Promise<void>;
-    };
-    if (ready > 0) void nav.setAppBadge?.(ready)?.catch(() => {});
-    else void nav.clearAppBadge?.()?.catch(() => {});
-  } catch {
-    // Unsupported on most platforms today, and never a reason to break a render.
-  }
+  // variable the gauge states above, so the two cannot disagree. Optional, and the
+  // switch lives in `./badge.ts` along with the reason it is a switch.
+  paintBadge(readyNow);
 }
 
 /** Plain words, one idea, no idioms (B-09). Never a countdown, never a rebuke.
@@ -540,6 +532,10 @@ async function main(): Promise<void> {
   // is needed most in exactly the state that would have removed it.
   const build = document.querySelector<HTMLElement>('#build-version');
   if (build) build.textContent = CURRENT.triplet;
+
+  // Read BEFORE the first render that paints the icon, so a device with the badge
+  // switched off never flashes a number on the way to obeying the preference.
+  await loadBadgePreference(session.store);
 
   // Opens itself on a first run — a new user has no way to know that storage
   // needs asking for — and never uninvited after that. Contained: a failure

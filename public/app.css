@@ -370,7 +370,8 @@ button.ghost {
  * the platform's own picker is the part most likely to still work. It needs
  * explicit sizing, because the default control is well under the 44px floor.
  */
-#import-file {
+#import-file,
+#other-file {
   display: block;
   width: 100%;
   min-height: var(--target);
@@ -382,7 +383,8 @@ button.ghost {
   border-radius: var(--radius);
   font: inherit;
 }
-#import-file::file-selector-button {
+#import-file::file-selector-button,
+#other-file::file-selector-button {
   min-height: 2.25rem;
   margin-right: 0.75rem;
   padding: 0.25rem 0.75rem;

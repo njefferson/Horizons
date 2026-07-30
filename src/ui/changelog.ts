@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.24.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-30',
+    notes: [
+      '**The number on the app icon is optional.** One button in here turns it off, and it goes off straight away rather than at the next reload. Nothing is lost \u2014 the app still holds everything and still tells you inside.',
+      '**You can bring work in from another planner.** An OmniFocus export \u2014 TaskPaper or CSV \u2014 or anything else TaskPaper-shaped. Projects keep their contents, and dates you set over there arrive as dates you set here, so they are the sort a calendar can carry.',
+      'It reads the file and tells you what it found *before* anything is written, including what will not come with it: flags, contexts, estimates and repeats stay behind, because this app has no priority field on purpose.',
+      'It goes in beside whatever is already there. Saving a copy and starting again from empty first is one section down, if you want a clean run.',
+    ],
+  },
+  {
     triplet: '0.23.2',
     kind: 'ITERATION',
     date: '2026-07-30',

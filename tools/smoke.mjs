@@ -2375,6 +2375,69 @@ try {
   is((shownBuild || '').trim(), (await tpage.locator('#version').textContent() || '').trim(),
     'and it is the same build the panel claims');
 
+  console.log('\nThe number on the icon is optional');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  is(await tpage.locator('#badge-toggle').getAttribute('aria-pressed'), 'true', 'on by default');
+  is(/Stop showing/.test(await tpage.locator('#badge-toggle').textContent() || ''), true,
+    'and the label says what pressing it DOES, not what the state is');
+  const badgeOff = await tpage.evaluate(async () => {
+    const calls = [];
+    navigator.setAppBadge = (n) => { calls.push(n ?? 'set'); return Promise.resolve(); };
+    navigator.clearAppBadge = () => { calls.push('clear'); return Promise.resolve(); };
+    document.querySelector('#badge-toggle').click();
+    await new Promise(r => setTimeout(r, 300));
+    return { calls, pressed: document.querySelector('#badge-toggle').getAttribute('aria-pressed') };
+  });
+  is(badgeOff.pressed, 'false', 'switching it off is recorded on the control');
+  is(badgeOff.calls.includes('clear'), true,
+    `and the icon was cleared in the same breath (${JSON.stringify(badgeOff.calls)})`);
+  is(/stays plain/.test(await tpage.locator('#badge-note').textContent() || ''), true,
+    'and it says the icon stays plain and nothing is lost');
+  await tpage.click('#badge-toggle');
+  await tpage.waitForTimeout(200);
+  is(await tpage.locator('#badge-toggle').getAttribute('aria-pressed'), 'true', 'and back on again');
+  await tpage.click('#about-close');
+
+  console.log('\nWork from another planner — TaskPaper and CSV');
+  const beforeImport = await tpage.locator('#cards .card').count();
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  // A real file, through the real picker: this is the path somebody actually uses,
+  // and a parser test cannot tell you the button is wired.
+  await tpage.setInputFiles('#other-file', {
+    name: 'omnifocus.taskpaper',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Kitchen refit:\n\t- Ring the plumber @due(2026-12-05)\n\t- Measure the gap @flagged\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 4000 });
+  const said = await tpage.locator('#other-note').textContent();
+  is(/1 project and 2 actions/.test(said || ''), true, `it says what the file held ("${said}")`);
+  is(/flagged/.test(said || ''), true, 'and names what will NOT come with it');
+  is(/TaskPaper/.test(said || ''), true, 'and which format it read');
+  await tpage.click('#other-go');
+  await tpage.waitForTimeout(900);
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#cards .card').count() > beforeImport, true, 'and the work arrived');
+  const nested = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const created = rows.filter(e => e.kind === 'node.created');
+    const project = created.find(e => e.payload?.title === 'Kitchen refit');
+    const child = created.find(e => e.payload?.title === 'Ring the plumber');
+    return { hasProject: !!project, childParent: child?.payload?.parent, projectNode: project?.node };
+  });
+  is(nested.hasProject, true, 'the project came across as a project');
+  is(nested.childParent === nested.projectNode, true,
+    'and its child is PARENTED to it — the shape a flat list cannot express');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {

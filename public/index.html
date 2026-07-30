@@ -621,6 +621,10 @@
     It is the same number as &ldquo;ready now&rdquo; beside what you are holding,
     and it goes away by itself when nothing is asking.
   </p>
+  <div class="about-actions">
+    <button id="badge-toggle" type="button" class="ghost" aria-pressed="true"></button>
+  </div>
+  <p id="badge-note" class="storage-note" role="status" aria-live="polite"></p>
   <p class="about-p about-caveat">
     It is a snapshot of this moment. If you change a date here afterwards, the
     calendar will not follow &mdash; send a fresh copy when it matters.
@@ -641,6 +645,23 @@
     It goes in beside anything you already have and behaves exactly like your own
     work &mdash; there is no button that takes only this back out again. Export a
     copy first if what is already here matters.
+  </p>
+
+  <h3 class="about-section">Bringing work in from another planner</h3>
+  <p class="about-p">
+    An OmniFocus export &mdash; TaskPaper or CSV &mdash; or anything else
+    TaskPaper-shaped. Projects keep their contents, and dates you set over there
+    arrive as dates you set here.
+  </p>
+  <label class="purge-label" for="other-file">Choose the file</label>
+  <input id="other-file" type="file" accept=".taskpaper,.txt,.csv,text/plain,text/csv">
+  <p id="other-note" class="storage-note" role="status" aria-live="polite"></p>
+  <div id="other-actions" class="about-actions" hidden>
+    <button id="other-go" type="button">Bring it in</button>
+  </div>
+  <p class="about-p about-caveat">
+    It goes in <em>beside</em> whatever is already here. If you want a clean run at
+    it, save a copy and start again from empty first &mdash; both are just below.
   </p>
 
   <h3 class="about-section">Clearing things out</h3>

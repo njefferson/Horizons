@@ -48,7 +48,8 @@ const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
-  '#sample', '#sample-note', '#badge-explainer',
+  '#sample', '#sample-note', '#badge-explainer', '#badge-toggle', '#badge-note',
+  '#other-file', 'label[for="other-file"]', '#other-note',
   '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
   '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',
   '#purge-cancel', '#purge-consequence',
@@ -845,7 +846,7 @@ try {
     await auditContrast(page, 'dialog, return visit', theme);
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
-    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample', '#purge-pick-clear']);
+    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample', '#purge-pick-clear', '#badge-toggle']);
 
     // Today on paper, in the same panel.
     await auditContrast(page, 'today on paper', theme);

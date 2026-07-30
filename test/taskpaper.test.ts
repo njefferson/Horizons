@@ -1,0 +1,296 @@
+// Bringing work in from another planner (Noah: "Possible to import an Omnifocus
+// export and really test at scale?").
+//
+// The tests that carry weight:
+//
+// **Hierarchy survives.** Containment is the shape a flat list cannot express and
+// the main reason importing at scale is worth doing — if nesting collapses, the
+// import produced a pile and proved nothing.
+//
+// **Every event passes the real `admit`.** Thousands of rows from somebody else's
+// planner is the largest untrusted input this app will ever take, and it must go
+// through the same door as a keystroke.
+//
+// **Dates land on the day they displayed in the other app**, in both hemispheres.
+//
+// **Nothing is silently discarded.** A tag that does not come across is reported.
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+
+import {
+  depthOf, importSummary, importWords, isCalendarDay, parseAnyExport, parseCsv,
+  parseOmniFocusCsv, parseTaskPaper, taskPaperEvents, type ImportContext,
+} from '../src/taskpaper.ts';
+import { admit, gateOptionsFor, heldNodes, silentNodes } from '../src/gate.ts';
+import { fold } from '../src/fold.ts';
+import { localDayKey } from '../src/time.ts';
+import { calendarCount } from '../src/ics.ts';
+
+const DENVER = 'America/Denver';
+const KIRITIMATI = 'Pacific/Kiritimati';
+const NOW = '2026-07-29T18:00:00.000Z';
+
+function ctxFor(zone = DENVER): ImportContext {
+  let n = 0;
+  return { at: NOW, device: 'imp', vault: 'personal', zone, seq: () => n, id: () => `i${n++}` };
+}
+
+const build = (text: string, zone = DENVER) => {
+  const { lines, unreadable } = parseAnyExport(text);
+  const offered = taskPaperEvents(ctxFor(zone), lines);
+  const admitted = admit(offered, fold([]), gateOptionsFor(zone));
+  return { lines, unreadable, offered, admitted, state: fold(admitted) };
+};
+
+const SAMPLE = `Kitchen refit:
+\t- Ring the plumber @due(2026-08-05)
+\t- Measure the gap @defer(2026-08-01)
+\tSome note about the taps
+Paperwork:
+\t- Compare renewals @due(2026-08-12) @flagged
+\t- Old thing @done
+- A loose action @due(2026-08-03)
+`;
+
+// --- THE ONE THAT MATTERS ---------------------------------------------------
+
+test('THE ONE THAT MATTERS: nesting survives, so containment actually arrives', () => {
+  const { state } = build(SAMPLE);
+  const held = heldNodes(state);
+  const kitchen = held.find(n => n.title === 'Kitchen refit');
+  const plumber = held.find(n => n.title === 'Ring the plumber');
+  assert.ok(kitchen, 'the project exists');
+  assert.equal(kitchen.kind, 'project');
+  assert.ok(plumber, 'the action exists');
+  assert.equal(plumber.parent, kitchen.id, 'and it sits UNDER the project');
+
+  const paperwork = held.find(n => n.title === 'Paperwork');
+  const renewals = held.find(n => n.title === 'Compare renewals');
+  assert.equal(renewals?.parent, paperwork?.id, 'a second project keeps its own children');
+  assert.notEqual(paperwork?.id, kitchen.id);
+
+  const loose = held.find(n => n.title === 'A loose action');
+  assert.equal(loose?.parent, null, 'and a top-level action has no invented parent');
+});
+
+test('and every imported event passes the real write boundary', () => {
+  const { offered, admitted, state } = build(SAMPLE);
+  for (const e of offered) {
+    assert.ok(admitted.some(a => a.id === e.id), `${e.kind} was refused`);
+  }
+  assert.deepEqual(silentNodes(state).map(n => n.title), [],
+    'and nothing arrived silent');
+});
+
+test('at scale: two thousand rows parse, map and admit', () => {
+  // "Really test at scale" was the ask. This is the largest untrusted input the app
+  // will ever take, and the interesting failure is not slowness — it is a gate cure
+  // storm, or a parent map that quietly stops resolving past some depth.
+  const lines: string[] = [];
+  for (let p = 0; p < 100; p++) {
+    lines.push(`Project ${p}:`);
+    for (let a = 0; a < 19; a++) {
+      lines.push(`\t- Action ${p}.${a}${a % 3 === 0 ? ' @due(2026-09-01)' : ''}`);
+    }
+  }
+  const { lines: parsed, state } = build(lines.join('\n'));
+  assert.equal(parsed.length, 100 * 20, 'every row was read');
+  const held = heldNodes(state);
+  assert.equal(held.length, 100 * 20, 'and every row landed');
+  assert.deepEqual(silentNodes(state), [], 'with nothing silent');
+  // Parents resolved for all of them, not just the early ones.
+  const projects = new Set(held.filter(n => n.kind === 'project').map(n => n.id));
+  const parented = held.filter(n => n.parent !== null && projects.has(n.parent));
+  assert.equal(parented.length, 100 * 19, 'every action found its own project');
+});
+
+// --- dates ------------------------------------------------------------------
+
+test('a due date lands on the day it displayed in the other planner', () => {
+  const { state } = build('- Ring the plumber @due(2026-08-05)\n');
+  const n = heldNodes(state)[0]!;
+  assert.ok(n.clocks.due, 'it has a due clock');
+  assert.equal(localDayKey(n.clocks.due.at, DENVER), '2026-08-05');
+});
+
+test('and on the other side of the world, the same day', () => {
+  // UTC+14. A date that shifts by a day on import is the worst kind of wrong: it
+  // looks right, and it is wrong for everybody east or west of whoever tested it.
+  const { state } = build('- Ring the plumber @due(2026-08-05)\n', KIRITIMATI);
+  const n = heldNodes(state)[0]!;
+  assert.equal(localDayKey(n.clocks.due!.at, KIRITIMATI), '2026-08-05');
+});
+
+test('an imported date is a date somebody CHOSE, so a calendar may carry it', () => {
+  // The point of importing at scale is partly to have real dates to test the
+  // calendar with — and `due` is the kind that survives `CALENDAR_KINDS`.
+  const { state } = build('- Ring the plumber @due(2026-08-05)\n');
+  assert.equal(calendarCount(state, NOW, DENVER), 1);
+});
+
+test('a defer date becomes a start clock, not a due date', () => {
+  const { state } = build('- Measure the gap @defer(2026-08-01)\n');
+  const n = heldNodes(state)[0]!;
+  assert.ok(n.clocks.start, 'start');
+  assert.equal(n.clocks.due, undefined, 'and not a deadline nobody set');
+});
+
+test('a date that is not a date is refused rather than invented', () => {
+  assert.equal(isCalendarDay('2026-02-31'), false, 'February has no 31st');
+  assert.equal(isCalendarDay('2026-13-01'), false);
+  assert.equal(isCalendarDay('not a date'), false);
+  assert.equal(isCalendarDay('2026-08-05'), true);
+  const { lines } = parseTaskPaper('- Thing @due(2026-02-31)\n');
+  assert.equal(lines[0]!.due, null, 'no clock invented from nonsense');
+  assert.ok(lines[0]!.dropped.includes('due'), 'and it says the date did not come across');
+});
+
+test('a date with a time keeps the day and drops the hour', () => {
+  for (const form of ['2026-08-05 17:00', '2026-08-05T17:00:00']) {
+    assert.equal(parseTaskPaper(`- Thing @due(${form})\n`).lines[0]!.due, '2026-08-05', form);
+  }
+});
+
+// --- what does not come across, and says so ---------------------------------
+
+test('a flag is dropped ON PURPOSE, and reported rather than swallowed', () => {
+  // This app has no priority field: pressure comes from the decay primitive, never
+  // from a star set in a better mood. Recording a flag as a fake clock would invent
+  // a demand nobody made — but discarding it silently would be a different lie.
+  const { lines } = parseTaskPaper('- Thing @flagged @estimate(20m) @context(Office)\n');
+  assert.deepEqual(lines[0]!.dropped.sort(), ['context', 'estimate', 'flagged']);
+  const words = importWords(importSummary(lines, []));
+  assert.match(words, /will not come with them/);
+  for (const t of ['flagged', 'estimate', 'context']) assert.ok(words.includes(t), t);
+});
+
+test('a line that is only tags is reported, not turned into "(untitled)"', () => {
+  const { lines, unreadable } = parseTaskPaper('- @flagged\n- Real thing\n');
+  assert.equal(lines.length, 1);
+  assert.equal(lines[0]!.title, 'Real thing');
+  assert.equal(unreadable.length, 1, 'and the odd line is kept so somebody can look');
+});
+
+test('notes do not become tasks', () => {
+  const { lines } = parseTaskPaper('Project:\n\t- Do it\n\tjust a note\n');
+  assert.equal(lines.filter(l => l.kind === 'note').length, 1);
+  const { state } = build('Project:\n\t- Do it\n\tjust a note\n');
+  assert.equal(heldNodes(state).some(n => n.title === 'just a note'), false);
+});
+
+// --- the shapes of the format ------------------------------------------------
+
+test('a project line ending in a colon is a project even with tags after it', () => {
+  // Stripping tags first made "Ship it: @due(...)" look like an action, which
+  // silently flattened a whole subtree under the wrong thing.
+  const { lines } = parseTaskPaper('Ship it: @due(2026-08-05)\n\t- A step\n');
+  assert.equal(lines[0]!.kind, 'project');
+  assert.equal(lines[0]!.due, '2026-08-05');
+  assert.equal(lines[1]!.kind, 'action');
+});
+
+test('tabs and two-space indents both count, including mixed', () => {
+  // OmniFocus writes spaces when the preference says spaces, and mixed files exist.
+  // Counting only tabs flattens an entire tree without any error at all.
+  assert.equal(depthOf('\t\t- x'), 2);
+  assert.equal(depthOf('    - x'), 2);
+  assert.equal(depthOf('\t  - x'), 2);
+  assert.equal(depthOf('- x'), 0);
+  const { state } = build('Top:\n  - Spaced child\n');
+  const child = heldNodes(state).find(n => n.title === 'Spaced child');
+  assert.equal(child?.parent, heldNodes(state).find(n => n.title === 'Top')?.id);
+});
+
+test('a deeper level attaches to the nearest container above it, not to a sibling', () => {
+  const { state } = build('A:\n\t- one\nB:\n\t- two\n');
+  const held = heldNodes(state);
+  assert.equal(held.find(n => n.title === 'two')?.parent,
+    held.find(n => n.title === 'B')?.id, 'B replaced A at that depth');
+});
+
+// --- CSV --------------------------------------------------------------------
+
+test('a quoted CSV field with commas and newlines survives', () => {
+  // A naive split mangles every note containing a comma, which is most of them.
+  const rows = parseCsv('Name,Notes\n"Ring, then email","line one\nline two"\n');
+  assert.deepEqual(rows[1], ['Ring, then email', 'line one\nline two']);
+});
+
+test('doubled quotes inside a quoted field are one quote', () => {
+  assert.deepEqual(parseCsv('Name\n"He said ""no"""\n')[1], ['He said "no"']);
+});
+
+test('CSV columns are found by NAME, so a reordered export still works', () => {
+  // A positional reader breaks on the next OmniFocus update, silently, by reading
+  // dates out of the notes column.
+  const a = 'Type,Name,Project,Due Date\ntask,Ring the plumber,Kitchen,2026-08-05\n';
+  const b = 'Due Date,Project,Name,Type\n2026-08-05,Kitchen,Ring the plumber,task\n';
+  const one = parseOmniFocusCsv(a).lines[0]!;
+  const two = parseOmniFocusCsv(b).lines[0]!;
+  assert.deepEqual({ ...one }, { ...two });
+  assert.equal(one.title, 'Ring the plumber');
+  assert.equal(one.due, '2026-08-05');
+  assert.equal(one.parentName, 'Kitchen');
+});
+
+test('a CSV project named by a child but never listed is created, not dropped', () => {
+  // The alternative is silently reparenting somebody's task to nothing — an import
+  // that loses structure without losing rows, which nobody notices.
+  const { state } = build('Type,Name,Project\ntask,Ring the plumber,Kitchen\n');
+  const held = heldNodes(state);
+  const kitchen = held.find(n => n.title === 'Kitchen');
+  assert.ok(kitchen, 'the project was created for it');
+  assert.equal(kitchen.kind, 'project');
+  assert.equal(held.find(n => n.title === 'Ring the plumber')?.parent, kitchen.id);
+});
+
+test('a CSV project listed AFTER its children is not duplicated', () => {
+  const { state } = build(
+    'Type,Name,Project\ntask,Ring the plumber,Kitchen\nproject,Kitchen,\ntask,Measure,Kitchen\n');
+  const kitchens = heldNodes(state).filter(n => n.title === 'Kitchen');
+  assert.equal(kitchens.length, 1, 'one Kitchen, not two');
+  assert.equal(heldNodes(state).filter(n => n.parent === kitchens[0]!.id).length, 2);
+});
+
+test('a completed CSV row arrives finished', () => {
+  const { state } = build('Type,Name,Completion Date\ntask,Old thing,2026-07-01\n');
+  assert.ok(heldNodes(state).find(n => n.title === 'Old thing')?.lastDone);
+});
+
+test('the format is sniffed from the content, not the filename', () => {
+  // A file renamed on the way between two apps is the normal case, and refusing a
+  // good file over its extension is the pedantry that makes people give up.
+  assert.equal(parseAnyExport('Type,Name\ntask,Thing\n').format, 'csv');
+  assert.equal(parseAnyExport('Project:\n\t- Thing\n').format, 'taskpaper');
+  // A TaskPaper line containing a comma is still TaskPaper.
+  assert.equal(parseAnyExport('- Ring, then email\n').format, 'taskpaper');
+});
+
+// --- the summary ------------------------------------------------------------
+
+test('the summary counts the parse, and the words state all three outcomes', () => {
+  const { lines, unreadable } = parseTaskPaper(SAMPLE);
+  const s = importSummary(lines, unreadable);
+  assert.equal(s.projects, 2);
+  assert.equal(s.actions, 5);
+  assert.equal(s.notes, 1);
+  assert.equal(s.done, 1);
+  assert.equal(s.withDates, 4);
+  const w = importWords(s);
+  assert.match(w, /2 projects and 5 actions/);
+  assert.match(w, /4 with a date/);
+  assert.match(w, /1 already finished/);
+});
+
+test('an empty or unreadable file says so and changes nothing', () => {
+  assert.match(importWords(importSummary([], [])), /Nothing in that file could be read/);
+  assert.match(importWords(importSummary([], [])), /Nothing has been changed/);
+  const { offered } = build('\n\n   \n');
+  assert.deepEqual(offered, []);
+});
+
+test('the words never claim more than the file held', () => {
+  const s = importSummary(parseTaskPaper('- One thing\n').lines, []);
+  assert.match(importWords(s), /^Found 1 action\.$/);
+});

@@ -28,6 +28,8 @@ import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
 import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
 import { CONFIRM_WORD, clearEvents, confirmMatches, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
+import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
+import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -662,6 +664,96 @@ export async function mountAbout(session: Session): Promise<void> {
           sampleNote.textContent =
             `That could not be added — ${(err as Error).message} Nothing was changed.`;
           sampleButton.disabled = false;
+        }
+      })();
+    });
+  }
+
+  // --- the number on the icon -----------------------------------------------
+  //
+  // `aria-pressed` carries the STATE and the label says what pressing it does, so
+  // the control is unambiguous read either way round. A button whose label is its
+  // own state ("Badge: on") makes somebody guess whether pressing it describes or
+  // changes — and this audience should never have to run that experiment on their
+  // own home screen.
+  const badgeToggle = document.querySelector<HTMLButtonElement>('#badge-toggle');
+  const badgeNote = document.querySelector<HTMLElement>('#badge-note');
+  if (badgeToggle && badgeNote) {
+    const paintToggle = (): void => {
+      const on = isBadgeOn();
+      badgeToggle.textContent = badgeToggleLabel(on);
+      badgeToggle.setAttribute('aria-pressed', String(on));
+      badgeNote.textContent = badgeWords(on);
+    };
+    paintToggle();
+    badgeToggle.addEventListener('click', () => {
+      void (async () => {
+        badgeToggle.disabled = true;
+        try {
+          await setBadgeEnabled(session.store, !isBadgeOn());
+        } catch {
+          // Said plainly rather than swallowed: a switch that silently did not
+          // stick is worse than one that admits it.
+          badgeNote.textContent = 'That could not be saved, so it will be back next time you open the app.';
+        } finally {
+          badgeToggle.disabled = false;
+          paintToggle();
+        }
+      })();
+    });
+  }
+
+  // --- work from another planner --------------------------------------------
+  //
+  // Read, PARSED, and reported BEFORE anything is written — the same shape as
+  // bringing a copy back. Somebody about to add two thousand rows to their planner
+  // should see what the file contained, and what will not come with it, while it is
+  // still a choice.
+  const otherFile = document.querySelector<HTMLInputElement>('#other-file');
+  const otherNote = document.querySelector<HTMLElement>('#other-note');
+  const otherActions = document.querySelector<HTMLElement>('#other-actions');
+  const otherGo = document.querySelector<HTMLButtonElement>('#other-go');
+  if (otherFile && otherNote && otherActions && otherGo) {
+    let staged: ReturnType<typeof parseAnyExport> | null = null;
+    otherFile.addEventListener('change', () => {
+      void (async () => {
+        const file = otherFile.files?.[0];
+        staged = null;
+        otherActions.hidden = true;
+        if (!file) { otherNote.textContent = ''; return; }
+        try {
+          const parsed = parseAnyExport(await file.text());
+          const summary = importSummary(parsed.lines, parsed.unreadable);
+          otherNote.textContent = `${importWords(summary)} Read as ${parsed.format === 'csv' ? 'CSV' : 'TaskPaper'}.`;
+          if (summary.projects + summary.actions > 0) {
+            staged = parsed;
+            otherActions.hidden = false;
+          }
+        } catch (err) {
+          otherNote.textContent = `That file could not be read — ${(err as Error).message} Nothing has been changed.`;
+        }
+      })();
+    });
+
+    otherGo.addEventListener('click', () => {
+      void (async () => {
+        if (!staged) return;
+        otherGo.disabled = true;
+        try {
+          const lines = staged.lines;
+          // The app's own write path, so somebody else's planner gets no more
+          // trust than a keystroke does and law 1 is enforced on every row.
+          let made: AppEvent[] = [];
+          await session.commit(ctx => {
+            made = taskPaperEvents(ctx, lines);
+            return made;
+          });
+          otherNote.textContent = `Brought in ${made.filter(e => e.kind === 'node.created').length} things. Reloading…`;
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          otherNote.textContent =
+            `That could not be brought in — ${(err as Error).message} Nothing was changed.`;
+          otherGo.disabled = false;
         }
       })();
     });
