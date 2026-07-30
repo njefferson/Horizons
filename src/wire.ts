@@ -26,6 +26,10 @@ export function httpWire(host: string, fetchImpl: typeof fetch = fetch): Wire {
     // outcome as a full mailbox so the exchange stops cleanly, keeps everything
     // it already has, and offers the rest next time.
     if (res.status === 429) throw new MailboxFull('the handover point is busy');
+    // 503 is the daily limit reached — the same shape to a caller as busy or
+    // full: stop cleanly, keep everything, offer the rest later (after the
+    // reset). The distinct message is what lets the surface say the true cause.
+    if (res.status === 503) throw new MailboxFull('the handover point has reached its daily limit');
     if (!res.ok) throw new Error(`the handover point answered ${res.status}`);
     return res;
   };
@@ -46,6 +50,13 @@ export function httpWire(host: string, fetchImpl: typeof fetch = fetch): Wire {
     async get(id, chunk) {
       const res = await ask(`/v1/${id}/${encodeURIComponent(chunk)}`);
       return (await res.json()) as unknown;
+    },
+
+    async purge(id) {
+      // Revocation: empty the old mailbox so a device with the old key cannot
+      // collect the backlog. Best-effort by contract — the caller decides what a
+      // failure means, because being offline must never block re-keying.
+      await ask(`/v1/${id}`, { method: 'DELETE' });
     },
 
     async post(id, sealed: Sealed) {

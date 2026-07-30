@@ -30,7 +30,7 @@ import {
   forgetPairing, malformedPairing, pairingFilename, pairingWords,
 } from './pairing.ts';
 import { encodeQr, toSvg } from '../qr.ts';
-import { outcomeWords, runExchange } from './sync-run.ts';
+import { outcomeWords, revokeMailbox, runExchange } from './sync-run.ts';
 import { deviceLine, deviceRecords, devicesWords, REPLACE_KEY_WORDS, REPLACED_KEY_WORDS } from '../devices.ts';
 import type { Session } from './session.ts';
 
@@ -344,12 +344,27 @@ export async function mountSync(session: Session): Promise<void> {
       replaceBtn.textContent = 'Replace the key';
       replaceBtn.disabled = true;
       try {
+        // The OLD pairing, captured BEFORE beginPairing overwrites it — its id
+        // and host are what the revocation needs.
+        const old = await currentPairing(session.store);
+
         // A fresh key, which is a fresh mailbox: whoever holds the old one is
-        // talking to a place nothing arrives at any more.
+        // talking to a place nothing arrives at any more. This also clears the
+        // mark, so this device re-uploads everything it holds to the new mailbox.
         const file = await beginPairing(session.store, RELAY_HOST, new Date().toISOString());
         await paint();
         showKey(file.key);
-        note.textContent = `${REPLACED_KEY_WORDS} ${SHOW_KEY_WORDS}`;
+
+        // REVOCATION: empty the old mailbox, so a device with the old key cannot
+        // even collect the last weeks of backlog that were waiting there. Best-
+        // effort — if this device is offline, the backlog expires on its own —
+        // and the words say which happened rather than claiming a clean cut-off
+        // it may not have achieved.
+        const purged = old ? await revokeMailbox(old.host, old.id) : true;
+        const revoked = purged
+          ? 'The old handover point has been emptied, so a device with the old key gets nothing more from it. '
+          : 'This device could not reach the handover point to empty the old one, so the last few weeks of work there will clear on their own within a month. ';
+        note.textContent = `${REPLACED_KEY_WORDS} ${revoked}${SHOW_KEY_WORDS}`;
       } catch (err) {
         note.textContent = `That did not work — ${(err as Error).message} The key here has not changed.`;
       } finally {

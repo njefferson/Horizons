@@ -21,6 +21,7 @@ import { handle, type Store } from '../src/relay.ts';
 interface KVNamespace {
   put(key: string, value: string, options?: { expirationTtl?: number }): Promise<void>;
   get(key: string): Promise<string | null>;
+  delete(key: string): Promise<void>;
   list(options: { prefix: string; limit?: number; cursor?: string }): Promise<{
     keys: { name: string }[];
     list_complete: boolean;
@@ -44,6 +45,7 @@ interface Env {
 const store = (kv: KVNamespace): Store => ({
   put: (key, body, ttlSeconds) => kv.put(key, body, { expirationTtl: ttlSeconds }),
   get: key => kv.get(key),
+  remove: key => kv.delete(key),
   list: async prefix => {
     // Paginated to exhaustion. A single page would silently under-report a full
     // mailbox, which would let the chunk cap be bypassed AND make a device think

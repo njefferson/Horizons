@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.27.1 — ITERATION
+
+*2026-07-30*
+
+- **Dropping a device now actually clears its access.** &ldquo;Replace the key&rdquo; used to stop only new work from reaching a device you let go; the last few weeks already waiting at the handover point could still be collected. Now, if this device is online, it empties that too &mdash; and says plainly when it could not, so you are never told a device is cut off when it is not.
+- **A page you can open to see the handover point&rsquo;s health.** If your other device is not catching up, you can now check in plain words whether the handover point is up, and what a hold-up most likely means &mdash; it is almost always a daily limit that resets on its own, with nothing lost.
+- **Taking a key in now carries a warning, where before only giving one out did.** A key someone hands you lets them read this planner, so the app now says so at the moment you paste or open one, and tells you to check the pairing name against your other device&rsquo;s screen.
+- Several places where the app described its own safety more confidently than it should have are now corrected to say exactly what is and is not protected &mdash; what leaves the device, what a handover point can tell, and what replacing a key can and cannot undo.
+- Fixed: a device whose key was replaced could stay quiet until you next wrote something, instead of bringing a fresh device fully up to date straight away.
+
 ## 0.27.0 — CAPABILITY
 
 *2026-07-30*

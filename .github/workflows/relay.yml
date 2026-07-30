@@ -208,7 +208,23 @@ jobs:
           echo "OPTIONS preflight: $PRE"
           case "$PRE" in 204|200) ;; *) echo "::error::the preflight answered $PRE — a browser could not POST to this"; exit 1;; esac
 
-          echo "The relay is up, answering, and reachable from another origin."
+          # The status page a person can open, and the DELETE route revocation
+          # needs. Both are new, and a deploy that shipped them broken would be a
+          # green deploy of a broken feature — the exact V-10 shape.
+          STAT=$(curl -s "$URL/status")
+          echo "status page: $(printf '%s' "$STAT" | head -1)"
+          printf '%s' "$STAT" | grep -qi 'Quietkeep relay' || { echo "::error::/status did not return the health page"; exit 1; }
+
+          # DELETE must empty a mailbox. Drop a shaped seal in, delete, confirm gone.
+          SEAL='{"v":1,"iv":"AAAAAAAAAAAAAAAA","ct":"AAAAAAAAAAAAAAAAAAAAAA=="}'
+          curl -s -X POST "$URL/v1/11111111111111111111111111111111" -H 'content-type: application/json' --data "$SEAL" >/dev/null
+          DEL=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$URL/v1/11111111111111111111111111111111")
+          echo "DELETE: $DEL"
+          [ "$DEL" = "200" ] || { echo "::error::DELETE (revocation) did not answer 200"; exit 1; }
+          AFTER=$(curl -s "$URL/v1/11111111111111111111111111111111")
+          printf '%s' "$AFTER" | grep -q '"chunks":\[\]' || { echo "::error::DELETE did not actually empty the mailbox: $AFTER"; exit 1; }
+
+          echo "The relay is up, answering, revocable, and reachable from another origin."
 
       - name: What to do with this
         run: |

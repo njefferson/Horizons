@@ -83,11 +83,13 @@ export interface SyncMark {
 
 export const emptyMark = (): SyncMark => ({ ingested: [], uploaded: {} });
 
-/** The transport, as three methods. Anything satisfying this works. */
+/** The transport. Anything satisfying this works. `purge` is separate from the
+ *  exchange — it is the one-off revocation action, not part of a sync round. */
 export interface Wire {
   chunks(id: string): Promise<string[]>;
   get(id: string, chunk: string): Promise<unknown>;
   post(id: string, sealed: Sealed): Promise<string>;
+  purge(id: string): Promise<void>;
 }
 
 export class MailboxFull extends Error {}

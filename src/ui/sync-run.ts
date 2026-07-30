@@ -81,6 +81,27 @@ export async function runExchange(session: Session, now: () => string): Promise<
   return { ran: true, result, landed };
 }
 
+/**
+ * Empty a mailbox at the handover point — revocation.
+ *
+ * Called when a key is replaced, on the OLD id and host, so a device that still
+ * holds the old key finds nothing waiting for it. BEST-EFFORT and it says so in
+ * its return: being offline must never block re-keying, so a failure here is a
+ * `false`, not a throw, and the surface tells the truth about which happened.
+ *
+ * It needs no key — the id alone addresses the mailbox, and the id is what the
+ * old pairing already computed. Nothing sealed is read or written; the whole
+ * exchange is one DELETE.
+ */
+export async function revokeMailbox(host: string, id: string): Promise<boolean> {
+  try {
+    await httpWire(host).purge(id);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 /** What the surface says. Reuses `exchangeWords` inside `ExchangeResult` for the
  *  numbers and adds only what this layer knows. */
 export function outcomeWords(o: SyncOutcome): string {

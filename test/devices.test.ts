@@ -114,17 +114,19 @@ test('the id is shown short enough to compare and never in full', async () => {
 test('replacing the key promises revocation and refuses to promise recall', async () => {
   // The clauses that matter, in the order somebody needs them.
   assert.match(REPLACE_KEY_WORDS, /new key/i, 'what it does');
-  assert.match(REPLACE_KEY_WORDS, /receives nothing NEW from this one/i,
+  assert.match(REPLACE_KEY_WORDS, /receives nothing new from this one/i,
     'FUTURE writes are genuinely cut off');
-  // The honesty an audit forced in: the cut-off is not retroactive, because the
-  // handover point still holds the last weeks of already-sent work. Copy that
-  // implied a total, instant cut-off was a false sense of safety.
-  assert.match(REPLACE_KEY_WORDS, /already handed over in the last few weeks/i,
-    'and the backlog window is stated, not hidden');
-  assert.match(REPLACE_KEY_WORDS, /for up to a month/i);
-  assert.match(REPLACE_KEY_WORDS, /whatever it already holds, it keeps/i,
-    'and what it cannot do is said, not implied');
-  assert.match(REPLACE_KEY_WORDS, /nothing here can take that back/i);
+  // Revocation now DELETES the old mailbox — so the backlog is emptied when
+  // online, and the copy must say both that and the honest offline fallback.
+  assert.match(REPLACE_KEY_WORDS, /empties the old handover point/i,
+    'the backlog is actively cleared, not left to leak');
+  assert.match(REPLACE_KEY_WORDS, /offline right now, that backlog clears itself within a month/i,
+    'and the offline case is stated, not hidden');
+  // The one thing that stays impossible: recalling what the dropped device
+  // already pulled onto itself.
+  assert.match(REPLACE_KEY_WORDS, /already collected onto itself, it keeps/i,
+    'and what nothing can do is said, not implied');
+  assert.match(REPLACE_KEY_WORDS, /no software anywhere can take that back/i);
 
   // The words that would be a lie. No app can reach into another machine and
   // remove a copy, and claiming to is worst at the moment somebody is relying

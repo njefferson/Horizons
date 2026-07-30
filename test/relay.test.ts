@@ -56,6 +56,7 @@ function resolvingStore() {
     put: async (key, body) => { map.set(resolve(key), body); },
     get: async key => map.get(resolve(key)) ?? null,
     list: async prefix => [...map.keys()].filter(k => k.startsWith(resolve(prefix) + '/')),
+    remove: async key => { map.delete(resolve(key)); },
   };
   return { store, map, resolve };
 }
@@ -72,6 +73,7 @@ function fakeStore() {
       prefixes.push(prefix);
       return [...map.keys()].filter(k => k.startsWith(prefix));
     },
+    remove: async key => { map.delete(key); },
   };
   return { store, map, prefixes };
 }
@@ -459,4 +461,119 @@ test('with no limiter configured the relay still works, and says so by behaviour
   for (let i = 0; i < 5; i++) {
     assert.equal((await postFrom(d, A, sealedish(), '203.0.113.4')).status, 201);
   }
+});
+
+// --- the DELETE route, for revocation ---------------------------------------
+//
+// Replacing a key mints a new mailbox; this empties the OLD one, so a device that
+// still holds the old key cannot collect the last weeks of backlog waiting there.
+// It is authorised by knowing the id, like every route — safe because a delete
+// can only ever force a re-upload, never lose work: every device keeps its log.
+
+const del = (d: Deps, id: string, ip = '203.0.113.5') =>
+  handle(new Request(`https://sync.example/v1/${id}`, {
+    method: 'DELETE', headers: { 'cf-connecting-ip': ip },
+  }), d);
+
+test('DELETE empties a mailbox, and a later GET finds it gone', async () => {
+  const { store, map } = fakeStore();
+  const d = deps(store);
+  await post(d, A, sealedish('b25l'));
+  await post(d, A, sealedish('dHdv'));
+  assert.equal(map.size, 2);
+
+  const res = await del(d, A);
+  assert.equal(res.status, 200);
+  assert.equal((await res.json() as { emptied: number }).emptied, 2);
+  assert.equal(map.size, 0, 'the chunks are actually gone from the store');
+
+  const list = await handle(req('GET', `/v1/${A}`), d);
+  assert.deepEqual((await list.json() as { chunks: string[] }).chunks, [], 'the mailbox reads empty');
+});
+
+test('DELETE touches only the named mailbox, never a neighbour', async () => {
+  // The isolation that matters for revocation: emptying one household's mailbox
+  // must not reach into another's, even on the same relay.
+  const { store, map } = fakeStore();
+  const d = deps(store);
+  await post(d, A, sealedish());
+  await post(d, B, sealedish());
+
+  await del(d, A);
+  assert.equal((await (await handle(req('GET', `/v1/${A}`), d)).json() as { chunks: string[] }).chunks.length, 0);
+  assert.equal((await (await handle(req('GET', `/v1/${B}`), d)).json() as { chunks: string[] }).chunks.length, 1,
+    'the other mailbox is untouched');
+  assert.equal(map.size, 1);
+});
+
+test('DELETE on an empty or unknown mailbox is fine, and idempotent', async () => {
+  // A device that deletes, drops its connection, and retries must land in the
+  // same place — not an error that makes re-keying look broken.
+  const { store } = fakeStore();
+  const d = deps(store);
+  const first = await del(d, A);
+  assert.equal(first.status, 200);
+  assert.equal((await first.json() as { emptied: number }).emptied, 0);
+  assert.equal((await del(d, A)).status, 200, 'a second delete is still fine');
+});
+
+test('DELETE is rate limited like a write, because a delete IS a write', async () => {
+  const { store } = fakeStore();
+  const lim = limiter(0);   // refuse immediately
+  const d = { ...deps(store), allowWrite: lim.allowWrite };
+  const res = await del(d, A);
+  assert.equal(res.status, 429, 'a flood of deletes cannot burn the quota unbounded');
+});
+
+test('a bad method or a chunk-level path is still refused', async () => {
+  const { store } = fakeStore();
+  const d = deps(store);
+  // DELETE is only defined at the mailbox level, never on a single chunk.
+  const res = await handle(req('DELETE', `/v1/${A}/000-aaaaaaaaaaaaaaaa`), d);
+  assert.equal(res.status, 405, 'no per-chunk delete');
+});
+
+// --- the health page and the daily-limit signal (Noah's alert) --------------
+//
+// Noah asked for "a write-rate alert I can understand". A true per-minute meter
+// needs Cloudflare's own dashboard (a counter in the worker would spend the very
+// writes it is trying to protect). What IS buildable: a plain-language status
+// page anyone can open, and a NAMED daily-limit signal instead of an opaque
+// crash when the write quota runs out.
+
+test('GET /status is a plain-language page that carries no sync id', async () => {
+  const { store } = fakeStore();
+  const res = await handle(req('GET', '/status'), deps(store));
+
+  assert.equal(res.status, 200);
+  assert.match(res.headers.get('content-type') || '', /text\/plain/);
+  const body = await res.text();
+  assert.match(body, /Quietkeep relay/);
+  assert.match(body, /resets on its own/i, 'it explains the daily limit in words');
+  assert.match(body, /nothing you have written is ever lost/i);
+  // It must not leak: no id anywhere, and it does not need one to answer.
+  assert.doesNotMatch(body, /[0-9a-f]{32}/, 'no sync id appears on the health page');
+});
+
+test('the status page reports when the store itself is not answering', async () => {
+  // A worker that is up but whose storage is failing is a different fact from a
+  // healthy relay, and the page should not claim health it cannot see.
+  const brokenGet: Store = {
+    put: async () => {}, get: async () => { throw new Error('kv down'); },
+    list: async () => [], remove: async () => {},
+  };
+  const body = await (await handle(req('GET', '/status'), deps(brokenGet))).text();
+  assert.match(body, /not answering/i);
+});
+
+test('a write that the store cannot land is a named 503, not an opaque crash', async () => {
+  // The daily-limit case. The client turns 503 into "the handover point reached
+  // its limit; it resets and nothing is lost" — a sentence a person can act on.
+  const full: Store = {
+    put: async () => { throw new Error('KV daily write limit exceeded'); },
+    get: async () => null, list: async () => [], remove: async () => {},
+  };
+  const res = await post(deps(full), A, sealedish());
+  assert.equal(res.status, 503, 'named, not a 500');
+  assert.match((await res.json() as { error: string }).error, /resets on its own/i);
 });

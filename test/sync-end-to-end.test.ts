@@ -28,7 +28,7 @@ import { openSession, captureEvent, type Session, type SessionStore } from '../s
 import { acceptKeyText, acceptPairing, beginPairing, currentKeyText, currentPairing } from '../src/ui/pairing.ts';
 import { eraseEverything } from '../src/purge.ts';
 import { MARK_KV } from '../src/sync-keys.ts';
-import { runExchange } from '../src/ui/sync-run.ts';
+import { revokeMailbox, runExchange } from '../src/ui/sync-run.ts';
 import { heldNodes } from '../src/gate.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -42,6 +42,7 @@ function relayStore(): Store {
     put: async (k, body) => { kv.set(k, body); },
     get: async k => kv.get(k) ?? null,
     list: async prefix => [...kv.keys()].filter(k => k.startsWith(prefix)).sort(),
+    remove: async k => { kv.delete(k); },
   };
 }
 
@@ -398,3 +399,72 @@ test('replacing the key on a device makes it re-offer everything to the new mail
   const after = await runExchangeWith(a, fetchImpl, now);
   assert.ok(after.result!.sent > 0, 'it re-offered its work to the new mailbox');
 });
+
+// --- revocation actually deletes (Noah's decision) --------------------------
+//
+// Noah: "Revocation needs to delete." The audit found "Replace the key" only
+// gave forward secrecy — a dropped device could still collect up to a month of
+// backlog from the old mailbox. Replacing the key now EMPTIES that mailbox, so
+// there is nothing left for the old key to fetch.
+
+test('replacing the key empties the old mailbox, so a dropped device gets nothing', async () => {
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  // A pairs and uploads. A "dropped" device D holds the same (old) key but has
+  // NOT yet collected — the exact window revocation has to close.
+  const a = await makeDevice('device-a');
+  const dropped = await makeDevice('device-dropped');
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptKeyText(dropped.store, (await currentKeyText(a.store))!, HOST);
+  await capture(a, 'something the dropped device must never get');
+  await runExchangeWith(a, fetchImpl, now);
+
+  // A replaces its key — which mints a new mailbox AND empties the old one.
+  const old = await currentPairing(a.store);
+  await beginPairing(a.store, HOST, now());
+  const purged = await revokeMailboxWith(old!.host, old!.id, fetchImpl);
+  assert.equal(purged, true, 'the old mailbox was emptied');
+
+  // The dropped device, still on the old key, now finds nothing waiting.
+  const d = await runExchangeWith(dropped, fetchImpl, now);
+  assert.equal(d.landed ?? 0, 0, 'the backlog is gone');
+  assert.deepEqual(titles(dropped), [], 'the dropped device collected nothing');
+});
+
+test('after re-keying, the legitimate other device still catches up on the new key', async () => {
+  // Deleting the old mailbox must not orphan a GOOD device: re-pairing it on the
+  // new key, this device re-uploads everything it holds (mark was cleared), so
+  // the good device gets it all through the new mailbox.
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  await beginPairing(a.store, HOST, now());
+  await capture(a, 'kept across a re-key');
+  await runExchangeWith(a, fetchImpl, now);
+
+  // Re-key (drops a lost device), then bring a fresh good device onto the new key.
+  const old = await currentPairing(a.store);
+  await beginPairing(a.store, HOST, now());
+  await revokeMailboxWith(old!.host, old!.id, fetchImpl);
+
+  const good = await makeDevice('device-good');
+  await acceptKeyText(good.store, (await currentKeyText(a.store))!, HOST);
+  await runExchangeWith(a, fetchImpl, now);
+  await runExchangeWith(good, fetchImpl, now);
+
+  assert.deepEqual(titles(good), ['kept across a re-key'],
+    'the good device caught up through the new mailbox');
+});
+
+/** revokeMailbox dials the real host through httpWire's fetch, so the test swaps
+ *  the global for the duration exactly as runExchangeWith does. */
+async function revokeMailboxWith(host: string, id: string, fetchImpl: typeof fetch): Promise<boolean> {
+  const real = globalThis.fetch;
+  globalThis.fetch = fetchImpl;
+  try { return await revokeMailbox(host, id); }
+  finally { globalThis.fetch = real; }
+}

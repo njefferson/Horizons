@@ -26,9 +26,12 @@
 // **Not authenticated, and it does not need to be.** The only credential is the
 // sync id, which is 128 bits derived from the key by one-way hash. There is no
 // route that lists ids and no route that lists anything without one. Someone who
-// guesses an id can write junk into a mailbox and read sealed bytes they cannot
-// open; that is the entire consequence, and it is why the contents are sealed
-// before they ever get here rather than protected by a login.
+// guesses an id can write junk into a mailbox, read sealed bytes they cannot
+// open, and empty the mailbox — and that is the entire consequence, because none
+// of it can LOSE anybody's work: every device keeps its full local log, so a
+// hostile write, delete or jam costs at most a re-upload. That is why the
+// contents are sealed before they ever get here rather than protected by a login,
+// and why a delete route is safe to add for revocation despite being unauthored.
 //
 // ## The one structural guarantee
 //
@@ -53,6 +56,9 @@ export interface Store {
   /** Every key beginning with `prefix`. Only ever called with a COMPLETE id — see
    *  `PREFIX_IS_A_WHOLE_ID` and the test that holds it. */
   list(prefix: string): Promise<string[]>;
+  /** Remove one key. Added for revocation (the DELETE route). The relay still has
+   *  no OVERWRITE — a chunk can be removed but never silently replaced. */
+  remove(key: string): Promise<void>;
 }
 
 export interface Deps {
@@ -113,7 +119,7 @@ const json = (status: number, body: unknown): Response =>
         // and pretending otherwise would be security theatre — the contents are
         // sealed before they arrive, which is the actual protection.
         'access-control-allow-origin': '*',
-        'access-control-allow-methods': 'GET, POST, OPTIONS',
+        'access-control-allow-methods': 'GET, POST, DELETE, OPTIONS',
         'access-control-allow-headers': 'content-type',
         // Nothing here is ever a cache hit worth having, and a stale mailbox
         // listing would make a device believe it had already collected something.
@@ -128,11 +134,12 @@ const json = (status: number, body: unknown): Response =>
 /**
  * The whole relay.
  *
- * Four routes and no fifth:
+ * Five routes and no sixth:
  *   `OPTIONS *`             — preflight
- *   `POST /v1/<id>`         — drop a sealed chunk off, get its name back
- *   `GET  /v1/<id>`         — the NAMES of the chunks in this mailbox
- *   `GET  /v1/<id>/<chunk>` — one sealed chunk
+ *   `POST   /v1/<id>`       — drop a sealed chunk off, get its name back
+ *   `GET    /v1/<id>`       — the NAMES of the chunks in this mailbox
+ *   `GET    /v1/<id>/<chunk>` — one sealed chunk
+ *   `DELETE /v1/<id>`       — empty this mailbox (revocation)
  *
  * Names and bodies are separate on purpose: a device asks what is there, compares
  * it against what it has already taken in, and fetches only the difference. That
@@ -145,6 +152,16 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
 
   const url = new URL(request.url);
   const parts = url.pathname.split('/').filter(Boolean);
+
+  // A HEALTH PAGE somebody can just open — Noah asked for an alert he can
+  // understand. It carries NO sync id, so it reveals nothing about any household,
+  // and it does one cheap READ (reads are the plentiful quota, not the scarce
+  // one) to prove the store is reachable and not only the worker. Plain text, so
+  // opening it in a browser is a sentence and not a puzzle.
+  if (request.method === 'GET' && parts.length === 1 && parts[0] === 'status') {
+    return status(deps);
+  }
+
   if (parts[0] !== 'v1' || parts.length < 2 || parts.length > 3) {
     return json(404, { error: 'no such route' });
   }
@@ -176,6 +193,24 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   }
   if (request.method === 'GET' && parts.length === 2) return listChunks(deps, id);
   if (request.method === 'GET' && parts.length === 3) return getChunk(deps, id, parts[2]!);
+
+  if (request.method === 'DELETE' && parts.length === 2) {
+    // REVOCATION. Replacing a key mints a new mailbox; this empties the OLD one,
+    // so a device still holding the old key cannot collect the last weeks of work
+    // that were waiting there. It is authorised by knowing the id, like every
+    // other route — the id is a 128-bit secret, and the only harm a stranger who
+    // learned one could do is force the owner to re-upload (every device keeps
+    // its full local log, so nothing is LOST by a delete, exactly as nothing is
+    // lost by the mailbox-jam this already tolerates).
+    //
+    // Rate-limited like a write, because a delete IS a write against the KV
+    // quota, and each one fans out to up to MAX_CHUNKS removals.
+    const caller = request.headers.get('cf-connecting-ip') ?? 'unknown';
+    if (deps.allowWrite && !(await deps.allowWrite(caller))) {
+      return json(429, { error: 'too many requests just now; try again shortly' });
+    }
+    return emptyMailbox(deps, id);
+  }
   return json(405, { error: 'that method is not used here' });
 }
 
@@ -205,11 +240,53 @@ async function put(request: Request, deps: Deps, id: string): Promise<Response> 
   }
 
   const chunk = chunkName(deps.now(), deps.token());
-  // No overwrite path and no delete route anywhere in this file. A relay that
-  // could replace a chunk could destroy the only copy in flight, and append-only
-  // is the same discipline the log itself is built on.
-  await deps.store.put(`${id}/${chunk}`, body, TTL_SECONDS);
+  // No overwrite path. A relay that could replace a chunk could destroy the only
+  // copy in flight; there is a DELETE route for revocation, but never a silent
+  // replace.
+  try {
+    await deps.store.put(`${id}/${chunk}`, body, TTL_SECONDS);
+  } catch {
+    // The write did not land — on the free tier this is the DAILY LIMIT being
+    // reached, which is the scarce resource in this whole design. Named as its
+    // own 503 rather than crashing to a bare 500, so the client can tell the
+    // person the true thing: the handover point is done for the day, it resets on
+    // its own, and nothing they wrote is lost (their device still holds it).
+    return json(503, { error: 'the handover point has reached its limit for now; it resets on its own and nothing you wrote is lost' });
+  }
   return json(201, { chunk });
+}
+
+/** The health page. No sync id, one cheap read, plain text. */
+async function status(deps: Deps): Promise<Response> {
+  let store: string;
+  try {
+    // A read of an id that cannot exist (zeroes are a valid-shaped id nobody
+    // pairs to). Proves the STORE answers, not just the worker.
+    await deps.store.get('00000000000000000000000000000000/probe');
+    store = 'reachable';
+  } catch {
+    store = 'not answering';
+  }
+  const lines = [
+    'Quietkeep relay',
+    '',
+    `Status: up. Storage is ${store}.`,
+    '',
+    'If your devices cannot sync but this page loads, the most likely cause is',
+    'that the daily limit has been reached. It resets on its own at midnight UTC,',
+    'and nothing you have written is ever lost — every device keeps its own copy.',
+    'If this page does NOT load, the relay itself is unreachable; the same is true',
+    'of your data, which is safe on your devices regardless.',
+  ];
+  return new Response(`${lines.join('\n')}\n`, {
+    status: 200,
+    headers: {
+      'content-type': 'text/plain; charset=utf-8',
+      'access-control-allow-origin': '*',
+      'cache-control': 'no-store',
+      'x-content-type-options': 'nosniff',
+    },
+  });
 }
 
 async function listChunks(deps: Deps, id: string): Promise<Response> {
@@ -251,6 +328,20 @@ async function getChunk(deps: Deps, id: string, chunk: string): Promise<Response
       'x-content-type-options': 'nosniff',
     },
   });
+}
+
+/**
+ * Empty a mailbox — the DELETE route, for revocation.
+ *
+ * Idempotent and always succeeds: an already-empty mailbox is a fine outcome, so
+ * a device that deletes, loses connection and retries lands in the same place.
+ * Bounded by the same `list` the cap uses, so it can never remove more than one
+ * mailbox holds.
+ */
+async function emptyMailbox(deps: Deps, id: string): Promise<Response> {
+  const keys = await deps.store.list(`${id}/`);
+  for (const key of keys) await deps.store.remove(key);
+  return json(200, { emptied: keys.length });
 }
 
 /**

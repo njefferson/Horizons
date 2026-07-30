@@ -59,6 +59,10 @@ function fakeWire() {
       box.set(`${id}/${name}`, sealed);
       return name;
     },
+    purge: async id => {
+      calls.push('purge');
+      for (const k of [...box.keys()]) if (k.startsWith(`${id}/`)) box.delete(k);
+    },
   };
   return { wire, box, failures, calls };
 }

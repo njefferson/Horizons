@@ -130,9 +130,9 @@ function ago(then: string, nowIso: string): string {
  */
 export const REPLACE_KEY_WORDS =
   'Replacing the key gives this device a brand-new key and a fresh place to hand work over. '
-  + 'From now on, a device still holding the old key receives nothing NEW from this one — so this is how you drop a device you no longer want in the pair. '
-  + 'Two honest limits. Anything this device already handed over in the last few weeks stays at the old handover point until it expires on its own, so a dropped device that had not yet collected it still can, for up to a month. '
-  + 'And it cannot reach into that device: whatever it already holds, it keeps, and nothing here can take that back. '
+  + 'From now on, a device still holding the old key receives nothing new from this one — so this is how you drop a device you no longer want in the pair. '
+  + 'If this device is online, it also empties the old handover point, so the last few weeks of work that were waiting there cannot be collected either. If it is offline right now, that backlog clears itself within a month instead. '
+  + 'The one thing nothing can do is reach into the dropped device: whatever it has ALREADY collected onto itself, it keeps, and no software anywhere can take that back. '
   + 'Your own writing is untouched, and you can pair a device again whenever you like.';
 
 /** After it has happened. States the consequence somebody must now act on. */
