@@ -664,6 +664,46 @@ being treated as one was a cache.
 
 ---
 
+## V-20 · The relay's DELETE empties what KV *lists*, and KV `list` is eventually consistent — **UNDERSTOOD, and the gate no longer races it**
+· raised 2026-07-30 when Relay run 12 on `c706a64` went red at "Check it actually answers"
+
+**What happened.** The deploy succeeded, `/status` was live, GET and OPTIONS
+passed, DELETE answered 200 — and the very next GET showed a chunk still present:
+
+    DELETE did not actually empty the mailbox: {"chunks":["1785446320412-39f9acdf7251c2b1"]}
+
+That timestamp decodes to 21:18:40 UTC, **twenty-four minutes before this run's
+own POST at 21:43:08.** So the run's own chunk *was* deleted; what survived was an
+orphan a prior run left in the one shared test mailbox (`1111…1111`) the check
+reused every time. A chunk orphaned by any run that failed before its own cleanup
+sits there for the 30-day TTL, and every later run's "confirm empty" trips over
+it — a plain re-run can never go green.
+
+**Is this a revocation bug? No.** `emptyMailbox` lists `${id}/` and removes each
+key; the worker's `list` adapter paginates to exhaustion (`relay/worker.ts`), so
+it under-reports nothing. The route is correct for a store whose `list` is
+current. What it cannot outrun is that **Cloudflare KV `list` is eventually
+consistent**: a just-written key is not instantly listable, and a just-removed one
+is not instantly absent from the listing. Real revocation is unaffected — it
+targets *backlog* (chunks written hours or days earlier, long since consistent),
+not a chunk written in the same second it is deleted. The one place the race bit
+was a health check that wrote, deleted and read back within one second.
+
+**What was fixed.** The gate now (1) uses a **unique mailbox per run+attempt**
+(sha256 of `$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT`), so no orphan and no concurrent
+run can ever contaminate it, and (2) **polls for convergence** — it waits until
+the POSTed chunk is listable before deleting (so DELETE lists a set that actually
+contains it), then waits up to ~60s for the listing to go empty, re-issuing the
+idempotent DELETE each round. Racing KV's consistency window is what made a
+working route look broken; the gate now respects the window the platform documents.
+
+**The honest residual.** A chunk written into a mailbox in the few seconds *before*
+a revoke may not be listable when the revoke runs, and so may survive until the
+next empty or its TTL. That is acceptable for what revocation is *for*, and it is
+recorded here rather than papered over with a claim of instant, total erasure.
+
+---
+
 ## V-19 · The relay's write limiter is live, and rides on an experimental binding — **VERIFIED, with a named fragility**
 · raised 2026-07-30 with the security audit's quota-exhaustion finding
 

@@ -214,17 +214,47 @@ jobs:
           echo "OPTIONS preflight: $PRE"
           case "$PRE" in 204|200) ;; *) echo "::error::the preflight answered $PRE — a browser could not POST to this"; exit 1;; esac
 
-          # DELETE (revocation) must empty a mailbox. The /status readiness gate
-          # above already proved the new worker is live, so this is now a clean
-          # test of the route rather than a race with propagation.
-          # Drop a shaped seal in, delete, confirm gone.
+          # DELETE (revocation) must empty a mailbox. Two things this has to get
+          # right, both learned from a red run that looked like a broken route and
+          # was not:
+          #
+          #  - A UNIQUE mailbox per run. An earlier version POSTed to one shared id,
+          #    so a chunk orphaned by ANY run that failed before its own cleanup sat
+          #    in that mailbox for the 30-day TTL and failed every later run's
+          #    "confirm empty" — a plain re-run could never go green. The failing
+          #    run's own chunk WAS deleted; what remained was a 24-minute-old orphan
+          #    from a prior run. Deriving the id from the run means no two runs, and
+          #    no run and its rerun, ever share a mailbox.
+          #  - KV's `list` is EVENTUALLY CONSISTENT. A just-written key is not
+          #    instantly listable and a just-removed one is not instantly gone, so
+          #    a POST-then-DELETE-then-GET raced within one second proves nothing.
+          #    We POLL instead: wait until the POSTed chunk is visible (the write
+          #    landed AND is listable, which is what DELETE lists), then delete,
+          #    then wait until the listing is empty — re-issuing the idempotent
+          #    DELETE each round in case a key became listable just after the first.
+          MB=$(printf '%s' "$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" | sha256sum | cut -c1-32)
           SEAL='{"v":1,"iv":"AAAAAAAAAAAAAAAA","ct":"AAAAAAAAAAAAAAAAAAAAAA=="}'
-          curl -s -X POST "$URL/v1/11111111111111111111111111111111" -H 'content-type: application/json' --data "$SEAL" >/dev/null
-          DEL=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$URL/v1/11111111111111111111111111111111")
+          curl -s -X POST "$URL/v1/$MB" -H 'content-type: application/json' --data "$SEAL" >/dev/null
+
+          SEEN=""
+          for attempt in 1 2 3 4 5 6; do
+            printf '%s' "$(curl -s "$URL/v1/$MB" || true)" | grep -q '"chunks":\["' && { SEEN=yes; break; }
+            sleep 10
+          done
+          [ -n "$SEEN" ] || { echo "::error::a POSTed chunk never became listable within 60s — KV write or list is not working"; exit 1; }
+
+          DEL=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$URL/v1/$MB")
           echo "DELETE: $DEL"
           [ "$DEL" = "200" ] || { echo "::error::DELETE (revocation) did not answer 200"; exit 1; }
-          AFTER=$(curl -s "$URL/v1/11111111111111111111111111111111")
-          printf '%s' "$AFTER" | grep -q '"chunks":\[\]' || { echo "::error::DELETE did not actually empty the mailbox: $AFTER"; exit 1; }
+
+          EMPTY=""
+          for attempt in 1 2 3 4 5 6; do
+            AFTER=$(curl -s "$URL/v1/$MB" || true)
+            printf '%s' "$AFTER" | grep -q '"chunks":\[\]' && { EMPTY=yes; break; }
+            curl -s -o /dev/null -X DELETE "$URL/v1/$MB" || true
+            sleep 10
+          done
+          [ -n "$EMPTY" ] || { echo "::error::DELETE did not empty the mailbox within 60s: $AFTER"; exit 1; }
 
           echo "The relay is up, answering, revocable, and reachable from another origin."
 
