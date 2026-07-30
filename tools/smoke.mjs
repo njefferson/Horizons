@@ -2399,6 +2399,31 @@ try {
   is(await tpage.locator('#badge-toggle').getAttribute('aria-pressed'), 'true', 'and back on again');
   await tpage.click('#about-close');
 
+  console.log('\nThe other edition — and the link that must NOT be invented');
+  // This walk runs on localhost, where there is no knowable sibling. That is
+  // exactly the case worth pinning at the artefact level: the whole reason the
+  // link is derived rather than written down is that a hardcoded URL would
+  // appear HERE too, and on every device, pointing at a host nobody confirmed.
+  // The unit tests prove the derivation; this proves the built app obeys it.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  const sib_hidden = await tpage.evaluate(() => {
+    const p = document.querySelector('#sibling');
+    const as = [...(p?.querySelectorAll('a') ?? [])];
+    // The HREFS, not only the text. The first version of this check read
+    // textContent alone and stayed green while a deliberately broken build
+    // rendered a link to a guessed host — the address lives in the attribute,
+    // which is precisely where nobody was looking.
+    return { present: !!p, hidden: p?.hidden ?? null,
+             text: `${p?.textContent ?? ''} ${as.map(a => a.getAttribute('href')).join(' ')}`,
+             links: as.length };
+  });
+  is(sib_hidden.present, true, 'the slot for the other edition exists');
+  is(sib_hidden.hidden, true, 'and on a host with no knowable sibling it stays hidden');
+  is(sib_hidden.links, 0, 'with no link invented for it');
+  is(/pages\.dev/.test(sib_hidden.text), false, 'and no address guessed into the text');
+  await tpage.click('#about-close');
+
   console.log('\nWork from another planner — TaskPaper and CSV');
   const beforeImport = await tpage.locator('#cards .card').count();
   await tpage.click('#open-about');

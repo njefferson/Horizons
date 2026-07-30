@@ -31,6 +31,7 @@ import { CONFIRM_WORD, clearEvents, confirmMatches, purgeCount, purgeSummary, pu
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 import { deliverCopy } from './export-copy.ts';
+import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -193,6 +194,37 @@ export async function mountAbout(session: Session): Promise<void> {
   // The tier that actually reminds you. Same deliver-then-record ordering as the
   // export below, for the same reason: a failed hand-off must never leave the log
   // asserting that a copy left.
+  // --- the other edition (ADR-0036) -----------------------------------------
+  //
+  // Shown in BOTH builds, from the same code, because the obligation is
+  // symmetrical: each states its own posture and links the other. The words
+  // differ by which build is running; the link is derived from this hostname so
+  // staging points at staging and neither can drift from the other.
+  //
+  // Silent when there is no knowable sibling. That is the whole reason this is
+  // not a hardcoded URL — see `sibling.ts`.
+  const siblingP = document.querySelector<HTMLElement>('#sibling');
+  if (siblingP) {
+    const here = location.hostname;
+    const origin = siblingOrigin(here, location.protocol);
+    const edition = editionOf(here);
+    if (origin && edition) {
+      siblingP.replaceChildren(
+        document.createTextNode(
+          `${edition === 'sync' ? PLAIN_INVITE_WORDS : SYNC_INVITE_WORDS} `),
+      );
+      const link = document.createElement('a');
+      link.href = origin;
+      link.textContent = edition === 'sync' ? 'Open Quietkeep' : 'Open Quietkeep Sync';
+      // A new tab, so somebody looking at the other edition has not lost the
+      // planner they were in the middle of.
+      link.rel = 'noopener';
+      link.target = '_blank';
+      siblingP.append(link);
+      siblingP.hidden = false;
+    }
+  }
+
   const cal = document.querySelector<HTMLButtonElement>('#calendar');
   const calNote = document.querySelector<HTMLElement>('#calendar-note');
   const paintCalendar = (): void => {

@@ -712,6 +712,12 @@
     A free planner that keeps everything on your device. No accounts, no
     telemetry, and no server holding your writing — because there is no server.
   </p>
+  <!-- The other edition (ADR-0036). Filled in by src/ui/sibling.ts, and left
+       EMPTY when there is no sibling to point at — on localhost, or anywhere
+       the two-project hostname pattern does not hold. A link that 404s reads as
+       "this app is broken" rather than "you are somewhere unexpected", so the
+       text is written by the code that knows the answer, never by this file. -->
+  <p id="sibling" class="about-p" hidden></p>
   <p class="about-p">
     <a href="https://noahjefferson.pages.dev/accessibility">Accessibility statement</a> ·
     <a href="https://github.com/njefferson/Quietkeep">Source and licence</a>
