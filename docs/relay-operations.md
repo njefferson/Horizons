@@ -37,27 +37,31 @@ of these — all of them keep your data and recover on their own:
 - **"reached its daily limit"** — the account-wide write budget for the day is
   spent. Resets at 00:00 UTC.
 
-## The write-rate alert — one dashboard step (operator to confirm)
+## The write-rate alert — already on, nothing to set up
 
 The relay deliberately keeps NO request logs — a log would record sync ids, which
 are a per-household activity trace, and that is the telemetry this project does
-not have. So the true write-rate lives only in Cloudflare's own metering, and the
-alert is a Cloudflare **Notification** rather than anything in the code.
+not have. So the true write-rate lives only in Cloudflare's own metering.
 
-To set it up (about two minutes, once):
+**The good news: on the free plan Cloudflare already emails this automatically.**
+When daily Workers KV usage nears the limit it sends the account's billing address
+a message like *"90% of daily usage limit for Cloudflare Workers KV operations
+reached"* — with no configuration. That IS the "someone is burning the quota while
+I am not looking" alert, and it is on by default. Not having received one means
+the limit has not been approached, which is the expected quiet state — not a sign
+anything is unset.
 
-1. Cloudflare dashboard → **Notifications** → **Add**.
-2. Choose **Workers KV** (or the closest "usage / limit" notification your plan
-   offers) and point it at the `quietkeep-relay-CHUNKS` namespace.
-3. Set it to email you when daily writes approach the free-plan limit.
-4. Add your email as the destination.
+So there is nothing to do here. Two optional places if you ever want more:
 
-That is the "someone is burning the quota while I am not looking" alert. It is the
-one place the real rate is visible, and it reaches you rather than waiting for you
-to check.
+- **See current usage:** Cloudflare dashboard → Workers & Pages → **KV** — the
+  product page shows usage for the period.
+- **A custom threshold:** account **Notifications** → Add, only if you want an
+  alert at a level other than Cloudflare's default. Not required.
 
-**This is a manual step the session token cannot perform (Doctrine §10).** It is
-listed here for Noah to do and confirm; nothing in the repo can do it for him.
+(An earlier version of this page told the operator to "set up" a Notification as a
+required step. That was wrong — the free-plan email is automatic — and it is
+corrected here rather than left to send someone hunting for a switch that is
+already thrown.)
 
 ## What a flood can and cannot do
 
