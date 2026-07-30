@@ -266,17 +266,17 @@ async function unsqueeze(bytes: Uint8Array): Promise<Uint8Array> {
  * authentication key with them — it is a total break, not a degradation.
  *
  * COMPRESSED BEFORE IT IS ENCRYPTED, and inside the seal rather than around it —
- * so the relay cannot tell whether compression was used at all, and learns
- * nothing it did not already learn from a length.
+ * so the relay cannot tell whether compression was used at all.
  *
  * The order is worth naming because the reverse is meaningless (ciphertext does
- * not compress) and because compressing-then-encrypting has a known caveat: when
- * an attacker can inject chosen text into the SAME compressed stream and watch
- * the length, compression leaks. That channel does not exist here — the relay
- * cannot put events into somebody's log, and a chunk is hundreds of events deep,
- * so the resolution is uselessly coarse. What it does change is that a length now
- * tracks how repetitive the content is rather than how much of it there is, which
- * is a different shade of the metadata already disclosed, not a new kind.
+ * not compress) and because compressing-then-encrypting has a known caveat (CRIME):
+ * when an attacker can inject chosen text into the SAME compressed stream and
+ * watch the length, compression leaks. **That injection leg DOES exist here** — a
+ * link carrying `?text=` puts chosen words into a log — which is exactly why every
+ * body is padded to a bucket by `frame`/`PAD_TO` before it is sealed. See that
+ * note for the full argument; an earlier version of this docstring wrongly said
+ * the channel did not exist, and that was the second overclaim this file had to
+ * retract. Padding is what makes the claim true rather than the wish.
  */
 export async function seal(key: CryptoKey, value: unknown): Promise<Sealed> {
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));

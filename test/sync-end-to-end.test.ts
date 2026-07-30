@@ -344,3 +344,57 @@ test('an event is offered once, not on every exchange', async () => {
   assert.ok(first.result!.sent > 0, 'offered the first time');
   assert.equal(second.result!.sent, 0, 'and not again');
 });
+
+// --- re-pairing resets the upload bookkeeping (audit finding) ----------------
+//
+// A security audit found that `beginPairing` set a new key but left the old
+// sync mark in place. A fresh key is a fresh, empty mailbox — so a device that
+// had synced, then replaced its key, believed it had already uploaded everything
+// and offered NOTHING to the new mailbox until the next keystroke. Worse, it made
+// the "a survivor can republish a lost device's work" promise false: the survivor
+// would sit on that work rather than send it to a replacement.
+
+test('a survivor republishes a lost device\'s work to a replacement, after re-pairing', async () => {
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  // A and B are a pair. A writes; both converge, so B now HOLDS A's work.
+  const a = await makeDevice('device-a');
+  const b = await makeDevice('device-b');
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptKeyText(b.store, (await currentKeyText(a.store))!, HOST);
+  await capture(a, 'a thought only device A ever typed');
+  await runExchangeWith(a, fetchImpl, now);
+  await runExchangeWith(b, fetchImpl, now);
+  assert.deepEqual(titles(b), ['a thought only device A ever typed'], 'B holds A\'s work');
+
+  // A is lost. B re-pairs with a NEW device C, on a fresh key. B has synced
+  // before, so it carries a mark — the exact condition the bug lived in.
+  const c = await makeDevice('device-c');
+  const fresh = await beginPairing(b.store, HOST, now());        // B mints a new key
+  await acceptKeyText(c.store, (await currentKeyText(b.store))!, HOST);
+
+  await runExchangeWith(b, fetchImpl, now);
+  await runExchangeWith(c, fetchImpl, now);
+
+  assert.deepEqual(titles(c), ['a thought only device A ever typed'],
+    'the lost device\'s work reached the replacement through the survivor');
+});
+
+test('replacing the key on a device makes it re-offer everything to the new mailbox', async () => {
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  await beginPairing(a.store, HOST, now());
+  await capture(a, 'written before the re-key');
+  await runExchangeWith(a, fetchImpl, now);       // uploaded to the first mailbox
+
+  // Replace the key: fresh mailbox, and the mark must not claim the new one
+  // already has these events.
+  await beginPairing(a.store, HOST, now());
+  const after = await runExchangeWith(a, fetchImpl, now);
+  assert.ok(after.result!.sent > 0, 'it re-offered its work to the new mailbox');
+});

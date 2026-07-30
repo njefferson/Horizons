@@ -64,6 +64,17 @@ export const FILE_WARNING_WORDS =
   'That file is the key. Anyone who opens it can read this planner, so hand it over the way you would a password — ' +
   'and delete it once the other device has taken it in.';
 
+/** The IMPORT side, which an audit found had no caution at all — every warning
+ *  was on the export side. Taking a key IN is where the real danger is: a key is
+ *  a password, and one you did not watch come off your OWN other device may be
+ *  somebody else's, handed to you so they can read everything you sync. So the
+ *  caution names the check that actually defends against it — compare the pairing
+ *  name shown here against the one on your other device's screen; do not trust the
+ *  file or the code to tell you what it is. */
+export const ACCEPT_CAUTION_WORDS =
+  'Only take in a key you watched appear on your own other device. A key is a password — one from anyone else lets them read this planner. '
+  + 'After pairing, this device shows a short pairing name; check it matches the one on your other device\'s screen before you trust it.';
+
 const el = <K extends keyof HTMLElementTagNameMap>(
   tag: K, cls?: string, text?: string,
 ): HTMLElementTagNameMap[K] => {
@@ -155,6 +166,8 @@ export async function mountSync(session: Session): Promise<void> {
   const pasteRow = el('div', 'about-actions');
   pasteRow.append(pasteGo);
 
+  const acceptCaution = el('p', 'about-p', ACCEPT_CAUTION_WORDS);
+
   const openLabel = el('label', 'detail-label', 'Or open a pairing file from your other device');
   const openFile = el('input');
   openFile.type = 'file';
@@ -168,7 +181,7 @@ export async function mountSync(session: Session): Promise<void> {
   const section = el('div');
   keyBox.append(keyCode, keyText, keyRow);
   section.append(heading, posture, state, devicesP, devicesList, actions,
-    keyBox, pasteLabel, pasteField, pasteRow, openLabel, openFile, note);
+    keyBox, acceptCaution, pasteLabel, pasteField, pasteRow, openLabel, openFile, note);
   anchor.parentElement.insertBefore(section, anchor.nextSibling);
 
   /** Show the key as a code and as text. The SVG is PARSED rather than assigned
@@ -264,7 +277,7 @@ export async function mountSync(session: Session): Promise<void> {
         const { id } = await acceptKeyText(session.store, pasteField.value, RELAY_HOST);
         pasteField.value = '';
         await paint();
-        note.textContent = `Paired. Check the other device also shows ${id.slice(0, 8)}. `
+        note.textContent = `Paired to ${id.slice(0, 8)}. Make sure that matches the name on your other device — if it does not, this key was not that device's, and you should Replace the key now. `
           + 'Nothing has moved yet — that happens next time either device opens, or now if you press Sync.';
       } catch (err) {
         note.textContent = `That key could not be used — ${(err as Error).message}`;
@@ -288,7 +301,7 @@ export async function mountSync(session: Session): Promise<void> {
         // else is refused with a sentence rather than failing silently later.
         const { id } = await acceptPairing(session.store, parsed, RELAY_HOST);
         await paint();
-        note.textContent = `Paired. Check the other device also shows ${id.slice(0, 8)}. `
+        note.textContent = `Paired to ${id.slice(0, 8)}. Make sure that matches the name on your other device — if it does not, this file was not that device's, and you should Replace the key now. `
           + 'Nothing has moved yet — that happens next time either device opens, or now if you press Sync.';
       } catch (err) {
         note.textContent = `That file could not be used — ${(err as Error).message}`;

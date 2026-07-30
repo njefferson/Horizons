@@ -86,6 +86,14 @@ export async function beginPairing(store: KvStore, host: string, at: string): Pr
   const id = await syncId(key);
   await store.setKv(KEY_KV, raw);
   await store.setKv(HOST_KV, host);
+  // The mark MUST go, and this is the fix for a bug an audit found. A fresh key
+  // is a fresh, EMPTY mailbox, but the mark records what was uploaded to the OLD
+  // one — so a device that had synced, then replaced its key, believed it had
+  // already uploaded everything and offered nothing to the new mailbox until the
+  // next keystroke. "Replace the key" and re-pairing both route through here, so
+  // clearing it here fixes both, and it makes the survivor genuinely able to
+  // republish a lost device's work to a replacement.
+  await store.setKv(MARK_KV, null);
   return { format: 'quietkeep-pairing', version: 1, key: raw, host, id, at };
 }
 

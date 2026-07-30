@@ -112,10 +112,16 @@ test('the id is shown short enough to compare and never in full', async () => {
 // --- the words, which are where a lie would live -----------------------------
 
 test('replacing the key promises revocation and refuses to promise recall', async () => {
-  // The three clauses that matter, in the order somebody needs them.
+  // The clauses that matter, in the order somebody needs them.
   assert.match(REPLACE_KEY_WORDS, /new key/i, 'what it does');
-  assert.match(REPLACE_KEY_WORDS, /stops receiving anything from this one/i,
-    'future access is genuinely cut off');
+  assert.match(REPLACE_KEY_WORDS, /receives nothing NEW from this one/i,
+    'FUTURE writes are genuinely cut off');
+  // The honesty an audit forced in: the cut-off is not retroactive, because the
+  // handover point still holds the last weeks of already-sent work. Copy that
+  // implied a total, instant cut-off was a false sense of safety.
+  assert.match(REPLACE_KEY_WORDS, /already handed over in the last few weeks/i,
+    'and the backlog window is stated, not hidden');
+  assert.match(REPLACE_KEY_WORDS, /for up to a month/i);
   assert.match(REPLACE_KEY_WORDS, /whatever it already holds, it keeps/i,
     'and what it cannot do is said, not implied');
   assert.match(REPLACE_KEY_WORDS, /nothing here can take that back/i);

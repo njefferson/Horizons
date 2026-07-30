@@ -120,15 +120,19 @@ function ago(then: string, nowIso: string): string {
 /**
  * What replacing the key does, and what it cannot do.
  *
- * Every clause here is load-bearing, and the third is the one people get wrong:
- * revoking future access is not the same as recalling what has already been
- * copied, and no software can offer the second.
+ * Every clause is load-bearing, and TWO are the ones people — and an earlier
+ * version of this very copy — get wrong. Revoking future access is not recalling
+ * what has already been copied; and "from now on" is not instant, because the
+ * handover point still holds the last few weeks of already-sent work, which the
+ * old device can still collect until it expires. An audit caught the copy
+ * implying the cut-off was total and immediate. It is neither, and saying so is
+ * the difference between an honest control and a false sense of safety.
  */
 export const REPLACE_KEY_WORDS =
   'Replacing the key gives this device a brand-new key and a fresh place to hand work over. '
-  + 'Any device still holding the old key stops receiving anything from this one, from that moment on — '
-  + 'so this is how you drop a device you no longer want in the pair. '
-  + 'It does not reach into that device: whatever it already holds, it keeps, and nothing here can take that back. '
+  + 'From now on, a device still holding the old key receives nothing NEW from this one — so this is how you drop a device you no longer want in the pair. '
+  + 'Two honest limits. Anything this device already handed over in the last few weeks stays at the old handover point until it expires on its own, so a dropped device that had not yet collected it still can, for up to a month. '
+  + 'And it cannot reach into that device: whatever it already holds, it keeps, and nothing here can take that back. '
   + 'Your own writing is untouched, and you can pair a device again whenever you like.';
 
 /** After it has happened. States the consequence somebody must now act on. */

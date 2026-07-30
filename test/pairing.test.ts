@@ -19,6 +19,7 @@ import {
   malformedPairing, pairingFilename, pairingWords, KEY_KV, HOST_KV, MARK_KV,
   acceptKeyText, currentKeyText,
 } from '../src/ui/pairing.ts';
+import { ACCEPT_CAUTION_WORDS } from '../src/ui/sync-ui.ts';
 import { exportKey, newKey, syncId } from '../src/seal.ts';
 
 const HOST = 'https://relay.example';
@@ -303,4 +304,24 @@ test('the key this device holds is the same text the other device pastes', async
 
 test('a device with no pairing has no key to show', async () => {
   assert.equal(await currentKeyText(kv()), null);
+});
+
+// --- the import side has a caution (audit finding) --------------------------
+//
+// An audit found every warning in the pairing surface was on the EXPORT side:
+// showing a key warned you it was a secret, but TAKING one in said nothing. Yet
+// import is where the real danger lives — a key you were handed by somebody else
+// lets them read everything you sync, and the app cannot tell an honest key from
+// a hostile one because a wholly attacker-chosen key is cryptographically valid.
+// The only defence is the person, so the words have to arm the person.
+
+test('the import caution names the danger and the check that defends against it', async () => {
+  // Two clauses carry the weight: a key from anyone else is a way in, and the
+  // pairing name is the thing to compare rather than trusting the file.
+  assert.match(ACCEPT_CAUTION_WORDS, /only take in a key you watched appear on your own/i,
+    'names the rule');
+  assert.match(ACCEPT_CAUTION_WORDS, /from anyone else lets them read this planner/i,
+    'names the consequence, plainly');
+  assert.match(ACCEPT_CAUTION_WORDS, /check it matches the one on your other device/i,
+    'and the check that actually defends against it');
 });
