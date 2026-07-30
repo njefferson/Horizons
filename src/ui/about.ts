@@ -723,7 +723,7 @@ export async function mountAbout(session: Session): Promise<void> {
         if (!file) { otherNote.textContent = ''; return; }
         try {
           const parsed = parseAnyExport(await file.text());
-          const summary = importSummary(parsed.lines, parsed.unreadable);
+          const summary = importSummary(parsed.lines, parsed.unreadable, new Date().toISOString(), session.zone);
           otherNote.textContent = `${importWords(summary)} Read as ${parsed.format === 'csv' ? 'CSV' : 'TaskPaper'}.`;
           if (summary.projects + summary.actions > 0) {
             staged = parsed;

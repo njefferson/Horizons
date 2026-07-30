@@ -44,6 +44,20 @@ const $ = <T extends HTMLElement>(sel: string): T => {
  * controls: open it, or check it off. The card used to be one big button, which
  * is why it could not gain a second one — a button inside a button is invalid.
  */
+/** How many rows one heading renders before it says how many it is holding back.
+ *  Generous on purpose: an ordinary planner never meets it, and the number is
+ *  stated when it does. */
+export const LIST_CAP = 25;
+
+/** Headings the reader has asked to see in full. Outside `render` so the choice
+ *  survives the re-render that showing them causes. Cleared on reload, which is
+ *  right — a thousand rows is not a state to restore somebody into. */
+const revealed = new Set<string>();
+
+/** Set once at boot so "show them" can ask for a fresh pass without `render`
+ *  needing to know how the app rerenders. */
+let rerenderAll: (() => void) | null = null;
+
 function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: (id: string) => void,
                 onFocus?: (n: NodeState) => void): void {
   const list = $('#cards');
@@ -67,7 +81,21 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
     ul.setAttribute('aria-label', group.title);
     rows.push(ul);
 
-    for (const node of group.items) {
+    // CAPPED, with the true total stated and a way to see the rest.
+    //
+    // The dedicated replan surface has capped at three since it existed, on the
+    // reasoning that "a wall of them is the pile in a new costume". The held list
+    // never had a cap at all, which nobody noticed while the fixtures held eight
+    // things. Noah imported 1,429 and got a scroll of well over a thousand rows
+    // under one heading — the pile, in the main list, which is the thing this app
+    // exists to prevent.
+    //
+    // The cap is generous, so an ordinary planner never meets it, and the number
+    // held back is stated rather than hidden. `revealed` is per-heading and lives
+    // outside this function, so pressing "show the rest" survives the re-render it
+    // triggers.
+    const shown = revealed.has(group.key) ? group.items : group.items.slice(0, LIST_CAP);
+    for (const node of shown) {
       const li = document.createElement('li');
       li.className = 'card';
 
@@ -145,6 +173,24 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       // Only when it has something in it: an empty div is a gap in a row of cards,
       // and a Menu row legitimately has no actions at all.
       if (actions.childElementCount > 0) li.append(actions);
+      ul.append(li);
+    }
+
+    const heldBack = group.items.length - shown.length;
+    if (heldBack > 0) {
+      const li = document.createElement('li');
+      li.className = 'card card-more';
+      const more = document.createElement('button');
+      more.type = 'button';
+      more.className = 'card-open';
+      // The real number, never "many". A cap that will not say what it is hiding
+      // is a cap that has decided for you.
+      more.textContent = `${heldBack} more under ${group.title.toLowerCase()} — show them`;
+      more.addEventListener('click', () => {
+        revealed.add(group.key);
+        rerenderAll?.();
+      });
+      li.append(more);
       ul.append(li);
     }
   }
@@ -429,6 +475,7 @@ async function main(): Promise<void> {
   // exactly what the exclusion exists to prevent. This is what work.ts is handed
   // as its onChange, since work refreshes itself afterwards.
   const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); };
+  rerenderAll = rerenderLists;
   const refreshAll = (): void => { rerenderLists(); work.refresh(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }

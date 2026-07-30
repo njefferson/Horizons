@@ -570,6 +570,10 @@ button.ghost {
   border: 1px solid transparent;
   border-radius: var(--radius);
 }
+/* "N more under ready now — show them". A card-shaped row so it sits in the list
+   rather than beside it, and its own text colour so it does not read as work. */
+.card-more > .card-open { color: var(--ink-soft); justify-content: flex-start; }
+
 /* The actions travel TOGETHER. One wrapper as a single flex item, so the group
    either sits beside the title or drops below it whole — never one button beside
    the title and the other stranded on the next line. */

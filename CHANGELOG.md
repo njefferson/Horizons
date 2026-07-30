@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.25.0 — CAPABILITY
+
+*2026-07-30*
+
+- **A date that already went by in your old planner does not arrive as something asking today.** Importing a long-running planner used to turn years of passed dates into that many things needing a new plan on the morning of the import. They come in without a date instead, and the app tells you how many and why before you press anything.
+- **No heading shows more than 25 things at once.** It says exactly how many it is holding back, and one tap shows them. A list of a thousand rows is the pile in a new coat.
+- Anything already finished in the other planner arrives finished.
+
 ## 0.24.1 — ITERATION
 
 *2026-07-30*

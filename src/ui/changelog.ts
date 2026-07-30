@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.25.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-30',
+    notes: [
+      '**A date that already went by in your old planner does not arrive as something asking today.** Importing a long-running planner used to turn years of passed dates into that many things needing a new plan on the morning of the import. They come in without a date instead, and the app tells you how many and why before you press anything.',
+      '**No heading shows more than 25 things at once.** It says exactly how many it is holding back, and one tap shows them. A list of a thousand rows is the pile in a new coat.',
+      'Anything already finished in the other planner arrives finished.',
+    ],
+  },
+  {
     triplet: '0.24.1',
     kind: 'ITERATION',
     date: '2026-07-30',

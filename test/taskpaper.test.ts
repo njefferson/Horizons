@@ -20,12 +20,13 @@ import assert from 'node:assert/strict';
 
 import {
   depthOf, importSummary, importWords, isCalendarDay, parseAnyExport, parseCsv,
-  parseOmniFocusCsv, parseTaskPaper, taskPaperEvents, type ImportContext,
+  parseOmniFocusCsv, parseTaskPaper, taskPaperEvents, isPastDay, type ImportContext,
 } from '../src/taskpaper.ts';
 import { admit, gateOptionsFor, heldNodes, silentNodes } from '../src/gate.ts';
 import { fold } from '../src/fold.ts';
 import { localDayKey } from '../src/time.ts';
 import { calendarCount } from '../src/ics.ts';
+import { replanAll } from '../src/replan.ts';
 
 const DENVER = 'America/Denver';
 const KIRITIMATI = 'Pacific/Kiritimati';
@@ -293,4 +294,77 @@ test('an empty or unreadable file says so and changes nothing', () => {
 test('the words never claim more than the file held', () => {
   const s = importSummary(parseTaskPaper('- One thing\n').lines, []);
   assert.match(importWords(s), /^Found 1 action\.$/);
+});
+
+// --- dates that already went by ---------------------------------------------
+//
+// Noah's real OmniFocus export: 1,173 due dates, EVERY ONE in the past, earliest
+// June 2019. Imported as due dates they became 1,173 things needing a new plan on
+// the morning of the import — seven years of residue arriving as today's demands.
+
+test('THE ONE FROM THE REAL EXPORT: a date that already went by does not come in as a date', () => {
+  const { state, offered } = build('- Download the baseball pictures @due(2019-06-11)\n');
+  const n = heldNodes(state)[0]!;
+  assert.equal(n.title, 'Download the baseball pictures', 'the work still arrives');
+  assert.equal(offered.some(e => e.kind === 'clock.set'), false,
+    'and no due clock is manufactured from a date seven years gone');
+  // It is still held and still not silent — the gate cures it like anything dateless.
+  assert.deepEqual(silentNodes(state), []);
+  assert.equal(heldNodes(state).length, 1);
+});
+
+test('and it therefore does not arrive demanding a new plan', () => {
+  // The whole point. A passed date in another planner is a record of a commitment
+  // somebody did not keep, not one they are carrying today.
+  const { state } = build('- Old thing @due(2019-06-11)\n');
+  assert.equal(replanAll(state, NOW, DENVER).length, 0);
+});
+
+test('a date still ahead is untouched', () => {
+  const { state } = build('- Ring the plumber @due(2026-08-05)\n');
+  assert.ok(heldNodes(state)[0]!.clocks.due, 'a real commitment still arrives as one');
+  assert.equal(calendarCount(state, NOW, DENVER), 1);
+});
+
+test('today itself still counts as a date, not as residue', () => {
+  // The boundary. "Due today" is a live commitment and must not be discarded as
+  // though it had gone.
+  const today = localDayKey(NOW, DENVER);
+  const { state } = build(`- Due today @due(${today})\n`);
+  assert.ok(heldNodes(state)[0]!.clocks.due, `${today} is not past`);
+});
+
+test('the boundary is the READER\'s day, not UTC\'s', () => {
+  // At 18:00Z on the 29th it is still the 29th in Denver and already the 30th in
+  // Kiritimati. A row dated the 29th is live for one and residue for the other, and
+  // getting that backwards would silently discard a live commitment.
+  assert.equal(isPastDay('2026-07-29', NOW, DENVER), false, 'still today in Denver');
+  assert.equal(isPastDay('2026-07-29', NOW, KIRITIMATI), true, 'yesterday in Kiritimati');
+});
+
+test('the summary says how many dates had gone, and why they did not come', () => {
+  const text = '- A @due(2019-06-11)\n- B @due(2020-01-02)\n- C @due(2026-08-05)\n';
+  const { lines } = parseAnyExport(text);
+  const s = importSummary(lines, [], NOW, DENVER);
+  assert.equal(s.staleDates, 2);
+  assert.equal(s.withDates, 1, 'and only the live one is counted as having a date');
+  const w = importWords(s);
+  assert.match(w, /2 dates had already gone by/);
+  assert.match(w, /without a date rather than as something asking today/);
+});
+
+test('one stale date is described in the singular', () => {
+  const { lines } = parseAnyExport('- A @due(2019-06-11)\n');
+  assert.match(importWords(importSummary(lines, [], NOW, DENVER)), /One date had already gone by/);
+});
+
+test('the summary and the store agree about which dates came across', () => {
+  // Two counters for one fact is the shape that has caused more defects here than
+  // any other, so they are checked against each other rather than each on its own.
+  const text = '- A @due(2019-06-11)\n- B @due(2026-08-05)\n- C @defer(2019-01-01)\n- D\n';
+  const { lines } = parseAnyExport(text);
+  const s = importSummary(lines, [], NOW, DENVER);
+  const events = taskPaperEvents(ctxFor(), lines);
+  assert.equal(events.filter(e => e.kind === 'clock.set').length, s.withDates);
+  assert.equal(s.staleDates, 2);
 });

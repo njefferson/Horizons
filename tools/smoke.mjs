@@ -2438,6 +2438,53 @@ try {
   is(nested.childParent === nested.projectNode, true,
     'and its child is PARENTED to it — the shape a flat list cannot express');
 
+  console.log('\nA long list does not become a wall');
+  // Noah imported 1,429 things and got a scroll of well over a thousand rows under
+  // one heading. The dedicated replan surface has cap_capped at three since it existed;
+  // the held list had no cap at all, which nobody noticed while the fixtures held
+  // eight things. Asserted through the REAL import path at a size past the cap.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  const cap_many = ['Big import:'];
+  for (let i = 0; i < 60; i++) cap_many.push(`\t- Imported thing ${i}`);
+  await tpage.setInputFiles('#other-file', {
+    name: 'big.taskpaper', mimeType: 'text/plain', buffer: Buffer.from(cap_many.join('\n') + '\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 5000 });
+  await tpage.click('#other-go');
+  await tpage.waitForTimeout(1400);
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  const cap_capped = await tpage.evaluate(() => {
+    const out = [];
+    for (const ul of document.querySelectorAll('#cards .cards-group')) {
+      const real = ul.querySelectorAll('li.card:not(.card-more)').length;
+      const more = ul.querySelector('.card-more .card-open');
+      out.push({ real, more: more ? more.textContent : null });
+    }
+    return out;
+  });
+  const cap_biggest = cap_capped.reduce((a, b) => (b.real > a.real ? b : a), { real: 0, more: null });
+  is(cap_biggest.real <= 25, true,
+    `no heading renders more than the cap (largest was ${cap_biggest.real})`);
+  const cap_withMore = cap_capped.find(g => g.more !== null);
+  is(cap_withMore !== undefined, true, 'and a heading that is holding rows back says so');
+  is(/^\d+ more under /.test(cap_withMore?.more || ''), true,
+    `it states the real number ("${cap_withMore?.more}")`);
+
+  // The number must be TRUE: revealing must produce exactly that cap_many more rows.
+  const cap_rowsBefore = await tpage.locator('#cards li.card:not(.card-more)').count();
+  const cap_promised = Number((cap_withMore?.more || '').match(/^(\d+)/)?.[1] ?? '0');
+  await tpage.locator('.card-more .card-open').first().click();
+  await tpage.waitForTimeout(400);
+  const cap_rowsAfter = await tpage.locator('#cards li.card:not(.card-more)').count();
+  is(cap_rowsAfter - cap_rowsBefore, cap_promised,
+    `showing them produced exactly the number it promised (${cap_rowsBefore} -> ${cap_rowsAfter}, promised ${cap_promised})`);
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#about-close');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {

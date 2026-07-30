@@ -533,6 +533,37 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **Noah's real OmniFocus import, and what 1,429 rows exposed
+  (0.24.1 ITERATION, 0.25.0 CAPABILITY).**
+  · **The alignment complaint was a mis-tap.** The border was on `.card-open`, not on
+  `.card`, so the action buttons were siblings outside the visible box — and because
+  the title is `flex: 1 1 auto` the wrap point moved with each title's length. On a
+  long row "Done" wrapped alone, left-aligned, directly above the NEXT item. The box
+  now belongs to `.card`, and the actions travel in one wrapper.
+  · The a11y gate caught the first attempt (`flex: 0 0 auto` on the group pushed the
+  page 192px sideways at 320px/200%), and the FIRST version of the new containment
+  gate was a tautology — a flex container always encloses its children wherever the
+  border is drawn, so it passed with the bug reintroduced. It now asserts that some
+  element DRAWING A BORDER encloses every control, which is about the rendered result.
+  · **My first diagnosis of the "needs a new plan" wall was wrong, and the data said
+  so.** `raisesReplanCard` already ignores cure clocks — `HARD = ['due','suspense']`
+  and cures are `review`. The 1,173 cards came from genuinely passed `due` dates Noah
+  set in OmniFocus, earliest **2019-06-11**. Seven years of backlog, all of it past.
+  · **So the importer no longer imports a date that has already gone.** A date that
+  passed years ago in another planner is a record of a commitment somebody did not
+  keep, not one they are carrying — manufacturing a fresh obligation from it is the
+  same mistake as putting the app's own clocks in a calendar. The row arrives without
+  a date, the gate cures it like anything dateless, and the summary says how many and
+  why before anything is written.
+  · **And no heading renders more than `LIST_CAP` = 25.** The dedicated replan
+  surface has capped at three since it existed; the held list had no cap at all,
+  which nobody noticed while the fixtures held eight things. The number held back is
+  stated, and the smoke check asserts that revealing produces EXACTLY that many more
+  rows — a cap that misreports what it hides is worse than no cap.
+  · Proofs: border back on the title button reds the containment gate; removing the
+  cap reds three checks; a more-row overstating by five reds the reveal check;
+  importing a 2019 date reds the residue tests.
+
 - **2026-07-30** — **Promoted to production: 0.21.1 through 0.24.0 in one step.**
   Noah's word, onto watched-green Spine run 103 (`d60271a`, all 14 steps), confirmed
   by Deploy run 100 on `main` reaching success at the Cloudflare step — never by

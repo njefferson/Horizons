@@ -45,7 +45,7 @@
 // PURE. No store, no clock of its own, no DOM.
 
 import type { AppEvent } from './events.ts';
-import { endOfLocalDay, isValidIso, localParts } from './time.ts';
+import { endOfLocalDay, isValidIso, localDayKey, localParts } from './time.ts';
 
 export interface ImportContext {
   at: string;
@@ -87,6 +87,9 @@ export interface ImportSummary {
   /** Lines that could not be understood at all, with their text kept so somebody
    *  can go and look rather than being told a number. */
   unreadable: string[];
+  /** Dates that had already gone by at the moment of import, and therefore did NOT
+   *  come across as dates. Counted so the summary can say so plainly. */
+  staleDates: number;
 }
 
 const TAG = /@([A-Za-z][A-Za-z0-9_-]*)(?:\(([^)]*)\))?/g;
@@ -196,6 +199,16 @@ export function parseTaskPaper(text: string): { lines: TaskLine[]; unreadable: s
  * a correct answer for "no clock yet", and inventing a different one here would
  * put two rules in the app for the same question.
  */
+/**
+ * Has this day already gone, in the reader's own zone?
+ *
+ * One definition, used by both the mapper and the summary, because they must agree
+ * about every single row — a count that disagreed with what was written would be a
+ * summary describing a different import.
+ */
+export const isPastDay = (day: string, nowIso: string, zone: string): boolean =>
+  day < localDayKey(nowIso, zone);
+
 export function taskPaperEvents(
   ctx: ImportContext,
   parsed: readonly TaskLine[],
@@ -266,10 +279,23 @@ export function taskPaperEvents(
 
     // A date from another planner is a date somebody CHOSE, which is why it lands
     // as `due` and is therefore one a calendar may carry.
-    if (line.due !== null) {
+    //
+    // **Unless it has already gone.** Noah's OmniFocus export carried 1,173 due
+    // dates and EVERY ONE of them was in the past — the earliest from June 2019.
+    // Imported as due dates they became 1,173 things needing a new plan on the
+    // morning of the import: seven years of residue arriving as today's demands.
+    //
+    // A date that passed years ago in another planner is not a commitment somebody
+    // is carrying, it is a record of one they did not keep, and manufacturing a
+    // fresh obligation from it is the same mistake as putting the app's own clocks
+    // in a calendar. So the day is DROPPED and the row arrives without one; the
+    // gate cures it like any dateless thing, and the summary says how many and why.
+    // The alternative — importing them and hiding the wall behind a cap — would
+    // leave the app quietly asserting a thousand demands nobody made today.
+    if (line.due !== null && !isPastDay(line.due, ctx.at, ctx.zone)) {
       stamp('clock.set', id, { clockKind: 'due', at: dayToInstant(line.due, ctx.zone), source: 'import:taskpaper' });
     }
-    if (line.start !== null) {
+    if (line.start !== null && !isPastDay(line.start, ctx.at, ctx.zone)) {
       stamp('clock.set', id, { clockKind: 'start', at: dayToInstant(line.start, ctx.zone), source: 'import:taskpaper' });
     }
     if (line.done) stamp('done.marked', id, { at: ctx.at });
@@ -409,17 +435,25 @@ export function parseAnyExport(text: string): { lines: TaskLine[]; unreadable: s
 export function importSummary(
   parsed: readonly TaskLine[],
   unreadable: readonly string[],
+  nowIso?: string,
+  zone?: string,
 ): ImportSummary {
   const tags = new Set<string>();
   for (const l of parsed) for (const t of l.dropped) tags.add(t);
+  const gone = (d: string | null): boolean =>
+    d !== null && nowIso !== undefined && zone !== undefined && isPastDay(d, nowIso, zone);
+  const live = (l: TaskLine): boolean =>
+    (l.due !== null && !gone(l.due)) || (l.start !== null && !gone(l.start));
   return {
     projects: parsed.filter(l => l.kind === 'project').length,
     actions: parsed.filter(l => l.kind === 'action').length,
     notes: parsed.filter(l => l.kind === 'note').length,
     done: parsed.filter(l => l.done).length,
-    withDates: parsed.filter(l => l.due !== null || l.start !== null).length,
+    // Only dates that actually came across, so this number and the store agree.
+    withDates: parsed.filter(live).length,
     droppedTags: [...tags].sort(),
     unreadable: [...unreadable],
+    staleDates: parsed.filter(l => gone(l.due) || gone(l.start)).length,
   };
 }
 
@@ -440,6 +474,11 @@ export function importWords(s: ImportSummary): string {
   if (s.withDates > 0) parts.push(`${s.withDates} with a date`);
   if (s.done > 0) parts.push(`${s.done} already finished`);
   let out = `${parts.join(', ')}.`;
+  if (s.staleDates > 0) {
+    // Said in full, because it is the single most surprising thing about importing
+    // a long-running planner and somebody will otherwise think the dates were lost.
+    out += ` ${s.staleDates === 1 ? 'One date had' : `${s.staleDates} dates had`} already gone by, so ${s.staleDates === 1 ? 'it comes' : 'they come'} in without a date rather than as something asking today.`;
+  }
   if (s.droppedTags.length > 0) {
     out += ` These will not come with them: ${s.droppedTags.join(', ')}.`;
   }
