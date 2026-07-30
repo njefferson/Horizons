@@ -664,6 +664,53 @@ being treated as one was a cache.
 
 ---
 
+## V-19 · The relay's write limiter is live, and rides on an experimental binding — **VERIFIED, with a named fragility**
+· raised 2026-07-30 with the security audit's quota-exhaustion finding
+
+**What was checked, and how.** Relay run 7 on `6438103` printed its binding table:
+
+    env.CHUNKS (***)                KV Namespace
+    env.WRITE_LIMIT (ratelimit)     Unsafe Metadata
+
+so the limiter is attached to the deployed Worker, not merely present in
+`wrangler.toml`. The same run then confirmed the relay still answers — HTTP 200
+with `{"chunks":[]}` on the first attempt, and a 204 to the OPTIONS preflight, so
+adding the binding broke neither reading nor cross-origin use.
+
+**The fragility, stated rather than discovered later.** The same deploy warned:
+
+    "unsafe" fields are experimental and may change or break at any time.
+
+Cloudflare's rate-limiting binding is declared under `[[unsafe.bindings]]`, and
+that is the *only* control bounding a stranger's ability to spend the daily KV
+write quota. So the defence rests on an interface its vendor reserves the right
+to change. Two consequences worth holding:
+
+- **A future wrangler could reject or ignore this stanza.** Rejecting is the safe
+  failure: the relay deploy goes red and the previous Worker keeps serving.
+  Ignoring is the dangerous one — the deploy succeeds, the binding is silently
+  absent, `allowWrite` is undefined, and the relay fails OPEN with nothing red
+  anywhere. That is the shape this repo keeps finding, and it is not currently
+  gated.
+- **The fail-open default is deliberate** (`relay/worker.ts`): the relay is
+  self-hostable, the limiter is Cloudflare-specific, and refusing every write on
+  a missing binding would turn a misconfiguration into total transfer failure for
+  a service whose worst untrusted-input outcome is a spent quota. That trade is
+  right, and it is exactly what makes the silent-ignore case invisible.
+
+**Closed in the same commit that raised it.** The relay workflow now greps
+wrangler's own applied-binding table for `WRITE_LIMIT` and fails the deploy if it
+is absent — the same move as checking that the relay answers rather than trusting
+that it deployed. A silently-dropped binding is now red, not invisible.
+
+**What this does NOT protect against.** A distributed flood from many addresses:
+the limit is per caller, so many callers each stay under it. Nothing here is a
+confidentiality or integrity control — a stranger can still neither read nor
+corrupt a mailbox, because that rests on the 128-bit sync id and on the seal.
+The limiter bounds *availability* damage only.
+
+---
+
 ## V-18 · The Cloudflare credential cannot deploy a Worker or create a KV namespace — **VERIFIED, and it blocks the relay**
 · raised 2026-07-30 with the first real run of `.github/workflows/relay.yml`
 

@@ -149,6 +149,25 @@ jobs:
         run: |
           set -euo pipefail
           npx --yes wrangler@${WRANGLER_VERSION} deploy 2>&1 | tee out.txt
+
+          # THE LIMITER MUST ACTUALLY BE BOUND (V-19).
+          #
+          # It is declared under `[[unsafe.bindings]]`, which wrangler itself
+          # warns is experimental and "may change or break at any time" — and it
+          # is the only control bounding a stranger's ability to spend the daily
+          # KV write quota. If a future wrangler REJECTS the stanza the deploy
+          # goes red, which is safe. If it silently IGNORES it, the deploy goes
+          # green, `allowWrite` is undefined, and the relay fails open with
+          # nothing red anywhere. That second case is the one worth a gate.
+          #
+          # wrangler prints the binding table it actually applied, so this asks
+          # the deploy what it did rather than trusting what was asked for.
+          if ! grep -q 'WRITE_LIMIT' out.txt; then
+            echo "::error::the deploy did not bind WRITE_LIMIT — the relay would accept unlimited writes from anyone. See V-19."
+            exit 1
+          fi
+          echo "WRITE_LIMIT is bound."
+
           URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' out.txt | head -1)
           if [ -z "$URL" ]; then
             echo "::error::the deploy did not print a workers.dev URL. If workers.dev is disabled on this account, the relay needs a custom domain instead."
