@@ -664,6 +664,57 @@ being treated as one was a cache.
 
 ---
 
+## V-17 · Will a real camera read the QR this encoder produces? — **NOT VERIFIED, and it is the only check that counts**
+· raised 2026-07-30 with `src/qr.ts`
+
+The encoder is built and heavily tested. **None of those tests can establish the one
+thing that matters.**
+
+What IS established here, and from first principles rather than from tables:
+
+- **GF(256) arithmetic** — against the field axioms: commutativity, associativity,
+  distributivity over XOR, and the existence of an inverse for all 255 non-zero
+  elements. Not a pasted table, which is a page of digits nobody checks.
+- **The Reed-Solomon codeword** — against its DEFINING property: every syndrome is
+  zero, i.e. the codeword is divisible by the generator. This is derivable and it
+  catches any error in the generator polynomial or the remainder. Corrupting one
+  symbol is asserted to break it, so the check has power.
+- **The geometry** — total codewords is COUNTED from the free modules of a laid-out
+  matrix, not looked up, and the data stream is asserted to fill that region exactly
+  with at most seven remainder bits. Every data position is visited exactly once.
+- **The structure** — three finders and no fourth, separators, timing patterns,
+  alignment, the dark module, both copies of the format information agreeing.
+- **The mask is chosen** by the specified penalty score, and each penalty rule is
+  measured as a delta from a checkerboard so it is attributable.
+
+**What is NOT established, and cannot be here:**
+
+- **the data/EC split for a version and level**
+  - By what: nothing. `EC_CODEWORDS` in `src/qr.ts` is the one table recited rather
+    than derived, and it is the sole reason this entry exists.
+  - Why no test can see it: a wrong entry produces a matrix that is well formed in
+    every way the tests examine — correct size, correct patterns, valid RS over
+    whatever it thinks the data is — and that no scanner will read. The round trip in
+    `test/qr.test.ts` would still pass, **because the reader would be wrong in exactly
+    the same way in both directions.** That is the shape of a test verifying its own
+    fake, which this project has already been caught by four times.
+  - What would settle it: point a phone camera at one. Once.
+
+- **that iOS opens the scanned link in the installed app rather than Safari**
+  - Already [V-16]. The two are separate: V-17 is "is it a valid QR", V-16 is "does
+    landing on it work". A pass on one says nothing about the other.
+
+**Two bugs the tests DID catch while it was being written**, which is the argument for
+the tests that exist rather than against them: the data-placement zigzag skipped the
+timing column only when a pair *started* on it, so four modules were written twice and
+column 6 never; and the format-information strip overwrote the timing patterns where
+they cross and turned the dark module light. The second was invisible to every
+count-based check — the reserved set was unchanged — and would have been invisible to
+a camera only in the sense that the camera would simply have failed.
+
+**Until this is verified, no surface may describe pairing as working.** The encoder is
+infrastructure, unwired, exactly like `seal.ts`, `relay.ts` and `sync.ts`.
+
 ## V-16 · Can an iPad web app scan a QR code at all? — **NOT VERIFIED, and it decides the pairing design**
 · raised 2026-07-30 with the sync stage 4 decision
 

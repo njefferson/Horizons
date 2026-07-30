@@ -533,6 +533,36 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **The QR encoder, and the boundary I drew in the wrong place.**
+  Noah: *"I still do not see anything about QR codes?"* He was right: it was recorded
+  as a decision in ADR-0037 and not built, because I had gated ALL of it behind V-16 —
+  whether an iPad can *read* a code. V-16 blocks reading. Showing was never blocked,
+  and I could have built it at any point in between.
+  · `src/qr.ts`, hand-written: GF(256), Reed-Solomon, byte mode, single-block versions
+  1–4, alignment, format information in both copies, all eight masks with the specified
+  penalty score, an SVG renderer with a quiet zone, and `pairingUrl` putting the key in
+  the FRAGMENT so it never reaches a server.
+  · **What CI proves, and from first principles:** the field axioms (not a pasted
+  table); the RS codeword against its DEFINING property, that every syndrome is zero;
+  the codeword count COUNTED from free modules rather than looked up, with the data
+  stream asserted to fill the region exactly; every data position visited once.
+  · **What CI cannot prove is [V-17]**: the data/EC split is the one table recited
+  rather than derived, and a wrong entry yields a matrix that passes every test here
+  and that no scanner reads — the round trip would agree with itself, which is the
+  verify-your-own-fake shape this session has now been caught by five times. One
+  photograph settles it. Until then no surface may call pairing working.
+  · **Two real bugs the tests caught while writing it.** The zigzag skipped the timing
+  column only when a pair STARTED on it, so four modules were written twice and column
+  6 never. And the format-information strip overwrote the timing patterns where they
+  cross and turned the dark module light — invisible to every count-based check,
+  because reserving a module twice is idempotent and the codeword total never moved.
+  · My penalty test was also meaningless at first: it compared an all-dark grid against
+  an all-light one, which are equally penalised. Uniform is not a neutral baseline; the
+  rules are now measured as deltas from a checkerboard.
+  · Unwired, like `seal.ts`, `relay.ts` and `sync.ts`. The reason there is no QR on
+  screen is that the screen it belongs to is Quietkeep Sync, a separate deployment
+  that does not exist yet (Doctrine §1).
+
 - **2026-07-30** — **A copy offered when a newer version lands (0.26.0 CAPABILITY).**
   Noah: *"Ask to backup when update detected?"*
   · **It refuses to imply danger, because there is none of the kind it would imply.**
