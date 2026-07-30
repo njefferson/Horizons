@@ -133,6 +133,26 @@ if (!RELAY_HOST) {
       pass('the sync build\'s cache name is its own');
     }
 
+    // ADR-0036 names the editions **Quietkeep** and **Quietkeep Sync**. That is
+    // not decoration: somebody with both installed sees two icons on one home
+    // screen, and two things called "Quietkeep" holding different data is the
+    // most confusing possible outcome of a feature meant to end confusion about
+    // where your work is.
+    const titlePath = join(SYNC_OUT, 'index.html');
+    if (existsSync(titlePath)) {
+      const html = readFileSync(titlePath, 'utf8');
+      writeFileSync(titlePath, html.replace('<title>Quietkeep</title>', '<title>Quietkeep Sync</title>'));
+      pass('the page is titled Quietkeep Sync');
+    }
+    const manifestPath = join(SYNC_OUT, 'manifest.webmanifest');
+    if (existsSync(manifestPath)) {
+      const m = JSON.parse(readFileSync(manifestPath, 'utf8'));
+      m.name = 'Quietkeep Sync';
+      m.short_name = 'Quietkeep Sync';
+      writeFileSync(manifestPath, `${JSON.stringify(m, null, 2)}\n`);
+      pass('and so is the installed app');
+    }
+
     const built = readFileSync(join(SYNC_OUT, 'app.js'), 'utf8');
     if (SYNC_MARKERS.every(m => built.includes(m))) {
       pass('the sync bundle contains the sync module');

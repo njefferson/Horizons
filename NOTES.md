@@ -834,10 +834,33 @@ decided by a session.**
   PROVABLE from the local log alone. Nothing above the last range is ever
   requested — nothing proves it exists, and asking would post an unsatisfiable
   request on every open until it filled the mailbox.
-  · **Still not built: stage 4**, the separate Quietkeep Sync deployment, and it
-  is blocked on one decision that is Noah's rather than mine — **how the key gets
-  onto the second device** (a pairing file, a typed code, or a QR scan). The
-  crypto is transfer-agnostic, which is why the rest could be built first.
+  · **Stage 4 is built and proven, and blocked on a Cloudflare permission.**
+  Pairing is by FILE — Noah, 2026-07-30: *"File first."* One device writes a small
+  JSON file carrying the key, the host and the pairing name; the other opens it.
+  No camera, no decoder, nothing from V-16 or V-17. The QR is a nicer way to move
+  the same 44 characters and can arrive later without changing pairing at all,
+  because what pairing DOES is independent of how the key travels. Building the
+  pretty rung before the working one was the mistake.
+  · **`test/sync-end-to-end.test.ts` is the claim that sync works.** Two real
+  sessions over separate stores, the real gate on every keystroke, real seal, real
+  `exchangeOnce`, real `httpWire`, and the real relay `handle()` with its routing
+  and status codes — only the socket is stood in for. Capture on A, exchange,
+  exchange on B, and it is on B. Written because two defects got past 567 passing
+  tests: every one of those checked a layer against a fake, and neither defect
+  lived inside a layer. They lived in what the layers assumed about each other.
+  · Those two defects, both fixed with tests that red on the old code: identity on
+  the wire was `device#seq`, but `cureFor` stamps a cure with its cause's device
+  AND seq, so the key identified a PAIR and dropped half of every capture; and
+  arrivals were re-run through `admit`, which double-mints cures the store then
+  refuses. Arrivals are a shard union now (`takeInEvents`), sharing the import
+  button's road. Recorded on the hub as LESSONS §7e.
+  · **What is left is not code.** The relay cannot be deployed: the Cloudflare
+  credential publishes Pages but has no Workers permissions, so there is nowhere
+  to create the KV namespace (V-18). Two permissions on the token — Workers KV
+  Storage:Edit and Workers Scripts:Edit — and the relay workflow deploys, prints
+  its URL, that URL goes in `src/relay-host.ts`, and the Sync edition builds and
+  ships. `tools/editions.mjs` builds NO sync edition while that host is unset, so
+  nothing can go out dialling a host that does not exist.
   · The sync design itself is recorded and stages 1-3b built. ADR-0037 names the
   three things that still need Noah's word: the doctrine wording (a sync id is
   account-shaped, and "no accounts, no server" stays true only of the default

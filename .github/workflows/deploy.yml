@@ -173,6 +173,49 @@ jobs:
           wranglerVersion: ${{ env.WRANGLER_VERSION }}
           command: pages deploy public --project-name=${{ env.PROJECT }} --branch=${{ github.ref_name }} --commit-dirty=true
 
+      # --- Quietkeep Sync (ADR-0036), when there is one to ship ----------------
+      #
+      # `build:sync` writes dist/sync ONLY when src/relay-host.ts names a real
+      # relay. With no relay deployed it skips, loudly, and exits zero — so this
+      # whole tail is inert rather than red. "There is no sync edition yet" is an
+      # honest state; a permanently failing deploy step is not, and would train
+      # everybody to ignore a red Deploy.
+      - name: Build the Sync edition, if there is a relay
+        if: steps.site.outputs.present == 'true'
+        run: npm run build:sync
+
+      - name: Is there a Sync edition to deploy?
+        id: sync
+        if: steps.site.outputs.present == 'true'
+        run: |
+          if [ -f dist/sync/index.html ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "dist/sync built — Quietkeep Sync will be published."
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No dist/sync. There is no relay host set, so there is no Sync edition."
+            echo "This is expected until the relay is deployed — see V-18."
+          fi
+
+      - name: Ensure the Sync Pages project exists
+        if: steps.cf.outputs.ready == 'true' && steps.sync.outputs.present == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages project create ${{ env.PROJECT }}-sync --production-branch=main
+
+      - name: Deploy Quietkeep Sync
+        if: steps.cf.outputs.ready == 'true' && steps.sync.outputs.present == 'true'
+        uses: cloudflare/wrangler-action@9acf94ace14e7dc412b076f2c5c20b8ce93c79cd # v3
+        with:
+          apiToken: ${{ env.CF_TOKEN }}
+          accountId: ${{ env.CF_ACCOUNT }}
+          wranglerVersion: ${{ env.WRANGLER_VERSION }}
+          command: pages deploy dist/sync --project-name=${{ env.PROJECT }}-sync --branch=${{ github.ref_name }} --commit-dirty=true
+
       - name: Where this went, and how to roll it back
         if: always() && steps.cf.outputs.ready == 'true'
         run: |
