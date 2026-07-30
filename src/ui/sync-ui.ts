@@ -30,6 +30,7 @@ import {
   malformedPairing, pairingFilename, pairingWords,
 } from './pairing.ts';
 import { outcomeWords, runExchange } from './sync-run.ts';
+import { deviceLine, deviceRecords, devicesWords, REPLACE_KEY_WORDS, REPLACED_KEY_WORDS } from '../devices.ts';
 import type { Session } from './session.ts';
 
 /** What this edition sends, in the plainest words available. Exported so a test
@@ -98,7 +99,17 @@ export async function mountSync(session: Session): Promise<void> {
   syncBtn.type = 'button';
   const forgetBtn = el('button', 'ghost', 'Forget this pairing');
   forgetBtn.type = 'button';
-  actions.append(pairBtn, syncBtn, forgetBtn);
+  const replaceBtn = el('button', 'ghost', 'Replace the key');
+  replaceBtn.type = 'button';
+  actions.append(pairBtn, syncBtn, replaceBtn, forgetBtn);
+
+  // WHO HAS WRITTEN HERE. Noah asked whether a person can see how many devices
+  // are syncing — the app has always known, from the device id on every event,
+  // and had never shown it. An extra device in a pair is invisible until
+  // something lists them, which makes listing them a security control and not a
+  // statistic.
+  const devicesP = el('p', 'about-p');
+  const devicesList = el('ul', 'note-list');
 
   const openLabel = el('label', 'detail-label', 'Open a pairing file from your other device');
   const openFile = el('input');
@@ -111,18 +122,25 @@ export async function mountSync(session: Session): Promise<void> {
   note.setAttribute('aria-live', 'polite');
 
   const section = el('div');
-  section.append(heading, posture, state, actions, openLabel, openFile, note);
+  section.append(heading, posture, state, devicesP, devicesList, actions, openLabel, openFile, note);
   anchor.parentElement.insertBefore(section, anchor.nextSibling);
 
   const paint = async (): Promise<void> => {
     const pair = await currentPairing(session.store);
     state.textContent = pairingWords(pair);
     const paired = pair !== null;
+
+    const records = deviceRecords(await session.store.all(), session.device);
+    devicesP.textContent = devicesWords(records);
+    const now = new Date().toISOString();
+    devicesList.replaceChildren(
+      ...records.map(r => el('li', undefined, deviceLine(r, now))));
     // Hidden rather than disabled when there is nothing to act on: a disabled
     // control still reads as a thing you have failed to earn, and there is no
     // failure here — this device simply has no pair yet.
     syncBtn.hidden = !paired;
     forgetBtn.hidden = !paired;
+    replaceBtn.hidden = !paired;
     pairBtn.textContent = paired ? 'Replace this pairing' : 'Pair this device';
     if (!paired) note.textContent = FIRST_STEP_WORDS;
   };
@@ -184,6 +202,37 @@ export async function mountSync(session: Session): Promise<void> {
         note.textContent = `That exchange stopped — ${(err as Error).message} Nothing here was lost.`;
       } finally {
         syncBtn.disabled = false;
+      }
+    })();
+  });
+
+  // TWO STEPS, because it cuts another device off and the first press is where
+  // somebody learns exactly what that does and does not mean. Not a typed word:
+  // this is reversible by pairing again, unlike erasing, so the guard is
+  // proportionate — read a sentence, then confirm.
+  let replaceArmed = false;
+  replaceBtn.addEventListener('click', () => {
+    void (async () => {
+      if (!replaceArmed) {
+        replaceArmed = true;
+        replaceBtn.textContent = 'Replace the key — press again';
+        note.textContent = REPLACE_KEY_WORDS;
+        return;
+      }
+      replaceArmed = false;
+      replaceBtn.textContent = 'Replace the key';
+      replaceBtn.disabled = true;
+      try {
+        // A fresh key, which is a fresh mailbox: whoever holds the old one is
+        // talking to a place nothing arrives at any more.
+        const file = await beginPairing(session.store, RELAY_HOST, new Date().toISOString());
+        deliverPairing(file, pairingFilename(file.id));
+        await paint();
+        note.textContent = `${REPLACED_KEY_WORDS} ${FILE_WARNING_WORDS}`;
+      } catch (err) {
+        note.textContent = `That did not work — ${(err as Error).message} The key here has not changed.`;
+      } finally {
+        replaceBtn.disabled = false;
       }
     })();
   });
