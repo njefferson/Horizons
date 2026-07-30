@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.24.1',
+    kind: 'ITERATION',
+    date: '2026-07-30',
+    notes: [
+      '**Buttons stay with the thing they belong to.** On a long title, &ldquo;Done&rdquo; used to wrap onto a line of its own and sit directly above the *next* item \u2014 so it looked like it belonged to that one instead. The box is now drawn around the whole row, including its buttons, at every width and text size.',
+      'A gate now measures this, so it cannot come back quietly.',
+    ],
+  },
+  {
     triplet: '0.24.0',
     kind: 'CAPABILITY',
     date: '2026-07-30',

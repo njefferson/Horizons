@@ -525,16 +525,33 @@ button.ghost {
    button is invalid HTML. */
 .card {
   display: flex;
-  align-items: stretch;
+  align-items: center;
   gap: 0.5rem;
   /* WRAPS. The row held two controls and did not need to; "Work on this" made it
      three, and at 320px with 200% text the third pushed the PAGE sideways by
      42px (a11y gate, B-04's hardest case). A row of actions that cannot wrap is
      a row that only fits the widths it was written at. */
   flex-wrap: wrap;
+  /* THE BORDER IS HERE, not on the title button, and that is a correctness fix
+     rather than a style preference.
+     It used to sit on `.card-open`, so the bordered box was only the TITLE and the
+     action buttons floated outside it. Because the title is `flex: 1 1 auto`, the
+     wrap point moved with the length of each title — so on a long row "Done"
+     wrapped onto a line of its own, left-aligned, sitting directly above the NEXT
+     item. A completion button that appears to belong to the thing below it is not
+     an alignment complaint, it is a mis-tap waiting to happen, and Noah found it
+     at 1,429 rows where almost every title is long.
+     With the container on `.card`, anything that wraps stays visibly inside the
+     item it acts on, at every width and every text size. */
+  padding: 0.5rem 0.6rem;
+  background: var(--surface);
+  /* The border carries the separation, not the fill: surface against bg is only
+     ~1.14:1, and one channel is never enough (B-01). */
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
 }
 .card-open {
-  flex: 1 1 auto;
+  flex: 1 1 12rem;
   min-width: 0;
   min-height: var(--target);
   font: inherit;
@@ -546,12 +563,30 @@ button.ghost {
   justify-content: space-between;
   gap: var(--gap);
   flex-wrap: wrap;
-  padding: 0.75rem 1rem;
-  background: var(--surface);
-  /* The border carries the separation, not the fill: surface against bg is only
-     ~1.14:1, and one channel is never enough (B-01). */
-  border: 1px solid var(--line);
+  padding: 0.25rem 0.4rem;
+  /* Transparent, because the card around it now carries the box. A second border
+     inside a border reads as two things. */
+  background: transparent;
+  border: 1px solid transparent;
   border-radius: var(--radius);
+}
+/* The actions travel TOGETHER. One wrapper as a single flex item, so the group
+   either sits beside the title or drops below it whole — never one button beside
+   the title and the other stranded on the next line. */
+.card-actions {
+  /* SHRINKABLE, and `min-width: 0` with it. `flex: 0 0 auto` sized the group to
+     its content and refused to narrow, so at 320px with 200% text the two buttons
+     pushed the page 192px sideways — the a11y gate caught it on the first run,
+     which is exactly the failure the note on `.card` was written about. Shrinking
+     lets the buttons inside stack instead. */
+  flex: 0 1 auto;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  /* Pushed right when there is room, and harmless when there is not. */
+  margin-left: auto;
 }
 
 .card-done {

@@ -95,6 +95,14 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       if (openDetail) open.addEventListener('click', () => openDetail(node));
       li.append(open);
 
+      // The actions live in ONE wrapper, so they wrap as a group. As bare siblings
+      // they wrapped independently: on a long title "Done" landed alone on the next
+      // line while "Work on this" stayed beside the title. Moving the card's border
+      // onto `.card` is what fixes the mis-tap (a stray button used to sit above a
+      // DIFFERENT item); grouping is what stops the pair splitting up.
+      const actions = document.createElement('div');
+      actions.className = 'card-actions';
+
       // "Work on this" — the way into a focus session, on the row rather than
       // buried in the sheet. Starting work is the commonest thing anyone does
       // here and it should not cost two taps and a dialog.
@@ -111,7 +119,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
         go.setAttribute('aria-label',
           `${node.kind === 'resume-card' ? 'Pick back up' : 'Work on'} ${node.title || '(untitled)'}`);
         go.addEventListener('click', () => onFocus(node));
-        li.append(go);
+        actions.append(go);
       }
 
       // Check it off without opening anything — what makes this a todo list.
@@ -132,8 +140,11 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
         done.textContent = 'Done';
         done.setAttribute('aria-label', `Done: ${node.title || '(untitled)'}`);
         done.addEventListener('click', () => onDone(node.id));
-        li.append(done);
+        actions.append(done);
       }
+      // Only when it has something in it: an empty div is a gap in a row of cards,
+      // and a Menu row legitimately has no actions at all.
+      if (actions.childElementCount > 0) li.append(actions);
       ul.append(li);
     }
   }

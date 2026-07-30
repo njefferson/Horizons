@@ -39,6 +39,59 @@ const SANDBOX_CHROMIUM = process.env.CHROMIUM_PATH || '/opt/pw-browsers/chromium
 if (existsSync(SANDBOX_CHROMIUM)) launchOpts.executablePath = SANDBOX_CHROMIUM;
 
 const failures = [];
+
+/**
+ * Every card must have ONE visible box that contains all of its own controls.
+ *
+ * The bug: the border lived on the title button rather than on the card, and the
+ * actions were siblings that wrapped independently — so on a long title "Done"
+ * landed alone on the next line, left-aligned, directly above a DIFFERENT item.
+ * Noah found it at 1,429 rows. A completion control that appears to belong to the
+ * thing below it is a mis-tap, not a cosmetic complaint, and no contrast or target
+ * check can see it.
+ *
+ * The FIRST version of this asserted the buttons sat inside the card element's
+ * bounding rect — which is a tautology, because a flex container always grows to
+ * enclose its children wherever the border happens to be drawn. It passed with the
+ * bug reintroduced. What matters is the box somebody can SEE: there must exist an
+ * element, the card or something in it, that draws a border and encloses every
+ * control the card owns. Stated that way it is about the rendered result rather
+ * than about which selector carries the style, so it survives any rewrite.
+ */
+async function auditCardContainment(page, state, theme) {
+  const bad = await page.evaluate(() => {
+    const out = [];
+    const bordered = (el) => {
+      const st = getComputedStyle(el);
+      return ['Top', 'Right', 'Bottom', 'Left'].every(side => {
+        const w = parseFloat(st[`border${side}Width`]);
+        const c = st[`border${side}Color`];
+        return w > 0 && c !== 'rgba(0, 0, 0, 0)' && c !== 'transparent';
+      });
+    };
+    const holds = (outer, inner) =>
+      inner.top >= outer.top - 1 && inner.bottom <= outer.bottom + 1
+      && inner.left >= outer.left - 1 && inner.right <= outer.right + 1;
+
+    for (const card of document.querySelectorAll('#cards .card')) {
+      const controls = [...card.querySelectorAll('button')]
+        .map(b => b.getBoundingClientRect()).filter(r => r.width > 0);
+      if (controls.length === 0) continue;
+      // Candidate boxes: the card, and any NON-button element inside it that draws
+      // a border. A button cannot be the box that contains its siblings.
+      const candidates = [card, ...card.querySelectorAll('*')]
+        .filter(el => el.tagName !== 'BUTTON' && bordered(el))
+        .map(el => el.getBoundingClientRect());
+      if (!candidates.some(box => controls.every(c => holds(box, c)))) {
+        out.push(`no single visible box holds every control of "${(card.textContent || '').replace(/\s+/g, ' ').slice(0, 44)}"`);
+      }
+    }
+    return out;
+  });
+  const label = `${theme}/${state}: each card has one visible box around all its controls`;
+  if (bad.length > 0) fail(`${label} — ${bad.slice(0, 2).join('; ')}`);
+  else pass(`${label}: yes`);
+}
 const fail = (m) => { failures.push(m); console.error(`  FAIL  ${m}`); };
 const pass = (m) => console.log(`  ok    ${m}`);
 
@@ -428,6 +481,7 @@ try {
     await auditContrast(page, 'with cards', theme);
     await auditAxe(page, 'with cards', theme);
     await auditTargets(page, 'with cards', theme);
+    await auditCardContainment(page, 'with cards', theme);
     // Only .card-open exists here: an unrouted capture belongs to triage and is
     // deliberately given no Done control. The tick-off button is audited in the
     // 'next up' state below, once the item has been routed and can be completed.

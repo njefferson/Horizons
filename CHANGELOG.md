@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.24.1 — ITERATION
+
+*2026-07-30*
+
+- **Buttons stay with the thing they belong to.** On a long title, &ldquo;Done&rdquo; used to wrap onto a line of its own and sit directly above the *next* item — so it looked like it belonged to that one instead. The box is now drawn around the whole row, including its buttons, at every width and text size.
+- A gate now measures this, so it cannot come back quietly.
+
 ## 0.24.0 — CAPABILITY
 
 *2026-07-30*
