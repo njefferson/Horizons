@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.22.0 — CAPABILITY
+
+*2026-07-30*
+
+- **You can put some sample work in.** An empty planner is hard to judge, so there is now a button that adds a small set of ordinary work dated around today — a job with two steps, something whose date has already gone by, something you are waiting on someone else for, a couple of things nobody is asking of you, and two notes not yet sorted. It goes in beside anything you already have and behaves exactly like your own work.
+- There is no button that takes only the sample work back out again, and the panel says so before you press it.
+- **Files you export now carry your own date, not the world’s.** In the evening an exported calendar was named with tomorrow’s date while saying inside that it was made today. Same day in both places now.
+
 ## 0.21.1 — ITERATION
 
 *2026-07-29*

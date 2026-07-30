@@ -2318,6 +2318,50 @@ try {
   is(folded, 1, 'and exactly one shard.folded is recorded — the one that took something');
   await tpage.click('#about-close');
 
+  console.log('\nSample work — an empty planner is hard to judge');
+  // Not "the button exists" — what it PUTS IN. A demonstration that adds nothing,
+  // or that adds rows the app would refuse, is worse than no demonstration, and
+  // only the real store can say which happened.
+  const beforeSample = await tpage.locator('#cards .card').count();
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#sample');
+  await tpage.waitForFunction(() => /sample things/.test(
+    document.querySelector('#sample-note')?.textContent ?? ''), null, { timeout: 4000 });
+  const sampleSaid = await tpage.locator('#sample-note').textContent();
+  is(/\d+ sample things/.test(sampleSaid || ''), true,
+    `it says how many went in ("${(sampleSaid || '').slice(0, 60)}")`);
+  is(/beside anything you already have/.test(sampleSaid || ''), true,
+    'and that it sits beside what was already there, rather than replacing it');
+  await tpage.waitForTimeout(900);
+  await tpage.waitForSelector('body[data-ready=true]');
+  const afterSample = await tpage.locator('#cards .card').count();
+  is(afterSample > beforeSample, true,
+    `the list actually grew (${beforeSample} -> ${afterSample})`);
+
+  // The characteristic surfaces the set exists to show. A sample of nothing but
+  // tidy rows would teach nothing about the app that matters.
+  const sampleLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    return await new Promise((res, rej) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result); tx.onerror = () => rej(tx.error);
+    });
+  });
+  is(sampleLog.some(e => e.kind === 'capture.recorded' && e.payload?.source === 'sample'), true,
+    'a sample capture says it came from the sample, not from a keystroke');
+  is(sampleLog.some(e => e.kind === 'waiting.opened'), true,
+    'something is with another person');
+  is(sampleLog.some(e => e.kind === 'menu.item.added'), true,
+    'and something is on the Menu, asking nothing');
+  is(sampleLog.some(e => e.kind === 'node.created' && e.payload?.parent), true,
+    'and something sits under a parent — the shape a flat list cannot express');
+  // No close click here: adding the set reloads the page (the same thing taking in
+  // a copy does), so the panel is already gone and waiting for its X would hang.
+
   console.log('\nThe badge — a glance at the icon, and a number that can reach zero');
   const badge = await tpage.evaluate(async () => {
     const calls = [];

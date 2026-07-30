@@ -42,7 +42,11 @@ export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person'] as const sat
 
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
 export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash';
-export type CaptureSource = 'quick' | 'share-target' | 'url-endpoint' | 'shortcut' | 'focus-interrupt';
+// `sample` is the demonstration set (src/sample.ts). Named rather than folded
+// into `quick`, because a capture that says it came from a keystroke when it came
+// from a button labelled "sample work" is a small lie in the one place the app
+// keeps its history. Additive only, so every log already written stays readable.
+export type CaptureSource = 'quick' | 'share-target' | 'url-endpoint' | 'shortcut' | 'focus-interrupt' | 'sample';
 export type Heat = 'hot' | 'cold';
 export type Capacity = 'low' | 'steady' | 'sharp' | 'unsure';
 export type Magnitude = 'pebble' | 'rock' | 'boulder';

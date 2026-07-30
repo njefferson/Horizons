@@ -48,6 +48,7 @@ const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
+  '#sample', '#sample-note',
   // The always-reachable way out. This panel is thousands of pixels tall, so a
   // close button only at the bottom meant scrolling the entire release history
   // to shut it (Noah, on device).
@@ -833,7 +834,7 @@ try {
     await auditContrast(page, 'dialog, return visit', theme);
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
-    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar']);
+    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample']);
 
     // Today on paper, in the same panel.
     await auditContrast(page, 'today on paper', theme);

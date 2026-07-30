@@ -162,7 +162,12 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 ### C · Capture and triage
 
 - **`capture.recorded`**
-  - Payload: `text, source: quick | share-target | url-endpoint | shortcut | focus-interrupt, sourceTags[]`
+  - Payload: `text, source: quick | share-target | url-endpoint | shortcut | focus-interrupt | sample, sourceTags[]`
+  - `sample` is the demonstration set (`src/sample.ts`), added 2026-07-30. Named
+    rather than folded into `quick`, because a capture claiming it came from a
+    keystroke when it came from a button labelled "sample work" is a small lie in
+    the one place the app keeps its history. Additive only: every log already
+    written stays readable.
   - Silent risk: **yes — gated** (an unclarified item gets an aggressive same-day clock at write time, not later)
 - **`heat.set`**
   - Payload: `heat: hot | cold`

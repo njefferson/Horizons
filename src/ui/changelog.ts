@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.22.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-30',
+    notes: [
+      '**You can put some sample work in.** An empty planner is hard to judge, so there is now a button that adds a small set of ordinary work dated around today \u2014 a job with two steps, something whose date has already gone by, something you are waiting on someone else for, a couple of things nobody is asking of you, and two notes not yet sorted. It goes in beside anything you already have and behaves exactly like your own work.',
+      'There is no button that takes only the sample work back out again, and the panel says so before you press it.',
+      '**Files you export now carry your own date, not the world\u2019s.** In the evening an exported calendar was named with tomorrow\u2019s date while saying inside that it was made today. Same day in both places now.',
+    ],
+  },
+  {
     triplet: '0.21.1',
     kind: 'ITERATION',
     date: '2026-07-29',

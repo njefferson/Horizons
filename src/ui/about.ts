@@ -26,6 +26,7 @@ import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
+import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -622,6 +623,43 @@ export async function mountAbout(session: Session): Promise<void> {
     // "Sent. Open the file…" — indefinitely, whatever had changed since (audit).
     paintCalendar();
   };
+
+  // --- sample work ---------------------------------------------------------
+  //
+  // Through `session.commit`, which is the app's own write path: it admits and
+  // appends in one queued transaction. Nothing here is privileged, so the sample
+  // set cannot demonstrate a state the app would refuse — and a bug in the
+  // generator surfaces as a refusal rather than as a corrupt store.
+  const sampleButton = document.querySelector<HTMLButtonElement>('#sample');
+  const sampleNote = document.querySelector<HTMLElement>('#sample-note');
+  if (sampleButton && sampleNote) {
+    sampleButton.addEventListener('click', () => {
+      void (async () => {
+        sampleButton.disabled = true;
+        try {
+          const at = new Date().toISOString();
+          // Generated ONCE and captured, so the number reported is counted from
+          // the very events that were committed. Generating a second set to count
+          // would be two sources for one fact, which is the shape that has caused
+          // more defects here than any other.
+          let made: AppEvent[] = [];
+          await session.commit(ctx => {
+            made = sampleEvents(ctx, at);
+            return made;
+          });
+          sampleNote.textContent = `${sampleWords(sampleSummary(made))} Reloading…`;
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          // Said plainly, and the button comes back. A refusal here means the
+          // generator produced something the gate would not take, which is a
+          // defect in the sample set and not something the reader did.
+          sampleNote.textContent =
+            `That could not be added — ${(err as Error).message} Nothing was changed.`;
+          sampleButton.disabled = false;
+        }
+      })();
+    });
+  }
 
   open.addEventListener('click', () => show(false));
 
