@@ -33,6 +33,7 @@ import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badg
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 import { deliverCopy } from './export-copy.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
+import { mountSecurity } from './security.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -204,6 +205,12 @@ export async function mountAbout(session: Session): Promise<void> {
   //
   // Silent when there is no knowable sibling. That is the whole reason this is
   // not a hardcoded URL — see `sibling.ts`.
+  // "How this works, and what it protects" — Noah asked for the security story to
+  // have its OWN place for people who want it, without it becoming the panel.
+  // A collapsed disclosure just above the What-this-is block: its own location,
+  // one tap, and free to everybody who never opens it.
+  mountSecurity(document.querySelector('#sibling'));
+
   const siblingP = document.querySelector<HTMLElement>('#sibling');
   if (siblingP) {
     const here = location.hostname;

@@ -1878,6 +1878,30 @@ try {
   is(panelH < 9000, true, `the panel is readable rather than a scroll of history (${panelH}px)`);
   is(await tpage.locator('.note-older').count(), 1,
     'older releases are one tap away, not removed');
+
+  // The security explanation Noah asked for: its own place, collapsed, and
+  // costing nothing to anybody who never opens it. Checked in the BUILT app
+  // because the passages are unit-tested but their reaching the screen is not.
+  const sec_shut = await tpage.evaluate(() => {
+    const d = document.querySelector('#security');
+    return { there: !!d, open: d?.hasAttribute('open') ?? null,
+             label: d?.querySelector('summary')?.textContent ?? '' };
+  });
+  is(sec_shut.there, true, 'the security explanation is in the panel');
+  is(sec_shut.open, false, 'collapsed, so it costs nothing to anyone not reading it');
+  is(/how this works/i.test(sec_shut.label), true, `and says what it is ("${sec_shut.label}")`);
+  const sec_body = await tpage.evaluate(() => {
+    const d = document.querySelector('#security');
+    d.setAttribute('open', '');
+    return { text: d.textContent ?? '', headings: d.querySelectorAll('h4').length };
+  });
+  is(sec_body.headings >= 3, true, `it has real sections (${sec_body.headings})`);
+  // This walk runs the DEFAULT build, whose whole claim is that it cannot reach
+  // anything. If this ever renders the sync explanation, the edition split has
+  // failed somewhere no unit test would see.
+  is(/Nothing\./.test(sec_body.text), true, 'and the private build states its strong claim');
+  is(/handover point/i.test(sec_body.text), false,
+    'without describing a sync this build does not have');
   await tpage.click('#about-close');
 
   console.log('\nToday on paper \u2014 and a print that prints the right thing');

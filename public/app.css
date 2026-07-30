@@ -1212,7 +1212,8 @@ dialog, dialog * { overflow-wrap: anywhere; }
 
 /* Older releases, folded. Rendering every release at once made the About panel
    17,000–25,000px tall — the reason a way out was ever far from a thumb. */
-.note-older > summary {
+.note-older > summary,
+.disclosure > summary {
   min-height: var(--target);
   display: flex;
   align-items: center;
