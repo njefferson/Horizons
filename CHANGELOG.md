@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.23.0 — CAPABILITY
+
+*2026-07-30*
+
+- **You can clear things out, two different ways.** *Clear what I’m holding* empties your surfaces and keeps every record of what happened, so a copy you export afterwards still has all of it. *Start again from empty* replaces the lot, history included, and cannot be undone from inside the app. The panel says which is which before you choose.
+- **Neither can be done by accident.** Each asks you to type a short word first — a different word for each, so a word typed for one can never authorise the other — and switching between them clears what you typed.
+- **It recommends saving a copy, with the button right there,** and the sentence above the go-ahead says plainly whether you have saved one.
+- It tells you the real count of what is about to go, never a rounded one.
+
 ## 0.22.0 — CAPABILITY
 
 *2026-07-30*

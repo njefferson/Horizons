@@ -533,6 +533,41 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **Clearing things out (0.23.0 CAPABILITY).** Noah, answering the
+  open question: *"I feel like both should be available so the user has control of
+  their data"* and *"there should be a verification that prevents it from being
+  easily done, however, and it should recommend a back up being done before it
+  happens with a button available at that point."*
+  · **Two modes, because they are different promises.** *Clear what I'm holding*
+  appends one `node.trashed` per held thing — the surfaces empty and the log still
+  contains everything, so law 9 stays unqualified and an export taken afterwards is
+  complete. *Start again from empty* calls `replaceAll([])`: the only operation in
+  this app that destroys data on purpose. Offering only the first would be dishonest
+  about what people want; offering only the second would make "clear the list" cost
+  the history.
+  · **The guard is a typed word, not a held button.** Hold-to-confirm is a dexterity
+  test and tremor is a supported condition — a guard a shaking hand cannot pass locks
+  somebody out of their own data. Case and stray spaces are forgiven; the check is on
+  intent.
+  · **The two words differ, and that is load-bearing.** With one shared word, typing
+  it for the reversible mode and then switching would carry the authorisation across
+  to the irreversible one. The UI half of the same protection: switching mode clears
+  the field, asserted in smoke.
+  · The backup is recommended with the button beside it, and the sentence above the
+  go-ahead states whether a copy has been saved — a recommendation nobody acted on
+  has to still be visible at the moment of the decision. It does not block; an adult
+  who has read an accurate sentence may proceed.
+  · Found while building it: `pick()` revealed the confirmation block before awaiting
+  the store read, so the consequence line was briefly visible and EMPTY — a paragraph
+  of nothing above the button, in the one place where the sentence is the entire
+  safeguard.
+  · The a11y gate now opens the confirmation in both audited dialog states rather
+  than having the registry name a hidden element. A control that only exists after a
+  click is still a control somebody reads, and exempting it would have exempted the
+  typed-word box.
+  · **Still roadmapped, not built: selecting ranges** (clear or export a chosen
+  subset rather than everything), a dry run for bulk acts, and a way to view the log.
+
 - **2026-07-30** — **Sample work (0.22.0 CAPABILITY).** Noah: *"I eventually want a
   set of test data i can import."* A generator, never a file: a fixture with a
   literal date in it is wrong tomorrow and absurd next year, and every surface here

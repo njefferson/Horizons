@@ -344,6 +344,26 @@ button.ghost {
  * alarm, and nothing on this surface shouts. */
 .replan-error { margin: 0.25rem 0 0; color: var(--ink); font-weight: 600; }
 
+/* --- clearing things out ---------------------------------------------------
+ * The confirmation is a typed word, and the box has to be as reachable as any
+ * other control here: the same 44px floor and the same borrowed styling as the
+ * file picker, because this is also a surface somebody reaches for at a moment
+ * they are not at their best.
+ */
+.purge-label { display: block; margin: 0.5rem 0 0.25rem; color: var(--ink); }
+#purge-word {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  margin: 0 0 0.5rem;
+  padding: 0.5rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+
 /* --- bringing a copy back -------------------------------------------------
  * A real <input type="file">, not a styled button driving a hidden one: this is
  * the surface someone reaches for after something has already gone wrong, and

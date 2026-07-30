@@ -627,6 +627,34 @@
     copy first if what is already here matters.
   </p>
 
+  <h3 class="about-section">Clearing things out</h3>
+  <p id="purge-summary" class="about-p" role="status" aria-live="polite"></p>
+  <p class="about-p">
+    Two different things, and they are not the same favour. Save a copy first
+    &mdash; it takes a second and it is the only way back.
+  </p>
+  <div class="about-actions">
+    <button id="purge-backup" type="button">Save a copy first</button>
+  </div>
+  <p id="purge-backup-note" class="storage-note" role="status" aria-live="polite"></p>
+  <div class="about-actions">
+    <button id="purge-pick-clear" type="button" class="ghost">Clear what I&rsquo;m holding</button>
+    <button id="purge-pick-erase" type="button" class="ghost">Start again from empty</button>
+  </div>
+  <div id="purge-confirm" hidden>
+    <p id="purge-consequence" class="about-p"></p>
+    <label class="purge-label" for="purge-word">
+      Type <strong id="purge-word-required"></strong> to go ahead
+    </label>
+    <input id="purge-word" type="text" autocomplete="off" autocapitalize="off"
+           spellcheck="false" inputmode="text">
+    <div class="about-actions">
+      <button id="purge-go" type="button" disabled>Go ahead</button>
+      <button id="purge-cancel" type="button" class="ghost">Leave it alone</button>
+    </div>
+  </div>
+  <p id="purge-note" class="storage-note" role="status" aria-live="polite"></p>
+
   <h3 class="about-section">What&rsquo;s new</h3>
   <div id="patch-notes"></div>
 

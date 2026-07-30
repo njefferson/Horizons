@@ -49,6 +49,9 @@ const DIALOG_COMMON = [
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
   '#sample', '#sample-note',
+  '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
+  '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',
+  '#purge-cancel', '#purge-consequence',
   // The always-reachable way out. This panel is thousands of pixels tall, so a
   // close button only at the bottom meant scrolling the entire release history
   // to shut it (Noah, on device).
@@ -399,6 +402,12 @@ try {
 
     // State 1: the first-run dialog, exactly as a new user meets it.
     await page.waitForSelector('#storage-body dt');
+    // The clearing confirmation is revealed by choosing a mode, so it is opened
+    // here: a control that only exists after a click is still a control somebody
+    // reads, and leaving it out of the audit would exempt the typed-word box —
+    // the one surface in the app standing between a person and their history.
+    await page.click('#purge-pick-clear');
+    await page.waitForSelector('#purge-confirm:not([hidden])');
     await auditContrast(page, 'first-run dialog', theme);
     await auditAxe(page, 'first-run dialog', theme);
     await auditTargets(page, 'first-run dialog', theme);
@@ -831,10 +840,12 @@ try {
     // live in, which the first gate structurally could not audit.
     await page.click('#open-about');
     await page.waitForSelector('#storage-body dt');
+    await page.click('#purge-pick-clear');
+    await page.waitForSelector('#purge-confirm:not([hidden])');
     await auditContrast(page, 'dialog, return visit', theme);
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
-    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample']);
+    await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample', '#purge-pick-clear']);
 
     // Today on paper, in the same panel.
     await auditContrast(page, 'today on paper', theme);

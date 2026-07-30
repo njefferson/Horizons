@@ -194,9 +194,30 @@ is why everything else could be built without settling it. The options, honestly
   needs a QR encoder in the bundle — the first dependency this app would take on
   for a feature rather than for correctness.
 
-No recommendation is recorded here on purpose. It is a thing Noah has to live
-with, and the honest position is that the file is the most practical, the code is
-the most private, and the QR is the easiest to get right once.
+**Settled 2026-07-30 (Noah): the QR scan, and the pairing file stays alongside
+it.** The target device's camera reads the code on the source device — *"Each could
+even scan the QR code of the other for double verification if it matters."*
+
+That mutual scan is a better idea than the one-way version and it is worth saying
+why, because it is not merely belt-and-braces. A one-way scan proves that the
+target saw *a* code; it does not prove the two devices ended up holding the same
+key, and a mis-scan therefore surfaces later as an exchange that silently moves
+nothing. If each device scans the other, both independently derive the sync id and
+each can check the other's — so pairing either **completes verified or fails
+immediately**, at the moment somebody is standing there able to try again. That
+turns a silent wrong state into a loud one, which is the trade this project makes
+everywhere else.
+
+The typed code is not built. It is the same 32 bytes with worse ergonomics than
+either surviving rung, and forty-four characters with no error correction is the
+wrong thing to hand this audience.
+
+The QR encoder is the cost: it is the first dependency this app takes on for a
+feature rather than for correctness. A QR matrix for 44 characters is small enough
+to generate without a library (byte mode, one fixed version, fixed mask) and that
+is the route to take — a hand-written encoder that only has to emit ONE size is
+about two hundred lines and is fully testable against a decoder, where a general
+library is a supply-chain surface for a screen shown twice in a device's life.
 
 ## What would overturn it
 

@@ -2362,6 +2362,69 @@ try {
   // No close click here: adding the set reloads the page (the same thing taking in
   // a copy does), so the panel is already gone and waiting for its X would hang.
 
+  console.log('\nClearing things out — and the guard that has to actually guard');
+  const purgeRows = () => tpage.locator('#cards .card').count();
+  const logCount = () => tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    return await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').count();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  });
+  const beforeRows = await purgeRows();
+  const beforeLog = await logCount();
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  is(/\d+ thing/.test(await tpage.locator('#purge-summary').textContent() || ''), true,
+    'it says how many things are on the surfaces');
+
+  // THE GUARD. Not "a confirm box exists" — that the button is genuinely
+  // unusable until the right word is typed, and that a near-miss does not open it.
+  await tpage.click('#purge-pick-clear');
+  await tpage.waitForSelector('#purge-confirm:not([hidden])');
+  is(await tpage.locator('#purge-go').isDisabled(), true, 'the go button starts disabled');
+  for (const near of ['yes', 'clea', 'clears']) {
+    await tpage.fill('#purge-word', near);
+    is(await tpage.locator('#purge-go').isDisabled(), true, `"${near}" does not unlock it`);
+  }
+
+  // Switching mode must CLEAR the typed word. Otherwise a word typed for the
+  // reversible mode sits in front of the irreversible one looking satisfied.
+  await tpage.fill('#purge-word', 'clear');
+  is(await tpage.locator('#purge-go').isDisabled(), false, 'the right word unlocks it');
+  await tpage.click('#purge-pick-erase');
+  is(await tpage.locator('#purge-word').inputValue(), '',
+    'switching mode emptied the box — no authorisation carried across');
+  is(await tpage.locator('#purge-go').isDisabled(), true, 'and the button locked again');
+  // The consequence line is rewritten after a store read, so it is WAITED for
+  // rather than sampled — sampling it made this red while the app was correct.
+  await tpage.waitForFunction(() => /cannot be undone/.test(
+    document.querySelector('#purge-consequence')?.textContent ?? ''), null, { timeout: 4000 });
+  is(/cannot be undone/.test(await tpage.locator('#purge-consequence').textContent() || ''), true,
+    'and starting again says plainly that it cannot be undone');
+  is(/not saved a copy/.test(await tpage.locator('#purge-consequence').textContent() || ''), true,
+    'and says whether a copy has been saved, at the moment of the decision');
+
+  // Leaving it alone changes nothing.
+  await tpage.click('#purge-cancel');
+  is(await tpage.locator('#purge-confirm').isHidden(), true, 'leaving it alone closes it');
+  is(await logCount(), beforeLog, 'and wrote nothing');
+
+  // And the reversible mode: surfaces empty, log GROWS.
+  await tpage.click('#purge-pick-clear');
+  await tpage.fill('#purge-word', 'CLEAR ');
+  is(await tpage.locator('#purge-go').isDisabled(), false,
+    'case and a stray space are forgiven — this tests intent, not dexterity');
+  await tpage.click('#purge-go');
+  await tpage.waitForTimeout(900);
+  await tpage.waitForSelector('body[data-ready=true]');
+  is(await purgeRows() < beforeRows, true, `the surfaces emptied (${beforeRows} -> ${await purgeRows()})`);
+  is(await logCount() > beforeLog, true,
+    `the log GREW rather than shrank (${beforeLog} -> ${await logCount()}) — clearing is an append`);
+
   console.log('\nThe badge — a glance at the icon, and a number that can reach zero');
   const badge = await tpage.evaluate(async () => {
     const calls = [];

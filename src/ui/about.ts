@@ -27,6 +27,7 @@ import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
 import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
+import { CONFIRM_WORD, clearEvents, confirmMatches, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -656,6 +657,126 @@ export async function mountAbout(session: Session): Promise<void> {
           sampleNote.textContent =
             `That could not be added — ${(err as Error).message} Nothing was changed.`;
           sampleButton.disabled = false;
+        }
+      })();
+    });
+  }
+
+  // --- clearing things out --------------------------------------------------
+  //
+  // The guard is a typed word, NOT a held button: hold-to-confirm is a dexterity
+  // test and tremor is a supported condition, so a shaking hand would be locked
+  // out of its own data. Typing tests intent, which is the thing being checked.
+  //
+  // The two modes take different words, and **switching mode clears the field** —
+  // the UI half of the same protection. Without it, typing the reversible mode's
+  // word and then switching would leave a satisfied-looking control in front of
+  // the irreversible one.
+  const purgeSummaryEl = document.querySelector<HTMLElement>('#purge-summary');
+  const purgeConfirm = document.querySelector<HTMLElement>('#purge-confirm');
+  const purgeConsequence = document.querySelector<HTMLElement>('#purge-consequence');
+  const purgeWordRequired = document.querySelector<HTMLElement>('#purge-word-required');
+  const purgeWordInput = document.querySelector<HTMLInputElement>('#purge-word');
+  const purgeGo = document.querySelector<HTMLButtonElement>('#purge-go');
+  const purgeCancel = document.querySelector<HTMLButtonElement>('#purge-cancel');
+  const purgeNote = document.querySelector<HTMLElement>('#purge-note');
+  const purgeBackup = document.querySelector<HTMLButtonElement>('#purge-backup');
+  const purgeBackupNote = document.querySelector<HTMLElement>('#purge-backup-note');
+  const purgePickClear = document.querySelector<HTMLButtonElement>('#purge-pick-clear');
+  const purgePickErase = document.querySelector<HTMLButtonElement>('#purge-pick-erase');
+
+  if (purgeSummaryEl && purgeConfirm && purgeConsequence && purgeWordRequired
+      && purgeWordInput && purgeGo && purgeCancel && purgeNote && purgeBackup
+      && purgeBackupNote && purgePickClear && purgePickErase) {
+    let mode: PurgeMode | null = null;
+    let savedACopy = false;
+
+    const counted = async (): Promise<PurgeCount> =>
+      purgeCount(session.state(), await session.store.all());
+
+    const paintSummary = async (): Promise<void> => {
+      purgeSummaryEl.textContent = purgeSummary(await counted());
+    };
+    await paintSummary();
+
+    const close = (): void => {
+      mode = null;
+      purgeConfirm.hidden = true;
+      // Cleared on every exit, not only on cancel. A word left in the box is an
+      // authorisation left lying next to a button.
+      purgeWordInput.value = '';
+      purgeGo.disabled = true;
+    };
+
+    const pick = async (m: PurgeMode): Promise<void> => {
+      mode = m;
+      purgeWordInput.value = '';
+      purgeGo.disabled = true;
+      purgeWordRequired.textContent = CONFIRM_WORD[m];
+      // Counted and WRITTEN before the block is revealed. Unhiding first left the
+      // consequence line visible and empty for as long as the store read took —
+      // an empty paragraph above a button, in the one place where the sentence is
+      // the entire safeguard. Revealing a surface before it can say anything is a
+      // small version of the same mistake as saying it wrongly.
+      purgeConsequence.textContent = purgeWords(m, await counted(), savedACopy);
+      purgeConfirm.hidden = false;
+      purgeWordInput.focus();
+    };
+
+    purgePickClear.addEventListener('click', () => { void pick('clear'); });
+    purgePickErase.addEventListener('click', () => { void pick('start-again'); });
+    purgeCancel.addEventListener('click', () => {
+      close();
+      purgeNote.textContent = 'Left alone. Nothing changed.';
+    });
+
+    purgeWordInput.addEventListener('input', () => {
+      purgeGo.disabled = mode === null || !confirmMatches(mode, purgeWordInput.value);
+    });
+
+    purgeBackup.addEventListener('click', () => {
+      void (async () => {
+        purgeBackup.disabled = true;
+        try {
+          await deliverExport('all', 'json');
+          savedACopy = true;
+          purgeBackupNote.textContent = 'Copy saved. Check it opened before going further.';
+          // The consequence line is live: it states whether a copy exists, and it
+          // must say so NOW rather than the next time the mode is picked.
+          if (mode) purgeConsequence.textContent = purgeWords(mode, await counted(), savedACopy);
+        } catch (err) {
+          purgeBackupNote.textContent =
+            `That copy could not be saved — ${(err as Error).message} Nothing has been cleared.`;
+        } finally {
+          purgeBackup.disabled = false;
+        }
+      })();
+    });
+
+    purgeGo.addEventListener('click', () => {
+      void (async () => {
+        if (!mode || !confirmMatches(mode, purgeWordInput.value)) return;
+        const chosen = mode;
+        purgeGo.disabled = true;
+        try {
+          const before = await counted();
+          if (chosen === 'clear') {
+            // Through the app's own write path, so law 1 is enforced on the way
+            // out exactly as on the way in.
+            await session.commit(ctx => clearEvents(ctx, session.state()));
+          } else {
+            // The one operation in this app that destroys data on purpose.
+            // `replaceAll` rather than reset-then-append: there is no window in
+            // which the old data is gone and nothing has arrived.
+            await session.store.replaceAll([]);
+          }
+          close();
+          purgeNote.textContent = `${purgedWords(chosen, before)} Reloading…`;
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          purgeNote.textContent =
+            `That did not go through — ${(err as Error).message} Nothing was changed.`;
+          purgeGo.disabled = false;
         }
       })();
     });
