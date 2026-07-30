@@ -407,7 +407,16 @@ function friendly(iso: string, zone: string): string {
   return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: zone });
 }
 
-async function main(): Promise<void> {
+/**
+ * What an edition adds. The Sync build passes one of these; the default build
+ * passes nothing, and because nothing here imports the sync module, the default
+ * bundle does not contain it — which is exactly the build-time exclusion
+ * [ADR-0036](../../docs/adr/0036-two-builds.md) asks for, verifiable by reading
+ * `public/app.js` rather than by trusting a flag.
+ */
+export type Edition = (session: Session) => void | Promise<void>;
+
+export async function main(edition?: Edition): Promise<void> {
   const session = await openSession(now);
   const input = $<HTMLInputElement>('#capture');
   const status = $('#status');
@@ -616,6 +625,17 @@ async function main(): Promise<void> {
   // the same reason it was contained here — offline support is an enhancement and
   // must never cost capture.
   mountUpdatePrompt(session);
+
+  // The edition's own surface, LAST and contained. Sync is an addition to a
+  // planner that has to work without it, so a failure in it costs sync and
+  // nothing else — the same containment the (i) panel and the service worker get.
+  if (edition) {
+    try {
+      await edition(session);
+    } catch {
+      // Reported by the surface itself where it can be; never fatal here.
+    }
+  }
 }
 
 /** Compose one capture from whatever a share sheet handed over. Title, text and
@@ -688,7 +708,13 @@ async function handleUrlEntrances(session: Session, status: HTMLElement, input: 
   status.append(undo);
 }
 
-void main().catch((err: unknown) => {
-  const status = document.querySelector('#status');
-  if (status) status.textContent = `Quietkeep could not start — ${(err as Error).message}`;
-});
+/** Start, and say so in the surface if it cannot. Called by the edition entry
+ *  points (`entry.ts`, `entry-sync.ts`) rather than on import, so that importing
+ *  this module — which the Sync entry does — never races the edition's own
+ *  registration. */
+export function start(edition?: Edition): void {
+  void main(edition).catch((err: unknown) => {
+    const status = document.querySelector('#status');
+    if (status) status.textContent = `Quietkeep could not start — ${(err as Error).message}`;
+  });
+}
