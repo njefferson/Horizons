@@ -13,7 +13,7 @@
 //
 // PURE. `now` and `zone` are arguments, like everywhere else.
 
-import type { NodeState, State } from './fold.ts';
+import { isAppClock, type NodeState, type State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { isReadyAgain, pressureOf } from './pressure.ts';
 import { raisesReplanCard } from './replan.ts';
@@ -46,7 +46,10 @@ export const SOON_DAYS = 7;
  * purpose, so it must not make something "Ready now". It is reported separately.
  */
 function soonestDemand(n: NodeState, zone: string, nowIso: string): { days: number; at: string } | null {
-  return soonestClock(n, zone, nowIso, false);
+  // App clocks excluded too, and for the same reason `park` is: a gate cure is not
+  // a demand. It exists so nothing goes silent, and reading it as "ready" made
+  // every undated thing claim a place in today.
+  return soonestClock(n, zone, nowIso, false, false);
 }
 
 /**
@@ -69,11 +72,25 @@ function soonestDemand(n: NodeState, zone: string, nowIso: string): { days: numb
  */
 export function soonestClock(
   n: NodeState, zone: string, nowIso: string, includePark: boolean,
+  /**
+   * Count clocks the APP set (gate cures)?
+   *
+   * `false` when deciding whether something is ready or coming up, because a cure
+   * says "this will come back to you", not "this is due". With cures counted, every
+   * dateless thing sat in "Ready now" — Noah imported 1,429 items and the heading
+   * claimed 1,055 were ready today, which was arithmetically true and completely
+   * false as a statement about his day.
+   *
+   * `true` when the question is "does this have any clock at all", which is what
+   * law 1 and the parked-until line are about.
+   */
+  includeAppClocks = true,
 ): { days: number; at: string } | null {
   let best: { days: number; at: string; ms: number } | null = null;
   for (const c of Object.values(n.clocks)) {
     if (!c || !isValidIso(c.at)) continue;
     if (!includePark && c.kind === 'park') continue;
+    if (!includeAppClocks && isAppClock(c)) continue;
     const ms = Date.parse(c.at);
     if (best === null || ms < best.ms) {
       best = { days: calendarDaysBetween(nowIso, c.at, zone), at: c.at, ms };
@@ -221,3 +238,24 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   if (days <= SOON_DAYS) return `in ${days} days`;
   return dateWords(at, zone, days);
 }
+
+/**
+ * Held, but carrying no date anybody chose — the honest size of "you have not
+ * decided about these yet".
+ *
+ * Exists because "nothing is asking" is true and unhelpful on its own. Noah
+ * imported 1,429 things, none of them dated, and the work surface correctly had
+ * nothing to offer — which reads as an empty app rather than as a full one waiting
+ * on a decision. This is the number that makes the difference sayable.
+ */
+export function undatedCount(state: State, nowIso: string, zone: string): number {
+  let n = 0;
+  for (const node of heldNodes(state)) {
+    if (node.lastDone) continue;
+    if (node.onMenu) continue;
+    if (node.captured && node.route === null) continue;   // the inbox says this already
+    if (soonestDemand(node, zone, nowIso) === null) n++;
+  }
+  return n;
+}
+

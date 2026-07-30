@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.25.1',
+    kind: 'ITERATION',
+    date: '2026-07-30',
+    notes: [
+      '**&ldquo;Ready now&rdquo; means somebody set a date.** A thousand things you had never dated were being counted as ready today, and the number on the icon said so. What the app puts on something to make sure it comes back is not a date you chose, and it no longer pretends to be.',
+      '**When nothing is asking, it says what is actually going on** \u2014 how many things are here without a date, waiting on you to decide \u2014 instead of the section quietly vanishing.',
+      'A card you were interrupted in the middle of now carries its own return, so it is offered back whatever else changes.',
+    ],
+  },
+  {
     triplet: '0.25.0',
     kind: 'CAPABILITY',
     date: '2026-07-30',

@@ -8,9 +8,10 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { fold, emptyState, type State, type NodeState } from '../src/fold.ts';
+import { fold, emptyState, isAppClock, type State, type NodeState } from '../src/fold.ts';
 import { heldNodes, coverageGauge, admit, gateOptionsFor } from '../src/gate.ts';
-import { heldGroups, heldStatus, SOON_DAYS } from '../src/held.ts';
+import { heldGroups, heldStatus, undatedCount, SOON_DAYS } from '../src/held.ts';
+import { nextUpQueue } from '../src/nextup.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { renameEvents, TITLE_MAX } from '../src/ui/detail-intents.ts';
 import type { AppEvent } from '../src/events.ts';
@@ -344,4 +345,101 @@ test('the tick-off control matches the groups exactly — including the Menu', (
         `"${g.title}" rows ${NO_TICK.has(g.key) ? 'must not' : 'must'} offer Done`);
     }
   }
+});
+
+// --- a gate cure is not a demand --------------------------------------------
+//
+// Noah imported 1,429 undated things from OmniFocus. The write boundary cured every
+// one so none would be silent (law 1), each cure landing at the end of that day —
+// and because "ready" was inferred from any arrived clock, the heading read
+// **"Ready now: 1,055"** and the icon badge said 1,012. Arithmetically correct,
+// and a complete falsehood about his day: he had not dated a single one.
+//
+// The fix is the same insight as `CALENDAR_KINDS` and the replan predicate, in a
+// third place: the app must not present its own bookkeeping as somebody's
+// commitment. What makes it tractable is that a cure records WHICH event it cured,
+// and therefore what intent it inherited.
+
+const cured = (id: string, cause: string, at = NOW): AppEvent[] => [
+  ev('node.created', id, { nodeKind: 'action', title: id }),
+  ev('clock.set', id, { clockKind: 'review', at, source: `gate:${cause}` }),
+];
+
+test('THE ONE FROM 1,429 ROWS: an undated thing is not "ready now"', () => {
+  const s = st(...cured('A', 'node.created'));
+  const groups = heldGroups(s, NOW, TZ);
+  const where = groups.find(g => g.items.some(n => n.id === 'A'))?.key;
+  assert.equal(where, 'later', `it was filed under "${where}"`);
+  assert.equal(nextUpQueue(s, NOW, TZ).some(i => i.node.id === 'A'), false,
+    'and it is not offered as work — nobody asked for it by today');
+  assert.equal(heldNodes(s).length, 1, 'it is still held');
+  assert.equal(coverageGauge(s).silent, 0, 'and still not silent — law 1 is untouched');
+});
+
+test('but a cure that inherited a DECISION still is', () => {
+  // The discrimination that matters, and the one I got wrong first: a cure carries
+  // the intent of the event it cured. Routing, replanning, promoting off the Menu
+  // and capturing are all things somebody DID, and the cure is how that choice
+  // becomes "now". Only a bare `node.created` says nothing about when.
+  for (const cause of ['clarify.routed', 'replan.resolved', 'menu.item.promoted', 'capture.recorded']) {
+    const s = st(...cured(`N-${cause}`, cause));
+    const key = heldGroups(s, NOW, TZ).find(g => g.items.length > 0)?.key;
+    assert.notEqual(key, 'later', `gate:${cause} was treated as no intent at all`);
+  }
+});
+
+test('a date somebody set is unaffected', () => {
+  const s = st(
+    ev('node.created', 'D', { nodeKind: 'action', title: 'D' }),
+    ev('clock.set', 'D', { clockKind: 'due', at: NOW, source: 'detail:due' }),
+  );
+  assert.equal(heldGroups(s, NOW, TZ).find(g => g.items.some(n => n.id === 'D'))?.key, 'ready');
+});
+
+test('an undated thing with a real date as well is judged on the real one', () => {
+  // Both clocks present: the cure today, a due date next month. The honest reading
+  // is "coming up", not "ready" — and it must still be reachable, which is what the
+  // severe audit in nextup.test.ts is about.
+  const s = st(
+    ...cured('B', 'node.created'),
+    ev('clock.set', 'B', { clockKind: 'due', at: '2026-08-30T00:00:00.000Z', source: 'detail:due' }),
+  );
+  const key = heldGroups(s, NOW, TZ).find(g => g.items.some(n => n.id === 'B'))?.key;
+  assert.equal(key, 'later', 'filed by the date the reader chose');
+  assert.equal(heldGroups(s, NOW, TZ).flatMap(g => g.items).some(n => n.id === 'B'), true,
+    'and present in the inventory — work never vanishes');
+});
+
+test('the count of undated things is the number the surface can state', () => {
+  const s = st(
+    ...cured('A', 'node.created'),
+    ...cured('B', 'node.created'),
+    ev('node.created', 'D', { nodeKind: 'action', title: 'D' }),
+    ev('clock.set', 'D', { clockKind: 'due', at: NOW, source: 'detail:due' }),
+  );
+  assert.equal(undatedCount(s, NOW, TZ), 2, 'the two nobody dated, and not the one somebody did');
+});
+
+test('THE ONE THAT WOULD HAVE BEEN MISSED: the clock source survives a snapshot', () => {
+  // `state = fold(log)` with a snapshot as a cache. If the source did not round
+  // trip, an undated import would read as "Later" on first load and jump to "Ready
+  // now" after the next reload — a surface that changes its mind about somebody's
+  // day depending on how recently they opened the app. A deliberate-failure proof
+  // showed nothing in the suite covered this at all.
+  const s = st(...cured('A', 'node.created'));
+  const back = deserialiseState(serialiseState(s));
+  assert.equal(back.nodes.get('A')!.clocks.review!.source, 'gate:node.created');
+  assert.equal(heldGroups(back, NOW, TZ).find(g => g.items.some(n => n.id === 'A'))?.key, 'later',
+    'and it is filed the same way after a round trip');
+});
+
+test('a log written before the source existed behaves exactly as it did', () => {
+  // No source recorded means "somebody's", which errs towards showing work rather
+  // than quieting it. Every log already on a device predates this field.
+  const s = st(
+    ev('node.created', 'O', { nodeKind: 'action', title: 'O' }),
+    ev('clock.set', 'O', { clockKind: 'review', at: NOW }),
+  );
+  assert.equal(isAppClock(s.nodes.get('O')!.clocks.review), false);
+  assert.equal(heldGroups(s, NOW, TZ).find(g => g.items.some(n => n.id === 'O'))?.key, 'ready');
 });

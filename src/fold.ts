@@ -16,7 +16,46 @@ export interface Clock {
   at: ISODateTime;
   /** Ordering stamp of the event that set it — used for per-field LWW. */
   setBy: Ordering;
+  /**
+   * Who set it, carried through from `clock.set`. Retained because the difference
+   * between a clock the READER chose and one the APP set is load-bearing on three
+   * separate surfaces, and it was being lost here — so each of them re-derived it
+   * wrongly in its own way.
+   *
+   * The calendar exported the app's own clocks as appointments. The held list read
+   * a cure clock as "ready now" and told Noah a thousand imported things were
+   * ready today. Next-up did the same. One field, asked once, instead of three
+   * guesses.
+   */
+  source?: string;
 }
+
+/**
+ * Is this the cure for a node that was created without a date — a clock carrying no
+ * intent at all about when?
+ *
+ * **A cure inherits the intent of the event it cured**, and the source records which
+ * event that was (`gate:${cause.kind}`). That distinction is the whole of this
+ * predicate, and getting it wrong in either direction is a real defect:
+ *
+ * - `gate:clarify.routed`, `gate:replan.resolved`, `gate:menu.item.promoted`,
+ *   `gate:capture.recorded`, `gate:resume.card.created` — somebody DID something,
+ *   and the cure is how that choice becomes "now". These are demands.
+ * - `gate:node.created` — a node exists and nobody said when. That is the only cure
+ *   with no intent behind it.
+ *
+ * I first wrote this as "any `gate:` source", which is the tempting reading and is
+ * wrong twice over: it made a deliberately promoted Menu item vanish from Next up,
+ * and it stopped a resume card being offered back after an interrupted focus. Both
+ * are cures, and both are the mechanism by which a decision takes effect. The tests
+ * that caught it were named for older audits, and they were right.
+ *
+ * A clock with no recorded source counts as somebody's, which is the safe default:
+ * every log written before this field existed behaves exactly as it did, and it errs
+ * towards showing work rather than quieting it.
+ */
+export const isAppClock = (c: Clock | undefined | null): boolean =>
+  c != null && c.source === 'gate:node.created';
 
 export interface NodeState {
   id: NodeId;
@@ -575,7 +614,10 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         const key = `clock.${e.payload.clockKind}`;
         const prev = n.stamps[key] ?? n.clocks[e.payload.clockKind]?.setBy;
         if (wins(prev, o)) {
-          n.clocks[e.payload.clockKind] = { kind: e.payload.clockKind, at: e.payload.at, setBy: o };
+          n.clocks[e.payload.clockKind] = {
+            kind: e.payload.clockKind, at: e.payload.at, setBy: o,
+            ...(typeof e.payload.source === 'string' ? { source: e.payload.source } : {}),
+          };
           setField(n.stamps, key, o);
         }
         break;

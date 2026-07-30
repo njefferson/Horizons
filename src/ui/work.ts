@@ -16,6 +16,7 @@ import type { Session } from './session.ts';
 import type { AppEvent } from '../events.ts';
 import { heldNodes } from '../gate.ts';
 import { workSurface, type NextUpItem } from '../nextup.ts';
+import { undatedCount } from '../held.ts';
 import { pressureWords } from '../pressure.ts';
 import { calendarDaysBetween } from '../time.ts';
 
@@ -166,6 +167,10 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
 
     if (up.head) {
       REGION.hidden = false;
+      // Restored explicitly: they are hidden in the no-head branch below, and a
+      // control that disappears once and never returns is the worst of both.
+      if (doneBtn) doneBtn.hidden = false;
+      if (skipBtn) skipBtn.hidden = false;
       TITLE.textContent = up.head.node.title || '(untitled)';
       // Why this, in words. Pressure adds its own gentle phrase; neither ever
       // reaches for the shame word this app refuses — no such state exists here,
@@ -183,9 +188,29 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
         return li;
       }));
     } else {
-      REGION.hidden = true;
-      TITLE.textContent = '';
+      // NOTHING IS ASKING — and if things are being held without dates, say that
+      // too rather than simply vanishing.
+      //
+      // "Nothing is asking" is true and, on its own, unhelpful: Noah imported 1,429
+      // undated things and this surface correctly had nothing to offer, which reads
+      // as an empty app rather than as a full one waiting on a decision. The section
+      // stays, says the real number, and the two action buttons go — there is
+      // nothing to be done to, and a live button with no subject is worse than none.
+      const undated = undatedCount(session.state(), nowIso(), session.zone);
       BEHIND.replaceChildren();
+      if (doneBtn) doneBtn.hidden = undated > 0;
+      if (skipBtn) skipBtn.hidden = undated > 0;
+      if (undated > 0) {
+        REGION.hidden = false;
+        TITLE.textContent = 'Nothing is asking today.';
+        WHY.textContent = undated === 1
+          ? 'One thing is here without a date. It is waiting on you to decide, not the other way round.'
+          : `${undated} things are here without a date. They are waiting on you to decide, not the other way round.`;
+        COUNT.textContent = '';
+      } else {
+        REGION.hidden = true;
+        TITLE.textContent = '';
+      }
     }
 
     // Upkeep chips (item 20) — already computed above, and already removed from

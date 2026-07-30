@@ -533,6 +533,34 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **A gate cure is not a demand (0.25.1 ITERATION).** Noah's second
+  export, re-imported on 0.25.0 minutes after the promote: 2,897 events, 1,429 nodes,
+  **zero `due` clocks** — every one of the 1,173 stale dates correctly dropped. Folded
+  in his real zone (UTC-7, not Denver — inferred from the cure instants rather than
+  assumed) the surfaces read **"Ready now: 1,055"** and the badge would have said
+  **1,012**. Arithmetically correct and a complete falsehood about his day: he had
+  not dated a single one.
+  · **Third instance of one root cause.** `CALENDAR_KINDS`, then the passed-date
+  import, now readiness: the app must not present its own bookkeeping as somebody's
+  commitment. Fixed at the root this time — `Clock` now carries `source`, so every
+  surface asks one question instead of guessing three ways.
+  · **The predicate was wrong twice and the tests caught both.** "Any `gate:` source"
+  is the tempting reading and it broke a deliberately promoted Menu item and an
+  interrupted focus's resume card. **A cure inherits the intent of the event it
+  cured** — `clarify.routed`, `replan.resolved`, `menu.item.promoted`,
+  `capture.recorded` are all things somebody DID, and the cure is how that choice
+  becomes "now". Only bare `node.created` says nothing about when.
+  · Resume cards now set their OWN clock (`focus:resume`) instead of leaning on a
+  cure. Every other deliberate act already declared its own; being the exception was
+  what made it fragile.
+  · **A deliberate-failure proof found the whole change untested**: removing `source`
+  from the fold left all 530 passing. Now covered, including the SNAPSHOT round trip —
+  without it an undated import would read "Later" on first load and "Ready now" after
+  a reload, a surface changing its mind about your day based on how recently you
+  opened it.
+  · And "nothing is asking" no longer means the section vanishes: it states how many
+  things are here undated, waiting on a decision. `undatedCount` is that number.
+
 - **2026-07-30** — **Noah's real OmniFocus import, and what 1,429 rows exposed
   (0.24.1 ITERATION, 0.25.0 CAPABILITY).**
   · **The alignment complaint was a mis-tap.** The border was on `.card-open`, not on

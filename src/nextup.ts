@@ -22,7 +22,7 @@
 //
 // PURE, and `now` is an argument.
 
-import type { NodeState, State } from './fold.ts';
+import { isAppClock, type NodeState, type State } from './fold.ts';
 import { pressureOf } from './pressure.ts';
 import { replanIds } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
@@ -97,6 +97,13 @@ function isCandidate(n: NodeState, nowIso: string, zone: string): boolean {
 const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
   Object.values(n.clocks).some(c =>
     c != null && c.kind !== 'park' && isValidIso(c.at) &&
+    // A GATE CURE IS NOT A DEMAND. The comment two tiers below already knew cure
+    // clocks "never move"; what it did not say is that treating one as arrived
+    // means every dateless thing reads as waiting for you today. Noah imported
+    // 1,429 items and this surface reported 1,012 ready — a number that was
+    // arithmetically correct and meant nothing. A cure exists so a node is not
+    // silent; the reader never asked for anything by today.
+    !isAppClock(c) &&
     calendarDaysBetween(nowIso, c.at, zone) <= 0);
 
 /**

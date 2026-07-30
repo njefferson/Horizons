@@ -142,6 +142,22 @@ function resumeCardEvents(ctx: StampContext, forNode: string, cue: string | null
   return [
     base(ctx, 'node.created', id, { nodeKind: 'resume-card' as NodeKind, title: 'where you left off' }),
     base(ctx, 'resume.card.created', id, { forNode, cue }),
+    // Its OWN clock, rather than leaning on the gate's cure.
+    //
+    // A resume card is the one node whose entire purpose is to be offered back, so
+    // "come back to me today" is a statement of intent and belongs in the log as
+    // one. It used to arrive with no clock at all and be cured like anything else —
+    // and a cure for a bare `node.created` carries no intent about when, which is
+    // exactly what a dateless import row also produces. The two were
+    // indistinguishable, so suppressing one suppressed the other and an interrupted
+    // thread stopped being offered back.
+    //
+    // Every other deliberate act here already declares its own clock (clarify,
+    // replan, the detail sheet). This one was the exception, and being the
+    // exception is what made it fragile.
+    base(ctx, 'clock.set', id, {
+      clockKind: 'review', at: endOfLocalDay(ctx.at, ctx.zone, 0), source: 'focus:resume',
+    }),
   ];
 }
 
