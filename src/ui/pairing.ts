@@ -133,6 +133,51 @@ export async function acceptPairing(
   return { id, host: p.host };
 }
 
+/**
+ * Pair from the KEY ALONE — the whole secret, and nothing else.
+ *
+ * Noah: *"can't the QR code JUST encode a number that the app pull in… as a long
+ * key so the user can just press save."* Yes, and it is better than the file on
+ * three counts, which is why this is now the primary road:
+ *
+ *   - **44 characters instead of a JSON document.** Small enough for a code a
+ *     phone can read across a table, and short enough to type if it comes to it.
+ *   - **Nothing is left lying around.** The file rung writes the key into
+ *     Downloads and asks somebody to remember to delete it. A key read off a
+ *     screen never lands on a disk at all.
+ *   - **It deletes an attack rather than defending against one.** A pairing FILE
+ *     carries a host, so a hostile one can point a planner at somebody else's
+ *     relay; that had to be refused explicitly. A key carries no host — the app
+ *     uses the one its own build permits — so there is nothing to poison.
+ *
+ * The key is verified by IMPORTING it, so a truncated paste or a stray character
+ * is refused here rather than becoming an unexplainable silence at exchange time.
+ */
+export async function acceptKeyText(
+  store: KvStore,
+  text: string,
+  host: string,
+): Promise<{ id: string; host: string }> {
+  // Forgiving of what a paste actually looks like: surrounding space, a newline
+  // the share sheet added, the odd zero-width character a rich-text field slips
+  // in. Not forgiving of anything that changes the key.
+  const raw = text.replace(/[\s​-‍﻿]/g, '');
+  if (!raw) throw new Error('there is no key there');
+
+  let key: CryptoKey;
+  try {
+    key = await importKey(raw);
+  } catch {
+    // Named by its most likely cause. "Invalid key" sends somebody looking for a
+    // broken app; "part of it is missing" sends them back to copy the whole thing.
+    throw new Error('that is not a whole key — copy all of it, including the end');
+  }
+  const id = await syncId(key);
+  await store.setKv(KEY_KV, raw);
+  await store.setKv(HOST_KV, host);
+  return { id, host };
+}
+
 /** The pair on this device, or null. */
 export async function currentPairing(store: KvStore): Promise<{ key: CryptoKey; id: string; host: string } | null> {
   const raw = await store.getKv<string>(KEY_KV);
@@ -146,6 +191,14 @@ export async function currentPairing(store: KvStore): Promise<{ key: CryptoKey; 
     // paired", which is true and actionable.
     return null;
   }
+}
+
+/** The key this device holds, as text, or null. What the QR encodes and what the
+ *  other device pastes — the same 44 characters either way, so the two roads
+ *  cannot drift apart. */
+export async function currentKeyText(store: KvStore): Promise<string | null> {
+  const raw = await store.getKv<string>(KEY_KV);
+  return typeof raw === 'string' && raw.length > 0 ? raw : null;
 }
 
 /** Forget the pair. The log is untouched — unpairing is not a way to lose work, and

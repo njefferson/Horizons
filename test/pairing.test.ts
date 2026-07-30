@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 import {
   acceptPairing, beginPairing, currentPairing, forgetPairing,
   malformedPairing, pairingFilename, pairingWords, KEY_KV, HOST_KV, MARK_KV,
+  acceptKeyText, currentKeyText,
 } from '../src/ui/pairing.ts';
 import { exportKey, newKey, syncId } from '../src/seal.ts';
 
@@ -219,4 +220,87 @@ test('a plain-http handover point is refused, and said to be insecure', async ()
     format: 'quietkeep-pairing', version: 1, key: 'k', id: 'i', at: AT,
     host: 'https://relay.example',
   }), null, 'https is still fine');
+});
+
+// --- pairing from the key alone ---------------------------------------------
+//
+// Noah: "can't the QR code JUST encode a number that the app pull in… as a long
+// key so the user can just press save." It carries the whole secret and nothing
+// else, which is better than the file on three counts: 44 characters instead of
+// a document, nothing left in a Downloads folder, and NO HOST FIELD — so the
+// hostile-relay attack the file rung had to defend against simply does not
+// exist on this road.
+
+test('a key on its own pairs the device, with the host coming from the build', async () => {
+  const source = kv();
+  const file = await beginPairing(source, HOST, AT);
+
+  const store = kv();
+  const { id, host } = await acceptKeyText(store, file.key, HOST);
+
+  assert.equal(id, file.id, 'the same pairing name, derived from the key');
+  assert.equal(host, HOST, 'and the host is the one this build permits');
+  const pair = await currentPairing(store);
+  assert.equal(pair!.id, file.id);
+});
+
+test('a key carries no host, so there is nothing to point somewhere hostile', async () => {
+  // The structural win. `acceptPairing` needed an explicit refusal for a file
+  // naming another relay; there is no equivalent hole here to defend, because
+  // the payload has nowhere to put one.
+  const file = await beginPairing(kv(), HOST, AT);
+  assert.doesNotMatch(file.key, /http/i, 'the key is opaque and carries no address');
+
+  const store = kv();
+  await acceptKeyText(store, file.key, HOST);
+  assert.equal((await currentPairing(store))!.host, HOST,
+    'the host can only ever be the one passed by the build');
+});
+
+test('a paste survives the mess a share sheet makes of it', async () => {
+  // What a key actually looks like after a round trip through a Notes app, an
+  // email, or a QR reader: wrapped, padded with spaces, sometimes carrying an
+  // invisible character. None of that changes the key, so none of it may be
+  // treated as changing the key.
+  const file = await beginPairing(kv(), HOST, AT);
+  const messy = ` ${file.key.slice(0, 20)}\n  ${file.key.slice(20)} \t\n`;
+
+  const store = kv();
+  const { id } = await acceptKeyText(store, messy, HOST);
+  assert.equal(id, file.id, 'same key, same pairing');
+});
+
+test('a truncated key is refused, and says which way to fix it', async () => {
+  // The most likely real mistake: a selection that missed the last characters.
+  // "Invalid key" would send somebody looking for a broken app; naming the cause
+  // sends them back to copy the whole thing.
+  const file = await beginPairing(kv(), HOST, AT);
+  const store = kv();
+
+  await assert.rejects(
+    () => acceptKeyText(store, file.key.slice(0, 30), HOST),
+    /not a whole key/);
+  assert.equal(await currentPairing(store), null, 'and nothing was stored');
+});
+
+test('an empty paste is refused without pretending it was a key', async () => {
+  const store = kv();
+  await assert.rejects(() => acceptKeyText(store, '   \n ', HOST), /no key there/);
+  assert.equal(await currentPairing(store), null);
+});
+
+test('the key this device holds is the same text the other device pastes', async () => {
+  // One string on both roads — what the QR encodes and what a person pastes.
+  // If these could differ, a code that scanned perfectly would pair to nothing.
+  const store = kv();
+  const file = await beginPairing(store, HOST, AT);
+  assert.equal(await currentKeyText(store), file.key);
+
+  const other = kv();
+  const { id } = await acceptKeyText(other, (await currentKeyText(store))!, HOST);
+  assert.equal(id, file.id);
+});
+
+test('a device with no pairing has no key to show', async () => {
+  assert.equal(await currentKeyText(kv()), null);
 });

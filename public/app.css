@@ -1220,3 +1220,16 @@ dialog, dialog * { overflow-wrap: anywhere; }
   color: var(--ink);
   cursor: pointer;
 }
+
+/* The pairing key, shown rather than downloaded. The code is scanned across a
+   table and the text beneath it is the same 44 characters — either road pairs,
+   and neither writes the secret to a disk. */
+.qr { margin: 0.75rem 0; }
+.qr svg { width: min(15rem, 60vw); height: auto; display: block; }
+.key-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+  user-select: all;              /* one tap selects the whole key, not a word of it */
+  color: var(--ink);
+}

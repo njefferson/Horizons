@@ -26,9 +26,10 @@
 
 import { RELAY_HOST, relayIsSet } from '../relay-host.ts';
 import {
-  acceptPairing, beginPairing, currentPairing, forgetPairing,
-  malformedPairing, pairingFilename, pairingWords,
+  acceptKeyText, acceptPairing, beginPairing, currentKeyText, currentPairing,
+  forgetPairing, malformedPairing, pairingFilename, pairingWords,
 } from './pairing.ts';
+import { encodeQr, toSvg } from '../qr.ts';
 import { outcomeWords, runExchange } from './sync-run.ts';
 import { deviceLine, deviceRecords, devicesWords, REPLACE_KEY_WORDS, REPLACED_KEY_WORDS } from '../devices.ts';
 import type { Session } from './session.ts';
@@ -43,7 +44,13 @@ export const POSTURE_WORDS =
 /** Said before anything is paired, so the trade is understood before it is made
  *  rather than explained afterwards. */
 export const FIRST_STEP_WORDS =
-  'Pair this device to start. You will get a small file: open it on your other device and the two are a pair.';
+  'Pair this device to start, then show the code to your other device — or paste the key into it. Either way the two become a pair.';
+
+/** Shown beside the key and its code. The key IS the secret, and somebody about
+ *  to hold a phone up to a screen should know what is on it. */
+export const SHOW_KEY_WORDS =
+  'This is the key, as a code and as text. Anyone who reads it can read this planner, so show it only to your own device. '
+  + 'On the other device, scan it with the camera and paste it below — or type it. Nothing is saved to a file this way.';
 
 /** The pairing file is the key. Somebody about to put it in a shared folder
  *  should know that, in the moment they are deciding where to put it. */
@@ -111,7 +118,38 @@ export async function mountSync(session: Session): Promise<void> {
   const devicesP = el('p', 'about-p');
   const devicesList = el('ul', 'note-list');
 
-  const openLabel = el('label', 'detail-label', 'Open a pairing file from your other device');
+  // THE KEY, shown as a code and as text. Noah: "can't the QR code JUST encode a
+  // number… so the user can just press save." It carries the whole secret and
+  // nothing else — no host, so there is nothing in it to point at a hostile
+  // relay, and nothing written to a disk to be forgotten about afterwards.
+  const keyBox = el('div');
+  keyBox.hidden = true;
+  const keyCode = el('div', 'qr');
+  const keyText = el('p', 'about-p key-text');
+  const keyHide = el('button', 'ghost', 'Hide the key');
+  keyHide.type = 'button';
+  // The file road, kept and demoted. Noah: "both should be available so the user
+  // has control of their data." Showing the key suits two devices in one room;
+  // a file suits a device that is somewhere else. The file writes the secret to
+  // a disk, so it is offered rather than defaulted to, and it says so.
+  const keySave = el('button', 'ghost', 'Save it as a file instead');
+  keySave.type = 'button';
+  const keyRow = el('div', 'about-actions');
+  keyRow.append(keyHide, keySave);
+
+  const pasteLabel = el('label', 'detail-label', 'Paste a key from your other device');
+  const pasteField = el('input');
+  pasteField.type = 'text';
+  pasteField.autocomplete = 'off';
+  pasteField.spellcheck = false;
+  pasteField.setAttribute('autocapitalize', 'off');
+  pasteLabel.htmlFor = pasteField.id = 'pairing-key';
+  const pasteGo = el('button', undefined, 'Save this key');
+  pasteGo.type = 'button';
+  const pasteRow = el('div', 'about-actions');
+  pasteRow.append(pasteGo);
+
+  const openLabel = el('label', 'detail-label', 'Or open a pairing file from your other device');
   const openFile = el('input');
   openFile.type = 'file';
   openFile.accept = 'application/json,.json';
@@ -122,8 +160,51 @@ export async function mountSync(session: Session): Promise<void> {
   note.setAttribute('aria-live', 'polite');
 
   const section = el('div');
-  section.append(heading, posture, state, devicesP, devicesList, actions, openLabel, openFile, note);
+  keyBox.append(keyCode, keyText, keyRow);
+  section.append(heading, posture, state, devicesP, devicesList, actions,
+    keyBox, pasteLabel, pasteField, pasteRow, openLabel, openFile, note);
   anchor.parentElement.insertBefore(section, anchor.nextSibling);
+
+  /** Show the key as a code and as text. The SVG is PARSED rather than assigned
+   *  as markup: `innerHTML` is banned outright in this app, and a QR is exactly
+   *  the sort of "obviously safe, it is only ours" string that erodes that rule. */
+  const showKey = (key: string): void => {
+    keyCode.replaceChildren();
+    try {
+      const svg = new DOMParser()
+        .parseFromString(toSvg(encodeQr(key, 'L'), { moduleSize: 6 }), 'image/svg+xml')
+        .documentElement;
+      svg.setAttribute('role', 'img');
+      svg.setAttribute('aria-label', 'The pairing key as a scannable code');
+      keyCode.append(document.importNode(svg, true));
+    } catch {
+      // A code that will not draw must not cost somebody the key: the text below
+      // is the same 44 characters and pairs just as well.
+      keyCode.replaceChildren();
+    }
+    keyText.textContent = key;
+    keyBox.hidden = false;
+    note.textContent = SHOW_KEY_WORDS;
+  };
+
+  keySave.addEventListener('click', () => {
+    void (async () => {
+      const pair = await currentPairing(session.store);
+      const key = await currentKeyText(session.store);
+      if (!pair || !key) return;
+      deliverPairing({
+        format: 'quietkeep-pairing', version: 1,
+        key, host: pair.host, id: pair.id, at: new Date().toISOString(),
+      }, pairingFilename(pair.id));
+      note.textContent = FILE_WARNING_WORDS;
+    })();
+  });
+
+  keyHide.addEventListener('click', () => {
+    keyBox.hidden = true;
+    keyCode.replaceChildren();
+    keyText.textContent = '';
+  });
 
   const paint = async (): Promise<void> => {
     const pair = await currentPairing(session.store);
@@ -155,13 +236,34 @@ export async function mountSync(session: Session): Promise<void> {
           return;
         }
         const file = await beginPairing(session.store, RELAY_HOST, new Date().toISOString());
-        deliverPairing(file, pairingFilename(file.id));
         await paint();
-        note.textContent = `${FILE_WARNING_WORDS} Both devices should end up showing ${file.id.slice(0, 8)}.`;
+        // Shown, not downloaded. The file rung is still there below for anybody
+        // who wants it, but the default road no longer writes the key to a disk.
+        showKey(file.key);
+        note.textContent = `${SHOW_KEY_WORDS} Both devices should end up showing ${file.id.slice(0, 8)}.`;
       } catch (err) {
         note.textContent = `That did not work — ${(err as Error).message}`;
       } finally {
         pairBtn.disabled = false;
+      }
+    })();
+  });
+
+  pasteGo.addEventListener('click', () => {
+    void (async () => {
+      pasteGo.disabled = true;
+      try {
+        // RELAY_HOST, never anything from the payload — a key carries no address,
+        // which is the whole reason this road has no hostile-host problem.
+        const { id } = await acceptKeyText(session.store, pasteField.value, RELAY_HOST);
+        pasteField.value = '';
+        await paint();
+        note.textContent = `Paired. Check the other device also shows ${id.slice(0, 8)}. `
+          + 'Nothing has moved yet — that happens next time either device opens, or now if you press Sync.';
+      } catch (err) {
+        note.textContent = `That key could not be used — ${(err as Error).message}`;
+      } finally {
+        pasteGo.disabled = false;
       }
     })();
   });
@@ -226,9 +328,9 @@ export async function mountSync(session: Session): Promise<void> {
         // A fresh key, which is a fresh mailbox: whoever holds the old one is
         // talking to a place nothing arrives at any more.
         const file = await beginPairing(session.store, RELAY_HOST, new Date().toISOString());
-        deliverPairing(file, pairingFilename(file.id));
         await paint();
-        note.textContent = `${REPLACED_KEY_WORDS} ${FILE_WARNING_WORDS}`;
+        showKey(file.key);
+        note.textContent = `${REPLACED_KEY_WORDS} ${SHOW_KEY_WORDS}`;
       } catch (err) {
         note.textContent = `That did not work — ${(err as Error).message} The key here has not changed.`;
       } finally {

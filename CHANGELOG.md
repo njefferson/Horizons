@@ -18,7 +18,9 @@ triplet and what it did for you.
 
 *2026-07-30*
 
-- **Two devices can keep each other up to date &mdash; in a separate app called Quietkeep Sync.** Pair them once by opening a small file on the second device, and from then on each brings the other up to date when you open it. No account, nothing to sign in to.
+- **Two devices can keep each other up to date &mdash; in a separate app called Quietkeep Sync.** Pair them once, and from then on each brings the other up to date when you open it. No account, nothing to sign in to.
+- Pairing shows a code and a key. Scan the code with your other device, or paste the key into it &mdash; nothing is written to a file unless you ask for one, so there is no copy of it left in a downloads folder afterwards.
+- You can see which devices have written here, and when each one last did. If you want to drop one, replacing the key stops it receiving anything from this device from that moment on &mdash; though whatever it already holds, it keeps.
 - Your writing is sealed on your device before any of it leaves, with a key only your devices hold. The handover point in between stores something it cannot read and is never given the key.
 - Both devices show the same short pairing name. If one shows something different they are not a pair &mdash; worth being able to see, rather than working it out from the fact that nothing ever arrives.
 - **Quietkeep itself still cannot reach anything at all, and that does not change.** It is the more private of the two and stays the one you get by default; the browser refuses to let it contact anything, whatever it is asked to do. Moving your work across is an export and an import, once.
