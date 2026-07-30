@@ -26,7 +26,17 @@ enabled = false
 
 [[kv_namespaces]]
 binding = "CHUNKS"
-# Filled in by whoever deploys it: `npx wrangler kv namespace create CHUNKS`.
+# Injected by .github/workflows/relay.yml, which finds or creates a namespace
+# titled `quietkeep-relay-CHUNKS` and substitutes its id here before deploying.
+# It stays a placeholder in the repo on purpose: the id is account-specific, and
+# nothing about an account belongs in a public tree.
+#
+# THE CREDENTIAL NEEDS WORKERS PERMISSIONS, which the Pages deploy does not
+# (V-18). A token holding only Cloudflare Pages:Edit fails here with wrangler's
+# "Authentication error [code: 10000]", which names neither the permission nor
+# the fix — so the workflow checks the KV endpoint directly first and says which
+# two to add. Both are Account scope: Workers KV Storage:Edit, Workers
+# Scripts:Edit.
 id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 [placement]
