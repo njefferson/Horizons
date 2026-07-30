@@ -24,7 +24,14 @@ export interface LogStore {
   all(): Promise<AppEvent[]>;
   /** Events after a per-device high-water mark — the snapshot tail. */
   since(upToSeqByDevice: Record<DeviceId, number>): Promise<AppEvent[]>;
-  /** Next gap-free seq for this device. */
+  /**
+   * The next UNUSED seq for this device: one past the highest it has ever
+   * written. Not "gap-free", which is what this said and is a different claim —
+   * a device whose store was seeded from a partial import can hold a hole below
+   * its maximum, and this returns max + 1 regardless. That is correct (it can
+   * never collide) but it does not fill the hole, and treating the number as
+   * proof of completeness is the mistake `src/exchange.ts` exists to prevent.
+   */
   nextSeq(device: DeviceId): Promise<number>;
   putSnapshot(s: Snapshot): Promise<void>;
   latestSnapshot(): Promise<Snapshot | null>;
