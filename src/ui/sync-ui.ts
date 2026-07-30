@@ -50,7 +50,13 @@ export const FIRST_STEP_WORDS =
  *  to hold a phone up to a screen should know what is on it. */
 export const SHOW_KEY_WORDS =
   'This is the key, as a code and as text. Anyone who reads it can read this planner, so show it only to your own device. '
-  + 'On the other device, scan it with the camera and paste it below — or type it. Nothing is saved to a file this way.';
+  // The camera instruction is EXACT, because the obvious action is the wrong one.
+  // A phone camera treats a scanned code as a web address, and this one is not an
+  // address — it is a secret. Tapping the banner that appears sends the key to a
+  // search engine and pairs nothing. Noah hit this on the first real attempt.
+  + 'On the other device, point the camera at the code and then press and hold the banner that appears to COPY it — '
+  + 'do not tap the banner, which would search the web for it instead. Then paste it below. '
+  + 'Typing it works just as well, and nothing is saved to a file either way.';
 
 /** The pairing file is the key. Somebody about to put it in a shared folder
  *  should know that, in the moment they are deciding where to put it. */

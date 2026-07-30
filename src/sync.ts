@@ -252,12 +252,45 @@ export async function exchangeOnce(deps: ExchangeDeps): Promise<ExchangeResult> 
   // Only NOW may the mark move. Persist-then-record: a death in between costs
   // one repeated download, where the reverse order costs a chunk forever.
   const withArrivals = [...deps.localEvents, ...fresh];
-  let mark: SyncMark = { ingested: [...ingested, ...takenIn].sort(), uploaded: deps.mark.uploaded };
+  // What ARRIVED counts as already uploaded, because it demonstrably came out of
+  // the mailbox — the pair has seen it. Without this the broader offer below
+  // turns into a ping-pong: A publishes, B collects and republishes the same
+  // events, A collects its own back and republishes B's. Every round is bounded
+  // and idempotent, so nothing breaks, but it doubles the traffic and spends the
+  // scarce thing (storage writes) on work already done.
+  //
+  // Together the two rules say exactly the right thing: offer what this device
+  // holds and the mailbox has not carried.
+  let mark: SyncMark = {
+    ingested: [...ingested, ...takenIn].sort(),
+    uploaded: fresh.length > 0
+      ? heldRanges([...eventsIn(withArrivals, deps.mark.uploaded), ...fresh])
+      : deps.mark.uploaded,
+  };
   await deps.remember(mark);
 
   // --- outbound ---
-  const mineHeld = heldRanges(withArrivals.filter(e => e.device === deps.ownDevice));
-  const owed = missing(deps.mark.uploaded, mineHeld);
+  //
+  // EVERYTHING THIS DEVICE HOLDS, not only what it wrote.
+  //
+  // This filtered to `ownDevice` and it was wrong on the main road. The reasoning
+  // was that each device is a single-writer shard, so the device that authored an
+  // event will publish it and nobody else need bother. True in a closed sync
+  // world — and false the moment a shard arrives by IMPORT, because the device
+  // that wrote it is not in the pair and never will be.
+  //
+  // Moving between the editions IS an export and an import (ADR-0036), so this
+  // was the documented route, not an edge of it. Noah's iPad held 2900 events
+  // brought over from the plain edition and offered zero of them; his phone held
+  // one event it had written itself, and that one crossed. "Pairing works
+  // although no data syncs."
+  //
+  // Offering what is HELD also makes the pair self-healing: if one device is
+  // lost, the survivor can still publish that device's work to a replacement.
+  // The `uploaded` mark means each device offers each event at most once, so the
+  // cost of the broader rule is bounded and one-off.
+  const held = heldRanges(withArrivals);
+  const owed = missing(mark.uploaded, held);
 
   const forOthers: AppEvent[] = [];
   for (const want of requests) {
@@ -292,10 +325,14 @@ export async function exchangeOnce(deps: ExchangeDeps): Promise<ExchangeResult> 
   // is offered again next time. `heldRanges` over the sent events, unioned with
   // what was already uploaded, keeps this a set and never a maximum.
   if (sent > 0) {
-    const acknowledged = sending.slice(0, sent).filter(e => e.device === deps.ownDevice);
+    // Not filtered to this device, for the same reason the offer is not: what
+    // was acknowledged is what must not be offered again, whoever wrote it.
+    // Leaving the filter here would have re-offered every imported event on
+    // every single exchange, forever.
+    const acknowledged = sending.slice(0, sent);
     mark = {
       ingested: mark.ingested,
-      uploaded: heldRanges([...eventsIn(withArrivals, deps.mark.uploaded), ...acknowledged]),
+      uploaded: heldRanges([...eventsIn(withArrivals, mark.uploaded), ...acknowledged]),
     };
     await deps.remember(mark);
   }

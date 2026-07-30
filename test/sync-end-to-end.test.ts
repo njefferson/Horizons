@@ -25,11 +25,12 @@ import assert from 'node:assert/strict';
 import { handle, type Store } from '../src/relay.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
 import { openSession, captureEvent, type Session, type SessionStore } from '../src/ui/session.ts';
-import { acceptPairing, beginPairing, currentPairing } from '../src/ui/pairing.ts';
+import { acceptKeyText, acceptPairing, beginPairing, currentKeyText, currentPairing } from '../src/ui/pairing.ts';
 import { eraseEverything } from '../src/purge.ts';
 import { MARK_KV } from '../src/sync-keys.ts';
 import { runExchange } from '../src/ui/sync-run.ts';
 import { heldNodes } from '../src/gate.ts';
+import type { AppEvent } from '../src/events.ts';
 
 const HOST = 'https://relay.example';
 
@@ -266,4 +267,80 @@ test('erasing clears the mark too, so a later pairing cannot skip events', async
 
   await eraseEverything(a.store);
   assert.equal(await a.store.getKv(MARK_KV), null, 'and erasing took it with the key');
+});
+
+// --- a planner that arrived by import must still sync ------------------------
+//
+// Noah, from his iPad and phone: "Pairing works although no data syncs."
+//
+// His exports told the whole story. The iPad held 2900 events and sent ZERO; the
+// phone held one event it had written itself, and that one crossed. The cause:
+// `exchangeOnce` offered only events THIS DEVICE AUTHORED, and every one of the
+// iPad's 2900 was authored by the plain Quietkeep app and had arrived in the Sync
+// edition by import — so the Sync edition considered none of it its own to share.
+//
+// The reasoning behind the old rule was that each device is a single-writer shard
+// and the device that wrote an event will publish it. True in a closed sync
+// world; false the moment a shard arrives by IMPORT, because the device that
+// wrote it is not in the pair and never will be. Moving between the editions is
+// an export and an import — the documented, expected route — so this was on the
+// main road, not an edge of it.
+
+test('a planner that arrived by import is uploaded, not just what this device wrote', async () => {
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  const b = await makeDevice('device-b');
+
+  // Exactly the iPad's situation: a full planner authored somewhere else,
+  // brought in by import, plus nothing of this device's own.
+  const imported: AppEvent[] = [
+    { id: 'far-0', vault: 'personal', at: '2026-07-29T09:00:00.000Z', device: 'a-different-app', seq: 0,
+      kind: 'capture.recorded', node: 'n0', payload: { text: 'written before the move', source: 'quick' } } as AppEvent,
+    { id: 'far-0~cure~n0', vault: 'personal', at: '2026-07-29T09:00:00.000Z', device: 'a-different-app', seq: 0,
+      kind: 'clock.set', node: 'n0',
+      payload: { clockKind: 'review', at: '2026-07-29T09:00:00.000Z', source: 'gate:capture.recorded' } } as AppEvent,
+  ];
+  await a.store.append(imported);
+  await a.refresh();
+  assert.deepEqual(titles(a), ['written before the move'], 'A is holding an imported planner');
+
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptKeyText(b.store, (await currentKeyText(a.store))!, HOST);
+
+  const up = await runExchangeWith(a, fetchImpl, now);
+  assert.ok(up.result!.sent > 0, 'A offered what it holds, not only what it wrote');
+
+  const down = await runExchangeWith(b, fetchImpl, now);
+  assert.ok(down.landed! > 0, 'and B took it in');
+  assert.deepEqual(titles(b), ['written before the move'],
+    'the imported planner reached the other device');
+});
+
+test('an event is offered once, not on every exchange', async () => {
+  // Uploading what this device HOLDS rather than only what it WROTE is correct,
+  // and it must not become a device re-posting the same events forever. The mark
+  // records what has been offered, whoever originally wrote it.
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  await a.store.append([
+    { id: 'far-1', vault: 'personal', at: '2026-07-29T09:00:00.000Z', device: 'elsewhere', seq: 0,
+      kind: 'capture.recorded', node: 'm0', payload: { text: 'from elsewhere', source: 'quick' } } as AppEvent,
+    { id: 'far-1~cure~m0', vault: 'personal', at: '2026-07-29T09:00:00.000Z', device: 'elsewhere', seq: 0,
+      kind: 'clock.set', node: 'm0',
+      payload: { clockKind: 'review', at: '2026-07-29T09:00:00.000Z', source: 'gate:capture.recorded' } } as AppEvent,
+  ]);
+  await a.refresh();
+  await beginPairing(a.store, HOST, now());
+
+  const first = await runExchangeWith(a, fetchImpl, now);
+  const second = await runExchangeWith(a, fetchImpl, now);
+
+  assert.ok(first.result!.sent > 0, 'offered the first time');
+  assert.equal(second.result!.sent, 0, 'and not again');
 });
