@@ -221,7 +221,7 @@ export async function mountAbout(session: Session): Promise<void> {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = exportFilename('calendar', at, false, 'ics');
+      a.download = exportFilename('calendar', at, false, 'ics', session.zone);
       document.body.append(a);
       a.click();
       a.remove();
@@ -341,7 +341,7 @@ export async function mountAbout(session: Session): Promise<void> {
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = exportFilename('status', nowIso, false, ext);
+        a.download = exportFilename('status', nowIso, false, ext, session.zone);
         document.body.append(a);
         a.click();
         a.remove();
@@ -392,7 +392,7 @@ export async function mountAbout(session: Session): Promise<void> {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = exportFilename(scope, at, false, ext);
+    a.download = exportFilename(scope, at, false, ext, session.zone);
     document.body.append(a);
     a.click();
     a.remove();

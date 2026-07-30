@@ -15,6 +15,7 @@ import assert from 'node:assert/strict';
 
 import { fold as foldEvents, type State } from '../src/fold.ts';
 import { toCalendar, calendarCount } from '../src/ics.ts';
+import { exportFilename } from '../src/portability.ts';
 import { heldGroups } from '../src/held.ts';
 import { localDayKey } from '../src/time.ts';
 import type { AppEvent } from '../src/events.ts';
@@ -406,4 +407,62 @@ test('an out-of-range alarm hour falls back rather than emitting a malformed DUR
     const trig = unfold(ics).find(l => l.startsWith('TRIGGER'))!;
     assert.match(trig, /^TRIGGER;RELATED=START:PT\d+H$/, `and a well-formed duration (${trig})`);
   }
+});
+
+// --- the name of the file and the day inside it ------------------------------
+//
+// Added after the two disagreed in production code for as long as the feature
+// had existed. `exportFilename` had NO unit test at all; the only thing that
+// ever noticed was a smoke check pinned to America/Denver contradicting one that
+// used `toISOString()`, and it noticed only during the six hours a day when UTC
+// and Denver are on different dates. An artifact that states two dates is
+// dishonest in the way this app cares most about, and the name is the part
+// somebody actually sees in Files.
+
+test('an export names itself with the same day it says inside', () => {
+  const evening = '2026-07-30T01:00:00.000Z';        // still the 29th in Denver
+  const name = exportFilename('calendar', evening, false, 'ics', DENVER);
+  const inside = toCalendar(st(ev('node.created', 'n1', { nodeKind: 'action', title: 'x' })), evening, DENVER);
+
+  const dayInName = (name.match(/(\d{4}-\d{2}-\d{2})/) ?? [])[1];
+  assert.equal(dayInName, localDayKey(evening, DENVER));
+  assert.equal(dayInName, '2026-07-29', 'the local day, which is what the reader is living in');
+  assert.ok(inside.includes(`as of ${dayInName}`),
+    `the file says "as of" a different day than its own name (${name})`);
+  // And the UTC day is NOT what the name carries, which is the whole bug.
+  assert.equal(name.includes('2026-07-30'), false);
+});
+
+test('and on the other side of the world, the same way', () => {
+  // UTC+14: morning in Kiritimati is still the previous day in UTC. The bug is
+  // symmetric and a fix that only handles negative offsets is not a fix.
+  const morning = '2026-07-29T18:00:00.000Z';        // the 30th in Kiritimati
+  const name = exportFilename('calendar', morning, false, 'ics', KIRITIMATI);
+  const dayInName = (name.match(/(\d{4}-\d{2}-\d{2})/) ?? [])[1];
+  assert.equal(dayInName, localDayKey(morning, KIRITIMATI));
+  assert.equal(dayInName, '2026-07-30');
+  assert.ok(toCalendar(st(ev('node.created', 'n1', { nodeKind: 'action', title: 'x' })), morning, KIRITIMATI)
+    .includes(`as of ${dayInName}`));
+});
+
+test('two exports in one local day still have different names', () => {
+  // The day alone would collide. The local TIME is kept for that reason, and
+  // kept local so it cannot disagree with the day beside it.
+  const a = exportFilename('all', '2026-07-30T01:00:00.000Z', false, 'json', DENVER);
+  const b = exportFilename('all', '2026-07-30T02:30:00.000Z', false, 'json', DENVER);
+  assert.notEqual(a, b);
+  assert.match(a, /2026-07-29T19-00-00/);
+  assert.match(b, /2026-07-29T20-30-00/);
+});
+
+test('with no zone it is unchanged, and a malformed instant does not throw', () => {
+  // Callers that have no zone keep exactly the old name — this widened a
+  // signature, and a widened signature must not move ground under a caller that
+  // did not ask for anything.
+  assert.equal(exportFilename('all', '2026-07-30T01:00:00.000Z', false, 'json'),
+    'quietkeep-all-2026-07-30T01-00-00-000Z.json');
+  assert.equal(exportFilename('all', 'not an instant', false, 'json', DENVER),
+    'quietkeep-all-not an instant.json', 'no crash on a hand-edited import');
+  assert.match(exportFilename('all', '2026-07-30T01:00:00.000Z', true, 'json', DENVER),
+    /-encrypted\.json$/);
 });

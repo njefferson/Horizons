@@ -892,9 +892,16 @@ try {
   // The date box refuses the past at the platform level, so a "new plan" cannot
   // be dated behind you.
   const minAttr = await tpage.getAttribute('#replan-new-date', 'min');
-  const todayKey = await tpage.evaluate(() => new Date().toISOString().slice(0, 10));
+  // The app's LOCAL day, in the zone this context is pinned to — not
+  // `toISOString()`, which is UTC. This compared a local day key against a UTC
+  // one and was therefore wrong every evening west of Greenwich: from 18:00
+  // Denver until midnight UTC the two disagree by a day, and the check reported
+  // the app as accepting a date in the past when the app was entirely correct.
+  // It passed for the other eighteen hours, which is why it survived.
+  const todayKey = await tpage.evaluate(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }));
   is(typeof minAttr === 'string' && minAttr >= todayKey, true,
-    `a new date cannot be in the past (min="${minAttr}")`);
+    `a new date cannot be in the past (min="${minAttr}", local today "${todayKey}")`);
 
   // Resolve the FIRST of two. "Not now" is legitimate and unremarkable
   // (ADR-0012), and it must take the passed date with it.
@@ -1211,7 +1218,16 @@ try {
   }
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
-  const sixDays = await tpage.evaluate(() => new Date(Date.now() + 6 * 86400000).toISOString().slice(0, 10));
+  // Six LOCAL days ahead. Adding six times 86,400,000 and slicing the UTC ISO
+  // string is not that: in the evening in a negative-offset zone it lands seven
+  // local days out, and the arithmetic below then expects the wrong answer while
+  // the app computes the right one.
+  const sixDays = await tpage.evaluate(() => {
+    const localToday = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+    const [y, m, d] = localToday.split('-').map(Number);
+    const walk = new Date(Date.UTC(y, m - 1, d + 6));
+    return walk.toISOString().slice(0, 10);
+  });
   await tpage.locator('#cards .card:has-text("brief the boss") .card-open').click();
   await tpage.waitForSelector('#detail[open]');
   await tpage.fill('#detail-date', sixDays);

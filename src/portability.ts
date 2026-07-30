@@ -23,6 +23,7 @@ import type { LogStore, Snapshot } from './log-store.ts';
 import { fold } from './fold.ts';
 import { silentNodes, heldNodes, structuralRefusal } from './gate.ts';
 import { serialiseState } from './snapshot.ts';
+import { isValidIso, localDayKey, localParts } from './time.ts';
 
 export interface ExportFile {
   format: 'planner-log';
@@ -69,8 +70,30 @@ export function fromJsonl(jsonl: string): AppEvent[] {
  *  it came from. The `format` field inside the file stays `planner-log`: that
  *  is a data-format identifier, and changing it would orphan every export
  *  already written for zero benefit. */
-export const exportFilename = (scope: string, at: string, encrypted: boolean, ext = 'json'): string =>
-  `quietkeep-${scope}-${at.replace(/[:.]/g, '-')}${encrypted ? '-encrypted' : ''}.${ext}`;
+export const exportFilename = (
+  scope: string,
+  at: string,
+  encrypted: boolean,
+  ext = 'json',
+  zone?: string,
+): string => {
+  // The stamp in the NAME must agree with the day stated INSIDE the file.
+  //
+  // It did not. The name carried the UTC instant while the contents said the
+  // local day (`madeOn` in `src/ics.ts`), so a calendar export taken at seven in
+  // the evening anywhere west of Greenwich was named 2026-07-30 and said "as of
+  // 2026-07-29". One artifact, two dates, and the name is the part a person sees
+  // in Files. Found because a pinned-zone smoke check disagreed with a UTC one
+  // at exactly the hour the two diverge — and it had been wrong every evening
+  // since it was written.
+  let stamp = at.replace(/[:.]/g, '-');
+  if (zone !== undefined && isValidIso(at)) {
+    const p = localParts(at, zone);
+    const two = (n: number): string => String(n).padStart(2, '0');
+    stamp = `${localDayKey(at, zone)}T${two(p.hour)}-${two(p.minute)}-${two(p.second)}`;
+  }
+  return `quietkeep-${scope}-${stamp}${encrypted ? '-encrypted' : ''}.${ext}`;
+};
 
 export async function exportAll(store: LogStore, at: string, scope = 'all'): Promise<ExportFile> {
   const events = await store.all();
