@@ -22,9 +22,22 @@ on:
     branches: [staging, main]
   workflow_dispatch:
 
+# Latest-wins is right for a preview and WRONG for production.
+#
+# On `main` a superseded deploy means the previous release is quietly still being
+# served while nothing anywhere is red: a cancelled run's conclusion is
+# `cancelled`, not `failure`, so it reads as neutral to every glance and every
+# notification. That is the perfect place for a staleness bug to live. It has
+# already happened once in a sibling app — a promote's deploy killed twenty
+# seconds later by a record-keeping commit — and it was harmless only because the
+# second push carried the same `public/` tree. That is luck, and luck is not a
+# deploy strategy.
+#
+# On `staging` superseding is exactly what is wanted: the newest preview is the
+# only one anybody cares about.
 concurrency:
   group: deploy-${{ github.ref_name }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.ref_name != 'main' }}
 
 permissions:
   contents: read
@@ -175,4 +188,4 @@ jobs:
           echo "  Cloudflare dashboard -> Workers & Pages -> quietkeep -> Deployments"
           echo "  -> pick the last good one -> Manage deployment -> Rollback."
           echo "That is instant. A git revert is also fine but waits for a fresh build,"
-          echo "and note concurrency cancel-in-progress can cancel an in-flight deploy."
+          echo "On staging a newer push supersedes this deploy; on main it does not."

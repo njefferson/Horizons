@@ -533,6 +533,42 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **Sample work (0.22.0 CAPABILITY).** Noah: *"I eventually want a
+  set of test data i can import."* A generator, never a file: a fixture with a
+  literal date in it is wrong tomorrow and absurd next year, and every surface here
+  is temporal, so a stale fixture exercises the wrong code paths rather than merely
+  looking odd. Generated a year apart it describes the same relative situation, and
+  that is asserted.
+  · It goes in through `session.commit` — the app's own admit-and-append path — so
+  the demonstration cannot show a state the app would refuse, and a bug in the
+  generator surfaces as a plain refusal instead of as a corrupt store.
+  · It contains the AWKWARD states on purpose: a passed date, something with
+  another person in it, two unpressured things on the Menu, two unsorted notes, and
+  real containment. The smoke checks read the store for each of those, not the copy
+  on screen — a proof showed a button reporting "13 sample things" while committing
+  nothing left the message assertion passing and reded only the three that read the
+  database.
+  · `capture.recorded` gains a `sample` source rather than borrowing `quick`, since
+  a capture claiming a keystroke it never had is a lie in the one place the app
+  keeps its history. Additive; every existing log stays readable.
+  · **Two invariants I had wrong, both caught by tests.** The set was leaning on the
+  gate's cures because the test helper folded the generator's output directly and
+  never went through `admit`; and "a container held up only by its clocked children"
+  is not a state this app has — containment satisfies the CHILD, so such a parent is
+  still silent and is cured at creation like any other node. A law you can quote is
+  not a law you have read.
+  · Alongside it: an export's filename carried the UTC instant while the file's own
+  contents stated the local day, so an evening calendar export was named tomorrow
+  and said today. Found only because the session crossed midnight UTC and two smoke
+  checks — themselves comparing a local day against `toISOString()` in a browser
+  pinned to America/Denver — disagreed. Both checks had been wrong since they were
+  written and passed for eighteen hours a day.
+  · **The deploy's `cancel-in-progress` is now false on `main`.** Latest-wins is
+  right for a preview and wrong for production: a superseded deploy leaves the
+  previous release being served while the run's conclusion reads `cancelled` rather
+  than `failure`, so nothing anywhere is red. A sibling app hit exactly this on a
+  promote and it was harmless only by luck.
+
 - **2026-07-29** — **Two builds, one branch — and the gate that makes the default's
   promise real ([ADR-0036](docs/adr/0036-two-builds-one-branch.md),
   [ADR-0037](docs/adr/0037-sync-design.md)).** Noah asked for two apps: Quietkeep,
