@@ -179,27 +179,33 @@ jobs:
         run: |
           set -uo pipefail
           URL="${{ steps.deploy.outputs.url }}"
-          # A deploy that succeeded and a relay that works are different claims,
-          # and only the second one is worth anything. An unknown id must answer
-          # with an empty chunk list, not a 404 and not a 500.
+          # A deploy that succeeded and THE NEW WORKER being live are different
+          # claims. wrangler propagates over a few seconds, so for a while the URL
+          # answers with the PREVIOUS version — and a probe of a route both
+          # versions share (a plain GET) passes against the old one and proves
+          # nothing about this deploy. The first run of this step failed exactly
+          # there: GET and OPTIONS passed on the stale worker, and only the
+          # new-only /status route exposed that the new code was not live yet.
           #
-          # WITH RETRIES, because a freshly published workers.dev route is not
-          # servable the instant wrangler prints its URL — the first run of this
-          # step failed on a 404 issued 0.1s after the deploy, which said nothing
-          # about the worker and everything about the timing of the question.
-          BODY=""
-          for attempt in 1 2 3 4 5 6 7 8; do
-            CODE=$(curl -s -o /tmp/relay.txt -w '%{http_code}' "$URL/v1/00000000000000000000000000000000" || echo 000)
-            BODY=$(cat /tmp/relay.txt 2>/dev/null || true)
-            echo "attempt $attempt: HTTP $CODE  $BODY"
-            [ "$CODE" = "200" ] && break
+          # So the readiness probe is /status ITSELF — a route only this version
+          # serves. Polling it until it returns the health page is what proves the
+          # new worker is the one answering, before anything else is checked.
+          READY=""
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            STAT=$(curl -s "$URL/status" || true)
+            echo "attempt $attempt: $(printf '%s' "$STAT" | head -1)"
+            if printf '%s' "$STAT" | grep -qi 'Quietkeep relay'; then READY=yes; break; fi
             sleep 10
           done
-          if [ "$CODE" != "200" ]; then
-            echo "::error::the relay did not answer with 200 after 8 tries (last: $CODE). It is deployed at $URL but not serving."
+          if [ -z "$READY" ]; then
+            echo "::error::the new worker never became live: /status did not return the health page after 10 tries. Deployed at $URL but the new code is not serving."
             exit 1
           fi
-          printf '%s' "$BODY" | grep -q '"chunks"' || { echo "::error::the relay answered 200, but not like a relay: $BODY"; exit 1; }
+          echo "The new worker is live (its /status page answered)."
+
+          # Now the shared routes, against a worker we KNOW is the new one.
+          BODY=$(curl -s "$URL/v1/00000000000000000000000000000000")
+          printf '%s' "$BODY" | grep -q '"chunks"' || { echo "::error::an unused mailbox did not answer like a relay: $BODY"; exit 1; }
 
           # The preflight matters as much as the GET: the app is on another
           # origin, so every POST is preceded by an OPTIONS, and a relay that
@@ -208,14 +214,10 @@ jobs:
           echo "OPTIONS preflight: $PRE"
           case "$PRE" in 204|200) ;; *) echo "::error::the preflight answered $PRE — a browser could not POST to this"; exit 1;; esac
 
-          # The status page a person can open, and the DELETE route revocation
-          # needs. Both are new, and a deploy that shipped them broken would be a
-          # green deploy of a broken feature — the exact V-10 shape.
-          STAT=$(curl -s "$URL/status")
-          echo "status page: $(printf '%s' "$STAT" | head -1)"
-          printf '%s' "$STAT" | grep -qi 'Quietkeep relay' || { echo "::error::/status did not return the health page"; exit 1; }
-
-          # DELETE must empty a mailbox. Drop a shaped seal in, delete, confirm gone.
+          # DELETE (revocation) must empty a mailbox. The /status readiness gate
+          # above already proved the new worker is live, so this is now a clean
+          # test of the route rather than a race with propagation.
+          # Drop a shaped seal in, delete, confirm gone.
           SEAL='{"v":1,"iv":"AAAAAAAAAAAAAAAA","ct":"AAAAAAAAAAAAAAAAAAAAAA=="}'
           curl -s -X POST "$URL/v1/11111111111111111111111111111111" -H 'content-type: application/json' --data "$SEAL" >/dev/null
           DEL=$(curl -s -o /dev/null -w '%{http_code}' -X DELETE "$URL/v1/11111111111111111111111111111111")
