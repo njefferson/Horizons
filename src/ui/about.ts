@@ -30,6 +30,7 @@ import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
 import { CONFIRM_WORD, clearEvents, confirmMatches, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
+import { deliverCopy } from './export-copy.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -389,32 +390,11 @@ export async function mountAbout(session: Session): Promise<void> {
   // handed to the browser first, the event is committed after, and every
   // failure is said out loud (§5). Each file carries every EARLIER export's
   // record; its own lands one export later.
-  /** Build the file, hand it over, THEN record it — one definition, used by the
-   *  Export button and by the backup offered before an import. The backup path
-   *  is the one that matters most: it runs seconds before the store is replaced,
-   *  and a second copy of this logic would be a second chance to get that
-   *  ordering wrong. */
-  const deliverExport = async (scope: string, ext: string): Promise<void> => {
-    const at = new Date().toISOString();
-    const file = await exportAll(session.store, at, scope);
-    const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = exportFilename(scope, at, false, ext, session.zone);
-    document.body.append(a);
-    a.click();
-    a.remove();
-    // Long grace: on iPadOS the share sheet holds the URL open while the user
-    // decides where the file goes.
-    setTimeout(() => URL.revokeObjectURL(url), 120_000);
-
-    await session.commit((ctx) => [{
-      id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
-      kind: 'export.written', node: null,
-      payload: { at, scope, encrypted: false },
-    } as AppEvent]);
-  };
+  /** One definition, now in `./export-copy.ts` because the update prompt needs the
+   *  same thing and the note that used to live here said a second copy would be a
+   *  second chance to get the ordering wrong. */
+  const deliverExport = (scope: string, ext: string): Promise<void> =>
+    deliverCopy(session, scope, ext);
 
   exp.addEventListener('click', async () => {
     exp.disabled = true;

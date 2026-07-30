@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.26.0 — CAPABILITY
+
+*2026-07-30*
+
+- **When a newer version is ready, it says so and offers you a copy first.** A line above the app, not something over it, with &ldquo;Save a copy&rdquo;, &ldquo;Reload now&rdquo; and &ldquo;Not now&rdquo;. Ignore it and nothing changes.
+- It does not pretend anything is at risk, because nothing is — this app only ever adds to its record and an update cannot rewrite it. A copy is a point to come back to, and that is all it claims to be.
+- It appears once. Declining is an answer, not a question to ask again.
+
 ## 0.25.1 — ITERATION
 
 *2026-07-30*

@@ -533,6 +533,28 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **A copy offered when a newer version lands (0.26.0 CAPABILITY).**
+  Noah: *"Ask to backup when update detected?"*
+  · **It refuses to imply danger, because there is none of the kind it would imply.**
+  The log is append-only, `state = fold(log)`, migrations are additive — an update
+  cannot rewrite what is written. "Back up or lose your data" would be a manufactured
+  alarm, which is a red wall in a sentence. The real reason is narrower and is stated:
+  a release that behaves badly AFTER it lands, and a copy is a point to come back to.
+  Tests assert the absence of the alarmist words AND the presence of the reassurance,
+  so neither half can drift.
+  · **`waiting` alone would have detected nothing on this app.** `sw.js` calls
+  `skipWaiting()`, so a new worker activates without asking and `waiting` is empty by
+  the time anything looks. `updateIsReady` therefore also treats "the active worker is
+  not the one controlling this page" as an update — and excludes a first-ever load,
+  where there is no controller and offering a copy of an empty store would be nonsense.
+  · A line, never a modal: it does not overlap the capture box (asserted), closes from
+  the first frame, and appears once — declining is an answer, not a question to ask
+  again.
+  · `deliverCopy` moved to `src/ui/export-copy.ts`. The closure it replaced carried a
+  note saying a second copy of the deliver-then-record ordering "would be a second
+  chance to get it wrong"; the update prompt needing the same thing is exactly the
+  moment that note was written for.
+
 - **2026-07-30** — **A gate cure is not a demand (0.25.1 ITERATION).** Noah's second
   export, re-imported on 0.25.0 minutes after the promote: 2,897 events, 1,429 nodes,
   **zero `due` clocks** — every one of the 1,173 stale dates correctly dropped. Folded

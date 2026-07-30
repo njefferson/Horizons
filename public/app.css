@@ -344,6 +344,20 @@ button.ghost {
  * alarm, and nothing on this surface shouts. */
 .replan-error { margin: 0.25rem 0 0; color: var(--ink); font-weight: 600; }
 
+/* --- a newer version is ready ----------------------------------------------
+ * A line above the app, not over it. `--surface` on `--bg` with the border doing
+ * the separating, exactly like a card — an update notice is not a different class
+ * of object and should not look like an alert.
+ */
+.update {
+  margin: 0 0 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.update-words { margin: 0 0 0.5rem; color: var(--ink); }
+
 /* --- clearing things out ---------------------------------------------------
  * The confirmation is a typed word, and the box has to be as reachable as any
  * other control here: the same 44px floor and the same borrowed styling as the

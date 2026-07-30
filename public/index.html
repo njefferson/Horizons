@@ -27,6 +27,18 @@
           title="About Quietkeep">i</button>
 </header>
 
+<!-- A newer version is ready. A LINE, never a modal: it must not stand between
+     somebody and their capture box, and it has a way out from the first frame
+     (Doctrine §4). Hidden until there is genuinely something to say. -->
+<section id="update" class="update" role="status" aria-live="polite" hidden>
+  <p id="update-words" class="update-words"></p>
+  <div class="about-actions">
+    <button id="update-save" type="button">Save a copy</button>
+    <button id="update-reload" type="button" class="ghost">Reload now</button>
+    <button id="update-dismiss" type="button" class="ghost">Not now</button>
+  </div>
+</section>
+
 <main>
   <!-- Capture first, and it is the thing that has focus on arrival. The gap
        between having a thought and it being safe is the whole product. -->

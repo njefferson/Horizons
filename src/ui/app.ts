@@ -13,6 +13,7 @@ import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
+import { mountUpdatePrompt } from './update.ts';
 import { loadBadgePreference, paintBadge } from './badge.ts';
 import { CURRENT } from './changelog.ts';
 import { mountTriage } from './clarify.ts';
@@ -609,12 +610,12 @@ async function main(): Promise<void> {
   // which fires while this function is still awaiting IndexedDB.
   document.body.dataset.ready = 'true';
 
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {
-      // Offline support is an enhancement; failing to register is not a reason
-      // to break capture, which is the one thing that must always work.
-    });
-  }
+  // Registration now lives with the update prompt, because the two are one
+  // question: the registration is how a newer version is noticed, and noticing it
+  // without offering the copy was the gap Noah asked about. Contained there, for
+  // the same reason it was contained here — offline support is an enhancement and
+  // must never cost capture.
+  mountUpdatePrompt(session);
 }
 
 /** Compose one capture from whatever a share sheet handed over. Title, text and

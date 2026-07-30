@@ -124,6 +124,7 @@ const REGISTRY = {
     '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
     '#capture-form button[type=submit]',
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a', '.build',
+    '#update-words', '#update-save', '#update-reload', '#update-dismiss',
   ],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
@@ -453,6 +454,15 @@ try {
     const page = await ctx.newPage();
     await page.goto(url, { waitUntil: 'load' });
     await page.waitForSelector('body[data-ready=true]');
+
+    // The update line is hidden until a newer version exists, so it is revealed for
+    // the audit — a control somebody only meets on an update day is still a control,
+    // and leaving it out would exempt exactly the surfaces people meet under strain.
+    await page.evaluate(() => {
+      const u = document.querySelector('#update');
+      const w = document.querySelector('#update-words');
+      if (u && w) { w.textContent = 'A newer version is ready.'; u.hidden = false; }
+    });
 
     // State 1: the first-run dialog, exactly as a new user meets it.
     await page.waitForSelector('#storage-body dt');

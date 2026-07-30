@@ -2438,6 +2438,26 @@ try {
   is(nested.childParent === nested.projectNode, true,
     'and its child is PARENTED to it — the shape a flat list cannot express');
 
+  console.log('\nA newer version offers a copy, and never stands in the way');
+  // It must be ABSENT on an ordinary load — a notice that shows itself when there is
+  // nothing to notice is the definition of a nag — and it must never sit between
+  // somebody and the capture box.
+  is(await tpage.locator('#update').isHidden(), true, 'hidden when there is no update');
+  const upd = await tpage.evaluate(async () => {
+    const region = document.querySelector('#update');
+    const words = document.querySelector('#update-words');
+    words.textContent = 'A newer version is ready.';
+    region.hidden = false;
+    const box = region.getBoundingClientRect();
+    const capture = document.querySelector('#capture').getBoundingClientRect();
+    const before = document.activeElement?.id ?? '';
+    return { overlapsCapture: !(box.bottom <= capture.top || box.top >= capture.bottom), before };
+  });
+  is(upd.overlapsCapture, false, 'it is a line above the app, not something over it');
+  // And it closes, from the first frame.
+  await tpage.click('#update-dismiss');
+  is(await tpage.locator('#update').isHidden(), true, 'and "Not now" closes it');
+
   console.log('\nA long list does not become a wall');
   // Noah imported 1,429 things and got a scroll of well over a thousand rows under
   // one heading. The dedicated replan surface has cap_capped at three since it existed;

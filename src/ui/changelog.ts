@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.26.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-30',
+    notes: [
+      '**When a newer version is ready, it says so and offers you a copy first.** A line above the app, not something over it, with &ldquo;Save a copy&rdquo;, &ldquo;Reload now&rdquo; and &ldquo;Not now&rdquo;. Ignore it and nothing changes.',
+      'It does not pretend anything is at risk, because nothing is \u2014 this app only ever adds to its record and an update cannot rewrite it. A copy is a point to come back to, and that is all it claims to be.',
+      'It appears once. Declining is an answer, not a question to ask again.',
+    ],
+  },
+  {
     triplet: '0.25.1',
     kind: 'ITERATION',
     date: '2026-07-30',
