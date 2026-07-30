@@ -76,12 +76,11 @@ jobs:
           # Idempotent: creating one that exists is an error, and a workflow that
           # can only be run once is a workflow that will be run twice.
           LIST=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace list 2>/dev/null || echo '[]')
-          ID=$(printf '%s' "$LIST" | python3 -c "
-import json,sys
-try: ns = json.load(sys.stdin)
-except Exception: ns = []
-print(next((n['id'] for n in ns if n.get('title','').endswith('$KV_TITLE')), ''))
-")
+          # One line on purpose: a multi-line here-script inside a YAML block
+          # scalar has to stay indented, and an unindented line silently ends the
+          # block — which is how the first two runs of this workflow failed
+          # before any step executed.
+          ID=$(printf '%s' "$LIST" | python3 -c "import json,sys; ns=json.load(sys.stdin); print(next((n['id'] for n in ns if n.get('title','').endswith('$KV_TITLE')), ''))" 2>/dev/null || true)
           if [ -z "$ID" ]; then
             echo "No namespace titled $KV_TITLE — creating one."
             OUT=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace create "$KV_TITLE")

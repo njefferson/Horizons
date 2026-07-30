@@ -25,6 +25,13 @@ jobs:
         with:
           node-version: 22
       - run: npm ci
+
+      # FIRST, because a workflow that does not parse fails in under a second
+      # with zero jobs — reported as red with nothing readable in it. Cheapest
+      # possible check for the least legible possible failure.
+      - name: Workflow files parse
+        run: npm run workflows:check
+
       - run: npm run typecheck
       - run: npm run test:only
 
