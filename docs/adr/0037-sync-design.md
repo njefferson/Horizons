@@ -212,12 +212,32 @@ The typed code is not built. It is the same 32 bytes with worse ergonomics than
 either surviving rung, and forty-four characters with no error correction is the
 wrong thing to hand this audience.
 
-The QR encoder is the cost: it is the first dependency this app takes on for a
-feature rather than for correctness. A QR matrix for 44 characters is small enough
-to generate without a library (byte mode, one fixed version, fixed mask) and that
-is the route to take — a hand-written encoder that only has to emit ONE size is
-about two hundred lines and is fully testable against a decoder, where a general
-library is a supply-chain surface for a screen shown twice in a device's life.
+**The showing half is cheap; the SCANNING half may not exist on an iPad.** A QR
+matrix for a fixed payload can be generated without a library — byte mode, one
+version, one mask, about two hundred lines, fully testable. Reading one is the
+problem: `BarcodeDetector` is a Chromium API and WebKit does not implement it, so an
+in-page scanner would need a QR **decoder** in the bundle reading `getUserMedia`
+frames. That is a much larger dependency, it needs camera permission, and it is a
+supply-chain surface for a screen shown twice in a device's lifetime.
+
+**So the QR carries a URL, not a bare key, with the key in the fragment:**
+
+`https://<sync-host>/pair#k=<44 chars>`
+
+The target scans it with the **built-in Camera app** — which the user already knows
+and which needs no permission from us — and iOS opens the link. A fragment is never
+transmitted to a server, so the key stays on the device even though it travelled
+inside a URL. Only the encoder ships. No camera code, no decoder, no dependency.
+
+**[V-16](../verifications.md) must be settled on the device first**: whether iOS
+opens that link in the installed PWA or in Safari. If Safari, the key lands in a
+different origin storage context and pairing would appear to succeed and then
+quietly not work — the exact silent-wrong-state this design exists to avoid.
+
+**The mutual check survives in a cheaper form.** A second scan hits the same missing
+API from the other direction, so instead **both devices display the sync id derived
+from the key** and a human compares two short strings. Same property Noah was
+after: pairing completes verified or fails while somebody is still there to retry.
 
 ## What would overturn it
 

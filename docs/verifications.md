@@ -664,6 +664,57 @@ being treated as one was a cache.
 
 ---
 
+## V-16 · Can an iPad web app scan a QR code at all? — **NOT VERIFIED, and it decides the pairing design**
+· raised 2026-07-30 with the sync stage 4 decision
+
+Noah chose the QR route for pairing, and the *showing* half is easy — an encoder
+for one fixed size is about two hundred lines and no dependency. **The scanning
+half is the part that may not exist.**
+
+What I believe and have NOT verified here:
+
+- **`BarcodeDetector` is a Chromium API.** WebKit does not implement it, so an
+  in-page scanner on an iPad would need a QR **decoder** shipped in the bundle,
+  reading frames off a `getUserMedia` stream. That is a far larger dependency than
+  the encoder, it needs camera permission from the web app, and it is exactly the
+  kind of supply-chain surface this project avoids — for a screen shown twice in a
+  device's lifetime.
+  - By what: nothing. Stated from memory, which is not evidence.
+  - How to settle it: on the iPad, open the app and evaluate
+    `'BarcodeDetector' in window`. One line, one answer.
+
+**The design that makes the question mostly moot.** Encode a URL rather than a
+bare key, with the key in the **fragment**:
+
+`https://<sync-host>/pair#k=<44 chars>`
+
+The target device scans it with the **built-in Camera app**, which every iOS user
+already knows and which needs no permission from us, and iOS opens the link. A
+fragment is never transmitted to a server by any browser, so the key stays on the
+device even though it travelled inside a URL. Then only the ENCODER ships, there is
+no camera code, no `getUserMedia`, and no decoder.
+
+**What only Noah can settle, and it is the real risk:** whether iOS opens that link
+in the **installed PWA** or in Safari. If Safari, the key lands in a different
+origin storage context than the installed app, and pairing would appear to succeed
+and then quietly not work — the exact silent-wrong-state this project refuses. It
+must be checked on the device before the flow is built, not after.
+
+- **the link opens in the installed app, not Safari**
+  - By what: nothing yet
+  - What would prove it: install the Sync app, scan a `/pair#…` QR with the Camera
+    app, and see which one comes to the front
+  - What it does NOT prove either way: anything about the key itself
+
+**On Noah's mutual-scan idea.** The instinct is right and it is worth keeping: a
+one-way scan proves the target saw *a* code, not that both devices ended up holding
+the same key, so a mis-scan surfaces later as an exchange that silently moves
+nothing. The cheap form of the same check is not a second scan (which hits the same
+missing API from the other direction) but **both devices displaying the sync id
+derived from the key, for a human to compare**. Two short strings, side by side,
+and pairing either completes verified or fails while somebody is still standing
+there able to retry.
+
 ## V-14 · Does the OS calendar actually fire a Quietkeep alarm with the app closed?
 **Status: NOT VERIFIED — and it is the only verification that counts for T1**
 · raised 2026-07-29 with 0.8.0
