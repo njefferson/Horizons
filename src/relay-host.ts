@@ -15,23 +15,19 @@
 /**
  * The relay this build dials unless a pairing file names another.
  *
- * **It reads `UNSET`, and that is a true statement rather than a placeholder
- * nobody got round to.** There is no relay deployed yet: the Cloudflare
- * credential this repo holds can publish Pages but has no Workers permissions,
- * so `.github/workflows/relay.yml` cannot create the KV namespace the relay
- * stores chunks in. That workflow says exactly which two permissions to add and
- * fails before creating anything.
+ * **Read from a deploy, not guessed.** Relay run 5 published the worker and
+ * printed this URL, with the `CHUNKS` KV namespace created and bound.
  *
- * It briefly held a GUESS at the workers.dev URL. A guess is worse than nothing
- * here: the format check passes, the sync edition builds, the CSP permits the
- * host, and the app dials into the void — a build that is broken in the one way
- * that produces no error anywhere. So while this is unset, `tools/editions.mjs`
- * does not build the Sync edition at all, and nothing ships that claims to sync.
- *
- * The value to put here is printed by the relay workflow's final step, on a run
- * that actually deployed. Not before.
+ * This value briefly held a GUESS — `quietkeep-relay.noahjefferson.workers.dev`,
+ * which is wrong: the account's subdomain has a hyphen. Every gate passed it.
+ * The format check passed, the sync edition built, the CSP permitted the host,
+ * and the app would have dialled a hostname that does not resolve — broken in
+ * the one way that produces no error on any device. It was set back to `UNSET`
+ * until a deploy log said otherwise, and that is the rule this constant lives
+ * under: **an unverified URL here is worse than a missing one, because it
+ * silences the check that would have caught it.**
  */
-export const RELAY_HOST = 'UNSET';
+export const RELAY_HOST = 'https://quietkeep-relay.noah-jefferson.workers.dev';
 
 /** Is this a real host, or the placeholder? Used by the edition gate, and by the
  *  surface so it can say "no handover point is set" rather than fail obscurely. */

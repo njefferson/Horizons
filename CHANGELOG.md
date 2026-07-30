@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.27.0 — CAPABILITY
+
+*2026-07-30*
+
+- **Two devices can keep each other up to date &mdash; in a separate app called Quietkeep Sync.** Pair them once by opening a small file on the second device, and from then on each brings the other up to date when you open it. No account, nothing to sign in to.
+- Your writing is sealed on your device before any of it leaves, with a key only your devices hold. The handover point in between stores something it cannot read and is never given the key.
+- Both devices show the same short pairing name. If one shows something different they are not a pair &mdash; worth being able to see, rather than working it out from the fact that nothing ever arrives.
+- **Quietkeep itself still cannot reach anything at all, and that does not change.** It is the more private of the two and stays the one you get by default; the browser refuses to let it contact anything, whatever it is asked to do. Moving your work across is an export and an import, once.
+- Taking in another device&rsquo;s work only ever adds. It never replaces and never removes, so neither side can lose anything to the other.
+
 ## 0.26.0 — CAPABILITY
 
 *2026-07-30*

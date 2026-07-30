@@ -158,15 +158,38 @@ jobs:
 
       - name: Check it actually answers
         run: |
-          set -euo pipefail
+          set -uo pipefail
           URL="${{ steps.deploy.outputs.url }}"
           # A deploy that succeeded and a relay that works are different claims,
           # and only the second one is worth anything. An unknown id must answer
           # with an empty chunk list, not a 404 and not a 500.
-          BODY=$(curl -fsS "$URL/v1/00000000000000000000000000000000")
-          echo "GET an unused mailbox -> $BODY"
-          printf '%s' "$BODY" | grep -q '"chunks"' || { echo "::error::the relay answered, but not like a relay"; exit 1; }
-          echo "The relay is up and answering."
+          #
+          # WITH RETRIES, because a freshly published workers.dev route is not
+          # servable the instant wrangler prints its URL — the first run of this
+          # step failed on a 404 issued 0.1s after the deploy, which said nothing
+          # about the worker and everything about the timing of the question.
+          BODY=""
+          for attempt in 1 2 3 4 5 6 7 8; do
+            CODE=$(curl -s -o /tmp/relay.txt -w '%{http_code}' "$URL/v1/00000000000000000000000000000000" || echo 000)
+            BODY=$(cat /tmp/relay.txt 2>/dev/null || true)
+            echo "attempt $attempt: HTTP $CODE  $BODY"
+            [ "$CODE" = "200" ] && break
+            sleep 10
+          done
+          if [ "$CODE" != "200" ]; then
+            echo "::error::the relay did not answer with 200 after 8 tries (last: $CODE). It is deployed at $URL but not serving."
+            exit 1
+          fi
+          printf '%s' "$BODY" | grep -q '"chunks"' || { echo "::error::the relay answered 200, but not like a relay: $BODY"; exit 1; }
+
+          # The preflight matters as much as the GET: the app is on another
+          # origin, so every POST is preceded by an OPTIONS, and a relay that
+          # 500s there is one that works in a test and never in a browser.
+          PRE=$(curl -s -o /dev/null -w '%{http_code}' -X OPTIONS "$URL/v1/00000000000000000000000000000000")
+          echo "OPTIONS preflight: $PRE"
+          case "$PRE" in 204|200) ;; *) echo "::error::the preflight answered $PRE — a browser could not POST to this"; exit 1;; esac
+
+          echo "The relay is up, answering, and reachable from another origin."
 
       - name: What to do with this
         run: |
