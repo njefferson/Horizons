@@ -533,6 +533,18 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **Promoted to production: 0.21.1 through 0.24.0 in one step.**
+  Noah's word, onto watched-green Spine run 103 (`d60271a`, all 14 steps), confirmed
+  by Deploy run 100 on `main` reaching success at the Cloudflare step — never by
+  reading production (V-15). Production had been on 0.21.1 while eight releases
+  accumulated on `staging`, which is also how he came to be looking for a feature
+  his device did not have: the version now renders on the main screen, so that
+  question answers itself from a screenshot.
+  · What went out: sample work, both clearing modes, the calendar carrying only days
+  the reader chose, the on-screen build number, the optional badge with the gauge
+  stating the same figure, and the OmniFocus/TaskPaper/CSV import.
+  · Sync stages 1–3b went with it and remain unreachable from any surface by design.
+
 - **2026-07-30** — **The badge is optional, and work comes in from other planners
   (0.24.0 CAPABILITY).** Noah: *"Make the badge optional as well"* and *"Possible to
   import an Omnifocus export and really test at scale?"*
