@@ -556,7 +556,29 @@ decided by a session.**
   Proven by breaking it four ways — widening `connect-src` to a relay, a font
   CDN, removing `connect-src` so it is inherited rather than stated, and a
   `report-uri` — **all four went red**.
-  · The sync design itself is recorded but **not built**. ADR-0037 names the
+  · **Stages 1 to 3b are now built and on `staging`** (2026-07-30). No triplet
+  bump and nothing reachable from a surface: `src/exchange.ts` (what a device
+  holds, as coalesced ranges — because a per-device maximum is not a completeness
+  claim and believing it is silent permanent loss), `src/seal.ts` (AES-256-GCM,
+  fresh IV per seal, one refusal message for every cause, the summary sealed too
+  because an unsealed one is a per-device write-rate graph), `src/relay.ts` plus
+  `relay/worker.ts` (a mailbox per sync id, append-only, expiring, refusing
+  anything not shaped like a seal), and `src/sync.ts` (the driver, ordered so a
+  death mid-exchange leaves the device with strictly more than it had). 63 tests
+  across the four, and every claim in their headers has a deliberate-failure proof
+  behind it — three of those proofs found tests with no detection power at all,
+  including the one asserting the relay cannot read anything, which passed with
+  the plaintext on the wire.
+  · **Gap repair needs no summary exchange.** `nextSeq` returns 0 for a device
+  with no events, so seq starts at zero and a hole below a device's first range is
+  PROVABLE from the local log alone. Nothing above the last range is ever
+  requested — nothing proves it exists, and asking would post an unsatisfiable
+  request on every open until it filled the mailbox.
+  · **Still not built: stage 4**, the separate Quietkeep Sync deployment, and it
+  is blocked on one decision that is Noah's rather than mine — **how the key gets
+  onto the second device** (a pairing file, a typed code, or a QR scan). The
+  crypto is transfer-agnostic, which is why the rest could be built first.
+  · The sync design itself is recorded and stages 1-3b built. ADR-0037 names the
   three things that still need Noah's word: the doctrine wording (a sync id is
   account-shaped, and "no accounts, no server" stays true only of the default
   build), re-running V-03 against Apple's own documentation if push is ever

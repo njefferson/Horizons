@@ -153,6 +153,51 @@ new record and not an enhancement.
   coverage.
 - Nothing in the default build changes. Not one line.
 
+## Status, 2026-07-30
+
+Stages 1 to 3b are built and sitting on `staging` with no triplet bump, because
+nothing in them is reachable from a surface and the default build is unchanged:
+
+- `src/exchange.ts` — what a device holds, as coalesced ranges. A per-device
+  maximum is not a completeness claim, and treating it as one is silent permanent
+  loss: a device holding seq 1, 2 and 5 announces "up to 5", the other side
+  believes it, and 3 and 4 are never recovered by anybody.
+- `src/seal.ts` — AES-256-GCM, a fresh IV per seal, one refusal message for every
+  cause, and the summary sealed as well as the events, because an unsealed summary
+  is a per-device write-rate graph and that is telemetry by another name.
+- `src/relay.ts` and `relay/worker.ts` — a mailbox per sync id. Append-only, no
+  delete route, expiring, and refusing anything not shaped like a sealed message
+  so it cannot become a general-purpose host. It cannot prove a body is encrypted
+  and is not asked to; it has never held a key.
+- `src/sync.ts` — the driver. Ordered so that a death at any point leaves the
+  device with strictly more than it had: arrivals are persisted before the mark
+  that records them advances, and a chunk that will not open is left in place
+  rather than written off, because a newer format means the other device is ahead.
+
+### The fourth thing that needs Noah's word
+
+**How the key reaches the second device.** The crypto is transfer-agnostic, which
+is why everything else could be built without settling it. The options, honestly:
+
+- **A pairing file.** Export a tiny file on device one, open it on device two.
+  Uses machinery that already exists (the export path, the share sheet, AirDrop),
+  works with no camera and no typing, and is the only option that is comfortable
+  when the two devices are not in the same room. The cost is that a key in a file
+  is a key in Files — it can be backed up to iCloud without anybody deciding to.
+- **A typed code.** Forty-four characters, read off one screen and typed into the
+  other. Nothing is stored anywhere in between, which is the strongest property on
+  offer. It is also the least kind rung for this audience: forty-four characters
+  is a working-memory task with no error correction, and getting it wrong produces
+  a refusal that cannot say which character was wrong.
+- **A QR scan.** Device one shows it, device two's camera reads it. Fastest and
+  hardest to get wrong, needs both devices present, needs camera permission, and
+  needs a QR encoder in the bundle — the first dependency this app would take on
+  for a feature rather than for correctness.
+
+No recommendation is recorded here on purpose. It is a thing Noah has to live
+with, and the honest position is that the file is the most practical, the code is
+the most private, and the QR is the easiest to get right once.
+
 ## What would overturn it
 
 A transport that removes the relay without losing the property — Safari shipping
