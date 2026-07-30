@@ -26,6 +26,8 @@ import { handle, type Store } from '../src/relay.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
 import { openSession, captureEvent, type Session, type SessionStore } from '../src/ui/session.ts';
 import { acceptPairing, beginPairing, currentPairing } from '../src/ui/pairing.ts';
+import { eraseEverything } from '../src/purge.ts';
+import { MARK_KV } from '../src/sync-keys.ts';
 import { runExchange } from '../src/ui/sync-run.ts';
 import { heldNodes } from '../src/gate.ts';
 
@@ -200,3 +202,68 @@ async function runExchangeWith(
     globalThis.fetch = real;
   }
 }
+
+// --- erasing, while paired --------------------------------------------------
+//
+// The audit's finding, and the nastiest shape a bug can have: an operation whose
+// whole purpose is to destroy data, quietly undone by an honest peer doing its
+// job. `replaceAll([])` empties the events and snapshots tables and nothing else,
+// so an erased device stayed PAIRED — and the next exchange pulled its own
+// history back out of a relay that still held thirty days of it.
+//
+// Nobody would have noticed until they erased something they truly wanted gone.
+
+test('erasing while paired empties the device and keeps it empty', async () => {
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  const b = await makeDevice('device-b');
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptPairing(b.store, JSON.parse(JSON.stringify(file)));
+
+  await capture(a, 'something private');
+  await runExchangeWith(a, fetchImpl, now);
+  await runExchangeWith(b, fetchImpl, now);
+  assert.deepEqual(titles(b), ['something private'], 'it reached the other device');
+
+  // The relay is still holding it — which is the whole point. Erasing has to
+  // survive that, not depend on it having expired.
+  await eraseEverything(a.store);
+
+  // Reopen: a fresh session over the same store, exactly as the reload does.
+  const a2 = await openSession(() => Date.parse('2026-07-30T13:00:00Z'),
+    'personal', 'device-a', a.store as unknown as SessionStore, 'America/Denver');
+  const after = await runExchangeWith(a2, fetchImpl, now);
+
+  // THE OUTCOME FIRST, deliberately. These are what somebody actually cares
+  // about, and asserting the mechanism ahead of them would make a regression
+  // report "the key was still set" rather than "the thing you erased came back".
+  assert.deepEqual(titles(a2), [], 'nothing came back');
+  assert.equal((await a2.store.all()).length, 0, 'and the log is still empty');
+  // Then the mechanism that achieves it.
+  assert.equal(after.ran, false, 'it does not exchange, because it is not paired');
+  assert.equal(await currentPairing(a.store), null, 'erasing unpaired this device');
+
+  // The other device is untouched. Erasing one device is not a remote wipe, and
+  // the confirmation says so.
+  assert.deepEqual(titles(b), ['something private'], 'the other device keeps its copy');
+});
+
+test('erasing clears the mark too, so a later pairing cannot skip events', async () => {
+  // A mark left behind would tell a NEW pairing that chunks it has never seen
+  // were already taken in — a silent, permanent hole with no error anywhere.
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  await beginPairing(a.store, HOST, now());
+  await capture(a, 'first life');
+  await runExchangeWith(a, fetchImpl, now);
+  assert.notEqual(await a.store.getKv(MARK_KV), null, 'a mark was written');
+
+  await eraseEverything(a.store);
+  assert.equal(await a.store.getKv(MARK_KV), null, 'and erasing took it with the key');
+});

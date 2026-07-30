@@ -27,7 +27,8 @@ import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
 import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
-import { CONFIRM_WORD, clearEvents, confirmMatches, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
+import { CONFIRM_WORD, clearEvents, confirmMatches, eraseEverything, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
+import { KEY_KV } from '../sync-keys.ts';
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 import { deliverCopy } from './export-copy.ts';
@@ -802,6 +803,9 @@ export async function mountAbout(session: Session): Promise<void> {
 
     const counted = async (): Promise<PurgeCount> =>
       purgeCount(session.state(), await session.store.all());
+    /** Is there a pairing to lose? Asked of the store, not of the sync module. */
+    const isPaired = async (): Promise<boolean> =>
+      typeof (await session.store.getKv<string>(KEY_KV)) === 'string';
 
     const paintSummary = async (): Promise<void> => {
       purgeSummaryEl.textContent = purgeSummary(await counted());
@@ -827,7 +831,10 @@ export async function mountAbout(session: Session): Promise<void> {
       // an empty paragraph above a button, in the one place where the sentence is
       // the entire safeguard. Revealing a surface before it can say anything is a
       // small version of the same mistake as saying it wrongly.
-      purgeConsequence.textContent = purgeWords(m, await counted(), savedACopy);
+      // Read from kv rather than from the sync module: this file ships in BOTH
+      // editions and the default one may not contain that module at all
+      // (ADR-0036). The key's presence is the whole question being asked.
+      purgeConsequence.textContent = purgeWords(m, await counted(), savedACopy, await isPaired());
       purgeConfirm.hidden = false;
       purgeWordInput.focus();
     };
@@ -852,7 +859,7 @@ export async function mountAbout(session: Session): Promise<void> {
           purgeBackupNote.textContent = 'Copy saved. Check it opened before going further.';
           // The consequence line is live: it states whether a copy exists, and it
           // must say so NOW rather than the next time the mode is picked.
-          if (mode) purgeConsequence.textContent = purgeWords(mode, await counted(), savedACopy);
+          if (mode) purgeConsequence.textContent = purgeWords(mode, await counted(), savedACopy, await isPaired());
         } catch (err) {
           purgeBackupNote.textContent =
             `That copy could not be saved — ${(err as Error).message} Nothing has been cleared.`;
@@ -869,18 +876,20 @@ export async function mountAbout(session: Session): Promise<void> {
         purgeGo.disabled = true;
         try {
           const before = await counted();
+          const wasPaired = await isPaired();
           if (chosen === 'clear') {
             // Through the app's own write path, so law 1 is enforced on the way
             // out exactly as on the way in.
             await session.commit(ctx => clearEvents(ctx, session.state()));
           } else {
-            // The one operation in this app that destroys data on purpose.
-            // `replaceAll` rather than reset-then-append: there is no window in
-            // which the old data is gone and nothing has arrived.
-            await session.store.replaceAll([]);
+            // The one operation in this app that destroys data on purpose — and
+            // the one that has to UNPAIR first, or a still-live pairing refills
+            // the planner it just emptied. Both halves live in `eraseEverything`
+            // so the order cannot be got wrong here.
+            await eraseEverything(session.store);
           }
           close();
-          purgeNote.textContent = `${purgedWords(chosen, before)} Reloading…`;
+          purgeNote.textContent = `${purgedWords(chosen, before, wasPaired)} Reloading…`;
           setTimeout(() => location.reload(), 500);
         } catch (err) {
           purgeNote.textContent =

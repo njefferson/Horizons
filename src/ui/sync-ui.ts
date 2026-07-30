@@ -158,7 +158,9 @@ export async function mountSync(session: Session): Promise<void> {
         // from a newer version is a device that is ahead, not a bad file.
         const bad = malformedPairing(parsed);
         if (bad) { note.textContent = `That file could not be used — ${bad}.`; return; }
-        const { id } = await acceptPairing(session.store, parsed);
+        // RELAY_HOST is what this build's CSP permits, so a file naming anything
+        // else is refused with a sentence rather than failing silently later.
+        const { id } = await acceptPairing(session.store, parsed, RELAY_HOST);
         await paint();
         note.textContent = `Paired. Check the other device also shows ${id.slice(0, 8)}. `
           + 'Nothing has moved yet — that happens next time either device opens, or now if you press Sync.';

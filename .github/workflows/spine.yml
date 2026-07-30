@@ -86,3 +86,11 @@ jobs:
       # locally and went red in CI on the tenth. Two copies of one rule drift.
       - name: No banned vocabulary
         run: npm run vocabulary
+
+      # Storage is IndexedDB via Dexie and localStorage is banned outright. That
+      # ban rested on review alone until a security audit pointed out it was the
+      # only invariant in CLAUDE.md with no gate behind it — unlike connect-src
+      # and the vocabulary, both of which fail the build. A rule enforced by
+      # remembering is a rule that lapses on a busy afternoon.
+      - name: No localStorage
+        run: npm run storage:check

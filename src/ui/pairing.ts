@@ -19,11 +19,13 @@
 // relay, and the relay must never see it.
 
 import { exportKey, importKey, newKey, syncId } from '../seal.ts';
+import { clearSyncKeys, HOST_KV, KEY_KV, MARK_KV } from '../sync-keys.ts';
 
-/** `kv` keys. Namespaced so a future second pairing cannot collide with this one. */
-export const KEY_KV = 'sync.key';
-export const HOST_KV = 'sync.host';
-export const MARK_KV = 'sync.mark';
+// The key names live in `sync-keys.ts`, not here, because the shared purge path
+// must be able to clear a pairing WITHOUT importing this module — the default
+// edition may not contain the sync module at all (ADR-0036), and its bundle is
+// checked for exactly that.
+export { HOST_KV, KEY_KV, MARK_KV };
 
 interface KvStore {
   getKv<T>(key: string): Promise<T | null | undefined>;
@@ -60,8 +62,17 @@ export function malformedPairing(x: unknown): string | null {
       : 'that pairing file is not a version this understands';
   }
   if (typeof p.key !== 'string' || p.key.length === 0) return 'that pairing file carries no key';
-  if (typeof p.host !== 'string' || !/^https?:\/\//.test(p.host)) {
+  if (typeof p.host !== 'string' || p.host.length === 0) {
     return 'that pairing file does not name a handover point';
+  }
+  // HTTPS ONLY. The bodies are sealed either way, so this is not about reading
+  // the contents — it is that plain http lets anything on the path drop, delay
+  // or replay an exchange, and hands the sync id and the cadence to every hop
+  // rather than to one relay operator.
+  if (!/^https:\/\//.test(p.host)) {
+    return /^http:\/\//.test(p.host)
+      ? 'that pairing file names a handover point that is not secure (http)'
+      : 'that pairing file does not name a handover point';
   }
   return null;
 }
@@ -85,10 +96,31 @@ export async function beginPairing(store: KvStore, host: string, at: string): Pr
  * that is the right size and not a key would otherwise be accepted here and fail
  * later, at exchange time, as something unexplainable.
  */
-export async function acceptPairing(store: KvStore, file: unknown): Promise<{ id: string; host: string }> {
+export async function acceptPairing(
+  store: KvStore,
+  file: unknown,
+  allowedHost?: string,
+): Promise<{ id: string; host: string }> {
   const bad = malformedPairing(file);
   if (bad) throw new Error(bad);
   const p = file as PairingFile;
+
+  // WHERE THIS FILE POINTS, checked against where this build is allowed to go.
+  //
+  // A pairing file carries both a key and a host, so a hostile one is a real
+  // attack and not a theoretical one: open it and this planner starts handing
+  // its work to somebody else's relay, sealed with somebody else's key — which
+  // that somebody can read.
+  //
+  // The browser already refuses the connection, because the Sync edition's CSP
+  // names exactly one host. But that is a SILENT refusal that surfaces as "sync
+  // mysteriously does nothing", and it means the whole defence rests on one
+  // generated header. Checking here turns it into a sentence, and means the
+  // guarantee no longer has a single point of failure.
+  if (allowedHost !== undefined && p.host !== allowedHost) {
+    throw new Error(
+      `that pairing file points somewhere this app cannot go (${p.host}) — it did not come from your other device`);
+  }
   const key = await importKey(p.key);       // throws if it is not a 256-bit key
   const id = await syncId(key);
   if (typeof p.id === 'string' && p.id !== id) {
@@ -119,10 +151,7 @@ export async function currentPairing(store: KvStore): Promise<{ key: CryptoKey; 
 /** Forget the pair. The log is untouched — unpairing is not a way to lose work, and
  *  saying so is the difference between a control people use and one they fear. */
 export async function forgetPairing(store: KvStore): Promise<void> {
-  await store.setKv(KEY_KV, null);
-  await store.setKv(HOST_KV, null);
-  await store.setKv(MARK_KV, null);
-
+  await clearSyncKeys(store);
 }
 
 /** The filename somebody will see in Files. Says what it is and which pair it is for,

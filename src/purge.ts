@@ -40,6 +40,7 @@
 import type { AppEvent } from './events.ts';
 import { heldNodes } from './gate.ts';
 import type { State } from './fold.ts';
+import { clearSyncKeys } from './sync-keys.ts';
 
 export type PurgeMode = 'clear' | 'start-again';
 
@@ -119,6 +120,44 @@ export function clearEvents(
   } as unknown as AppEvent));
 }
 
+/** What `start again` needs of a store: forget the pairing, then replace the log. */
+export interface ErasableStore {
+  setKv(key: string, value: unknown): Promise<void>;
+  replaceAll(events: readonly AppEvent[]): Promise<void>;
+}
+
+/**
+ * Start again from empty — the whole operation, in the only safe order.
+ *
+ * ## Unpairing is part of erasing, not a separate courtesy
+ *
+ * `replaceAll([])` clears the events and snapshots and NOTHING else, so an erased
+ * device used to stay paired. On the next open it exchanged with a relay still
+ * holding up to thirty days of its own sealed history — and with a peer holding
+ * all of it — and the empty planner refilled itself. No attacker and no
+ * malfunction: an honest relay doing exactly its job, undoing the one operation
+ * in this app whose entire purpose is to destroy data.
+ *
+ * A control that does not do what its own confirmation promised is worse than a
+ * missing control, because somebody acted on the promise.
+ *
+ * ## The order is the safety
+ *
+ * Unpair FIRST, then wipe. If the wipe fails afterwards the device is unpaired
+ * with its data intact — inconvenient, and safe. The reverse order fails the
+ * other way: data destroyed, pairing alive, history flowing back in. When one
+ * ordering can only cost convenience and the other can only cost the point of the
+ * operation, there is no trade-off to weigh.
+ *
+ * It does NOT reach the other device. That is stated in the words rather than
+ * attempted here — a control on this device cannot honestly promise to empty one
+ * sitting in another room.
+ */
+export async function eraseEverything(store: ErasableStore): Promise<void> {
+  await clearSyncKeys(store);
+  await store.replaceAll([]);
+}
+
 /**
  * What the confirmation says.
  *
@@ -128,11 +167,19 @@ export function clearEvents(
  * moment of the decision. It does not scold and it does not block: an adult who
  * has read an accurate sentence is allowed to proceed.
  */
-export function purgeWords(mode: PurgeMode, count: PurgeCount, savedACopy: boolean): string {
+export function purgeWords(mode: PurgeMode, count: PurgeCount, savedACopy: boolean, paired = false): string {
   const things = count.things === 1 ? '1 thing' : `${count.things} things`;
+  // Said HERE, at the moment of the decision, because it changes what the button
+  // does. Erasing unpairs — it has to, or the other device fills this one back up
+  // — and it cannot reach into the other device. Somebody who wants both empty
+  // has to do it on both, and finding that out afterwards would be finding out
+  // that the control did not mean what it said.
+  const pairing = mode === 'start-again' && paired
+    ? ' It also unpairs this device, so it stops syncing: without that, the other device would simply fill this one back up. The other device keeps its own copy — to empty that one too, do this again over there.'
+    : '';
   const body = mode === 'clear'
     ? `This clears ${things} off your surfaces. Everything that happened stays in the log, so a copy you export afterwards still has all of it.`
-    : `This replaces everything with an empty planner — ${things} and all ${count.events} records of what happened. It cannot be undone from inside the app.`;
+    : `This replaces everything with an empty planner — ${things} and all ${count.events} records of what happened. It cannot be undone from inside the app.${pairing}`;
   const copy = savedACopy
     ? 'You have saved a copy.'
     : mode === 'clear'
@@ -153,8 +200,11 @@ export function purgeSummary(count: PurgeCount): string {
 
 /** After the fact, and it says which mode ran — the two outcomes are different
  *  enough that one shared "done" would be a small lie about what happened. */
-export function purgedWords(mode: PurgeMode, count: PurgeCount): string {
-  return mode === 'clear'
-    ? `Cleared. ${count.things === 1 ? 'One thing' : `${count.things} things`} came off your surfaces; the history is untouched.`
+export function purgedWords(mode: PurgeMode, count: PurgeCount, wasPaired = false): string {
+  if (mode === 'clear') {
+    return `Cleared. ${count.things === 1 ? 'One thing' : `${count.things} things`} came off your surfaces; the history is untouched.`;
+  }
+  return wasPaired
+    ? 'Started again. This planner is empty, and this device is no longer paired — pair it again when you want the two back in step.'
     : 'Started again. This planner is empty.';
 }

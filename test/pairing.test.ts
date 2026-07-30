@@ -175,3 +175,48 @@ test('the key is stored as the file carries it, so a round trip is lossless', as
   });
   assert.equal(store.map.get(KEY_KV), raw);
 });
+
+// --- where a pairing file points --------------------------------------------
+//
+// A pairing file carries a key AND a host, which makes a hostile one a real
+// attack rather than a theoretical one: open it, and this planner starts handing
+// its work to somebody else's relay, sealed with somebody else's key — which that
+// somebody can read. The browser refuses the connection because the Sync
+// edition's CSP names exactly one host, but that refusal is SILENT and the whole
+// defence rested on one generated header.
+
+test('a pairing file naming another handover point is refused by name', async () => {
+  const store = kv();
+  const real = await beginPairing(kv(), HOST, AT);
+  const hostile = { ...real, host: 'https://not-your-relay.example' };
+
+  await assert.rejects(
+    () => acceptPairing(store, hostile, HOST),
+    /cannot go|did not come from your other device/);
+  assert.equal(await currentPairing(store), null, 'and nothing was stored');
+});
+
+test('a file from your own other device is accepted, because it names the same host', async () => {
+  // The check must not break the ordinary case: both devices run the same build,
+  // so both carry the same permitted host.
+  const store = kv();
+  const mine = await beginPairing(kv(), HOST, AT);
+  const { id } = await acceptPairing(store, JSON.parse(JSON.stringify(mine)), HOST);
+  assert.equal(id, mine.id);
+  assert.notEqual(await currentPairing(store), null);
+});
+
+test('a plain-http handover point is refused, and said to be insecure', async () => {
+  // The bodies are sealed either way, so this is not about reading contents: it
+  // is that anything on the path could drop, delay or replay an exchange, and
+  // every hop would learn the sync id and the cadence.
+  const insecure = malformedPairing({
+    format: 'quietkeep-pairing', version: 1, key: 'k', id: 'i', at: AT,
+    host: 'http://relay.example',
+  });
+  assert.match(insecure!, /not secure/);
+  assert.equal(malformedPairing({
+    format: 'quietkeep-pairing', version: 1, key: 'k', id: 'i', at: AT,
+    host: 'https://relay.example',
+  }), null, 'https is still fine');
+});
