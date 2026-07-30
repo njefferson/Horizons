@@ -12,14 +12,25 @@
 //
 // ## What the relay learns, stated exactly
 //
-// - the **sync id**, which is derived from the key by one-way hash — so holding
-//   the id gives no route to the key, and pairing transfers only the key;
-// - a **blob length**, and the fact that a device wrote at some time.
+// Even though every BODY is sealed, a network service unavoidably sees more than
+// the bytes it stores, and pretending otherwise would be the overclaim this
+// project refuses. Stated honestly, the relay operator and Cloudflare can observe:
 //
-// It does not learn device ids, event counts, titles, dates, or how much you
-// write — because **the summary is sealed too**, not just the events. An
-// unencrypted summary would hand the relay a per-device write-rate graph, which
-// is telemetry by another name and this project does not have telemetry.
+// - the **sync id** — derived from the key by one-way hash, so it never yields
+//   the key and pairing transfers only the key, but it is STABLE for the life of
+//   a pairing and rides in the URL path of every request, so it links a
+//   household's devices under one pseudonym;
+// - each device's **source IP**, and thus rough location and network;
+// - the **length** of each sealed blob (GCM is unpadded, so ciphertext tracks
+//   plaintext length) and the **time** of every request — so repeated observation
+//   yields a sync *cadence*: when, and how often, a household syncs.
+//
+// What stays sealed and is genuinely NOT learned: device ids, event counts,
+// titles, dates, and the per-device breakdown of how much you write — because
+// **the summary is sealed too**, not just the events. So the relay learns THAT
+// you synced and roughly WHEN, never WHAT. That cadence is a real, if shallow,
+// transport-level signal; the honest posture is to seal the content and name what
+// remains, not to claim nothing remains.
 //
 // ## Losing the key loses nothing permanent
 //
@@ -185,7 +196,13 @@ export function malformedSeal(x: unknown): string | null {
   return null;
 }
 
-/** What the relay is handed, and nothing more — used by the tests to assert the
- *  claim rather than merely state it. */
+/** The application PAYLOAD the relay is handed — the request body, and the whole
+ *  of what it can STORE. The tests use this to assert the body carries nothing but
+ *  opaque bytes. It is deliberately NOT the whole of what the relay OBSERVES: the
+ *  transport also exposes the id (in the URL path), this blob's length, the time
+ *  of the request, and the device's IP. Content and key are sealed; cadence and
+ *  coarse metadata are not — see the header's "what the relay learns, stated
+ *  exactly". Naming this the payload, not "everything the relay sees", is the
+ *  difference between a true claim and a comfortable one. */
 export const relaySees = (id: string, sealed: Sealed): Record<string, unknown> =>
   ({ id, v: sealed.v, iv: sealed.iv, ct: sealed.ct });
