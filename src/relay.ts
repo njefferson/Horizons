@@ -61,6 +61,18 @@ export interface Deps {
   now: () => number;
   /** 16 hex characters of randomness. Injected for the same reason. */
   token: () => string;
+  /**
+   * May this caller write right now?
+   *
+   * INJECTED, like everything else here, so the policy is testable without a
+   * platform. In production it is Cloudflare's rate-limiting binding keyed on the
+   * caller's IP; in tests it is a function.
+   *
+   * Optional, and absent means "no limit" — which is the honest default for a
+   * relay somebody self-hosts, and is what the whole existing test suite runs
+   * under. The deployed relay always passes one.
+   */
+  allowWrite?: (caller: string) => Promise<boolean>;
 }
 
 /** A sealed body over this is refused. Generous enough for a long log, small
@@ -140,7 +152,28 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   const id = parts[1]!;
   if (!ID.test(id)) return json(400, { error: 'that is not a sync id' });
 
-  if (request.method === 'POST' && parts.length === 2) return put(request, deps, id);
+  if (request.method === 'POST' && parts.length === 2) {
+    // WRITES ARE THE SCARCE THING, and the reason this check exists at all.
+    //
+    // A mailbox is addressed by a 128-bit sync id, which is not guessable — but
+    // the relay's own address is public by construction: it is named in the Sync
+    // edition's CSP, which every visitor can read. So anyone can POST to
+    // arbitrary ids, and each accepted POST is a write against a storage quota
+    // that is small and daily. Nothing is exposed by this and nothing is
+    // corrupted; the damage is that a household's sync stops until the quota
+    // resets, silently, because request logging is deliberately off.
+    //
+    // "Keep the URL secret" is not available as a defence — it is published.
+    // Rate limiting is, and it is keyed on the caller rather than on the mailbox:
+    // a per-mailbox limit would let one flooder open a million mailboxes.
+    const caller = request.headers.get('cf-connecting-ip') ?? 'unknown';
+    if (deps.allowWrite && !(await deps.allowWrite(caller))) {
+      // 429, not 507: "you are going too fast" is a different fact from "this
+      // mailbox is full", and the client must retry rather than give up.
+      return json(429, { error: 'too many writes just now; try again shortly' });
+    }
+    return put(request, deps, id);
+  }
   if (request.method === 'GET' && parts.length === 2) return listChunks(deps, id);
   if (request.method === 'GET' && parts.length === 3) return getChunk(deps, id, parts[2]!);
   return json(405, { error: 'that method is not used here' });

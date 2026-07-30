@@ -28,7 +28,18 @@ interface KVNamespace {
   }>;
 }
 
-interface Env { CHUNKS: KVNamespace }
+/** Cloudflare's rate-limiting binding. One method, and it costs no KV write —
+ *  which matters, because KV writes are the very thing being protected. */
+interface RateLimiter {
+  limit(options: { key: string }): Promise<{ success: boolean }>;
+}
+
+interface Env {
+  CHUNKS: KVNamespace;
+  /** Optional so the relay still runs if the binding is unavailable. Absent means
+   *  unlimited, which is stated rather than hidden — see the note at `fetch`. */
+  WRITE_LIMIT?: RateLimiter;
+}
 
 const store = (kv: KVNamespace): Store => ({
   put: (key, body, ttlSeconds) => kv.put(key, body, { expirationTtl: ttlSeconds }),
@@ -57,5 +68,27 @@ const token = (): string =>
 
 export default {
   fetch: (request: Request, env: Env): Promise<Response> =>
-    handle(request, { store: store(env.CHUNKS), now: () => Date.now(), token }),
+    handle(request, {
+      store: store(env.CHUNKS),
+      now: () => Date.now(),
+      token,
+      // Per-CALLER, not per-mailbox: a per-mailbox limit would let one flooder
+      // open a million mailboxes and cost the same. The relay's address is
+      // public — it is named in the Sync edition's CSP — so this is the control
+      // that actually bounds a stranger's ability to spend the daily KV write
+      // quota and stop somebody's sync.
+      //
+      // FAILS OPEN if the binding is missing, and that is deliberate rather than
+      // careless: this relay is self-hostable, the limiter is Cloudflare-specific,
+      // and the alternative — refusing every write when a binding is absent —
+      // turns a misconfiguration into total data-transfer failure for a service
+      // whose worst untrusted-input outcome is a spent quota. The deployed relay
+      // always has it; `wrangler.toml` is where that is asserted.
+      // Spread rather than `: undefined` — the property must be ABSENT when there
+      // is no limiter, not present and undefined, which is what "no limit" means
+      // to `handle` and what the type says.
+      ...(env.WRITE_LIMIT
+        ? { allowWrite: async (caller: string) => (await env.WRITE_LIMIT!.limit({ key: caller })).success }
+        : {}),
+    }),
 };

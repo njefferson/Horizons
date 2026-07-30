@@ -41,3 +41,24 @@ id = "REPLACE_WITH_KV_NAMESPACE_ID"
 
 [placement]
 mode = "smart"
+
+# Per-caller write limiting (audit finding, 2026-07-30).
+#
+# The relay's ADDRESS IS PUBLIC — it is named in the Sync edition's
+# Content-Security-Policy, which every visitor can read — so "keep the URL
+# private" was never a defence. A mailbox is addressed by an unguessable 128-bit
+# sync id, so nobody can read or corrupt anything; but anyone can POST to
+# arbitrary ids, and every accepted POST spends one of a small daily quota of KV
+# writes. The damage is a household's sync stopping until the quota resets,
+# silently, because request logging is off by design.
+#
+# This binding costs no KV write, which is the point: the control must not
+# consume the resource it protects.
+#
+# 200 writes per minute per IP is far above any real device (an app-open is one
+# or two) and far below what makes flooding worthwhile. `period` accepts 10 or 60.
+[[unsafe.bindings]]
+name = "WRITE_LIMIT"
+type = "ratelimit"
+namespace_id = "1001"
+simple = { limit = 200, period = 60 }

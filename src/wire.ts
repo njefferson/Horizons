@@ -20,6 +20,12 @@ export function httpWire(host: string, fetchImpl: typeof fetch = fetch): Wire {
   const ask = async (path: string, init?: RequestInit): Promise<Response> => {
     const res = await fetchImpl(`${base}${path}`, init);
     if (res.status === 507) throw new MailboxFull('the handover point is full');
+    // 429 is TEMPORARY and is not a fault. The relay rate-limits writes because
+    // its storage quota is daily and its address is public; being told to slow
+    // down means try again later, not "sync is broken". Mapped to the same
+    // outcome as a full mailbox so the exchange stops cleanly, keeps everything
+    // it already has, and offers the rest next time.
+    if (res.status === 429) throw new MailboxFull('the handover point is busy');
     if (!res.ok) throw new Error(`the handover point answered ${res.status}`);
     return res;
   };

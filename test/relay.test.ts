@@ -371,3 +371,92 @@ test('an unreachable relay is an ordinary condition, said as one', async () => {
   assert.match(relayWords('unreachable'), /safe/);
   assert.match(relayWords('full'), /nothing here is lost/);
 });
+
+// --- rate limiting writes ---------------------------------------------------
+//
+// The relay's ADDRESS IS PUBLIC. It is named in the Sync edition's
+// Content-Security-Policy, so every visitor can read it — "keep the URL private"
+// was never available as a defence. A mailbox is addressed by an unguessable
+// 128-bit id, so a stranger can neither read nor corrupt anything; but every
+// accepted POST spends one of a small daily quota of storage writes, and a
+// household whose quota is spent simply stops syncing, silently, because request
+// logging is off by design.
+//
+// So writes are limited per CALLER. Per mailbox would be useless: a flooder would
+// open a million mailboxes for the same cost.
+
+/** A limiter that refuses after `allowed` calls, and records who asked. */
+function limiter(allowed: number) {
+  const asked: string[] = [];
+  return {
+    asked,
+    allowWrite: async (caller: string): Promise<boolean> => {
+      asked.push(caller);
+      return asked.length <= allowed;
+    },
+  };
+}
+
+const postFrom = (d: Deps, id: string, value: unknown, ip: string) =>
+  handle(new Request(`https://sync.example/v1/${id}`, {
+    method: 'POST', body: JSON.stringify(value), headers: { 'cf-connecting-ip': ip },
+  }), d);
+
+test('a flood of writes is refused once the limit is reached', async () => {
+  const { store, map } = fakeStore();
+  const lim = limiter(2);
+  const d = { ...deps(store), allowWrite: lim.allowWrite };
+
+  assert.equal((await postFrom(d, A, sealedish(), '203.0.113.9')).status, 201);
+  assert.equal((await postFrom(d, A, sealedish(), '203.0.113.9')).status, 201);
+  const third = await postFrom(d, A, sealedish(), '203.0.113.9');
+
+  assert.equal(third.status, 429, 'told to slow down');
+  // 429 and not 507: "you are going too fast" and "this mailbox is full" are
+  // different facts, and the client retries on one and stops on the other.
+  assert.notEqual(third.status, 507);
+  assert.equal(map.size, 2, 'and the refused write cost no storage');
+});
+
+test('the limit is keyed on the caller, not the mailbox', async () => {
+  // The whole point. A per-mailbox limit would be trivially defeated by writing
+  // to a different id every time, which costs an attacker nothing.
+  const { store } = fakeStore();
+  const lim = limiter(99);
+  const d = { ...deps(store), allowWrite: lim.allowWrite };
+
+  await postFrom(d, A, sealedish(), '198.51.100.7');
+  await postFrom(d, B, sealedish(), '198.51.100.7');
+
+  assert.deepEqual(lim.asked, ['198.51.100.7', '198.51.100.7'],
+    'both writes were charged to the same caller despite different mailboxes');
+});
+
+test('reading is never rate limited, so a throttled device still catches up', async () => {
+  // Reads are cheap and are not the scarce resource. Limiting them would mean a
+  // device that had been flooded could not collect what was already waiting for
+  // it — punishing the victim for the flood.
+  const { store } = fakeStore();
+  const lim = limiter(1);
+  const d = { ...deps(store), allowWrite: lim.allowWrite };
+
+  await postFrom(d, A, sealedish(), '203.0.113.1');
+  const blocked = await postFrom(d, A, sealedish(), '203.0.113.1');
+  assert.equal(blocked.status, 429);
+
+  const list = await handle(req('GET', `/v1/${A}`), d);
+  assert.equal(list.status, 200, 'listing still works');
+  assert.equal((await list.json() as { chunks: string[] }).chunks.length, 1);
+  assert.equal(lim.asked.length, 2, 'and reads never consulted the limiter');
+});
+
+test('with no limiter configured the relay still works, and says so by behaviour', async () => {
+  // Self-hosting is a supported case and the limiter is Cloudflare-specific.
+  // Absent means unlimited — the alternative, refusing every write when a binding
+  // is missing, turns a misconfiguration into total transfer failure.
+  const { store } = fakeStore();
+  const d = deps(store);
+  for (let i = 0; i < 5; i++) {
+    assert.equal((await postFrom(d, A, sealedish(), '203.0.113.4')).status, 201);
+  }
+});

@@ -91,7 +91,12 @@ export function outcomeWords(o: SyncOutcome): string {
   }
   const bits: string[] = [r.words];
   if (r.outcome === 'full') {
-    bits.push('The handover point is full, so some of this is still to go. It will finish next time.');
+    // Covers both "this mailbox is holding all it takes" and "you are being asked
+    // to slow down". One sentence on purpose: from where somebody is standing
+    // they are the same fact — some of it has not gone, none of it is lost, and
+    // it finishes on its own. Splitting them would explain a storage quota to a
+    // person who did not ask about one.
+    bits.push('Some of this has not gone across yet. Nothing here is lost, and it finishes next time.');
   } else if (r.outcome === 'refused') {
     bits.push('The handover point would not take the rest just now. It will be offered again next time.');
   }
