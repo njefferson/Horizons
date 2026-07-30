@@ -301,12 +301,52 @@ export async function foldInShard(
   store: LogStore,
   file: ExportFile,
   now: string,
-): Promise<{ taken: number; skipped: number; fromDevices: string[] }> {
+): Promise<TakenIn> {
   const summary = inspectExport(file);
   if (summary.refusals.length > 0) {
     throw new Error(`${summary.refusals[0]} Nothing was taken in and your current data is untouched.`);
   }
-  const incoming = fromJsonl(file.logJsonl);
+  return takeInEvents(store, fromJsonl(file.logJsonl), now);
+}
+
+export interface TakenIn {
+  taken: number;
+  skipped: number;
+  fromDevices: string[];
+}
+
+/**
+ * The union itself, over raw events — shared by the "take in what I don't have"
+ * button and by sync, because they are the same operation arriving by different
+ * roads. A file on a memory stick and a chunk from a relay are both another
+ * device's shard.
+ *
+ * ## Why this does NOT run the gate
+ *
+ * It looks like a missing safety check and it is the opposite. These events are
+ * **already-gated history**: the gate ran on the device that wrote them, at the
+ * moment it wrote them, and the cure it produced is IN the log beside its cause.
+ * Running `admit` again here would, all three verified against the gate in
+ * `test/take-in.test.ts` rather than reasoned about:
+ *
+ *   - mint a SECOND cure for each cause, carrying the same derived
+ *     `<cause>~cure~<node>` id — not rejected, just written, and then refused by
+ *     the store's unique index at the append;
+ *   - refuse a shard taken in twice, as a creation landing on a node that
+ *     already exists — the ordinary case for anyone using two devices;
+ *   - refuse a `node.parented`, `dependency.declared` or `node.renamed` whose
+ *     subject has not arrived yet, which is legal history split across chunks.
+ *
+ * Law 1 is preserved not by re-checking but because the log being folded in
+ * already satisfies it, and the fold of two law-1-satisfying shards satisfies it
+ * too: every node arrives with whatever put it on a surface. That is what makes
+ * single-writer shards unionable at all (ADR-0003, ADR-0035).
+ */
+export async function takeInEvents(
+  store: LogStore,
+  incoming: readonly AppEvent[],
+  now: string,
+): Promise<TakenIn> {
   const mine = await store.all();
 
   // BY EVENT ID. The store's index is unique on id, so appending one it already
@@ -314,6 +354,10 @@ export async function foldInShard(
   // before `replaceAll` existed. Filtering here means the append cannot fail on
   // a file that has simply been taken in twice, which is the ordinary case for
   // anyone actually using two devices.
+  //
+  // The id and NOT `device#seq`: a cure carries its cause's device and seq
+  // (`gate.ts`, `cureFor`), so the coarser key would treat a capture's clock as
+  // already held and drop it.
   const held = new Set(mine.map(e => e.id));
   const fresh = incoming.filter(e => !held.has(e.id));
   const fromDevices = [...new Set(fresh.map(e => e.device))].sort();

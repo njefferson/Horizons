@@ -118,8 +118,13 @@ export function eventsIn(events: readonly AppEvent[], want: Held): AppEvent[] {
   return events
     .filter(e => sets.get(e.device)?.has(e.seq) ?? false)
     // A TOTAL order, so the same request always produces the same bytes — which
-    // is what makes a transfer comparable, cacheable and diffable.
-    .sort((a, b) => (a.device < b.device ? -1 : a.device > b.device ? 1 : a.seq - b.seq));
+    // is what makes a transfer comparable, cacheable and diffable. The id is the
+    // final tiebreak because device+seq does NOT identify an event: a cure
+    // carries its cause's stamp (`gate.ts`, `cureFor`), so a pair sharing both
+    // would otherwise be ordered only by luck of input order.
+    .sort((a, b) => (a.device < b.device ? -1 : a.device > b.device ? 1
+      : a.seq !== b.seq ? a.seq - b.seq
+        : a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
 }
 
 /** Do two devices hold exactly the same set? */

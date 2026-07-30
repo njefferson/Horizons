@@ -71,7 +71,6 @@ function device(name: string, events: AppEvent[] = [], mark: SyncMark = emptyMar
   let dieOnRemember = 0;
   const deps = (wire: Wire): ExchangeDeps => ({
     key, wire, ownDevice: name, localEvents: log, mark,
-    admit: es => [...es],
     persist: async es => { persisted.push([...es]); log.push(...es); },
     remember: async m => {
       remembered.push(m);
@@ -367,19 +366,21 @@ test('nothing legible ever reaches the wire, including the request', async () =>
   assert.equal(bodies.some(b => (b as ChunkBody).kind === 'request'), true);
 });
 
-test('events go through the app\'s own write boundary, not around it', async () => {
-  // An event over a wire is still an event. Law 1 does not care where it came
-  // from, and a sync path that bypassed `admit` would be the one hole through
-  // which every invariant leaks.
+test('everything that arrives is handed over whole, and this driver filters nothing', async () => {
+  // This test used to assert the OPPOSITE — that arrivals were re-run through
+  // `admit` — and that was wrong in a way worth keeping the record of. The gate
+  // stamps a cure with its cause's id, so re-admitting an already-cured log
+  // mints a duplicate the store refuses; and the gate rejects a child whose
+  // parent is in the next chunk, which over a wire is ordinary. Arrivals are a
+  // SHARD UNION (`takeInEvents`, ADR-0035), and the only thing this driver may
+  // do with them is pass them on complete.
   const { wire, box } = fakeWire();
   await drop(box, { kind: 'events', events: [ev('b', 0), ev('b', 1)] });
-  const seen: AppEvent[][] = [];
   const a = device('a');
-  const deps = a.deps(wire);
-  const r = await exchangeOnce({ ...deps, admit: es => { seen.push([...es]); return [es[0]!]; } });
-  assert.equal(seen.length, 1, 'admit was called');
-  assert.deepEqual(seen[0]!.map(e => e.id), ['b-0', 'b-1'], 'with everything that arrived');
-  assert.equal(r.received, 1, 'and only what it returned counts as received');
+  const r = await exchangeOnce(a.deps(wire));
+  assert.deepEqual(a.persisted.flat().map(e => e.id), ['b-0', 'b-1'],
+    'everything that arrived was handed to persist, in one call, unfiltered');
+  assert.equal(r.received, 2);
 });
 
 test('a large log becomes several chunks rather than one refusal', async () => {
@@ -401,4 +402,66 @@ test('a gap is described as waiting, never as a fault or a loss', async () => {
   for (const bad of ['fail', 'error', 'was lost', 'missing', 'corrupt', 'behind', '%']) {
     assert.doesNotMatch(w, new RegExp(bad, 'i'), `"${w}" contains "${bad}"`);
   }
+});
+
+// --- a cure shares its cause's device AND seq --------------------------------
+//
+// `gate.ts` stamps every cure with its cause's `at`, `device` and `seq`, on
+// purpose, so replaying a log reproduces the same cure with the same derived id
+// (`cureFor`). The consequence is one this module got wrong: **`device#seq` is
+// not an event identity.** Every capture in the app produces exactly such a
+// pair — the `capture.recorded` and the `clock.set` that keeps it from being
+// silent — so this is not an edge case, it is the ordinary shape of the data.
+//
+// Keying identity by `device#seq` collapses the two halves into one. Whichever
+// half is lost, the result is a node that violates law 1 or a clock with nothing
+// under it, on the OTHER device, permanently, with nothing anywhere reporting a
+// fault. Identity is the event id, which is what the store itself keys on.
+
+/** A capture and the cure the gate wrote in the same transaction, stamped the
+ *  way `cureFor` really stamps them. */
+const causeAndCure = (device: string, seq: number): [AppEvent, AppEvent] => {
+  const node = `${device}-n${seq}`;
+  const cause = { id: `${device}-${seq}`, vault: 'personal', at: NOW, device, seq,
+    kind: 'capture.recorded', node,
+    payload: { text: 'milk', source: 'quick' } } as AppEvent;
+  const cure = { id: `${device}-${seq}~cure~${node}`, vault: 'personal', at: NOW, device, seq,
+    kind: 'clock.set', node,
+    payload: { clockKind: 'review', at: NOW, source: 'gate:capture.recorded' } } as AppEvent;
+  return [cause, cure];
+};
+
+test('a cure and its cause both reach the wire, though they share a device and a seq', async () => {
+  const { wire, box } = fakeWire();
+  const [cause, cure] = causeAndCure('a', 0);
+  const a = device('a', [cause, cure]);
+
+  const r = await exchangeOnce(a.deps(wire));
+
+  assert.equal(r.sent, 2, 'both halves of the capture were sent, not one');
+  const sealed = [...box.values()];
+  assert.equal(sealed.length, 1);
+  const body = await open(key, sealed[0]!) as ChunkBody;
+  assert.equal(body.kind, 'events');
+  const ids = (body as { events: AppEvent[] }).events.map(e => e.id).sort();
+  assert.deepEqual(ids, [cause.id, cure.id],
+    'the chunk carries the capture AND the clock that keeps it from being silent');
+});
+
+test('a cure still arrives when the device already holds its cause', async () => {
+  // The half-finished transfer stage 1 exists for: B took in the capture and
+  // died before the clock. The clock is in the mailbox and B must take it, or B
+  // holds a node with no clock forever — a law 1 violation delivered by sync.
+  const { wire, box } = fakeWire();
+  const [cause, cure] = causeAndCure('a', 0);
+  await drop(box, { kind: 'events', events: [cause, cure] });
+
+  const b = device('b', [cause]);
+  const r = await exchangeOnce(b.deps(wire));
+
+  const landed = b.persisted.flat().map(e => e.id);
+  assert.ok(landed.includes(cure.id),
+    'the cure was taken in; holding the cause is not holding the pair');
+  assert.ok(!landed.includes(cause.id), 'and the cause was not taken in twice');
+  assert.equal(r.received, 1);
 });

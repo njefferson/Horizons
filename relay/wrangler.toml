@@ -12,6 +12,12 @@ name = "quietkeep-relay"
 main = "worker.ts"
 compatibility_date = "2026-07-01"
 
+# A workers.dev URL, because this has no custom domain and the sync build has to
+# name the host in its CSP. The URL the deploy prints is the value that goes into
+# src/relay-host.ts — it is not guessable from here, and guessing it produces a
+# build that passes every check and silently never syncs.
+workers_dev = true
+
 # Observability off on purpose. A request log would record the sync ids — which
 # are stable per pairing — and that is a per-household activity trace, which is
 # telemetry by another name and this project does not have telemetry.

@@ -63,6 +63,14 @@ jobs:
       - name: Network posture
         run: npm run headers:check
 
+      # ADR-0036's OTHER half. `headers:check` proves the default origin cannot
+      # reach anywhere; this proves the sync module is not in the default bundle
+      # at all — read out of the built artefact, and with the marker list itself
+      # checked against a sync build so the gate cannot pass by testing for words
+      # nothing emits.
+      - name: Two editions
+        run: npm run build:sync
+
       # The vocabulary is a closed list and "overdue"/"streak" are banned
       # outright (ADR-0010). A grep is the cheapest possible gate.
       # ONE definition, in package.json, so `npm run vocabulary` locally is the

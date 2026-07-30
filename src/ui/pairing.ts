@@ -24,8 +24,6 @@ import { exportKey, importKey, newKey, syncId } from '../seal.ts';
 export const KEY_KV = 'sync.key';
 export const HOST_KV = 'sync.host';
 export const MARK_KV = 'sync.mark';
-/** Arrivals the gate would not take yet, kept across reloads (see `ingest.ts`). */
-export const PENDING_KV = 'sync.pending';
 
 interface KvStore {
   getKv<T>(key: string): Promise<T | null | undefined>;
@@ -124,7 +122,7 @@ export async function forgetPairing(store: KvStore): Promise<void> {
   await store.setKv(KEY_KV, null);
   await store.setKv(HOST_KV, null);
   await store.setKv(MARK_KV, null);
-  await store.setKv(PENDING_KV, null);
+
 }
 
 /** The filename somebody will see in Files. Says what it is and which pair it is for,

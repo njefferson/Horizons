@@ -36,6 +36,18 @@ export interface Session {
   state(): State;
   /** Commit intents. Resolves only once the write has LANDED (ADR-0008). */
   commit(make: (ctx: StampContext) => AppEvent[]): Promise<State>;
+  /**
+   * Re-read the log and rebuild live state.
+   *
+   * For the one write that legitimately does not come through `commit`: taking
+   * in another device's already-gated shard (`takeInEvents`). The import BUTTON
+   * reloads the page afterwards, which is a fine answer for a deliberate action;
+   * sync happens on open and cannot, so it needs this instead.
+   *
+   * Serialized on the SAME queue as commits, so it can never read the log
+   * half-way through one and paint a state that never existed.
+   */
+  refresh(): Promise<State>;
   draft(): Promise<string>;
   setDraft(text: string): Promise<void>;
   store: SessionStore;
@@ -123,12 +135,22 @@ export async function openSession(
     return run;
   };
 
+  const refresh: Session['refresh'] = () => {
+    const run = queue.then(async () => {
+      state = fold(await store.all());
+      return state;
+    });
+    queue = run.catch(() => { /* as with commit, a failure does not wedge the queue */ });
+    return run;
+  };
+
   return {
     device,
     vault,
     zone,
     state: () => state,
     commit,
+    refresh,
     draft: async () => (await store.getKv<string>('capture.draft')) ?? '',
     setDraft: (text) => store.setKv('capture.draft', text),
     store,

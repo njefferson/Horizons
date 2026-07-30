@@ -27,6 +27,21 @@
 // same coalesced ranges `exchange.ts` publishes — and not a high-water number.
 // A number here would re-introduce the bug stage 1 exists to prevent, one layer
 // up, where it would be even harder to see.
+//
+// **Never re-run the gate on what arrives.** This driver first carried an
+// `admit` hook whose comment said law 1 was enforced on wire events "exactly as
+// on a keystroke". It read as the principled choice and it was wrong three ways,
+// each checked against the gate rather than assumed (`test/take-in.test.ts`):
+// admitting an already-cured log writes a SECOND cure with the same derived id,
+// which the store refuses at the append; a chunk delivered twice is refused as a
+// creation landing on a node that already exists; and a `node.parented`,
+// `dependency.declared` or `node.renamed` whose subject is in the next chunk is
+// refused outright, which over a wire is ordinary rather than a fault. What
+// arrives is already-gated history and is taken in as a shard (`takeInEvents`,
+// ADR-0035) — the same road the import button uses.
+//
+// **Identity is the event id, never `device#seq`.** A cure shares both with its
+// cause, so the coarse key silently drops half of every capture.
 
 import { type Held, countIn, eventsIn, heldRanges, malformed, missing, exchangeWords } from './exchange.ts';
 import type { AppEvent, DeviceId } from './events.ts';
@@ -84,11 +99,13 @@ export interface ExchangeDeps {
   /** Everything this device holds. */
   localEvents: readonly AppEvent[];
   mark: SyncMark;
-  /** The write boundary — the SAME `admit` the rest of the app uses. Events that
-   *  arrive over a wire get no special treatment; law 1 is enforced on them
-   *  exactly as it is on a keystroke. */
-  admit: (events: readonly AppEvent[]) => AppEvent[];
-  /** Persist admitted events, and only then may the mark advance. */
+  /**
+   * Take these events in, and only once that has LANDED may the mark advance.
+   *
+   * The union of single-writer shards (`takeInEvents`), not a re-run of the
+   * gate — see the note in the header on why re-admitting is wrong rather than
+   * merely redundant.
+   */
   persist: (events: readonly AppEvent[]) => Promise<void>;
   /** Persist the mark. Called after `persist`, never before. */
   remember: (mark: SyncMark) => Promise<void>;
@@ -215,18 +232,21 @@ export async function exchangeOnce(deps: ExchangeDeps): Promise<ExchangeResult> 
   }
 
   // Only what is genuinely new, so the number reported is the number gained.
-  const have = new Set(deps.localEvents.map(e => `${e.device}#${e.seq}`));
-  const fresh = arrived.filter(e => !have.has(`${e.device}#${e.seq}`));
+  //
+  // BY EVENT ID, and that is not a detail. `gate.ts` stamps a cure with its
+  // CAUSE's device and seq (`cureFor`, for replay determinism), so `device#seq`
+  // identifies a pair and not an event — every capture in the app is such a
+  // pair. Keying on it here silently dropped whichever half arrived second, and
+  // the result is a node with no clock, or a clock with no node, on the far
+  // device, permanently, with nothing reporting a fault. The store's own primary
+  // key is the id, so this matches what "already held" actually means.
+  const have = new Set(deps.localEvents.map(e => e.id));
+  const fresh = arrived.filter(e => !have.has(e.id));
 
   let received = 0;
   if (fresh.length > 0) {
-    // The app's own write boundary. An event over a wire is still an event, and
-    // law 1 does not care where it came from. A rejection is not swallowed —
-    // it means the other device sent something this one considers illegal, and
-    // that is a real disagreement, not a network hiccup.
-    const admitted = deps.admit(fresh);
-    await deps.persist(admitted);
-    received = admitted.length;
+    await deps.persist(fresh);
+    received = fresh.length;
   }
 
   // Only NOW may the mark move. Persist-then-record: a death in between costs
@@ -249,8 +269,11 @@ export async function exchangeOnce(deps: ExchangeDeps): Promise<ExchangeResult> 
   }
   const fulfilled = forOthers.length;
 
+  // Deduplicated by id for the same reason `have` is: a cause and its cure share
+  // a device and a seq, and collapsing them here would have uploaded one half of
+  // every capture this device ever made.
   const toSend = [...eventsIn(withArrivals, owed), ...forOthers];
-  const unique = new Map(toSend.map(e => [`${e.device}#${e.seq}`, e]));
+  const unique = new Map(toSend.map(e => [e.id, e]));
   const sending = [...unique.values()];
 
   let sent = 0;

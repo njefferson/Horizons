@@ -1,0 +1,132 @@
+name: Relay
+
+# The handover point (ADR-0037), deployed on demand.
+#
+# Deliberately NOT on push. The relay is a separate deployment from Quietkeep and
+# from Quietkeep Sync — the app works with it absent, unreachable, or shut down
+# forever — so it has no business redeploying because somebody edited a
+# changelog. It runs when somebody asks it to.
+#
+# ## What it prints, and why that is the point of running it
+#
+# The workers.dev URL. That value cannot be derived from anything in this repo:
+# it depends on the account's workers.dev subdomain. It has to be READ from a
+# real deploy and then written into `src/relay-host.ts`, because a guess produces
+# a sync build that passes every gate and silently never reaches anything — the
+# exact failure shape this repo keeps finding (V-10).
+#
+# Actions are SHA-pinned (Doctrine §16.1); these steps run holding a live token.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: relay
+  cancel-in-progress: false
+
+env:
+  WRANGLER_VERSION: "4.114.0"
+  KV_TITLE: quietkeep-relay-CHUNKS
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-node@a0853c24544627f65ddf259abe73b1d18a591444 # v5
+        with:
+          node-version: 22
+
+      - name: Prepare Cloudflare credentials
+        env:
+          RAW_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          RAW_KEY: ${{ secrets.CLOUDFLARE_API_KEY }}
+          RAW_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          # Same handling as deploy.yml, for the same reason: a pasted secret
+          # carries a trailing newline that corrupts the Authorization header.
+          TOKEN=$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]')
+          KEY=$(printf '%s' "$RAW_KEY" | tr -d '[:space:]')
+          ACCOUNT=$(printf '%s' "$RAW_ACCOUNT" | tr -d '[:space:]')
+          [ -z "$TOKEN" ] && TOKEN="$KEY"
+          echo "::add-mask::$TOKEN"
+          echo "::add-mask::$ACCOUNT"
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::error::no Cloudflare credential or account id — set CLOUDFLARE_API_TOKEN (or _API_KEY) and CLOUDFLARE_ACCOUNT_ID."
+            exit 1
+          fi
+          echo "CLOUDFLARE_API_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
+
+      - name: Find or create the KV namespace
+        run: |
+          set -euo pipefail
+          # Idempotent: creating one that exists is an error, and a workflow that
+          # can only be run once is a workflow that will be run twice.
+          LIST=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace list 2>/dev/null || echo '[]')
+          ID=$(printf '%s' "$LIST" | python3 -c "
+import json,sys
+try: ns = json.load(sys.stdin)
+except Exception: ns = []
+print(next((n['id'] for n in ns if n.get('title','').endswith('$KV_TITLE')), ''))
+")
+          if [ -z "$ID" ]; then
+            echo "No namespace titled $KV_TITLE — creating one."
+            OUT=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace create "$KV_TITLE")
+            echo "$OUT"
+            # wrangler prints the id in the binding snippet it suggests.
+            ID=$(printf '%s' "$OUT" | grep -oE '[0-9a-f]{32}' | head -1)
+          fi
+          if [ -z "$ID" ]; then
+            echo "::error::could not find or create the KV namespace. The credential may lack Workers KV Storage:Edit."
+            exit 1
+          fi
+          echo "::add-mask::$ID"
+          echo "KV_ID=$ID" >> "$GITHUB_ENV"
+          echo "KV namespace ready."
+
+      - name: Point wrangler.toml at it
+        run: |
+          set -euo pipefail
+          # The id is account-specific and is injected rather than committed, so
+          # the repo carries no account details.
+          sed -i "s|REPLACE_WITH_KV_NAMESPACE_ID|${KV_ID}|" relay/wrangler.toml
+          grep -q REPLACE_WITH relay/wrangler.toml && { echo "::error::the placeholder was not replaced"; exit 1; } || true
+
+      - name: Deploy the relay
+        id: deploy
+        working-directory: relay
+        run: |
+          set -euo pipefail
+          npx --yes wrangler@${WRANGLER_VERSION} deploy 2>&1 | tee out.txt
+          URL=$(grep -oE 'https://[a-z0-9.-]+\.workers\.dev' out.txt | head -1)
+          if [ -z "$URL" ]; then
+            echo "::error::the deploy did not print a workers.dev URL. If workers.dev is disabled on this account, the relay needs a custom domain instead."
+            exit 1
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Check it actually answers
+        run: |
+          set -euo pipefail
+          URL="${{ steps.deploy.outputs.url }}"
+          # A deploy that succeeded and a relay that works are different claims,
+          # and only the second one is worth anything. An unknown id must answer
+          # with an empty chunk list, not a 404 and not a 500.
+          BODY=$(curl -fsS "$URL/v1/00000000000000000000000000000000")
+          echo "GET an unused mailbox -> $BODY"
+          printf '%s' "$BODY" | grep -q '"chunks"' || { echo "::error::the relay answered, but not like a relay"; exit 1; }
+          echo "The relay is up and answering."
+
+      - name: What to do with this
+        run: |
+          echo ""
+          echo "  RELAY URL: ${{ steps.deploy.outputs.url }}"
+          echo ""
+          echo "Put that value in src/relay-host.ts as RELAY_HOST, commit it, and the"
+          echo "sync edition will build. tools/editions.mjs generates the sync build's"
+          echo "CSP from it, so the host the app dials and the host the browser permits"
+          echo "stay the same by construction."
