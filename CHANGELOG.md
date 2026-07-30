@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.23.1 — ITERATION
+
+*2026-07-30*
+
+- **The build number is on the main screen now,** at the bottom, small. It was only inside this panel’s title, so a screenshot of the app could not say which build it was — which is exactly how you end up looking for something your device does not have yet.
+
 ## 0.23.0 — CAPABILITY
 
 *2026-07-30*

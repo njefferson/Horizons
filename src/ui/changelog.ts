@@ -29,6 +29,14 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.23.1',
+    kind: 'ITERATION',
+    date: '2026-07-30',
+    notes: [
+      '**The build number is on the main screen now,** at the bottom, small. It was only inside this panel\u2019s title, so a screenshot of the app could not say which build it was \u2014 which is exactly how you end up looking for something your device does not have yet.',
+    ],
+  },
+  {
     triplet: '0.23.0',
     kind: 'CAPABILITY',
     date: '2026-07-30',

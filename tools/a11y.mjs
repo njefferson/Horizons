@@ -69,7 +69,7 @@ const REGISTRY = {
   'empty store': [
     '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
     '#capture-form button[type=submit]',
-    'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a',
+    'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a', '.build',
   ],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify

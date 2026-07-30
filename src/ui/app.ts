@@ -13,6 +13,7 @@ import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
+import { CURRENT } from './changelog.ts';
 import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
@@ -517,6 +518,16 @@ async function main(): Promise<void> {
     }
     if (landed) input.focus();
   });
+
+  // The build, painted BEFORE the panel and OUTSIDE its try/catch.
+  //
+  // It used to exist only in the (i) panel's title, which meant a screenshot of
+  // the app could not say which build it was — and the panel is wrapped below
+  // precisely because it is allowed to fail. A version stamp is a diagnostic, and
+  // a diagnostic that disappears when something breaks is the wrong way round: it
+  // is needed most in exactly the state that would have removed it.
+  const build = document.querySelector<HTMLElement>('#build-version');
+  if (build) build.textContent = CURRENT.triplet;
 
   // Opens itself on a first run — a new user has no way to know that storage
   // needs asking for — and never uninvited after that. Contained: a failure

@@ -591,6 +591,16 @@ button.ghost {
   color: var(--ink-soft);
   font-size: 0.9375rem;
 }
+/* The build, on the main screen. `--ink-soft` on `--bg` is an already-registered
+ * pair, so this adds no new colour to the contrast gate — a version stamp is not
+ * a reason to introduce a shade nobody has measured. */
+.build {
+  margin: 0.25rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+}
+
 .foot a {
   color: var(--accent);
   display: inline-flex;

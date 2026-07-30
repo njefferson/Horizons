@@ -2362,6 +2362,19 @@ try {
   // No close click here: adding the set reloads the page (the same thing taking in
   // a copy does), so the panel is already gone and waiting for its X would hang.
 
+  console.log('\nThe build is on the main screen, without opening anything');
+  // Noah could not tell which build his device was running, because the version
+  // lived only inside the (i) panel's title. A screenshot of the app has to say
+  // it. Read with the panel SHUT, and matched against the changelog head so the
+  // two cannot drift.
+  const shownBuild = await tpage.locator('#build-version').textContent();
+  is(/^\d+\.\d+\.\d+$/.test((shownBuild || '').trim()), true,
+    `the main screen shows a bare triplet ("${shownBuild}")`);
+  is(await tpage.locator('#about').evaluate(d => d.hasAttribute('open')), false,
+    'and it is readable with the panel shut');
+  is((shownBuild || '').trim(), (await tpage.locator('#version').textContent() || '').trim(),
+    'and it is the same build the panel claims');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {
