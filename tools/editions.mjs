@@ -78,10 +78,20 @@ console.log('Sync edition');
 if (!RELAY_HOST) {
   fail('src/relay-host.ts does not export a literal RELAY_HOST');
 } else if (RELAY_HOST.includes('UNSET') || !/^https:\/\/[a-z0-9.-]+\.[a-z]{2,}(\/|$)/.test(RELAY_HOST)) {
-  // A sync build that cannot reach a relay does not fail loudly — it silently
-  // never syncs, which is indistinguishable from a quiet week.
-  fail(`RELAY_HOST is "${RELAY_HOST}", which is not a deployed host. ` +
-    'Run the relay workflow, take the URL it prints, and put it in src/relay-host.ts.');
+  // NOT a failure, and the distinction is the whole point of this branch.
+  //
+  // "There is no relay yet, so no sync edition is built" is a coherent, honest
+  // state — it is where this repo is until the Cloudflare token gains Workers
+  // permissions. Failing here would paint the whole pipeline red for something
+  // no commit can fix, and a permanently red gate is one nobody reads.
+  //
+  // What must NEVER happen is the other thing: a sync edition built against a
+  // guessed host. That ships an app which passes every check and dials into the
+  // void, with no error on any device. So the edition is skipped, loudly, and
+  // there is nothing to deploy.
+  console.log(`  --    RELAY_HOST is "${RELAY_HOST}" — no relay is deployed, so the Sync edition is NOT built.`);
+  console.log('        Quietkeep (the default) is unaffected and ships as normal.');
+  console.log('        To change that: run the Relay workflow, and put the URL it prints in src/relay-host.ts.');
 } else {
   pass(`the relay is ${RELAY_HOST}`);
 

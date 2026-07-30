@@ -70,12 +70,51 @@ jobs:
           echo "CLOUDFLARE_API_TOKEN=$TOKEN" >> "$GITHUB_ENV"
           echo "CLOUDFLARE_ACCOUNT_ID=$ACCOUNT" >> "$GITHUB_ENV"
 
+      # BEFORE anything is created, ask whether this credential can do the job,
+      # and say exactly what is missing if it cannot.
+      #
+      # This step exists because the first real run failed with wrangler's
+      # "Authentication error [code: 10000]" — which names no permission, no
+      # endpoint and no fix, and sits under a step called "create the KV
+      # namespace" that had already printed "creating one" as though it were
+      # proceeding. The credential deploys Pages perfectly well; it simply has no
+      # Workers permissions, and nothing in that message says so.
+      - name: Can this credential reach Workers KV?
+        run: |
+          set -uo pipefail
+          CODE=$(curl -s -o /tmp/kv.json -w '%{http_code}' \
+            "https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/storage/kv/namespaces?per_page=1" \
+            -H "Authorization: Bearer ${CLOUDFLARE_API_TOKEN}")
+          echo "KV namespaces endpoint answered $CODE"
+          if [ "$CODE" = "200" ]; then
+            echo "This credential can read Workers KV. Proceeding."
+            exit 0
+          fi
+          # Never print the body blind — an error body from Cloudflare is safe,
+          # but keep the habit of naming the shape rather than dumping it.
+          python3 -c "import json;d=json.load(open('/tmp/kv.json'));print('errors:', d.get('errors'))" || true
+          echo "::error::This Cloudflare credential cannot reach Workers KV, so the relay cannot be deployed."
+          echo "::error::It CAN deploy Pages — quietkeep.pages.dev works — so the credential is valid and simply too narrow."
+          echo ""
+          echo "To fix it, in the Cloudflare dashboard:"
+          echo "  My Profile -> API Tokens  (or Manage Account -> API Tokens for an account-owned token)"
+          echo "  Edit the token used by this repo and ADD these two permissions:"
+          echo "    Account -> Workers KV Storage -> Edit"
+          echo "    Account -> Workers Scripts    -> Edit"
+          echo "Nothing else needs to change, and no secret needs renaming."
+          exit 1
+
       - name: Find or create the KV namespace
         run: |
           set -euo pipefail
           # Idempotent: creating one that exists is an error, and a workflow that
           # can only be run once is a workflow that will be run twice.
-          LIST=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace list 2>/dev/null || echo '[]')
+          #
+          # `|| echo '[]'` on a FAILED list would turn "not allowed to look" into
+          # "there are none", and then create a second namespace on every run.
+          # The preflight above has already established the credential can read
+          # KV, so a failure here is real and is allowed to be fatal.
+          LIST=$(npx --yes wrangler@${WRANGLER_VERSION} kv namespace list)
           # One line on purpose: a multi-line here-script inside a YAML block
           # scalar has to stay indented, and an unindented line silently ends the
           # block — which is how the first two runs of this workflow failed

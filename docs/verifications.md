@@ -664,6 +664,45 @@ being treated as one was a cache.
 
 ---
 
+## V-18 · The Cloudflare credential cannot deploy a Worker or create a KV namespace — **VERIFIED, and it blocks the relay**
+· raised 2026-07-30 with the first real run of `.github/workflows/relay.yml`
+
+**What was checked, and how.** The relay workflow ran on `ea38768` and failed at
+the KV step with wrangler's `Authentication error [code: 10000]` — a message that
+names no permission, no endpoint and no fix. The evidence that explains it was
+already in a Deploy run's log from twenty minutes earlier:
+
+- the secret is stored as `CLOUDFLARE_API_KEY`, 53 characters, and
+  `CLOUDFLARE_EMAIL` is unset;
+- `GET /user/tokens/verify` answers `success: false, code 1000 Invalid API Token`;
+- and yet `wrangler pages deploy` **succeeds** with the same value, publishing to
+  staging.quietkeep.pages.dev.
+
+Those two facts are only consistent one way: it is an **account-owned scoped API
+token**. `/user/...` endpoints do not apply to one, which is why verify rejects it,
+and its permissions include Cloudflare Pages and not Workers.
+
+**What follows, and what does not.**
+
+- Quietkeep — the default edition — is entirely unaffected. It has no relay, by
+  design, and deploys exactly as it always has.
+- Quietkeep Sync cannot exist until the token is widened. Not "is untested":
+  cannot be deployed at all, because the relay has nowhere to store a chunk.
+- The two permissions to add are **Account → Workers KV Storage → Edit** and
+  **Account → Workers Scripts → Edit**. Nothing needs renaming and no new secret
+  is needed. This is a dashboard action; the session token cannot perform it
+  (Doctrine §10 applies — it is listed for Noah, not done unilaterally).
+
+**The trap this row exists to close.** `RELAY_HOST` briefly held a *guess* at the
+workers.dev URL, and every gate passed: the format check, the CSP generation, the
+bundle check. A sync build shipped that way would dial a host that does not exist
+and report nothing wrong on any device — an app broken in the one way that
+produces no error. It now reads `UNSET`, and `tools/editions.mjs` builds no sync
+edition while it does. **An unverified URL is not a weaker fact than a missing
+one; it is a worse one, because it silences the check that would have caught it.**
+
+---
+
 ## V-17 · Will a real camera read the QR this encoder produces? — **NOT VERIFIED, and it is the only check that counts**
 · raised 2026-07-30 with `src/qr.ts`
 
