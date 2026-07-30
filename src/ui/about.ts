@@ -196,9 +196,14 @@ export async function mountAbout(session: Session): Promise<void> {
     if (!calNote) return;
     try {
       const n = calendarCount(session.state(), new Date().toISOString(), session.zone);
+      // "a date YOU set" rather than "a date", because the app puts its own
+      // clocks on things constantly — that is how it brings them back — and only
+      // a day somebody chose belongs in a diary. Saying "nothing has a date" while
+      // a dozen things visibly show "back tomorrow" reads as a bug rather than as
+      // a distinction.
       calNote.textContent = n === 0
-        ? 'Nothing has a date yet, so there is nothing to send.'
-        : `${n} ${n === 1 ? 'thing has' : 'things have'} a date to send.`;
+        ? 'Nothing has a date you set, so there is nothing to send. The app still brings everything back to you itself — a calendar is only for days you chose.'
+        : `${n} ${n === 1 ? 'thing has' : 'things have'} a date you set.`;
     } catch {
       calNote.textContent = '';
     }
@@ -212,7 +217,7 @@ export async function mountAbout(session: Session): Promise<void> {
     // answers when asked, which is the same courtesy the rest of the app extends.
     const at = new Date().toISOString();
     if (calendarCount(session.state(), at, session.zone) === 0) {
-      calNote.textContent = 'Nothing has a date yet. Give something a date first, and it can go to your calendar.';
+      calNote.textContent = 'Nothing has a date you set. Open something and give it a date, and it can go to your calendar — the app\u2019s own "bring this back tomorrow" is not a date for your diary.';
       cal.focus();
       return;
     }

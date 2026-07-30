@@ -19,7 +19,7 @@
 // event description carry the moment they were made.
 
 import type { NodeState, State } from './fold.ts';
-import { heldGroups, soonestClock } from './held.ts';
+import { heldGroups } from './held.ts';
 import { localDayKey, isValidIso } from './time.ts';
 
 /**
@@ -107,10 +107,46 @@ const dateValue = (iso: string, zone: string): string => localDayKey(iso, zone).
 const stampValue = (iso: string): string =>
   new Date(iso).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
 
-/** The soonest demanding clock — the same question `held.ts` groups on. `park`
- *  is excluded: a parked thing is being held away from you on purpose. */
-const soonestAt = (n: NodeState, zone: string, nowIso: string): string | null =>
-  soonestClock(n, zone, nowIso, true)?.at ?? null;
+/**
+ * Clock kinds a CALENDAR may carry, and the axis is **did the reader choose this
+ * day** — not "is it a hard deadline".
+ *
+ * In: `due` (somebody picked a date, or said "today"), `start`, `suspense` (the day
+ * this must move to still land), and `park` — a park is a return date the held list
+ * already shows as "parked until…", so leaving it out made the app contradict
+ * something plainly on screen. That was settled by an earlier audit and is not
+ * reopened here.
+ *
+ * Out: **`review`, and that exclusion is the whole point of this constant.** A
+ * review clock is the app's own resurfacing marker — "bring this back to me on a
+ * surface" — and it is what routing, repeats, bother handling, the comms sweep,
+ * replan's escalate and renegotiate, and every gate cure set by default. Nobody
+ * ever typed one.
+ *
+ * Exporting them turned "show me this again tomorrow" into "this is due tomorrow",
+ * with a nine o'clock alarm, once per item. Noah routed nine things to Next action
+ * in one afternoon and his calendar offered him nine all-day events on a single day,
+ * none of which he had ever given a date to. **A planner that misreports your
+ * obligations to a calendar you trust is worse than one with no calendar export at
+ * all**: the app can be wrong on its own screen and be corrected by the next
+ * glance, but it cannot follow the mistake back out of your diary.
+ */
+export const CALENDAR_KINDS: ReadonlySet<string> = new Set(['due', 'start', 'suspense', 'park']);
+
+/** The soonest clock a calendar may carry. NOT `soonestClock`, which answers a
+ *  different question — `held.ts` groups on any clock, because the app genuinely
+ *  should resurface a review-clocked item. Only the export is narrower. */
+const soonestAt = (n: NodeState, zone: string, nowIso: string): string | null => {
+  void zone; void nowIso;
+  let best: { at: string; ms: number } | null = null;
+  for (const c of Object.values(n.clocks)) {
+    if (!c || !isValidIso(c.at)) continue;
+    if (!CALENDAR_KINDS.has(c.kind)) continue;
+    const ms = Date.parse(c.at);
+    if (best === null || ms < best.ms) best = { at: c.at, ms };
+  }
+  return best?.at ?? null;
+};
 
 export interface CalendarOptions {
   /** Overridable so tests do not depend on the wall clock. */

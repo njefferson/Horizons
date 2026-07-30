@@ -14,7 +14,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { fold as foldEvents, type State } from '../src/fold.ts';
-import { toCalendar, calendarCount } from '../src/ics.ts';
+import { toCalendar, calendarCount, CALENDAR_KINDS } from '../src/ics.ts';
+import { routeEvents } from '../src/ui/triage-intents.ts';
 import { exportFilename } from '../src/portability.ts';
 import { heldGroups } from '../src/held.ts';
 import { localDayKey } from '../src/time.ts';
@@ -29,7 +30,12 @@ const ev = (kind: string, node: string, payload: unknown, at = '2026-07-01T12:00
   ({ id: `e${seq}`, vault: 'personal', at, device: 'd0', seq: seq++, kind, node, payload } as AppEvent);
 const st = (...events: AppEvent[]): State => foldEvents(events);
 
-const clockAt = (id: string, days: number, kind = 'review'): AppEvent =>
+// Defaults to `due` — the kind somebody set themselves, and the only sort a
+// calendar has any business carrying. It defaulted to `review` for as long as this
+// file existed, which meant every fixture here was quietly asserting that the app's
+// own resurfacing markers belong in a diary. They do not, and Noah's calendar found
+// out before these tests did.
+const clockAt = (id: string, days: number, kind = 'due'): AppEvent =>
   ev('clock.set', id, { clockKind: kind, at: new Date(Date.parse(NOW) + days * 86_400_000).toISOString(), source: 't' });
 
 const item = (id: string, title: string, days = 0): AppEvent[] =>
@@ -126,7 +132,7 @@ test('the all-day date is the day the READER would call it, in their own zone', 
   // the 30th in Kiritimati (UTC+14).
   const at = '2026-07-30T02:30:00.000Z';
   const s = st(ev('node.created', 'N', { nodeKind: 'action', title: 'x' }),
-    ev('clock.set', 'N', { clockKind: 'review', at, source: 't' }));
+    ev('clock.set', 'N', { clockKind: 'due', at, source: 't' }));
 
   const dDenver = unfold(toCalendar(s, NOW, DENVER)).find(l => l.startsWith('DTSTART'));
   assert.equal(dDenver, `DTSTART;VALUE=DATE:${localDayKey(at, DENVER).replace(/-/g, '')}`);
@@ -391,7 +397,9 @@ test('clocks are compared as INSTANTS, never as strings (audit)', () => {
   const s = st(
     ev('node.created', 'N', { nodeKind: 'action', title: 'x' }),
     ev('clock.set', 'N', { clockKind: 'due', at: '2026-08-05T00:00:00.000Z', source: 't' }),
-    ev('clock.set', 'N', { clockKind: 'review', at: '2026-08-04T20:00:00.000-12:00', source: 't' }),
+    // `suspense`, not `review`: the property under test is instant-vs-string
+    // comparison, and it needs both clocks to be ones a calendar may carry.
+    ev('clock.set', 'N', { clockKind: 'suspense', at: '2026-08-04T20:00:00.000-12:00', source: 't' }),
   );
   assert.ok('2026-08-04T20:00:00.000-12:00' < '2026-08-05T00:00:00.000Z', 'text order is the trap');
   assert.ok(Date.parse('2026-08-04T20:00:00.000-12:00') > Date.parse('2026-08-05T00:00:00.000Z'),
@@ -465,4 +473,86 @@ test('with no zone it is unchanged, and a malformed instant does not throw', () 
     'quietkeep-all-not an instant.json', 'no crash on a hand-edited import');
   assert.match(exportFilename('all', '2026-07-30T01:00:00.000Z', true, 'json', DENVER),
     /-encrypted\.json$/);
+});
+
+// --- what a calendar is allowed to claim ------------------------------------
+//
+// Noah, on device, with ten events offered: *"it's literally everything in the
+// list that has just been given a date of today supposedly, I assume, because they
+// couldn't be blank?"* He was right. Routing to Next action sets a `review` clock
+// at end of tomorrow, so nine things routed in one afternoon became nine all-day
+// events on one day, each with a nine o'clock alarm, none of which he had dated.
+
+test('THE ONE NOAH FOUND: a review clock is the app talking to itself, not a date', () => {
+  const s = st(...item('R', 'routed to next action', 1));
+  const withReview = st(
+    ev('node.created', 'R2', { nodeKind: 'action', title: 'routed to next action' }),
+    ev('clock.set', 'R2', { clockKind: 'review', at: '2026-07-31T05:59:00.000Z', source: 'clarify:next-action' }),
+  );
+  // It is still HELD — the app must absolutely still bring it back to you.
+  assert.ok(heldGroups(withReview, NOW, DENVER).some(g => g.items.some(n => n.id === 'R2')),
+    'the app still resurfaces it, which is what a review clock is for');
+  // It is simply not a diary entry.
+  assert.equal(calendarCount(withReview, NOW, DENVER), 0, 'and the calendar does not claim it');
+  assert.equal(unfold(toCalendar(withReview, NOW, DENVER)).filter(l => l.startsWith('UID:')).length, 0);
+  // A due clock on an otherwise identical item DOES go, so this is a statement
+  // about the kind and not about the item.
+  assert.equal(calendarCount(s, NOW, DENVER), 1, 'a date somebody chose still exports');
+});
+
+test('and the real routing intent produces exactly that, end to end', () => {
+  // Through `routeEvents` itself rather than a hand-written clock, because the
+  // defect lived in the gap between what routing writes and what the export reads.
+  // A fixture-shaped approximation of routing would have agreed with either.
+  let n = 0;
+  const ctx = {
+    at: NOW, device: 'd0', vault: 'personal', zone: DENVER,
+    seq: () => n, id: () => `r${n++}`,
+  };
+  const created = ev('node.created', 'X', { nodeKind: 'action', title: 'brief the boss' });
+  const routing = routeEvents(ctx, 'X', 'next-action', 'action');
+  const kinds = routing.filter(e => e.kind === 'clock.set')
+    .map(e => (e.payload as { clockKind: string }).clockKind);
+  assert.deepEqual(kinds, ['review'], 'routing sets a review clock — that is the input to the bug');
+
+  const s = st(created, ...routing);
+  assert.ok(heldGroups(s, NOW, DENVER).some(g => g.items.some(i => i.id === 'X')), 'held');
+  assert.equal(calendarCount(s, NOW, DENVER), 0, 'and absent from the calendar');
+});
+
+test('a due date beats a sooner review clock, rather than the review winning', () => {
+  // The exact shape of Noah's screenshot: the review clock was SOONER, so it won
+  // the soonest-clock contest and named the day. Now it is not in the contest.
+  const s = st(
+    ev('node.created', 'N', { nodeKind: 'action', title: 'x' }),
+    ev('clock.set', 'N', { clockKind: 'review', at: '2026-07-31T05:59:00.000Z', source: 'clarify:next-action' }),
+    ev('clock.set', 'N', { clockKind: 'due', at: '2026-08-14T05:59:00.000Z', source: 'detail:due' }),
+  );
+  const d = unfold(toCalendar(s, NOW, DENVER)).find(l => l.startsWith('DTSTART'));
+  assert.equal(d, 'DTSTART;VALUE=DATE:20260813', 'the day the reader chose, not the day the app chose');
+});
+
+test('the kinds a calendar may carry are named, and review is not one of them', () => {
+  // Asserted as a set rather than inferred from behaviour, so adding a kind is a
+  // decision somebody has to make here rather than a side effect elsewhere.
+  assert.deepEqual([...CALENDAR_KINDS].sort(), ['due', 'park', 'start', 'suspense']);
+  assert.equal(CALENDAR_KINDS.has('review'), false);
+});
+
+test('nine things routed in one afternoon do not become nine events', () => {
+  // The screenshot, reproduced. Before the fix this exported nine all-day events
+  // on a single day, each with an alarm.
+  let n = 0;
+  const ctx = {
+    at: NOW, device: 'd0', vault: 'personal', zone: DENVER,
+    seq: () => n, id: () => `q${n++}`,
+  };
+  const events: AppEvent[] = [];
+  for (let i = 0; i < 9; i++) {
+    events.push(ev('node.created', `W${i}`, { nodeKind: 'action', title: `work ${i}` }));
+    events.push(...routeEvents(ctx, `W${i}`, 'next-action', 'action'));
+  }
+  const s = st(...events);
+  assert.equal(heldGroups(s, NOW, DENVER).flatMap(g => g.items).length, 9, 'all nine are held');
+  assert.equal(calendarCount(s, NOW, DENVER), 0, 'and the calendar offers none of them');
 });

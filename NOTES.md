@@ -533,6 +533,40 @@ decided by a session.**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
+- **2026-07-30** — **Two things Noah found on the device (0.23.2 ITERATION).**
+  · **The calendar was exporting the app's own clocks as appointments.** Routing to
+  Next action sets `clockKind: 'review'` at end of tomorrow — the app's resurfacing
+  marker, not a date anybody typed — and `soonestClock` returns any kind, so nine
+  items routed in one afternoon became nine all-day events on one day, each with a
+  nine o'clock alarm. Noah: *"it's literally everything in the list that has just
+  been given a date of today supposedly, I assume, because they couldn't be blank?"*
+  He was right, and the diagnosis was right.
+  · **`CALENDAR_KINDS` = `due`, `start`, `suspense`, `park`.** The axis is *did the
+  reader choose this day*, not *is it a deadline*: `due` comes only from
+  `detail:due` or `replan:compress`, while `review` is what routing, repeats,
+  bother handling, the comms sweep, replan's escalate/renegotiate and every gate
+  cure set. `park` stays IN — an earlier audit settled that, because the held list
+  already shows "parked until…" and dropping it made the app contradict its own
+  screen. My first patch reversed that finding; the park test caught it.
+  · **A planner that misreports your obligations to a calendar you trust is worse
+  than one with no calendar export at all.** The app can be wrong on its own screen
+  and be corrected by the next glance; it cannot follow the mistake back out of a
+  diary.
+  · **The ics fixtures were encoding the defect.** `clockAt` defaulted to
+  `kind = 'review'`, so every test in that file asserted that the app's own markers
+  belong in a calendar. Default is now `due`, and the regression is driven through
+  `routeEvents` itself rather than a hand-written clock — the bug lived in the gap
+  between what routing writes and what the export reads, and a fixture-shaped
+  approximation of routing would have agreed with either side.
+  · **The icon badge asserted a number no surface stated.** It counts `ready`
+  correctly, but group headings deliberately carry no counts, so a red 1 on the
+  home screen was unfindable inside the app — an unexplained demand, which is the
+  one thing this app must never be. The gauge now says "N ready now" from the SAME
+  variable that feeds the badge, and the panel explains what the number is.
+  · My first smoke check for that was vacuous: it only asserted when the icon had
+  been given a number, and at that point in the walk it had been given `clear`.
+  A guard on a state the fixture never reaches is not a check.
+
 - **2026-07-30** — **Clearing things out (0.23.0 CAPABILITY).** Noah, answering the
   open question: *"I feel like both should be available so the user has control of
   their data"* and *"there should be a verification that prevents it from being

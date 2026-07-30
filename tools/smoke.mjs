@@ -2450,6 +2450,27 @@ try {
     return { calls, ready };
   });
   is(badge.calls.length > 0, true, `the icon is told something (${JSON.stringify(badge.calls)})`);
+  // THE NUMBER MUST BE FINDABLE. Noah came back to a red 1 on the home screen and
+  // could not find a 1 inside the app — an unexplained demand, which is the one
+  // thing this app must never be. The gauge has to state the same figure the icon
+  // does, and the panel has to say what it means.
+  const badgeGauge = (await tpage.locator('#gauge').textContent()) || '';
+  const iconNumber = badge.calls.filter(c => Number.isInteger(c)).at(-1);
+  // UNCONDITIONAL. The first version of this only asserted when the icon had been
+  // given a number — and at this point in the walk it had been given `clear`, so
+  // the check never ran at all. A guard on a state the fixture does not reach is
+  // not a check, and this file has produced that shape before.
+  is(/held/.test(badgeGauge) ? /ready now/.test(badgeGauge) : true, true,
+    `whenever the gauge counts what is held it also states what is ready ("${badgeGauge}")`);
+  is(iconNumber === undefined
+      ? /\b0 ready now\b/.test(badgeGauge) || /nothing held yet/.test(badgeGauge)
+      : new RegExp(`\\b${iconNumber} ready now\\b`).test(badgeGauge), true,
+    `the gauge states the icon's own number ("${badgeGauge}" vs icon ${JSON.stringify(iconNumber ?? 'clear')})`);
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  is(/number on the app icon/i.test(await tpage.locator('#badge-explainer').textContent() || ''), true,
+    'and the panel says what the number on the icon means');
+  await tpage.click('#about-close');
   is(badge.calls.every(c => c === 'clear' || Number.isInteger(c)), true,
     'and it is a whole count or an explicit clear, never a stale string');
 

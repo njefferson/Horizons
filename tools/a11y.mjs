@@ -48,7 +48,7 @@ const DIALOG_COMMON = [
   '#about-title', '.version', '.about-section',
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
-  '#sample', '#sample-note',
+  '#sample', '#sample-note', '#badge-explainer',
   '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
   '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',
   '#purge-cancel', '#purge-consequence',

@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.23.2',
+    kind: 'ITERATION',
+    date: '2026-07-30',
+    notes: [
+      '**Your calendar only gets days you chose.** It was also being offered every date Quietkeep sets for itself \u2014 the \u201cback with you tomorrow\u201d it puts on anything you route \u2014 so routing nine things in one afternoon offered nine all-day events on a single day, with alarms, none of which you had dated. Those stay here now, where they belong.',
+      'If nothing has a date you set, it says so and says why, instead of looking broken.',
+      '**The number on the app icon is findable.** It is how many things are ready now, it is stated beside what you are holding in the same words, and the panel explains it. Before, it was a number that appeared nowhere inside the app.',
+    ],
+  },
+  {
     triplet: '0.23.1',
     kind: 'ITERATION',
     date: '2026-07-30',

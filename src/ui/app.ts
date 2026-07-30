@@ -305,17 +305,29 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
 
   // The gauge reads as text first and the number is the information (B-02).
   const { silent, total } = coverageGauge(session.state());
+  const readyNow = groups.find(g => g.key === 'ready')?.items.length ?? 0;
   // The gauge is a button: its number is a claim, and the claim opens into the
   // itemised list that backs it (build-plan item 21).
+  //
+  // `ready` is stated here because **the icon badge shows that same number**, and
+  // until now no surface in the app said it anywhere. Noah came back to a red 1 on
+  // the home screen and could not find a 1 inside — so the badge was an
+  // unexplained demand, which is the one thing this app must never be. The group
+  // headings deliberately carry no counts (a heading is not a score), so the
+  // gauge is the honest place: it is already where numbers live, and it already
+  // opens into the list that backs them.
   $('#gauge').textContent =
-    total === 0 ? 'nothing held yet' : `${total} held · ${silent} silent · see each`;
+    total === 0
+      ? 'nothing held yet'
+      : `${total} held · ${readyNow} ready now · ${silent} silent · see each`;
 
   // T0's badge (ADR-0007): how many things are actually asking, on the app icon,
   // so a glance at the home screen is informative without opening anything.
   // Counts the READY group ONLY — a badge showing everything you hold is a number
-  // that never falls, which is a nag rather than information.
+  // that never falls, which is a nag rather than information. It is the SAME
+  // number the gauge states, from the same variable, so the two cannot disagree.
   try {
-    const ready = groups.find(g => g.key === 'ready')?.items.length ?? 0;
+    const ready = readyNow;
     const nav = navigator as Navigator & {
       setAppBadge?: (n?: number) => Promise<void>;
       clearAppBadge?: () => Promise<void>;
