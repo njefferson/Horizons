@@ -132,16 +132,95 @@ export async function syncId(key: CryptoKey): Promise<string> {
 
 // --- sealing ---------------------------------------------------------------
 
+/** gzip's first two bytes. JSON always begins `{` (0x7b), so a sealed payload is
+ *  self-describing with no wrapper and no version negotiation: look at byte one
+ *  and you know which it is. */
+const GZIP_MAGIC = [0x1f, 0x8b];
+
+/**
+ * Squeeze, if this platform can.
+ *
+ * An event log compresses extraordinarily well — the same keys, the same device
+ * id and near-identical timestamps on every line. Noah's planner measured 8.4x,
+ * which turns a first sync from eight uploads into one. Storage writes are the
+ * scarcest thing in this whole design, so that is the difference between a
+ * comfortable margin and a tight one.
+ *
+ * **Returns the input untouched if `CompressionStream` is missing.** Degrading is
+ * free here because the format is self-describing: a device that cannot compress
+ * sends plain JSON, and every reader handles both. No capability check, no
+ * negotiation, and nothing to get wrong on a platform nobody has tested.
+ */
+async function squeeze(bytes: Uint8Array): Promise<Uint8Array> {
+  if (typeof CompressionStream !== 'function') return bytes;
+  try {
+    const cs = new CompressionStream('gzip');
+    const writer = cs.writable.getWriter();
+    void writer.write(bytes);
+    void writer.close();
+    const parts: Uint8Array[] = [];
+    const reader = cs.readable.getReader();
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      parts.push(value as Uint8Array);
+    }
+    const total = parts.reduce((n, p) => n + p.length, 0);
+    const out = new Uint8Array(total);
+    let at = 0;
+    for (const p of parts) { out.set(p, at); at += p.length; }
+    return out;
+  } catch {
+    // A compressor that failed is not a reason to fail a sync.
+    return bytes;
+  }
+}
+
+/** The inverse, applied only when the bytes say they need it. */
+async function unsqueeze(bytes: Uint8Array): Promise<Uint8Array> {
+  if (bytes.length < 2 || bytes[0] !== GZIP_MAGIC[0] || bytes[1] !== GZIP_MAGIC[1]) return bytes;
+  const ds = new DecompressionStream('gzip');
+  const writer = ds.writable.getWriter();
+  void writer.write(bytes);
+  void writer.close();
+  const parts: Uint8Array[] = [];
+  const reader = ds.readable.getReader();
+  for (;;) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    parts.push(value as Uint8Array);
+  }
+  const total = parts.reduce((n, p) => n + p.length, 0);
+  const out = new Uint8Array(total);
+  let at = 0;
+  for (const p of parts) { out.set(p, at); at += p.length; }
+  return out;
+}
+
 /**
  * Seal a value.
  *
  * A FRESH random IV every time, and that is the single most important line in
  * this file. Reusing an IV under GCM leaks the XOR of both plaintexts and the
  * authentication key with them — it is a total break, not a degradation.
+ *
+ * COMPRESSED BEFORE IT IS ENCRYPTED, and inside the seal rather than around it —
+ * so the relay cannot tell whether compression was used at all, and learns
+ * nothing it did not already learn from a length.
+ *
+ * The order is worth naming because the reverse is meaningless (ciphertext does
+ * not compress) and because compressing-then-encrypting has a known caveat: when
+ * an attacker can inject chosen text into the SAME compressed stream and watch
+ * the length, compression leaks. That channel does not exist here — the relay
+ * cannot put events into somebody's log, and a chunk is hundreds of events deep,
+ * so the resolution is uselessly coarse. What it does change is that a length now
+ * tracks how repetitive the content is rather than how much of it there is, which
+ * is a different shade of the metadata already disclosed, not a new kind.
  */
 export async function seal(key: CryptoKey, value: unknown): Promise<Sealed> {
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const ct = await subtle().encrypt({ name: AES, iv }, key, enc.encode(JSON.stringify(value)));
+  const body = await squeeze(enc.encode(JSON.stringify(value)));
+  const ct = await subtle().encrypt({ name: AES, iv }, key, body);
   return { v: SEAL_VERSION, iv: b64(iv), ct: b64(ct) };
 }
 
@@ -168,7 +247,10 @@ export async function open(key: CryptoKey, sealed: unknown): Promise<unknown> {
     throw new Error('that could not be opened with this key');
   }
   try {
-    return JSON.parse(dec.decode(plain));
+    // Self-describing: compressed payloads announce themselves in their first two
+    // bytes, so a device reading an older uncompressed chunk needs no flag, no
+    // version bump and no negotiation. Both directions of the upgrade work.
+    return JSON.parse(dec.decode(await unsqueeze(new Uint8Array(plain))));
   } catch {
     throw new Error('it opened but did not contain what was expected');
   }
