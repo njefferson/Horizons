@@ -137,6 +137,38 @@ export async function syncId(key: CryptoKey): Promise<string> {
  *  and you know which it is. */
 const GZIP_MAGIC = [0x1f, 0x8b];
 
+/** "QKP1" — the marker for a framed, padded payload. Present so a chunk sealed
+ *  before padding existed still opens: no marker means the old shape. */
+const FRAME_MAGIC = [0x51, 0x4b, 0x50, 0x31];
+
+/**
+ * Every sealed body is rounded up to a multiple of this before encryption.
+ *
+ * **Noah asked the right question:** could somebody inject one item, have it
+ * travel without a pile of other data around it, and learn more from the result?
+ *
+ * The mechanism is not quite the one in the question, and it is real. A chunk
+ * holding only an attacker's own item tells them nothing they did not write. The
+ * danger is the reverse — their text compressed ALONGSIDE somebody's private
+ * text, where a guess that happens to match makes the result a little smaller.
+ * That is the CRIME shape, and this app does have the injection leg it needs: a
+ * link carrying `?text=` puts chosen words into a log.
+ *
+ * The bar is still high — it needs the target to tap a crafted link hundreds of
+ * times, a position to watch chunk sizes from, and a sync between each attempt.
+ * But "hard" is not "impossible", and a comment in this file previously said the
+ * channel did not exist here, which was wrong.
+ *
+ * Padding closes most of it, and closes something older too: GCM is unpadded, so
+ * a sealed size tracked the plaintext size long before compression arrived. Now a
+ * one-event exchange and a fifty-event exchange look identical, and a guess has
+ * to shift the total across a whole bucket to be visible at all.
+ *
+ * 4 KiB: small enough that a daily exchange costs nothing anybody would notice,
+ * large enough to swallow the difference a single crafted word could make.
+ */
+export const PAD_TO = 4096;
+
 /**
  * Squeeze, if this platform can.
  *
@@ -174,6 +206,35 @@ async function squeeze(bytes: Uint8Array): Promise<Uint8Array> {
     // A compressor that failed is not a reason to fail a sync.
     return bytes;
   }
+}
+
+/** Wrap the body with its true length and pad the result out to a bucket, so the
+ *  size that reaches the relay says as little as possible about the contents. */
+function frame(body: Uint8Array): Uint8Array {
+  const size = FRAME_MAGIC.length + 4 + body.length;
+  const padded = Math.ceil(size / PAD_TO) * PAD_TO;
+  const out = new Uint8Array(padded);
+  out.set(FRAME_MAGIC, 0);
+  // Big-endian length, so the reader knows where the body ends and the padding
+  // begins. The padding itself is zeroes and is never interpreted.
+  new DataView(out.buffer).setUint32(FRAME_MAGIC.length, body.length, false);
+  out.set(body, FRAME_MAGIC.length + 4);
+  return out;
+}
+
+/** Unwrap, if it was wrapped. A payload sealed before padding existed has no
+ *  marker and is returned untouched — which is what keeps older chunks readable. */
+function unframe(bytes: Uint8Array): Uint8Array {
+  if (bytes.length < FRAME_MAGIC.length + 4) return bytes;
+  for (let i = 0; i < FRAME_MAGIC.length; i++) if (bytes[i] !== FRAME_MAGIC[i]) return bytes;
+  const at = FRAME_MAGIC.length;
+  const length = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength).getUint32(at, false);
+  const start = at + 4;
+  // A length that overruns the buffer means a corrupt payload. It cannot arrive
+  // through a valid seal — GCM authenticates first — so this is belt and braces
+  // against a bug rather than an attacker.
+  if (start + length > bytes.length) return bytes;
+  return bytes.slice(start, start + length);
 }
 
 /** The inverse, applied only when the bytes say they need it. */
@@ -219,7 +280,7 @@ async function unsqueeze(bytes: Uint8Array): Promise<Uint8Array> {
  */
 export async function seal(key: CryptoKey, value: unknown): Promise<Sealed> {
   const iv = globalThis.crypto.getRandomValues(new Uint8Array(IV_BYTES));
-  const body = await squeeze(enc.encode(JSON.stringify(value)));
+  const body = frame(await squeeze(enc.encode(JSON.stringify(value))));
   const ct = await subtle().encrypt({ name: AES, iv }, key, body);
   return { v: SEAL_VERSION, iv: b64(iv), ct: b64(ct) };
 }
@@ -250,7 +311,7 @@ export async function open(key: CryptoKey, sealed: unknown): Promise<unknown> {
     // Self-describing: compressed payloads announce themselves in their first two
     // bytes, so a device reading an older uncompressed chunk needs no flag, no
     // version bump and no negotiation. Both directions of the upgrade work.
-    return JSON.parse(dec.decode(await unsqueeze(new Uint8Array(plain))));
+    return JSON.parse(dec.decode(await unsqueeze(unframe(new Uint8Array(plain)))));
   } catch {
     throw new Error('it opened but did not contain what was expected');
   }

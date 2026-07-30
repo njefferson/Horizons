@@ -82,7 +82,8 @@ const THE_HANDOVER: Passage = {
   heading: 'What the handover point can and cannot see',
   paragraphs: [
     'It cannot read your writing. It never receives the key, and what it stores is meaningless without one. It also cannot change anything: an entry that had been altered on the way would fail its check on your device and be refused, rather than quietly accepted.',
-    'It is not blind, though, and it would be dishonest to say it were. Like any service on the internet, it can see that a request arrived, roughly when, how big it was, and which network it came from. Over time that adds up to a rough sense of WHEN a set of devices sync and how often — never what they contain, never how much you have written, never a single word of it.',
+    'It is not blind, though, and it would be dishonest to say it were. Like any service on the internet, it can see that a request arrived, roughly when, and which network it came from. Over time that adds up to a rough sense of WHEN a set of devices sync and how often — never what they contain, never a single word of it.',
+    'What it deliberately cannot tell is how MUCH: everything is padded to a fixed size before it is sealed, so a single note and fifty of them leave here looking identical. That also shuts a subtler door — without it, somebody could in principle send you a link that slipped chosen words into your planner and then watch how the size changed. They cannot, because it does not.',
     'It also forgets. What it holds is passed on and then expires by itself; it is a place work briefly rests on the way between your devices, not a copy of your planner. Your devices hold the real thing, and if the handover point vanished tomorrow you would lose nothing.',
   ],
 };
