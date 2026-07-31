@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.2.1 — ITERATION
+
+*2026-07-31*
+
+- **Sending something to &ldquo;Do now&rdquo; no longer feels like a trap.** The offer that follows now says which thing it is asking about by name, and adds &ldquo;Leave it for now&rdquo; &mdash; so you can agree it is for today without being made to either mark it done or start a timer. It stays on your list under Next up either way.
+- **The &ldquo;also asking&rdquo; list under Next up reads as a list again.** Each thing is on its own line with its name in full, above a quiet note of why &mdash; instead of name and note run together on one line, which read like a paragraph rather than a set of separate things.
+
 ## 1.2.0 — CAPABILITY
 
 *2026-07-31*

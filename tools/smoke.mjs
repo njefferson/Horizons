@@ -309,6 +309,13 @@ try {
     'and does NOT start a stopwatch nobody asked for');
   is(await tpage.locator('.donow-done').count(), 1,
     'Done is offered without having to run a timer first');
+  // It NAMES the item and offers a way out that is neither Done nor a timer —
+  // the offer used to be an unnamed bar with only those two exits (Noah, on
+  // device). Made to fail if the label stops naming the item or the exit is gone.
+  is((await tpage.locator('.donow-label').textContent())?.includes('do a two-minute thing'), true,
+    'the Do now offer names the item it is asking about');
+  is(await tpage.locator('.donow button', { hasText: 'Leave it for now' }).count(), 1,
+    'and offers a way out that keeps it for today — Done and the timer are not the only exits');
   await routeByLabel('Next action');
   await routeByLabel('Waiting for');
   await routeByLabel('Someday');
@@ -434,7 +441,7 @@ try {
   // this check can happen at all; nothing in the app writes it, so shipped
   // behaviour is always 120.
   await tpage.evaluate(() => { document.querySelector('#triage-donow').dataset.seconds = '2'; });
-  await tpage.locator('.donow button.ghost').click();            // Start two minutes
+  await tpage.locator('.donow button', { hasText: 'Start two minutes' }).click();   // not the "Leave it for now" ghost beside it
   await tpage.waitForTimeout(200);
   is((await tpage.locator('.donow-label').textContent())?.includes('left'), true,
     'asking for the timer starts it');

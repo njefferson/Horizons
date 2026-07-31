@@ -109,15 +109,30 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
    */
   const offerDoNow = (node: string): void => {
     active?.stop('abandoned');
+    // NAME the item. The offer used to say "Now — finish it, or take two minutes"
+    // with no hint of WHAT, so a fast router landed on a bar demanding an answer
+    // about a thing it would not name (Noah, on device).
+    const title = session.state().nodes.get(node)?.title || '(untitled)';
     const bar = el('div', 'donow');
-    bar.append(el('span', 'donow-label', 'Now — finish it, or take two minutes.'));
+    bar.append(el('span', 'donow-label', `Now: ${title}`));
     const done = el('button', 'donow-done', 'Done');
     done.type = 'button';
     done.addEventListener('click', () => { DONOW.replaceChildren(); markDone(node); });
     const start = el('button', 'ghost', 'Start two minutes');
     start.type = 'button';
     start.addEventListener('click', () => startDoNowTimer(node));
-    bar.append(done, start);
+    // A WAY OUT that keeps it for today. The offer is an offering, not a gate —
+    // but "Done" and a timer were the only exits, so a category ("this one is for
+    // today") became a trap with no way to simply agree and move on. Leaving it
+    // dismisses the offer; the item stays clocked for today, waiting under Next up.
+    const leave = el('button', 'ghost', 'Leave it for now');
+    leave.type = 'button';
+    leave.addEventListener('click', () => {
+      DONOW.replaceChildren();
+      LIVE.textContent = 'Left for today — it is waiting under Next up.';
+      restoreFocus();
+    });
+    bar.append(done, start, leave);
     DONOW.replaceChildren(bar);
   };
 

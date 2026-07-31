@@ -232,7 +232,10 @@ button.ghost {
   border: 1px solid var(--line);
   border-radius: var(--radius);
 }
-.donow-label { color: var(--warm); font-variant-numeric: tabular-nums; }
+/* Full-width, so the label — now the item's own name — gets its own line and the
+   buttons sit beneath it, rather than being squeezed beside a title that could be
+   any length. The running timer's countdown reads the same way. */
+.donow-label { flex: 1 0 100%; color: var(--warm); font-variant-numeric: tabular-nums; }
 /* The offer now lives outside the triage section, so it needs its own room —
    it used to inherit the section's margins. */
 #triage-donow:empty { display: none; }
@@ -528,18 +531,22 @@ button.ghost {
   padding: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
 }
+/* Each "also asking" item is a ROW with its own title and a quiet reason beneath
+   it — the same title-over-reason shape as the primary Next-up card above. They
+   used to sit as title-and-reason justified on one line, same weight and same
+   quiet colour, which read as a run of prose rather than a list of things (Noah,
+   on device). A divider and a title in full ink make them separate, nameable
+   items. */
 .behind-item {
   display: flex;
-  justify-content: space-between;
-  gap: var(--gap);
-  flex-wrap: wrap;
-  color: var(--ink-soft);
-  font-size: 0.9375rem;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--line);
 }
-.behind-title { overflow-wrap: anywhere; }
-.behind-why { flex: 0 1 auto; min-width: 0; }
+.behind-title { color: var(--ink); overflow-wrap: anywhere; }
+.behind-why { color: var(--ink-soft); font-size: 0.875rem; }
 
 .chips {
   list-style: none;
