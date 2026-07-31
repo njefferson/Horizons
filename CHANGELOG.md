@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.1.0 — CAPABILITY
+
+*2026-07-31*
+
+- **A short walkthrough the first time you open Quietkeep.** Four calm steps on what it is and how it works &mdash; put something down, it sorts and times itself, it is all on your device. You can Skip at any point, and it never interrupts again.
+- Want it back? &ldquo;Show the walkthrough again&rdquo; is under the ⓘ, beside how to use the app.
+
 ## 1.0.1 — ITERATION
 
 *2026-07-31*

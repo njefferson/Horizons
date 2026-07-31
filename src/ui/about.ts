@@ -933,14 +933,22 @@ export async function mountAbout(session: Session): Promise<void> {
   // reload immediately after closing cannot race the persistence and re-show
   // the intro — a race the audit-fix first introduced, caught in CI.
   const seen = await session.store.getKv<boolean>(SEEN);
-  if (!seen) {
+  // The WALKTHROUGH now owns first run (src/ui/tour.ts). It sets `about.seen`
+  // when it finishes, and opens this panel for the storage step itself — so the
+  // old auto-open only fires for someone who somehow reached here with the intro
+  // unseen AND the walkthrough already done. Gating on `tour.seen` is what stops
+  // the two ever showing at once on a brand-new device.
+  const tourSeen = await session.store.getKv<boolean>('tour.seen');
+  if (!seen && tourSeen) {
     dialog.addEventListener('close', () => {
       void session.store.setKv(SEEN, true).then(() => {
         document.body.dataset.introDismissed = 'true';
       });
     }, { once: true });
     show(true);
-  } else {
+  } else if (seen) {
     document.body.dataset.introDismissed = 'true';
   }
+  // When neither is set, the walkthrough will set `introDismissed` as it exits;
+  // leaving it unset here is what makes the headless walk wait for that.
 }

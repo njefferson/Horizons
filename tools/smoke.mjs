@@ -66,9 +66,20 @@ try {
   await ready();
   const bootMs = Date.now() - bootStart;
 
-  console.log('\nFirst run — the panel introduces itself once');
-  is(await page.locator('#about').isVisible(), true, 'the (i) panel opens by itself on a fresh store');
-  is(await page.locator('#about-intro').isVisible(), true, 'with the first-run introduction');
+  console.log('\nFirst run — the walkthrough, then the panel for the storage step');
+  is(await page.locator('#tour').isVisible(), true, 'the walkthrough opens by itself on a fresh store');
+  is((await page.locator('#tour-progress').textContent())?.trim(), 'Step 1 of 4', 'it starts at the first step');
+  is(await page.locator('#tour-skip').isVisible(), true, 'Skip is present, so it is never a trap');
+  // Step to the end. Back appears after the first step; the last step offers
+  // "Get started", which hands off to the (i) panel for keeping your data.
+  await page.click('#tour-next');
+  is(await page.locator('#tour-back').isVisible(), true, 'Back appears once you have moved');
+  await page.click('#tour-next');
+  await page.click('#tour-next');
+  is((await page.locator('#tour-next').textContent())?.trim(), 'Get started', 'the last step offers to get started');
+  await page.click('#tour-next');
+  is(await page.locator('#tour').isVisible(), false, 'finishing closes the walkthrough');
+  is(await page.locator('#about').isVisible(), true, 'and opens the panel for the storage step');
   is((await page.locator('#version').textContent())?.trim(), CURRENT.triplet,
     'version is the bare triplet — releases do not have names');
   is(await page.locator('.note-triplet').first().textContent(), CURRENT.triplet,
@@ -79,14 +90,15 @@ try {
   await page.click('#about-close');
   is(await page.evaluate(() => document.activeElement?.id), 'capture',
     'closing the panel hands focus to capture');
-  // Wait for the SEEN write to PERSIST before reloading — a fast reload races
-  // the fire-and-forget write and the intro re-opens, its modal blocking every
-  // later click. This exact race failed CI (not locally), which is why the app
-  // flags the write's completion and the test waits for it.
+  // Wait for the seen write to PERSIST before reloading — a fast reload races
+  // the fire-and-forget write and the walkthrough re-opens, its modal blocking
+  // every later click. This race (as the intro) failed CI once, not locally,
+  // which is why the app flags the write's completion and the test waits for it.
   await page.waitForSelector('body[data-intro-dismissed=true]');
   await page.reload({ waitUntil: 'load' });
   await ready();
-  is(await page.locator('#about').isVisible(), false, 'and it never opens uninvited again');
+  is(await page.locator('#tour').isVisible(), false, 'the walkthrough never opens uninvited again');
+  is(await page.locator('#about').isVisible(), false, 'and neither does the panel');
 
   console.log('\nShell');
   is(await page.title(), 'Quietkeep', 'title');
@@ -242,7 +254,7 @@ try {
   tpage.on('console', (m) => { if (m.type() === 'error') tErrors.push(m.text()); });
   await tpage.goto(url, { waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
-  await tpage.click('#about-close');                 // dismiss the first-run panel
+  await tpage.click('#tour-skip');                   // dismiss the first-run walkthrough
   await tpage.waitForSelector('body[data-intro-dismissed=true]');
 
   console.log('\nTriage — capture fills the inbox');
@@ -2282,7 +2294,7 @@ try {
   const other = await otherCtx.newPage();
   await other.goto(url, { waitUntil: 'load' });
   await other.waitForSelector('body[data-ready=true]');
-  await other.click('#about-dismiss');
+  await other.click('#tour-skip');                   // dismiss the first-run walkthrough
   for (const t of ['written on the other device', 'and this one too']) {
     await other.fill('#capture', t);
     await other.click('#capture-form button[type=submit]');

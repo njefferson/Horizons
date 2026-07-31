@@ -13,6 +13,7 @@ import type { AppEvent } from '../events.ts';
 import { coverageGauge } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import { mountAbout } from './about.ts';
+import { mountTour } from './tour.ts';
 import { mountUpdatePrompt } from './update.ts';
 import { loadBadgePreference, paintBadge } from './badge.ts';
 import { CURRENT } from './changelog.ts';
@@ -612,6 +613,16 @@ export async function main(edition?: Edition): Promise<void> {
     await mountAbout(session);
   } catch {
     // The (i) failing is a lost nicety; capture still works.
+  }
+
+  // The walkthrough — first run only, and contained for the same reason: a new
+  // person seeing nothing is better than a broken boot. It runs AFTER mountAbout
+  // so the panel's own first-run auto-open is already gated behind `tour.seen`
+  // and the two cannot stack.
+  try {
+    await mountTour(session);
+  } catch {
+    // A missing walkthrough costs an introduction, never capture.
   }
 
   // The store is open, state is folded, and the surface reflects it. Marked on

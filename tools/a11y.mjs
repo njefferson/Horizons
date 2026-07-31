@@ -118,7 +118,16 @@ const DIALOG_COMMON = [
   '.note-triplet', '.note-kind', '.note-list li', '.about-p', '.about-p a',
 ];
 const REGISTRY = {
-  'first-run dialog': [...DIALOG_COMMON, '#about-intro p', '.intro-aside'],
+  // The walkthrough (src/ui/tour.ts) is the first surface a new person meets now,
+  // so it is audited as its own state. #tour-back is hidden on the first step, so
+  // it is not registered here where it would match nothing visible (it shares
+  // button.ghost with #tour-skip, which IS checked); it is exercised by the
+  // driver stepping forward.
+  'walkthrough': ['#tour-progress', '#tour-heading', '.tour-p', '#tour-skip', '#tour-next'],
+  // The ⓘ panel's own first-run auto-open is now gated behind the walkthrough, so
+  // its intro no longer shows — the panel a new person reaches (by finishing the
+  // walkthrough) is the same one a returning person sees.
+  'first-run dialog': DIALOG_COMMON,
   'dialog, return visit': DIALOG_COMMON,
   'empty store': [
     '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
@@ -464,7 +473,20 @@ try {
       if (u && w) { w.textContent = 'A newer version is ready.'; u.hidden = false; }
     });
 
-    // State 1: the first-run dialog, exactly as a new user meets it.
+    // State 0: the walkthrough, which is the FIRST surface a new person meets —
+    // before the (i) panel, which is now gated behind it.
+    await page.waitForSelector('#tour[open]');
+    await auditContrast(page, 'walkthrough', theme);
+    await auditAxe(page, 'walkthrough', theme);
+    await auditTargets(page, 'walkthrough', theme);
+    // Step to the end. The last step's "Get started" hands off to the (i) panel
+    // for the storage step, which is exactly what State 1 audits.
+    await page.click('#tour-next');
+    await page.click('#tour-next');
+    await page.click('#tour-next');
+    await page.click('#tour-next');
+
+    // State 1: the (i) panel as a new user reaches it (via the walkthrough).
     await page.waitForSelector('#storage-body dt');
     // The clearing confirmation is revealed by choosing a mode, so it is opened
     // here: a control that only exists after a click is still a control somebody

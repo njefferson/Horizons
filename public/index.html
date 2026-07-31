@@ -478,6 +478,23 @@
   <p class="build" id="build-version" aria-label="Build"></p>
 </footer>
 
+<!-- The walkthrough (src/ui/tour.ts). A calm, skippable, replayable first-run
+     guide — the family's first tutorial, built to the house "calm skippable
+     first-run" brief. Steps are filled in by the module; this is the shell. -->
+<dialog id="tour" aria-labelledby="tour-heading">
+  <div class="tour-card">
+    <p class="tour-progress" id="tour-progress" role="status" aria-live="polite"></p>
+    <h2 class="tour-heading" id="tour-heading" tabindex="-1"></h2>
+    <div id="tour-body"></div>
+    <div class="tour-nav">
+      <button id="tour-skip" type="button" class="ghost">Skip</button>
+      <span class="tour-dots" id="tour-dots" aria-hidden="true"></span>
+      <button id="tour-back" type="button" class="ghost" hidden>Back</button>
+      <button id="tour-next" type="button">Next</button>
+    </div>
+  </div>
+</dialog>
+
 <dialog id="about" aria-labelledby="about-title">
   <!-- A close that is ALWAYS reachable. This panel carries every release's
        patch notes, so it grew past ten thousand pixels tall and the only way
@@ -546,6 +563,9 @@
     You never file anything or set reminders by hand. Dates, repeats and nudges
     are the app&rsquo;s job, not yours.
   </p>
+  <div class="about-actions">
+    <button id="tour-replay" type="button" class="ghost">Show the walkthrough again</button>
+  </div>
 
   <h3 class="about-section">Add it to your home screen</h3>
   <div id="install-steps">

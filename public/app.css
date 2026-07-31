@@ -817,6 +817,41 @@ dialog, dialog * { overflow-wrap: anywhere; }
    as steps, not prose. */
 .about-list { margin: 0 0 0.6rem; padding-left: 1.15rem; color: var(--ink-soft); }
 .about-list li { margin: 0 0 0.4rem; }
+
+/* The walkthrough (src/ui/tour.ts). Inherits the base `dialog` look; this is
+   only the calm inner layout — no animation, so reduced-motion is honoured by
+   there being no motion. */
+.tour-progress {
+  margin: 0 0 0.4rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.tour-heading { margin: 0 0 0.75rem; font-size: 1.25rem; }
+/* The heading takes focus each step; its ring is the app's, not a stray outline. */
+.tour-heading:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 2px; }
+.tour-p { margin: 0 0 0.7rem; color: var(--ink-soft); }
+.tour-p:last-child { margin-bottom: 0; }
+.tour-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1.25rem;
+}
+/* Next is the primary action and sits at the end; Skip leads, Back sits between,
+   and the dots take the slack in the middle. */
+.tour-nav #tour-next { margin-left: auto; }
+.tour-dots { display: inline-flex; gap: 0.35rem; }
+.tour-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: transparent;
+}
+.tour-dot.on { background: var(--accent); border-color: var(--accent); }
 .about-p { margin: 0 0 0.6rem; color: var(--ink-soft); }
 .about-p a {
   color: var(--accent);
