@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.0.0 — VERSION
+
+*2026-07-31*
+
+- **This is version one.** Every capability the planner was built to have is in place and in daily use &mdash; friction-free capture, triage, a single Next-up, dates and repeats, the Review that surfaces only what has stalled, the person lens, the carrying report, and calendar reminders. Nothing here is a preview any more.
+- It stays exactly what it always was: yours, on your device, with no account, no telemetry, and no server holding your data. Keeping two devices in step is a separate edition you opt into; the planner itself still cannot reach anything at all.
+
 ## 0.27.3 — ITERATION
 
 *2026-07-31*
