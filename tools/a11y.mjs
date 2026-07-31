@@ -994,13 +994,21 @@ try {
     await page.fill('#capture', 'a sortable thing under something');
     await page.click('#capture-form button[type=submit]');
     await page.waitForSelector('#triage:not([hidden]) .route');
-    for (let i = 0; i < 12; i++) {
-      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
-      await page.click('#triage-actions .route');
-      await page.waitForTimeout(120);
-    }
-    await page.locator('#triage-actions .route', { hasText: 'Next action' }).first().click();
-    await page.waitForTimeout(250);
+    // Drive heat -> clarify -> route with IN-PAGE clicks under a polling wait.
+    // Locator clicks lost a race on the 2-core CI runner: every queued commit
+    // repaints the action row, the button detached mid-click, and the
+    // stability retry loop ran out its 30s (Spine run 161). An in-page click
+    // acts on whatever exists at that instant and the poll simply tries again
+    // after the next repaint.
+    await page.waitForFunction(() => {
+      const byText = (t) => [...document.querySelectorAll('#triage-actions .route')]
+        .find(b => (b.textContent || '').includes(t));
+      const next = byText('Next action');
+      if (next) { next.click(); return true; }
+      byText('Hot')?.click();
+      return false;
+    }, null, { timeout: 20000, polling: 300 });
+    await page.waitForTimeout(400);
     await page.fill('#search-input', 'sortable thing');
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');
