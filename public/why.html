@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why it works this way — Quietkeep</title>
+<meta name="description" content="The reasoning behind Quietkeep — how memory, attention and motivation actually work, and how that shaped every choice — with each source named and tagged by how well established it is.">
+<meta name="theme-color" content="#141A26" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F1E9" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="/brand/icon.svg">
+<style>
+  :root{
+    color-scheme: light dark;
+    --bg:#F4F1E9; --surface:#FFFFFF; --ink:#1B2333; --ink-soft:#4C5670;
+    --line:#8E8A7F; --accent:#33425F; --warm:#7A4E00;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#141A26; --surface:#1E2637; --ink:#F2F0EA; --ink-soft:#B3BCCE;
+      --line:#6A7896; --accent:#AFC0DC; --warm:#F5C978; }
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; }
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.6;
+    padding:2.5rem 1.25rem 4rem;
+  }
+  main{ max-width:42rem; margin:0 auto; }
+  a{ color:var(--accent); }
+  a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; border-radius:2px; }
+  .back{ display:inline-block; margin-bottom:1.75rem; font-weight:600; }
+  h1{ font-size:1.9rem; line-height:1.2; margin:0 0 1rem; }
+  h2{ font-size:1.4rem; margin:2.4rem 0 0.6rem; }
+  h3{ font-size:1.12rem; margin:1.8rem 0 0.4rem; }
+  h4{ font-size:1rem; margin:1.4rem 0 0.3rem; }
+  p{ margin:0 0 1rem; color:var(--ink-soft); }
+  li{ margin:0 0 0.4rem; color:var(--ink-soft); }
+  ul,ol{ margin:0 0 1rem; padding-left:1.3rem; }
+  strong{ color:var(--ink); }
+  code{
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:0.9em;
+    background:color-mix(in srgb,var(--line) 22%,transparent);
+    padding:0.05em 0.35em; border-radius:0.3rem;
+  }
+  hr{ border:0; border-top:1px solid var(--line); margin:2.4rem 0; }
+  blockquote{
+    margin:1.4rem 0; padding:0.2rem 0 0.2rem 1rem;
+    border-left:3px solid var(--line); color:var(--ink-soft);
+  }
+  blockquote p:last-child{ margin-bottom:0; }
+  footer{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--line); color:var(--ink-soft); font-size:0.9375rem; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">&larr; Back to Quietkeep</a>
+  <h1>Planning for Humans</h1>
+  <p>Why Quietkeep is shaped the way it is.</p>
+  <p>Every feature below is traced to the finding that motivated it, and <strong>every finding carries an epistemic tag</strong>, because the strength of the evidence varies enormously and pretending otherwise would be dishonest about a subject where people have been sold a great deal of confident nonsense.</p>
+  <ul><li><strong>established</strong> — Replicated, broadly accepted in the literature. Safe to design on.</li><li><strong>emerging</strong> — Real research, genuinely unsettled. Designed for cautiously and reversibly.</li><li><strong>community-construct</strong> — Named and described by the community it concerns, widely recognised as real experience, <strong>not</strong> a validated clinical construct. Treated as a <em>description of experience</em>, never as a mechanism.</li><li><strong>negative finding</strong> — Something once believed that <strong>did not replicate</strong> or does not transfer. These constrain the design by forbidding things.</li></ul>
+  <p>A design decision resting on an <code>emerging</code> or <code>community-construct</code> finding is built so it can be removed. One resting on a <code>negative finding</code> is a prohibition, and prohibitions here are permanent.</p>
+  <p><strong>Two things this document is not.</strong> It is not a claim that Quietkeep is a clinical intervention — it is not, and product law 7 forbids the app from talking that way. And it is not a claim that these findings describe any particular user. They describe <em>patterns the design must not break under</em>. If a pattern doesn't apply to you, the app should still be fine; nothing here is diagnostic.</p>
+  <hr>
+  <h2>1 · Why "return" is the whole product</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Prospective memory</strong> — remembering to do a thing at a future moment — is a</li></ul>
+  <p>  distinct capacity from remembering the thing itself. <strong>Time-based</strong> prospective   memory (do X at 3pm) is markedly less reliable than <strong>event-based</strong> (do X when   you see Y), because time-based tasks have no external cue and depend on   self-initiated checking. <em>(established)</em></p>
+  <ul><li><strong>Barkley: temporal myopia.</strong> The future is weakly represented; behaviour is</li></ul>
+  <p>  governed by what is present. The <strong>point of performance</strong> — the place and   moment where the behaviour must happen — is where support has to be, not   earlier and not in the abstract. <em>(established)</em></p>
+  <ul><li><strong>Gilbert: intention offloading.</strong> People offload intentions to external stores</li></ul>
+  <p>  and, having done so, <em>reduce internal rehearsal</em>. Offloading works — and it   transfers the reliability burden entirely to the store. <em>(established)</em></p>
+  <ul><li><strong>Masicampo &amp; Baumeister.</strong> An unfulfilled goal produces intrusive thoughts;</li></ul>
+  <p>  <strong>making a specific plan quiets them</strong> even before any action is taken. The   relief comes from the plan, not from the doing. <em>(established)</em></p>
+  <p><strong>What follows.</strong> The relief of capture is real and it arrives <em>immediately</em>. That is the trap. Once the thought is written the intrusion quiets, internal rehearsal stops, and the item's survival now depends entirely on the tool. If the tool's resurfacing depends on the user's habit of reviewing, it has handed the job back to the capacity that was failing.</p>
+  <p><strong>So: the return has to be structural.</strong></p>
+  <p>→ <strong>Product law 1</strong> (no silent nodes), enforced at the write boundary rather than by a sweep (<a href="adr/0011-no-silent-nodes-gate.md">ADR-0011</a>). → <strong>Product law 2</strong> (the coverage gauge) — the invariant is not just held, it is <em>shown</em>, because a promise the user cannot verify is one they must take on faith, and this audience has been let down by such promises before. → Cue conversion: wherever possible a time-based obligation becomes an event-based one. This is the whole argument for <strong>T1 <code>.ics</code> export</strong> — the OS calendar fires the cue whether or not the app is open (<a href="adr/0007-notification-tiers.md">ADR-0007</a>).</p>
+  <hr>
+  <h2>2 · Why there is no "overdue"</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Sirois &amp; Pychyl: procrastination is mood repair.</strong> Delay is not a time-management</li></ul>
+  <p>  failure; it is short-term regulation of negative affect around the task. <strong>The   aversive feeling causes the delay</strong> — so anything that increases aversion   increases delay. <em>(established)</em></p>
+  <ul><li><strong>Deci &amp; Ryan: the overjustification effect.</strong> Extrinsic rewards and scores can</li></ul>
+  <p>  <em>undermine</em> intrinsic motivation for a task the person already valued. <em>(established)</em></p>
+  <ul><li><strong>Ego depletion — willpower as a depletable tank — failed to replicate</strong> in</li></ul>
+  <p>  large multi-lab efforts. <em>(negative finding)</em></p>
+  <ul><li><strong>Working-memory training does not transfer</strong> to untrained tasks or everyday</li></ul>
+  <p>  function. <em>(negative finding)</em></p>
+  <p><strong>What follows.</strong> An "overdue" flag adds aversion to a task that is already aversive, and it does so at the exact moment the person is deciding whether to approach it. It is a machine for producing the behaviour it labels.</p>
+  <p><strong>Streaks are the same error with better marketing.</strong> A streak converts something you valued into a score, and its real design purpose is the moment it breaks. For someone whose engagement is genuinely variable, that is a manufactured quitting moment.</p>
+  <p>The two negative findings are load-bearing <strong>prohibitions</strong>:</p>
+  <blockquote><p><strong>Nothing in Quietkeep may assume willpower is a tank</strong> — no "you have used your focus for today", no depletion model, no discipline framing. <strong>Nothing in Quietkeep may claim to train an underlying capacity.</strong> It is a prosthesis, not an exercise regime. It does not make you better at remembering; it remembers.</p></blockquote>
+  <p>→ <strong>Product law 5</strong>, one decay primitive, continuous pressure, "ready again" (<a href="adr/0010-decay-primitive.md">ADR-0010</a>). → <strong>Product law 3</strong>, no past bucket — a passed date becomes a <em>decision</em>, not a mark (<a href="adr/0012-no-past-bucket.md">ADR-0012</a>). → <strong>KC Davis: care tasks are morally neutral.</strong> <em>(community-construct — a practitioner framework, widely adopted, not an experimental result.)</em> Undone laundry is not a moral failing. This sets the voice throughout: shame-free, adult, never a rebuke.</p>
+  <hr>
+  <h2>3 · Interruption, focus, and getting back</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Altmann &amp; Trafton: memory-for-goals.</strong> A suspended goal decays with time and</li></ul>
+  <p>  is recovered by <strong>retrieval cues</strong> associated with it at suspension. Recovery is   cue-driven, not will-driven. <em>(established)</em></p>
+  <ul><li><strong>Trafton et al.: resumption lag</strong> is substantially reduced when a cue is</li></ul>
+  <p>  encoded during the <strong>interruption lag</strong> — the brief window between knowing you   will be interrupted and being interrupted. <em>(established)</em></p>
+  <ul><li><strong>Mark: interruption costs.</strong> Interrupted work is often completed in comparable</li></ul>
+  <p>  time but at higher stress and effort; task-switching carries real overhead. <em>(established)</em></p>
+  <ul><li><strong>Leroy: attention residue.</strong> Attention persists on a prior task into the next,</li></ul>
+  <p>  degrading it — worst when the prior task was left <strong>unresolved</strong>. <em>(established)</em></p>
+  <ul><li><strong>Radvansky: event boundaries.</strong> Crossing a boundary (a doorway, a context</li></ul>
+  <p>  change) degrades access to what was active before it. <em>(established)</em></p>
+  <ul><li><strong>Monotropism</strong> (Murray, Lesser, Lawson): attention as a small number of deeply</li></ul>
+  <p>  engaged interests; switching is <strong>costly and involuntary to reverse</strong>, and   interruption is disproportionately expensive. <em>(emerging — an increasingly   supported theoretical account, not a settled mechanism.)</em></p>
+  <ul><li><strong>Hyperfocus</strong> (Ashinoff &amp; Abu-Akel): reviewed as a real but under-operationalised</li></ul>
+  <p>  phenomenon; the literature does not yet agree on definition or measurement.   <em>(emerging)</em></p>
+  <p><strong>What follows.</strong> The interruption is not preventable — walk-ins are the job. What is designable is the <strong>cue at suspension</strong> and the <strong>route back</strong>.</p>
+  <p>→ <strong>Focus anchor</strong> — a manual one-tap "Focus" on any item, which models the state explicitly rather than inferring it. → <strong>Capture during focus auto-pairs a resume card</strong>, with an optional five-word <em>"I was about to…"</em> prompt. This is Trafton's interruption-lag cue, made cheap enough to actually happen. <strong>It is skippable, and skipping is unremarkable</strong> — a prompt that nags during an interruption is itself an interruption. → <strong>Interrupt gesture (pin + capture) from anywhere, 2-second budget</strong> (<a href="adr/0008-capture-endpoints.md">ADR-0008</a>). Two seconds is not a performance target picked for tidiness — it is roughly the width of the interruption lag. → <strong>Resume cards rank above pressure in Next-up.</strong> Leroy's residue says the unresolved prior task is already consuming attention; finishing it is cheaper than starting something else on top of it. → <strong>Unspent resume cards convert to a day-end review question</strong>, never to a reproach. → <em>Because monotropism and hyperfocus are <code>emerging</code></em>, nothing structural depends on them. They inform ergonomics — the cost of a switch, the value of not fragmenting a session — and if the accounts change, the design bends rather than breaks.</p>
+  <p><strong>Cirillo's interruption protocol</strong> <em>(community-construct — a widely used practitioner technique, not a validated finding)</em>: capture the interruption, protect the current block, return. Quietkeep borrows the <strong>shape</strong> — capture without leaving — and drops the timer, which is a demand.</p>
+  <hr>
+  <h2>4 · Clarify, breakdown, and the two-minute rule</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Choice overload.</strong> More options can reduce satisfaction and the likelihood of</li></ul>
+  <p>  choosing at all. The effect is context-dependent and its size has been   contested — but the <em>direction</em> holds where options are similar and stakes are   ambiguous, which is precisely an inbox. <em>(established, with contested magnitude   — stated honestly rather than overclaimed.)</em></p>
+  <ul><li><strong>D'Zurilla: problem-solving therapy.</strong> Structured problem-solving — define,</li></ul>
+  <p>  generate, decide, act — improves outcomes; the <strong>structure</strong> carries the benefit.   <em>(established)</em></p>
+  <ul><li><strong>Gollwitzer: implementation intentions.</strong> "When situation X, I will do Y"</li></ul>
+  <p>  substantially improves follow-through over goal intentions alone. The   <em>specificity</em> is the mechanism. <em>(established)</em></p>
+  <ul><li><strong>Brown: executive function clusters</strong> — activation, focus, effort, emotion,</li></ul>
+  <p>  memory, action — as a description of where difficulty sits. <em>(established as a   clinical framework)</em></p>
+  <p><strong>What follows.</strong></p>
+  <p>→ <strong>Clarify shows one card at a time with forced-choice routing</strong> (Do now · Next action · Waiting For · Someday · Reference · Trash). One card removes the comparison. Six fixed routes remove the open field. The routes are the structure D'Zurilla's evidence points at. → <strong>A "next action" must be specific enough to start</strong>, which is the implementation-intention finding applied. Vagueness is the actual blocker far more often than difficulty. → <strong>The two-minute timer on Do now</strong> is a bounded commitment, not a rule about what deserves doing. Its value is that "two minutes" is a <em>cheap</em> decision. → <strong>The breakdown ladder generates all steps but reveals one</strong> (<a href="adr/0015-ai-never-blocks.md">ADR-0015</a>). Showing eight steps to someone stuck at activation is choice overload at the worst moment. The granularity dial exists because the right step size is personal and varies by day. → <strong>Batch assist at the end of a Dump session</strong> keeps capture and decision separate. Deciding while dumping stops the dumping.</p>
+  <hr>
+  <h2>5 · Upkeep, habit, and honest timelines</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Lally et al.:</strong> automaticity takes a <strong>median ~66 days</strong>, with a range from</li></ul>
+  <p>  about 18 to well over 250. The popular "21 days" has no basis. <em>(established)</em></p>
+  <ul><li><strong>Wood &amp; Neal: context cues.</strong> Habits are cued by stable context far more than</li></ul>
+  <p>  by intention or motivation. <em>(established)</em></p>
+  <p><strong>What follows.</strong></p>
+  <p>→ <strong>Upkeep uses interval + comfort window, not a habit tracker.</strong> No chains, no "day 14 of 66". Given the range Lally found, a progress bar toward automaticity would be fiction for most items and most people. → <strong>"Ready again" language</strong> frames Upkeep as availability rather than obligation. → Because context cues beat intention, Upkeep chips surface <strong>in Work mode where the person already is</strong> — pushed to the point of performance rather than parked in a section they must remember to visit (<a href="adr/0013-levels-push-down.md">ADR-0013</a>). → The honest framing of Lally is itself a feature: an app that promises a habit in three weeks is lying, and the user will find out.</p>
+  <hr>
+  <h2>6 · Rest, lapse, and re-entry</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Raymaker et al.: autistic burnout</strong> — chronic exhaustion, skill loss, reduced</li></ul>
+  <p>  tolerance to stimulus, following sustained accumulated load. Recovery requires   <strong>reduced demand</strong>, not more strategy. <em>(established as a qualitative research   finding; the construct is characterised, not yet clinically operationalised.)</em></p>
+  <ul><li><strong>Spoon theory</strong> (Christine Miserandino): finite daily capacity, spent by</li></ul>
+  <p>  ordinary tasks, not restored by willpower. <em>(community-construct — an   explanatory metaphor from the chronic-illness community. Widely understood,   never validated as a mechanism, and </em>not* the same claim as ego depletion: it   describes lived capacity variation, it does not posit a depleting reservoir.)*</p>
+  <ul><li><strong>Kahneman: peak-end rule.</strong> Remembered experience is dominated by the peak and</li></ul>
+  <p>  the ending, not the average or the duration. <em>(established)</em></p>
+  <p><strong>What follows.</strong></p>
+  <p>→ <strong>Product law 8: rest is legitimate, and re-entry is the primary designed path</strong> — not an error state. Most planners treat a two-week absence as a data problem; for this audience it is the <em>expected</em> usage pattern. → <strong>The greeting after a lapse is bounded by schema</strong>: Next-up + at most three triage items + the gauge + an amnesty offer. Never the backlog. The bound is in the event shape, not in a UI decision that could regress (<a href="event-vocabulary.md"><code>event-vocabulary.md</code></a> §I). → <strong>The amnesty offer</strong> exists because the alternative — working through what accumulated — is exactly the demand Raymaker's participants describe as unaffordable during recovery. → <strong>Rest mode</strong>: pressure hidden, Menu forward, gauge quietly present, nothing red. The gauge stays because it is the <em>reassurance</em> — nothing was lost while you were away — and removing it would remove the reason rest is safe. → <strong>Capacity is self-declared</strong> (low / steady / sharp / unsure), never inferred. "Unsure" is a first-class option because <strong>alexithymia</strong> (Bird &amp; Cook) — difficulty identifying one's own internal states, co-occurring at elevated rates in autistic populations <em>(established)</em> — makes forced introspection a barrier. An app that requires you to know how you feel excludes people who don't. → <strong>Peak-end shapes the session close screen</strong>: a win and a green gauge. The end is disproportionately what gets remembered, and what gets remembered determines whether the app is opened tomorrow.</p>
+  <hr>
+  <h2>7 · Load, capacity, and pebbles</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Personal Kanban (Benson &amp; Barry): limit work in progress.</strong> *(community-construct —</li></ul>
+  <p>  a practitioner method with strong roots in manufacturing flow theory, not an   experimental psychology result.)*</p>
+  <ul><li><strong>Goldratt: buffers.</strong> In a chain of dependent events with variation, protection</li></ul>
+  <p>  belongs in an explicit <strong>buffer</strong>, and buffer consumption is the signal to watch   — not individual task lateness. <em>(established in operations research)</em></p>
+  <ul><li><strong>Kahneman &amp; Tversky: the planning fallacy.</strong> Estimates are systematically</li></ul>
+  <p>  optimistic, and — importantly — <strong>experience does not fix it</strong>. The   outside view does. <em>(established)</em></p>
+  <p><strong>What follows.</strong></p>
+  <p>→ <strong>Pebbles are load, not work</strong> (<a href="adr/0014-demand-free-types.md">ADR-0014</a>). The unresolved thing you are carrying has weight even when it is not a task, and a system that only models tasks will consistently over-ask on the days you can least afford it. An active pebble may <strong>depress capacity/WIP</strong> — which is the app asking for less, automatically, without requiring you to explain yourself. → <strong>Pebbles annotate the timeline so low-capacity stretches have a visible reason.</strong> Strictly co-occurrence: the app shows the pebble and the capacity in the same period. <strong>It never says one caused the other</strong> (product law 7). → <strong>Dependency dates use buffer language</strong>: declare <code>feeds →</code> (project, suspense) plus a lead estimate, compute latest-start, show <strong>buffer burn</strong>. Goldratt's insight is that the burn rate is the signal — which is why a passed date raises a replan card with days-left context rather than a late flag. → <strong>The planning fallacy is why estimates are logged from v1</strong> even though learning from them is v2. The correction is empirical — your own history — and it cannot be backfilled. It is also why estimates are never used to <em>judge</em>: the fallacy is universal, not a personal failing.</p>
+  <hr>
+  <h2>8 · Bother, worry, and things that are not tasks</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Borkovec: stimulus control for worry.</strong> Postponing worry to a designated time</li></ul>
+  <p>  and place reduces overall worry — the <em>scheduling</em> does the work, not suppression.   <em>(established)</em></p>
+  <ul><li><strong>Masicampo &amp; Baumeister</strong>, again: the plan quiets the intrusion. <em>(established)</em></li></ul>
+  <p><strong>What follows.</strong></p>
+  <p>→ <strong>The bother flow</strong> takes free text and asks the one question that matters: <em>whose is it</em> — mine to solve · mine to track · <strong>not mine to carry</strong>. → <strong>It must terminate in a route or a Park-with-return-clock.</strong> No exit that leaves the bother where it was. This is Borkovec applied literally: the return clock is the designated later time, and it is a <em>guarantee</em>, which is what makes letting go possible now. → <strong>"Not mine to carry" still produces a record</strong> — the <strong>Not Now ledger</strong>. Declining is a decision worth keeping, not a deletion. It is also the thing to point at when the same request comes back. → <strong>Request slots</strong> are stimulus control for incoming demand: a scheduled place for requests to land, so they are not evaluated at arrival. → The <strong>comms-sweep chip</strong> is the same idea for messages. <strong>The app owns the schedule of looking and never the messages themselves</strong> — there is no integration and no event that could carry message content (<a href="event-vocabulary.md"><code>event-vocabulary.md</code></a> §E). Sweeps ride focus-exit ramps, because the cost of checking is the switch, and a switch already happening is free.</p>
+  <hr>
+  <h2>9 · Where the interest actually comes from</h2>
+  <p><strong>Findings:</strong></p>
+  <ul><li><strong>Dodson: the interest-based nervous system.</strong> A clinical account that engagement</li></ul>
+  <p>  is driven by interest, novelty, challenge, and urgency rather than by importance   and reward. <em>(community-construct — widely circulated and clinically originated,   but not an experimentally validated model. Treated as description, never mechanism.)</em></p>
+  <ul><li><strong>Rejection-sensitive dysphoria (RSD).</strong> *(community-construct — named</li></ul>
+  <p>  clinically, widely recognised as experience, <strong>not</strong> a validated diagnostic   construct with an established evidence base. Tagged explicitly because it is   frequently presented as settled science and is not.)*</p>
+  <p><strong>What follows.</strong> Both are tagged <code>community-construct</code> and <strong>nothing structural rests on either</strong>. Their influence is confined to things that are true regardless of whether the model is:</p>
+  <p>→ <strong>"Not this" cycles freely on the Next-up card, with no penalty and no record of refusal.</strong> Whatever the underlying account, a planner that makes declining today's suggestion feel like a failure will be abandoned. Nothing is logged as a rejection, because a rejection log would eventually be shown to someone. → <strong>The Menu exists</strong> so that interest has a legitimate home that owes nothing (law 6). → <strong>The RSD tag drives the voice more than any feature</strong>: no rebukes, no disappointed copy, no red walls, no implied judgement in an empty state. This costs nothing if the construct is wrong, and matters a great deal if it is right — which is the correct way to design under this much uncertainty.</p>
+  <hr>
+  <h2>10 · The negative findings, stated as prohibitions</h2>
+  <p>These earn their own section because they are the easiest to violate by accident — each corresponds to a feature that would look perfectly reasonable in a spec.</p>
+  <ul><li><strong>Ego depletion</strong> — willpower as a depletable resource — failed large-scale replication<ul><li>Status: <strong>negative finding</strong></li><li>What it forbids here: No depletion model. No "you have used your focus today". No discipline or willpower framing anywhere in copy or ranking. Capacity is <strong>self-declared</strong>, never computed from what you have spent.</li></ul></li><li><strong>Working-memory training does not transfer</strong> to untrained tasks or daily function<ul><li>Status: <strong>negative finding</strong></li><li>What it forbids here: Quietkeep never claims to improve an underlying capacity. No exercises, no scores, no "getting better". It is a prosthesis. Saying otherwise would be selling something that does not work — Doctrine §5.</li></ul></li><li><strong>"21 days to a habit"</strong> — no evidential basis; Lally's median is ~66 days with an enormous range<ul><li>Status: <strong>negative finding</strong></li><li>What it forbids here: No habit-formation countdown, no automaticity progress bar, no promise of a timeline the data cannot support.</li></ul></li></ul>
+  <p><strong>Why they are here rather than quietly obeyed:</strong> each of these is a feature somebody will eventually propose in good faith, because they all appear in successful competing products. This table is the answer, with the reason attached.</p>
+  <hr>
+  <h2>11 · The five things Quietkeep claims are different</h2>
+  <p>Stated as <strong>claims, not conclusions</strong>. The competitive pass that would test them is <strong>V-08 in <a href="verifications.md"><code>verifications.md</code></a>, and it has not been run</strong> — it is owed before any public release copy is written. Publishing these as established differentiators before that check would be exactly the false-confidence failure Doctrine §5 names.</p>
+  <ol><li><strong>A decay-based Upkeep lane</strong> — recurring things modelled by comfort window and</li></ol>
+  <p>   rising pressure rather than by due dates or streaks.</p>
+  <ol><li><strong>Unified suspend–capture–resume bound to a modelled focus state</strong> — the focus</li></ol>
+  <p>   anchor, the paired resume card, and the interrupt gesture as one mechanism    rather than three features.</p>
+  <ol><li><strong>Bother triage that terminates in clock-guaranteed routes</strong> — worry handling</li></ol>
+  <p>   with no exit that leaves the worry unheld.</p>
+  <ol><li><strong>A horizon-integrity engine</strong> — the no-silent-nodes invariant enforced at the</li></ol>
+  <p>   write boundary and <em>proved</em> by a visible gauge.</p>
+  <ol><li><strong>A pebble load ledger</strong> — non-task load modelled explicitly and allowed to</li></ol>
+  <p>   reduce what the app asks of you.</p>
+  <hr>
+  <h2>Canon index</h2>
+  <p>Everything cited above, with its tag.</p>
+  <p><strong>Established</strong> Barkley (temporal myopia; point of performance) · Brown (executive function clusters) · prospective memory, incl. time-based vs event-based and cue conversion · Altmann &amp; Trafton (memory-for-goals) · Trafton et al. (resumption cues, interruption lag) · Mark (interruption costs) · Leroy (attention residue) · Radvansky (event boundaries) · Masicampo &amp; Baumeister (plans quiet intrusive thoughts) · Gilbert (intention offloading) · Sirois &amp; Pychyl (procrastination as mood repair) · Gollwitzer (implementation intentions) · D'Zurilla (problem-solving structure) · Borkovec (worry postponement / stimulus control) · Lally (habit timelines) · Wood &amp; Neal (context cues) · Kahneman (planning fallacy; peak-end rule) · Goldratt (buffers, in operations research) · Bird &amp; Cook (alexithymia) · Raymaker (autistic burnout — qualitative) · choice overload <em>(direction established, magnitude contested)</em></p>
+  <p><strong>Emerging</strong> Monotropism (Murray, Lesser, Lawson) · hyperfocus (Ashinoff &amp; Abu-Akel)</p>
+  <p><strong>Community-construct</strong> Dodson (interest-based nervous system) · RSD · spoon theory (Miserandino) · KC Davis (moral neutrality of care tasks) · Personal Kanban WIP limits (Benson &amp; Barry) · Cirillo (interruption protocol)</p>
+  <p><strong>Negative findings — prohibitions</strong> Ego depletion (failed replication) · working-memory training transfer (does not transfer) · "21 days to a habit" (no basis)</p>
+  <hr>
+  <blockquote><p><strong>A note on citation.</strong> This document names findings and the people associated with them; it does not reproduce their text, and it is not a literature review. Where a construct is contested it is tagged as contested. Where the app borrows a <em>shape</em> from a practitioner method rather than a research result, it says so. Prior art in personal productivity methodology is acknowledged as prior art — Quietkeep claims no affiliation with, endorsement by, or compatibility with any methodology or its trademark holders (<a href="adr/0016-gtd-marks-and-original-content.md">ADR-0016</a>).</p></blockquote>
+  <footer>
+    This is the reasoning behind Quietkeep, kept in step with the app itself. It
+    names findings and the people associated with them; it is not a literature
+    review, and where a construct is contested it says so. <a href="/">Back to the app.</a>
+  </footer>
+</main>
+</body>
+</html>

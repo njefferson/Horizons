@@ -21,7 +21,7 @@ triplet and what it did for you.
 - **A short walkthrough the first time you open Quietkeep.** Four calm steps on what it is and how it works &mdash; put something down, it sorts and times itself, it is all on your device. You can Skip at any point, and it never interrupts again.
 - Want it back? &ldquo;Show the walkthrough again&rdquo; is under the ⓘ, beside how to use the app.
 - **A Help section under the ⓘ** &mdash; short, tap-to-open answers to the things people ask: getting a thought out of your head, what happens after, how it picks what is next, dates that have gone by, reminders, privacy, backups, and two devices.
-- And, for the curious, &ldquo;Why does it work this way?&rdquo; links to the full reasoning behind Quietkeep &mdash; how memory, attention and motivation actually work &mdash; with every source named.
+- And, for the curious, &ldquo;Why does it work this way?&rdquo; opens the full reasoning behind Quietkeep &mdash; a readable page right here in the app on how memory, attention and motivation actually work, with every source named and tagged by how well established it is.
 
 ## 1.0.1 — ITERATION
 

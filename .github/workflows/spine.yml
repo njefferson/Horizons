@@ -49,6 +49,12 @@ jobs:
       - name: Changelog and triplet
         run: npm run changelog:check
 
+      # The hosted "why it works this way" page is GENERATED from the rationale
+      # doc (tools/thesis.mjs), so the two cannot drift — same rule as the
+      # changelog, so it earns the same gate.
+      - name: Thesis page in sync with the doc
+        run: npm run thesis:check
+
       # The unit tests prove the spine folds. They cannot prove the bundle
       # loads, that Dexie opens in a browser, or that a captured thought comes
       # back — which is the app's one promise. Only driving the built page does
