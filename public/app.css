@@ -699,6 +699,18 @@ button.ghost {
 }
 .card-title { flex: 1 1 12rem; min-width: 0; overflow-wrap: anywhere; }
 
+/* "in Boy Scouts" / "7 under it" — full width, so it drops to its own line
+   beneath the title and status rather than fighting them for room. Same quiet
+   ink-on-surface pair as `.card-when`, so no new contrast pair is introduced;
+   it is what marks an already-filed item apart from a loose one. */
+.card-place {
+  flex: 1 0 100%;
+  margin-top: 0.1rem;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 .card-when {
   /* Shrink-and-wrap, not fixed: at 320px/200% a longer status than "returns
      today" (e.g. a dated "returns Thu 30 Jul") must wrap within the card, not

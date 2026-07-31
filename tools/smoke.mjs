@@ -1432,6 +1432,23 @@ try {
   is(stillListed.includes('draft the brief'), true,
     'and what was put under it is still right there on the list, not filed away');
 
+  // AND it now SAYS where it sits, right on the row. This is the mark that tells
+  // an already-filed item apart from a loose one — an OmniFocus import drew filed
+  // and loose actions identically, so a backlog of a thousand could not be
+  // processed because nothing said which already had a home (Noah, on device).
+  const places = await tpage.evaluate(() => {
+    const out = {};
+    for (const card of document.querySelectorAll('#cards .card')) {
+      const t = card.querySelector('.card-title')?.textContent ?? '';
+      out[t] = card.querySelector('.card-place')?.textContent ?? '';
+    }
+    return out;
+  });
+  is(places['draft the brief'], 'in the quarterly report',
+    `the filed action shows the project it is in ("${places['draft the brief']}")`);
+  is(places['the quarterly report'], '1 under it',
+    `and the container says how many it holds ("${places['the quarterly report']}")`);
+
   // A parenting is silent-risk, so the log must show the gate covering it.
   const parentLog = await tpage.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });

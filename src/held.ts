@@ -240,6 +240,55 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
 }
 
 /**
+ * How many LIVE things sit directly under each node — computed once, so a card
+ * can say what it contains without every card re-scanning the store.
+ *
+ * The point is disambiguation, not decoration. An OmniFocus import brings a
+ * project's actions in parented to it, but the flat list drew them the same as a
+ * loose inbox item — so a thing already filed under "Boy Scouts" looked exactly
+ * like something still needing a home, and a backlog could not be processed
+ * because nothing said which was which (Noah, on device). A trashed or merged
+ * child is not something a node holds, so it does not count.
+ */
+export function liveChildCounts(state: State): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const n of state.nodes.values()) {
+    if (n.trashed || n.mergedInto || !n.parent) continue;
+    counts.set(n.parent, (counts.get(n.parent) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/**
+ * The title of the live container a node sits in, or null.
+ *
+ * A card uses it to say "in <project>", so an imported action that already
+ * belongs somewhere does not read like loose work. A trashed or merged-away
+ * parent confers no home and returns null — the node really is loose again.
+ */
+export function parentTitleOf(n: NodeState, state: State): string | null {
+  if (!n.parent) return null;
+  const p = state.nodes.get(n.parent);
+  if (!p || p.trashed || p.mergedInto) return null;
+  return p.title || '(untitled)';
+}
+
+/**
+ * The one line a card shows about where a node sits in the structure: the
+ * container it is in, and/or how many things are under it. Either, both, or
+ * neither — a loose action with no parent and no children returns null and reads
+ * as exactly what it is. One definition, so the list and any test agree.
+ */
+export function placeWords(n: NodeState, state: State, childCounts: Map<string, number>): string | null {
+  const parts: string[] = [];
+  const parent = parentTitleOf(n, state);
+  if (parent) parts.push(`in ${parent}`);
+  const kids = childCounts.get(n.id) ?? 0;
+  if (kids > 0) parts.push(kids === 1 ? '1 under it' : `${kids} under it`);
+  return parts.length ? parts.join(' · ') : null;
+}
+
+/**
  * Held, but carrying no date anybody chose — the honest size of "you have not
  * decided about these yet".
  *

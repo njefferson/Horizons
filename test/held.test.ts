@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 
 import { fold, emptyState, isAppClock, type State, type NodeState } from '../src/fold.ts';
 import { heldNodes, coverageGauge, admit, gateOptionsFor } from '../src/gate.ts';
-import { heldGroups, heldStatus, undatedCount, SOON_DAYS } from '../src/held.ts';
+import { heldGroups, heldStatus, undatedCount, SOON_DAYS, liveChildCounts, parentTitleOf, placeWords } from '../src/held.ts';
 import { nextUpQueue } from '../src/nextup.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { renameEvents, TITLE_MAX } from '../src/ui/detail-intents.ts';
@@ -33,6 +33,40 @@ const clockAt = (id: string, days: number): AppEvent => {
   const at = new Date(Date.parse(NOW) + days * 86_400_000).toISOString();
   return ev('clock.set', id, { clockKind: 'review', at, source: 'test' });
 };
+
+// --- where a node sits: telling a filed item from a loose one ---------------
+
+test('a child says which project it is in; a container says how many it holds; a loose item says neither', () => {
+  const s = st(
+    ev('node.created', 'PROJ', { nodeKind: 'project', title: 'Boy Scouts' }), clockAt('PROJ', 5),
+    ev('node.created', 'A1', { nodeKind: 'action', title: 'youth protection training', parent: 'PROJ' }),
+    ev('node.created', 'A2', { nodeKind: 'action', title: 'merit badges', parent: 'PROJ' }),
+    ev('node.created', 'LOOSE', { nodeKind: 'action', title: 'a loose thought' }), clockAt('LOOSE', 2),
+  );
+  const counts = liveChildCounts(s);
+  assert.equal(counts.get('PROJ'), 2, 'the project holds two live children');
+  assert.equal(parentTitleOf(s.nodes.get('A1')!, s), 'Boy Scouts', 'the child names its container');
+  assert.equal(parentTitleOf(s.nodes.get('LOOSE')!, s), null, 'a loose item has no container');
+  assert.equal(placeWords(s.nodes.get('A1')!, s, counts), 'in Boy Scouts', 'the filed action reads as filed');
+  assert.equal(placeWords(s.nodes.get('PROJ')!, s, counts), '2 under it', 'the container reads as a container');
+  assert.equal(placeWords(s.nodes.get('LOOSE')!, s, counts), null,
+    'the loose item shows nothing — it IS loose, which is the whole distinction');
+});
+
+test('a trashed parent or child confers and counts no home', () => {
+  const s = st(
+    ev('node.created', 'PROJ', { nodeKind: 'project', title: 'Old project' }), clockAt('PROJ', 5),
+    ev('node.created', 'A1', { nodeKind: 'action', title: 'kept', parent: 'PROJ' }),
+    ev('node.created', 'A2', { nodeKind: 'action', title: 'gone', parent: 'PROJ' }),
+    ev('node.trashed', 'A2', { reason: 'test' }),
+  );
+  assert.equal(liveChildCounts(s).get('PROJ'), 1, 'a trashed child is not something the project holds');
+  // Trash the parent: its remaining child is loose again, not filed under a ghost.
+  const s2 = fold([ev('node.trashed', 'PROJ', { reason: 'test' })], s);
+  assert.equal(parentTitleOf(s2.nodes.get('A1')!, s2), null,
+    'a trashed container is no home — the child really is loose again');
+  assert.equal(placeWords(s2.nodes.get('A1')!, s2, liveChildCounts(s2)), null, 'so it shows nothing');
+});
 
 // --- totality: the property that matters most ------------------------------
 

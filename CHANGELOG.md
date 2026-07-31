@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.2.2 — ITERATION
+
+*2026-07-31*
+
+- **Things you are holding now say where they sit.** An item that belongs to a project shows &ldquo;in &lt;project&gt;&rdquo; right on its row, and a project shows how many things are under it. Before, an imported action that already had a home looked exactly like a loose one &mdash; so a big import (say, from OmniFocus) arrived as one flat pile with no way to tell what was already filed from what still needs sorting. Now the loose ones are the ones with nothing beside them, which is what makes a backlog possible to work through.
+
 ## 1.2.1 — ITERATION
 
 *2026-07-31*

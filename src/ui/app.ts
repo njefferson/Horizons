@@ -27,7 +27,7 @@ import { mountBother } from './bother.ts';
 import { mountPrint } from './print.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
-import { heldGroups, heldStatus } from '../held.ts';
+import { heldGroups, heldStatus, liveChildCounts, placeWords } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
 import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
 import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
@@ -65,7 +65,11 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
                 onFocus?: (n: NodeState) => void): void {
   const list = $('#cards');
   const nowIso = new Date(now()).toISOString();
-  const groups = heldGroups(session.state(), nowIso, session.zone);
+  const st = session.state();
+  const groups = heldGroups(st, nowIso, session.zone);
+  // Computed ONCE for the whole render, not per card: a card can then say what it
+  // is in or what it holds without each one re-scanning every node.
+  const childCounts = liveChildCounts(st);
 
   // A real heading and a real list per group. The first version made the heading
   // an <li> with role="presentation", which strips the listitem role and leaves a
@@ -123,6 +127,21 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       when.textContent = heldStatus(node, nowIso, session.zone);
 
       open.append(title, when);
+
+      // Where it sits, when that is a fact worth stating: "in Boy Scouts", or
+      // "7 under it" for a container. This is what tells an already-filed import
+      // apart from a loose one — the flat list drew them identically, so a
+      // backlog of a thousand could not be processed because nothing said which
+      // items already had a home (Noah, on device). A loose action returns null
+      // and shows nothing, which is correct: it IS loose.
+      const place = placeWords(node, st, childCounts);
+      if (place !== null) {
+        const where = document.createElement('span');
+        where.className = 'card-place';
+        where.textContent = place;
+        open.append(where);
+      }
+
       if (openDetail) open.addEventListener('click', () => openDetail(node));
       li.append(open);
 

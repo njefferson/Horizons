@@ -29,6 +29,14 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.2.2',
+    kind: 'ITERATION',
+    date: '2026-07-31',
+    notes: [
+      '**Things you are holding now say where they sit.** An item that belongs to a project shows &ldquo;in &lt;project&gt;&rdquo; right on its row, and a project shows how many things are under it. Before, an imported action that already had a home looked exactly like a loose one &mdash; so a big import (say, from OmniFocus) arrived as one flat pile with no way to tell what was already filed from what still needs sorting. Now the loose ones are the ones with nothing beside them, which is what makes a backlog possible to work through.',
+    ],
+  },
+  {
     triplet: '1.2.1',
     kind: 'ITERATION',
     date: '2026-07-31',
