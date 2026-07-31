@@ -1032,6 +1032,25 @@ try {
     await auditAxe(page, 'sort card', theme);
     await auditTargets(page, 'sort card', theme);
     await auditFocusRings(page, 'sort card', theme, ['#sort-card', '#sort-actions .route']);
+    // A route removes the control it was on; focus must land somewhere REAL
+    // (WCAG 2.4.3) — the entry line mid-range, the back button on completion —
+    // never fall to <body>, in the mode built for a thousand consecutive
+    // actions (audit). In-page click for the same repaint-race reason as triage.
+    await page.waitForFunction(() => {
+      const b = [...document.querySelectorAll('#sort-actions .route')]
+        .find(x => (x.textContent || '').includes('Next action'));
+      if (b) { b.click(); return true; }
+      return false;
+    }, null, { timeout: 10000, polling: 200 });
+    const sortFocusOk = await page.waitForFunction(
+      () => ['sort-entry', 'sort-back'].includes(document.activeElement?.id ?? ''),
+      null, { timeout: 5000 },
+    ).then(() => true).catch(() => false);
+    if (!sortFocusOk) {
+      const where = await page.evaluate(() =>
+        document.activeElement?.id || document.activeElement?.tagName || '(none)');
+      fail(`${theme}: after a sort route, focus landed on "${where}" instead of the entry line or back control`);
+    }
     await page.click('#sort-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users

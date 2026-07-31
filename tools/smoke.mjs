@@ -2744,9 +2744,52 @@ try {
   await tpage.waitForTimeout(150);
   await tpage.click('#detail-close');
 
+  // After the sheet closes the conveyor stands on the remaining card. Leaving
+  // it too exhausts the sitting — and the lap must RESTART with the earlier
+  // skipped card rather than wedging on the head item forever while saying
+  // "left" (audit): Leave it always advances.
+  await tpage.waitForFunction(() =>
+    document.querySelector('#sort-card')?.textContent === 'Sort me three');
+  await tpage.locator('#sort-actions .route', { hasText: 'Leave it' }).first().click();
+  await tpage.waitForFunction(() =>
+    document.querySelector('#sort-card')?.textContent === 'Sort me two');
+  is(await tpage.locator('#sort-card').textContent(), 'Sort me two',
+    'when only skipped cards remain, the lap starts again — Leave it always advances');
+
+  // THE FRESH CHECK (audit, CRITICAL): a route button carries the card it was
+  // painted for, and the sheet is reachable from here — so the very item on
+  // screen can change between paint and tap. Trash the card through the sheet,
+  // then fire the click the STALE button would have delivered: it must refuse
+  // in words and write nothing, not route a thing the user just let go.
+  await tpage.evaluate(() => { window.__staleRoute = document.querySelector('#sort-actions .route'); });
+  await tpage.click('#sort-card');
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.click('#detail-trash');
+  await tpage.waitForTimeout(200);
+  await tpage.click('#detail-close');
+  await tpage.waitForFunction(() =>
+    document.querySelector('#sort-card')?.textContent === 'Sort me three');
+  const staleLogMid = await sortCount();
+  await tpage.evaluate(() => { window.__staleRoute.click(); });
+  await tpage.waitForFunction(() => /changed while it was on screen/.test(
+    document.querySelector('#sort-live')?.textContent ?? ''));
+  is(await sortCount(), staleLogMid, 'the stale click wrote nothing');
+  is(await tpage.locator('#sort-card').textContent(), 'Sort me three',
+    'and the fresh view stands');
+
   // Law 5, asserted on the DOM: sorting shows no progress arithmetic, ever.
-  const sortText = await tpage.locator('#sort').textContent() || '';
-  is(/%|remaining|sorted this sitting|\bof the\b \d+/.test(sortText), false,
+  // The entry sentence ("N things, oldest first") is the ONE sanctioned total,
+  // stated once at entry — so #sort-entry is excluded by element and every
+  // other node in the dialog faces the full pattern: percentages, "remaining",
+  // tallies, and the count-forms the first regex missed ("19 of 240", "3/240",
+  // "5 left", "3 to go" — number-adjacent, so the verb message "Left where it
+  // is." stays legal).
+  const sortText = await tpage.evaluate(() => {
+    const clone = document.querySelector('#sort')?.cloneNode(true);
+    clone?.querySelector('#sort-entry')?.remove();
+    return clone?.textContent ?? '';
+  });
+  is(/%|remaining|sorted this sitting|\bof the\b \d+|\d+\s*(of|\/)\s*\d+|\d+\s+left\b|\d+\s+to go\b/.test(sortText), false,
     'no tally, no countdown, no percentage anywhere in sort mode');
   is(await tpage.locator('#sort progress').count(), 0, 'and no progress element');
   await tpage.click('#sort-close');

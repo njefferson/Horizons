@@ -237,7 +237,12 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   // louder fact and keeps the generic words.
   const start = n.clocks.start;
   if (start && isValidIso(start.at) && start.at === at && days > 0) {
-    return `not before ${days === 1 ? 'tomorrow' : dateWords(at, zone, days)}`;
+    // The tie goes to the DEADLINE: with a due or suspense at the same instant
+    // (or sooner), "not before" would describe an obligation as a door opening
+    // (audit — both dates on one day read as pure deferral).
+    const harder = [n.clocks.due, n.clocks.suspense].some(c =>
+      c && isValidIso(c.at) && Date.parse(c.at) <= Date.parse(start.at));
+    if (!harder) return `not before ${days === 1 ? 'tomorrow' : dateWords(at, zone, days)}`;
   }
   if (days < 0) return 'ready now';
   if (days === 0) return 'today';

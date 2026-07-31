@@ -433,6 +433,43 @@ decided by a session.**
 
 ### Log
 
+- **2026-07-31 (night)** — **1.3.1: the adversarial audit of 1.3.0, all fifteen
+  findings fixed.** The release shipped green through every gate, so the audit
+  was pointed at what the gates do NOT ask — and it found two CRITICAL mainline
+  defects plus thirteen lesser ones, every finding verified with a repro before
+  it was fixed and pinned with a test after.
+  · **The two CRITICALs:** a due-dated item routed to Someday kept its date
+  invisibly forever (the Menu group wins every surface, no replan card raises,
+  the sheet hides temporal rows, sort hygiene excludes it — law 3 violated in
+  the mainline). The someday/reference routes now shed the node's demand
+  clocks in the same batch, and a new gate belt refuses Menu+demand-clock
+  outright, oracle side included. And sort mode's route buttons acted on the
+  card as painted — the sheet is one tap away, so the on-screen item could be
+  completed or shelved and the stale tap still routed it; every act re-checks
+  the live node now and refuses in words (the smoke fires a genuinely stale
+  click to prove it).
+  · **The gate grew three corrections** (ADR-0046 amended): the born set (the
+  dirty-set rework was blind to ghosts `ensureNode` mints mid-batch and
+  rejected batches the old scan accepted); `collectDependents` iterative (a
+  deep chain returned a raw RangeError instead of a decision — pinned at
+  10,000); and a stamp-disordered batch is refused rather than tolerated
+  (`dependency.released` is the one non-commutative fold op; a disordered
+  batch could make a cycle real in an append-only log). The refusal caught its
+  first real bug the day it landed: undo's waiting-for branch emitted seqs out
+  of order.
+  · **The year-0099 pin found the fix was half-shipped**: `detail-intents` was
+  corrected but `time.ts` itself still collapsed year 99 → 1999 through four
+  raw `Date.UTC` calls (and `localDayKey` printed year 99 unpadded). One
+  `utcMs` now lives in time.ts and every parts-built date goes through it —
+  the deliberate-failure discipline working as designed: the test failed, and
+  what it failed on was real.
+  · Also: Leave-it laps instead of wedging; focus lands somewhere real after
+  every sort action (a11y driver asserts it); "not before" yields to a
+  same-day deadline; create-in-place collision checked against ALL live
+  containers; estimate/temporal rows hidden on Menu items; the law-5 smoke
+  regex actually catches count-forms ("19 of 240", "5 left") with #sort-entry
+  excluded as the one sanctioned total. 710 unit tests green.
+
 - **2026-07-31 (evening)** — **The roadmap session: from return engine to real
   planner.** Noah: *"You do not have any direction from here… you have nothing
   that a real planner system needs for humans to use it."* An 8-agent

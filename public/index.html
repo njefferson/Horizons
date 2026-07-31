@@ -120,7 +120,8 @@
          what makes rename, a real date, filing and a person reachable
          mid-triage — the six routes stay the six routes. -->
     <button id="triage-card" type="button" class="triage-card"
-            aria-label="Open this item to edit it"></button>
+            aria-describedby="triage-card-hint"></button>
+    <span id="triage-card-hint" class="visually-hidden">Opens this item to edit it</span>
     <div id="triage-actions" class="triage-actions"></div>
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
@@ -306,9 +307,10 @@
     </div>
   </div>
   <div id="sort-card-region" hidden>
-    <p id="sort-entry" class="sort-entry"></p>
+    <p id="sort-entry" class="sort-entry" tabindex="-1"></p>
     <button id="sort-card" type="button" class="triage-card"
-            aria-label="Open this item to edit it"></button>
+            aria-describedby="sort-card-hint"></button>
+    <span id="sort-card-hint" class="visually-hidden">Opens this item to edit it</span>
     <p id="sort-where" class="sort-where"></p>
     <div id="sort-actions" class="triage-actions"></div>
     <div id="sort-undo" class="triage-undo"></div>
@@ -419,7 +421,7 @@
 
   <!-- The estimate — logged from v1 because it can never be backfilled; the
        learning that reads it comes later. Optional, one number, no judgement. -->
-  <div class="detail-group">
+  <div class="detail-group" id="detail-estimate-group">
     <label class="detail-label" for="detail-estimate">About how long?</label>
     <div class="detail-row">
       <input id="detail-estimate" type="number" min="1" max="6000" inputmode="numeric"

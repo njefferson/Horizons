@@ -64,6 +64,11 @@ export function replanEvents(
   passedKinds: readonly ClockKind[] = ['due'],
   newDayKey?: string,
   fromKind: NodeKind = 'action',
+  /** EVERY demand clock the node carries right now (`demandClocksOf`), not just
+   *  the passed ones — `to-menu` must shed them all, or the gate's Menu belt
+   *  (1.3.1) rightly refuses the landing: a node with a passed due AND a future
+   *  suspense would otherwise reach the Menu still owing somebody an answer. */
+  demandClocks: readonly ClockKind[] = [],
 ): AppEvent[] {
   const r = resolved(ctx, node, choice);
   // RETIRE EVERY DATE THAT WENT BY — all of them, not the one the card happened
@@ -150,8 +155,10 @@ export function replanEvents(
       // produce (audit).
       return [
         r,
-        ...retire(passedKinds),
         base(ctx, 'menu.item.added', node, { category: 'try' as MenuCategory }),
+        // Menu first, then the clears (no junk cure between); ALL demand clocks
+        // go, not only the passed ones — see the parameter note.
+        ...retire([...new Set([...passedKinds, ...demandClocks])]),
       ];
 
     default:

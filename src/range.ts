@@ -124,8 +124,16 @@ export interface RangeChoice {
  * What the picker offers, computed fresh: the fixed ranges that currently hold
  * anything, plus one entry per container with sortable descendants. Empty
  * ranges are not offered — a door to nowhere is noise.
+ *
+ * GETTERS, not values (audit, CRITICAL). The first version closed each
+ * choice's `items` over the state object passed in — a frozen snapshot,
+ * because `session.commit` replaces the state object on every write. The
+ * conveyor kept offering items live state had disqualified: the detail sheet
+ * is reachable mid-sort, so the very card on screen could be completed or
+ * sent to the Menu and then still routed. Every `items()` call now re-reads.
  */
-export function rangeChoices(state: State, nowIso: string): RangeChoice[] {
+export function rangeChoices(getState: () => State, nowIso: () => string): RangeChoice[] {
+  const state = getState();
   const out: RangeChoice[] = [];
   const loose = looseFromImport(state);
   if (loose.length > 0) {
@@ -133,16 +141,16 @@ export function rangeChoices(state: State, nowIso: string): RangeChoice[] {
       key: 'loose-import',
       words: 'Loose things brought in from another planner',
       count: loose.length,
-      items: () => looseFromImport(state),
+      items: () => looseFromImport(getState()),
     });
   }
-  const back = parkedAndBack(state, nowIso);
+  const back = parkedAndBack(state, nowIso());
   if (back.length > 0) {
     out.push({
       key: 'parked-back',
       words: 'Parked, and now back',
       count: back.length,
-      items: () => parkedAndBack(state, nowIso),
+      items: () => parkedAndBack(getState(), nowIso()),
     });
   }
   for (const c of heldNodes(state).filter(isContainer)
@@ -153,7 +161,7 @@ export function rangeChoices(state: State, nowIso: string): RangeChoice[] {
       key: `under:${c.id}`,
       words: `Everything under ${c.title || '(untitled)'}`,
       count: under.length,
-      items: () => underContainer(state, c.id),
+      items: () => underContainer(getState(), c.id),
     });
   }
   return out;

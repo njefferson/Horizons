@@ -130,7 +130,13 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (parentCreate) {
       const raw = parentFilter?.value ?? '';
       const clean = cleanTitle(raw);
-      const exact = clean !== '' && legal.some(t => normalize(t.title || '') === normalize(clean));
+      // Over ALL live containers, not the LEGAL list: legalParents excludes the
+      // node's CURRENT parent, so typing its title showed "nothing matches
+      // that" plus an offer to mint an empty doppelganger and silently re-home
+      // into it (audit). A place that exists is never offered as new.
+      const exact = clean !== '' && [...st.nodes.values()]
+        .filter(t => !t.trashed && !t.mergedInto && isContainer(t))
+        .some(t => normalize(t.title || '') === normalize(clean));
       const offer = clean !== '' && !exact;
       parentCreate.hidden = !offer;
       if (offer) parentCreate.textContent = `New project named “${clean}” — put it under that`;
@@ -328,6 +334,11 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     grp('#detail-date-group', temporal);
     grp('#detail-start-group', temporal);
     grp('#detail-repeat-group', temporal);
+    // The estimate is about DOING the thing: meaningless on a wish, a person,
+    // or something let go — and junk rows would pollute the one dataset that
+    // can never be backfilled (audit).
+    grp('#detail-estimate-group', !n.onMenu && !n.trashed
+      && !['person', 'aspiration', 'pebble'].includes(n.kind));
     show('#detail-date-clear', Boolean(n.clocks.due));
     show('#detail-start-clear', Boolean(n.clocks.start));
     show('#detail-repeat-stop', repeats);
@@ -360,7 +371,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     show('#detail-make-project', !isContainer(n) && !n.trashed);
     // The track role and the answer-owed date belong to containers only: a role
     // on a single action would be a label with nothing under it to govern.
-    const container = isContainer(n) && !n.trashed;
+    // `!n.onMenu`: a Menu-resident container must not offer the answer-owed
+    // date — the gate's Menu belt would refuse it, and offering a choice the
+    // gate refuses is the recorded anti-pattern (audit; ADR-0038).
+    const container = isContainer(n) && !n.trashed && !n.onMenu;
     const trackRow = q('#detail-track-row');
     const suspRow = q('#detail-suspense-row');
     if (trackRow) trackRow.hidden = !container;

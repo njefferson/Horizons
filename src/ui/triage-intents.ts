@@ -18,7 +18,8 @@
 // These build events; they never touch the store. `app.ts` hands them to
 // `session.commit`, which runs them through the gate.
 
-import type { AppEvent, ClarifyRoute, Heat, MenuCategory, NodeKind } from '../events.ts';
+import type { AppEvent, ClarifyRoute, ClockKind, Heat, MenuCategory, NodeKind } from '../events.ts';
+import type { NodeState } from '../fold.ts';
 import type { StampContext } from './session.ts';
 import { endOfLocalDay } from '../time.ts';
 
@@ -45,12 +46,37 @@ const menu = (ctx: StampContext, node: string): AppEvent =>
 export const heatEvents = (ctx: StampContext, node: string, heat: Heat): AppEvent[] =>
   [base(ctx, 'heat.set', node, { heat })];
 
+/** The clock kinds that are DEMANDS — dates somebody chose or owes. A `review`
+ *  clock is the app's own resurfacing marker and is never in this list. */
+const DEMAND_KINDS: readonly ClockKind[] = ['due', 'start', 'suspense', 'park'];
+
+/**
+ * The demand clocks a node currently carries — what a Menu landing must clear.
+ * Exported so callers hand `routeEvents` the truth about THIS node rather than
+ * the route guessing (an unconditional clear would write claims about changes
+ * that did not happen).
+ */
+export const demandClocksOf = (n: NodeState | undefined): ClockKind[] =>
+  n ? DEMAND_KINDS.filter(k => Boolean(n.clocks[k])) : [];
+
 /**
  * A route's full batch. Every branch terminates legally on its own — and even a
  * bare `clarify.routed` cannot silence the node, because it enters clarify already
  * covered by its capture clock (see the header note).
+ *
+ * `demandClocks` (1.3.1): the demand clocks the node carries RIGHT NOW, from
+ * `demandClocksOf`. The someday/reference branches clear every one of them in
+ * the same batch — the audit's most severe finding was a due-dated item routed
+ * to Someday keeping its date invisibly for ever: the Menu group wins every
+ * surface, `raisesReplanCard` returns false for Menu items, the sheet hides
+ * temporal controls, and sort mode's hygiene excludes it — a hard date
+ * swallowed whole, which is law 3 violated in the app's own mainline. A wish
+ * carries no demands; landing on the Menu must shed them, visibly, in the log.
  */
-export function routeEvents(ctx: StampContext, node: string, route: ClarifyRoute, fromKind: NodeKind): AppEvent[] {
+export function routeEvents(
+  ctx: StampContext, node: string, route: ClarifyRoute, fromKind: NodeKind,
+  demandClocks: readonly ClockKind[] = [],
+): AppEvent[] {
   const r = routed(ctx, node, route);
   switch (route) {
     case 'do-now':
@@ -67,7 +93,14 @@ export function routeEvents(ctx: StampContext, node: string, route: ClarifyRoute
       ];
     case 'someday':
     case 'reference':
-      return [r, menu(ctx, node)];
+      // Menu FIRST, then the clears: once the node is on the Menu it is covered
+      // by clause (c), so stripping its clocks needs no cure — the other order
+      // would make the gate write a junk same-day clock between the two.
+      return [
+        r,
+        menu(ctx, node),
+        ...demandClocks.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
+      ];
     case 'trash':
       return [r, base(ctx, 'node.trashed', node, { reason: 'clarify:trash' })];
     default:
@@ -99,19 +132,25 @@ export function undoRouteEvents(
   ctx: StampContext, node: string, route: ClarifyRoute, fromKind: NodeKind,
 ): AppEvent[] {
   const reopen = base(ctx, 'clarify.reopened', node, { from: route });
-  const clearReview = base(ctx, 'clock.cleared', node, { clockKind: 'review' });
+  // Built LAZILY, in emission position. The first version constructed this
+  // before the switch, so the waiting-for branch emitted [reopen, kind.changed,
+  // cleared] with the cleared event carrying an EARLIER seq than the kind
+  // change — a stamp-disordered batch the old gate tolerated silently and the
+  // 1.3.1 order refusal caught on its first run. Stamps follow emission order
+  // or the batch is lying about its own history.
+  const clearReview = (): AppEvent => base(ctx, 'clock.cleared', node, { clockKind: 'review' });
   switch (route) {
     case 'do-now':
     case 'next-action':
       // The route replaced the capture clock with its own review clock; clearing
       // it lets the gate re-cure to a same-day clock, so the item is restored to
       // the exact state a fresh capture is in.
-      return [reopen, clearReview];
+      return [reopen, clearReview()];
     case 'waiting-for':
       return [
         reopen,
         base(ctx, 'node.kind.changed', node, { from: 'waiting-for' as NodeKind, to: fromKind }),
-        clearReview,
+        clearReview(),
       ];
     case 'someday':
     case 'reference':

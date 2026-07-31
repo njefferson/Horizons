@@ -150,5 +150,27 @@ export function admitReference(
     }
   }
 
+  // A batch may not leave a node ON THE MENU carrying a demand clock (due,
+  // start, suspense, park). Law 6 governs KINDS; this governs PLACEMENT: a
+  // someday-routed action keeps kind 'action', so a date on it is kind-legal —
+  // and then unrenderable, because the Menu group wins every surface, no
+  // replan card can raise, and the sheet hides its temporal controls: a hard
+  // date swallowed whole (audit, CRITICAL — a due-dated import routed to
+  // Someday lost its date invisibly for ever). Delta form like every belt:
+  // a pre-existing state stays curable; the batch may not introduce one.
+  const DEMAND_CLOCKS = ['due', 'start', 'suspense', 'park'] as const;
+  for (const n of final.nodes.values()) {
+    if (n.onMenu === null) continue;
+    const carrying = DEMAND_CLOCKS.filter(k => n.clocks[k]);
+    if (carrying.length === 0) continue;
+    const prev = priorState.nodes.get(n.id);
+    const wasAlready = !!prev && prev.onMenu !== null && DEMAND_CLOCKS.some(k => prev.clocks[k]);
+    if (!wasAlready) {
+      throw new GateRejection(
+        `batch would leave ${n.id} on the Menu carrying a ${carrying[0]} date — a wish holds no demands; bring it back as real work first`,
+        anchor);
+    }
+  }
+
   return out;
 }

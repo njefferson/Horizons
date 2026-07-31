@@ -16,7 +16,7 @@
 
 import type { AppEvent, MenuCategory, NodeKind } from '../events.ts';
 import type { StampContext } from './session.ts';
-import { endOfLocalDay, localDayKey } from '../time.ts';
+import { endOfLocalDay, localDayKey, utcMs } from '../time.ts';
 import { CONTAINER_DEFAULT } from '../tree.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
@@ -25,11 +25,14 @@ const base = (ctx: StampContext, kind: string, node: string, payload: unknown): 
 } as AppEvent);
 
 /** Whole calendar days between two `YYYY-MM-DD` keys. Plain arithmetic on the
- *  parts — no zone involved, because a key is already zone-resolved. */
+ *  parts — no zone involved, because a key is already zone-resolved. `utcMs`
+ *  from time.ts, so a typed year below 100 stays itself (audit: "0099-08-04"
+ *  through raw `Date.UTC` became 1999 and raised an instant replan card about
+ *  a day nobody chose). */
 const daysBetweenKeys = (from: string, to: string): number => {
   const [fy, fm, fd] = from.split('-').map(Number) as [number, number, number];
   const [ty, tm, td] = to.split('-').map(Number) as [number, number, number];
-  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+  return Math.round((utcMs(ty, tm, td) - utcMs(fy, fm, fd)) / 86_400_000);
 };
 
 /**
@@ -43,7 +46,7 @@ const daysBetweenKeys = (from: string, to: string): number => {
  */
 export function endOfDayKey(dayKey: string, zone: string): string {
   const [y, m, d] = dayKey.split('-').map(Number) as [number, number, number];
-  const probe = new Date(Date.UTC(y, m - 1, d, 12, 0, 0)).toISOString();
+  const probe = new Date(utcMs(y, m, d, 12)).toISOString();
   const drift = daysBetweenKeys(localDayKey(probe, zone), dayKey);
   return endOfLocalDay(probe, zone, drift);
 }

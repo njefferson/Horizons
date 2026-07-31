@@ -6,6 +6,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { admit, GateRejection, isSilent, silentNodes, coverageGauge } from '../src/gate.ts';
+import { endOfDayKey } from '../src/ui/detail-intents.ts';
+import { localDayKey } from '../src/time.ts';
 import { fold, emptyState, compareEvents, type State } from '../src/fold.ts';
 import { serialiseState } from '../src/snapshot.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
@@ -136,6 +138,90 @@ test('import-gate: a file folding to a silent node is refused, store left intact
   };
   await assert.rejects(() => importSeedingFresh(store, badFile), /not a faithful Quietkeep export/);
   assert.equal((await store.all()).length, before, 'the existing store is untouched by a refused import');
+});
+
+// --- the 1.3.1 audit: the gate's new refusals, each proven from both sides ---
+
+test('menu-belt: a demand clock cannot land on a Menu item — suspense, due, or park', () => {
+  // The audit's CRITICAL shape: a Menu placement makes every temporal surface
+  // stand down (the Menu group wins, no replan card raises, the sheet hides its
+  // date controls), so Menu + demand-clock is a hard date swallowed whole.
+  let s = write(emptyState(), [ev('node.created', 'P', { nodeKind: 'project', title: 'p' }, { seq: 0 })]);
+  s = write(s, [ev('menu.item.added', 'P', { category: 'read' }, { seq: 1 })]);
+  assert.throws(() => admit([ev('suspense.set', 'P', { at: '2026-08-09T12:00:00.000Z' }, { seq: 2 })], s),
+    /a wish holds no demands/, 'suspense.set on a menu’d project');
+  assert.throws(() => admit([ev('clock.set', 'P', { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' }, { seq: 3 })], s),
+    /a wish holds no demands/, 'a due date on a menu’d project');
+  assert.throws(() => admit([ev('park.set', 'P', { returnAt: '2026-08-09T12:00:00.000Z' }, { seq: 4 })], s),
+    /a wish holds no demands/, 'a park stacked on a Menu landing');
+});
+
+test('menu-belt: the OTHER direction — landing a due-dated item on the Menu without shedding the date', () => {
+  let s = write(emptyState(), [ev('node.created', 'D', { nodeKind: 'action', title: 'd' }, { seq: 0 })]);
+  s = write(s, [ev('clock.set', 'D', { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' }, { seq: 1 })]);
+  assert.throws(() => admit([ev('menu.item.added', 'D', { category: 'read' }, { seq: 2 })], s),
+    /a wish holds no demands/, 'a bare Menu landing may not swallow the date');
+  // The legal batch is the one routeEvents builds: Menu FIRST, then the clears.
+  const out = admit([
+    ev('menu.item.added', 'D', { category: 'read' }, { seq: 3 }),
+    ev('clock.cleared', 'D', { clockKind: 'due' }, { seq: 4 }),
+  ], s);
+  const after = fold(out, s).nodes.get('D')!;
+  assert.ok(after.onMenu, 'landed');
+  assert.equal(after.clocks.due, undefined, 'and the date was shed, visibly, in the log');
+});
+
+test('menu-belt is a DELTA: a pre-existing Menu+date state stays curable, not wedged', () => {
+  // Fold the illegal state in directly (an older build could have written it);
+  // an unrelated write must still land, and the cure — clearing the date — too.
+  const legacy = fold([
+    ev('node.created', 'L', { nodeKind: 'action', title: 'l' }, { seq: 0 }),
+    ev('menu.item.added', 'L', { category: 'read' }, { seq: 1 }),
+    ev('clock.set', 'L', { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' }, { seq: 2 }),
+  ]);
+  assert.doesNotThrow(() => admit([ev('capture.recorded', 'B', { text: 'new', source: 'quick' }, { seq: 3 })], legacy));
+  assert.doesNotThrow(() => admit([ev('clock.cleared', 'L', { clockKind: 'due' }, { seq: 4 })], legacy));
+});
+
+test('gate-order: a stamp-disordered batch is refused before anything folds', () => {
+  // The accumulator applies in OFFERED order; fold sorts by (at, device, seq).
+  // dependency.released is non-commutative under that re-sort, so a disordered
+  // batch could slip a dependency cycle past wouldCycle — permanently, in an
+  // append-only log. The precondition is now a refusal, not an assumption.
+  const s = write(emptyState(), [ev('node.created', 'A', { nodeKind: 'action', title: 'a' }, { seq: 0 })]);
+  const later = ev('node.renamed', 'A', { title: 'second' }, { seq: 50 });
+  const earlier = ev('node.renamed', 'A', { title: 'first' }, { seq: 40 });
+  assert.throws(() => admit([later, earlier], s), /its own event order/);
+  assert.doesNotThrow(() => admit([earlier, later], s), 'the same events, sorted, admit fine');
+});
+
+test('gate-depth: a 10,000-deep chain gets a decision, not a blown call stack', () => {
+  // collectDependents once recursed; a deep parent chain came back as a raw
+  // RangeError instead of an admit/reject decision. Each node carries its own
+  // clock so the walk is exercised without minting 10,000 casualties.
+  const events: AppEvent[] = [];
+  let sq = 0;
+  const mk = (kind: string, node: string, payload: unknown): AppEvent =>
+    ({ id: `d${sq}`, vault: 'personal', at: '2026-07-28T12:00:00.000Z', device: 'd0', seq: sq++, kind, node, payload } as AppEvent);
+  events.push(mk('node.created', 'N0', { nodeKind: 'project', title: 'root' }));
+  events.push(mk('clock.set', 'N0', { clockKind: 'review', at: '2026-08-05T00:00:00.000Z', source: 't' }));
+  for (let i = 1; i < 10_000; i++) {
+    events.push(mk('node.created', `N${i}`, { nodeKind: 'action', title: 't', parent: `N${i - 1}` }));
+    events.push(mk('clock.set', `N${i}`, { clockKind: 'review', at: '2026-08-05T00:00:00.000Z', source: 't' }));
+  }
+  const s = fold(events);
+  const out = admit([mk('clock.cleared', 'N0', { clockKind: 'review' })], s);
+  assert.equal(out.length, 2, 'the clear and its cure — a decision, from the bottom of the chain');
+});
+
+test('date-0099: a typed year 0099 stays year 0099 — never silently 1999', () => {
+  // Date.UTC(99, …) means 1999 (the legacy two-digit-year trap), so a typo like
+  // "0099-08-04" became a date 27 years in the past and raised an instant
+  // replan card about a day nobody chose. utcMs (setUTCFullYear) round-trips.
+  const zone = 'America/Denver';
+  const iso = endOfDayKey('0099-08-04', zone);
+  assert.ok(!iso.startsWith('1999'), `did not collapse to 1999 (got ${iso})`);
+  assert.equal(localDayKey(iso, zone), '0099-08-04', 'the instant is the end of the day that was typed');
 });
 
 test('export-roundtrip: a faithful export re-imports cleanly and re-folds identically', async () => {

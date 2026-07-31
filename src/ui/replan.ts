@@ -22,6 +22,7 @@ import type { Session } from './session.ts';
 import type { ReplanCard } from '../replan.ts';
 import { replanCards, replanWords, contextWords, REPLAN_CAP } from '../replan.ts';
 import { localDayKey } from '../time.ts';
+import { demandClocksOf } from './triage-intents.ts';
 import { replanEvents, canResolve, REPLAN_CHOICES } from './replan-intents.ts';
 import type { ReplanChoice } from '../events.ts';
 
@@ -127,7 +128,8 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
       // letting the kind default to 'action' wrote a transition that never
       // happened into an append-only log (audit).
       await session.commit(ctx =>
-        replanEvents(ctx, node.id, choice, passedKinds, dayKey, node.kind));
+        replanEvents(ctx, node.id, choice, passedKinds, dayKey, node.kind,
+          demandClocksOf(session.state().nodes.get(node.id))));
       landed = true;
     } catch (err) {
       say(`Couldn’t do that — ${(err as Error).message}`, true);

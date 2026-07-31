@@ -145,14 +145,17 @@ test('every resolution clears the card, whichever hard clocks went by', () => {
   //
   // The resolution takes its passed clocks from the CARD, so the card is what
   // this asks, rather than a hand-written list that could quietly disagree.
-  const shapes: [string, AppEvent[]][] = [
-    ['due only', [clock('N', 'due', -4)]],
-    ['suspense only', [clock('N', 'suspense', -4)]],
-    ['both passed', [clock('N', 'due', -9), clock('N', 'suspense', -2)]],
+  // FACTORIES, not pre-built arrays: the gate refuses a batch offered out of
+  // its own stamp order (1.3.1), and a shape built once carries older seqs
+  // than the node() minted fresh each iteration.
+  const shapes: [string, () => AppEvent[]][] = [
+    ['due only', () => [clock('N', 'due', -4)]],
+    ['suspense only', () => [clock('N', 'suspense', -4)]],
+    ['both passed', () => [clock('N', 'due', -9), clock('N', 'suspense', -2)]],
   ];
-  for (const [shape, clocks] of shapes) {
+  for (const [shape, mkClocks] of shapes) {
     for (const { choice } of REPLAN_CHOICES) {
-      let s = write(emptyState(), [node('N'), ...clocks]);
+      let s = write(emptyState(), [node('N'), ...mkClocks()]);
       const card = replanAll(s, NOW, TZ)[0]!;
       assert.ok(card, `${shape}: the card is raised to begin with`);
       const events = replanEvents(ctx(), 'N', choice, card.passedKinds, '2026-09-01', card.node.kind);

@@ -75,9 +75,16 @@ function randomEvent(rnd: () => number, s: State, fresh: () => string): AppEvent
   if (roll < 0.74) return ev('menu.item.added', pick(), { category: 'read' });
   if (roll < 0.79) return ev('menu.item.removed', pick(), { from: 'read' });
   if (roll < 0.85) return ev('node.merged', pick(), { into: rnd() < 0.85 ? pick() : 'MISSING' });
-  if (roll < 0.90) return ev('node.kind.changed', pick(), { from: 'action', to: rnd() < 0.5 ? 'aspiration' : 'waiting-for' });
-  if (roll < 0.95) return ev('node.untrashed', pick(), {});
-  return ev('clarify.routed', pick(), { route: 'next-action' });
+  if (roll < 0.89) return ev('node.kind.changed', pick(), { from: 'action', to: rnd() < 0.5 ? 'aspiration' : 'waiting-for' });
+  if (roll < 0.92) return ev('node.untrashed', pick(), {});
+  if (roll < 0.94) return ev('clarify.routed', pick(), { route: 'next-action' });
+  // Ghost-minting shapes (1.3.1): ensureNode creates on first touch whatever
+  // the kind, so each of these can mint an UNCOVERED node the silent check has
+  // to find — via a non-silent-risk kind, via a silent-risk kind whose own cure
+  // adopts it, and via a payload reference rather than the event's node.
+  if (roll < 0.96) return ev('heat.set', fresh(), { heat: rnd() < 0.5 ? 'hot' : 'cold' });
+  if (roll < 0.98) return ev('clarify.routed', fresh(), { route: rnd() < 0.5 ? 'next-action' : 'someday' });
+  return ev('person.linked', pick(), { node: fresh(), person: 'PER', relation: 'helper' });
 }
 
 /**
@@ -131,10 +138,26 @@ test('PROPERTY: reworked admit answers event-for-event what the old admit answer
       // And the folded outcomes agree — belt on the belt. (Node SETS, which the
       // junk cures never changed: they were clocks on nodes whose silence rode
       // the merge chain.)
+      const foldedNew = fold(newOut!, prior);
       assert.deepEqual(
-        [...fold(newOut!, prior).nodes.keys()],
+        [...foldedNew.nodes.keys()],
         [...fold(oldOut!, prior).nodes.keys()],
         `seed ${seed}: folded node sets differ`);
+      // PROPERTY (the Menu belt, 1.3.1): no ADMITTED batch may end a node on
+      // the Menu carrying a demand clock it was not already carrying there — a
+      // hard date on a Menu item is unrenderable everywhere (the audit's
+      // CRITICAL). The belt enforces this by rejection; this asserts the
+      // survivors actually satisfy it, so the belt cannot be quietly loosened.
+      const DEMANDS = ['due', 'start', 'suspense', 'park'] as const;
+      for (const n of foldedNew.nodes.values()) {
+        if (n.onMenu === null) continue;
+        const prev = prior.nodes.get(n.id);
+        const already = !!prev && prev.onMenu !== null && DEMANDS.some(k => prev.clocks[k]);
+        if (!already) {
+          assert.ok(!DEMANDS.some(k => n.clocks[k]),
+            `seed ${seed}: ${n.id} ended on the Menu carrying a demand clock`);
+        }
+      }
     }
     checked++;
   }
@@ -192,6 +215,31 @@ test('merge-borne transient silence: saved later in the batch, accepted with ZER
   // And the belt is satisfied: folding introduces no newly-silent node.
   const final = fold(out, prior);
   assert.equal(final.nodes.get('MRG')!.mergedInto, 'P0', 'the merge chain survived intact');
+});
+
+test('ghost parity: a stray-id heat.set riding with a capture is CURED, not rejected', () => {
+  // heat.set at a never-created id mints an uncovered ghost through ensureNode.
+  // The old whole-state scan met it at the NEXT silent-risk event and cured it;
+  // a dirty set keyed only on the current event's ids was blind to it and
+  // rejected the whole batch — the user's own capture riding in it included
+  // (audit). The born set restores the oracle's answer exactly, cure and all.
+  const prior = seedState();
+  seq = 9300;
+  const a = admitReference([
+    ev('heat.set', 'T1-GHOST', { heat: 'hot' }),
+    ev('capture.recorded', 'T1-CAP', { text: 'mine', source: 'quick', sourceTags: [] }),
+  ], prior, OPTS);
+  seq = 9300;
+  const b = admit([
+    ev('heat.set', 'T1-GHOST', { heat: 'hot' }),
+    ev('capture.recorded', 'T1-CAP', { text: 'mine', source: 'quick', sourceTags: [] }),
+  ], prior, OPTS);
+  assert.deepEqual(b, a, 'event-for-event, the ghost’s adopted cure included');
+  const final = fold(b, prior);
+  assert.ok(Object.keys(final.nodes.get('T1-GHOST')!.clocks).length > 0,
+    'the ghost ends under a clock — visible, never silent');
+  assert.ok(Object.keys(final.nodes.get('T1-CAP')!.clocks).length > 0,
+    'and the capture kept its same-day cure');
 });
 
 test('a rejected batch leaves the prior state untouched — copy-on-write holds', () => {

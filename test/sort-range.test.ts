@@ -23,8 +23,8 @@ import {
   sortable, looseFromImport, underContainer, parkedAndBack, matchingQuery, rangeChoices,
 } from '../src/range.ts';
 import { unclarified, needsHeat, inboxGauge } from '../src/triage.ts';
-import { routeEvents, undoRouteEvents } from '../src/ui/triage-intents.ts';
-import { setStartEvents, clearStartEvents } from '../src/ui/detail-intents.ts';
+import { demandClocksOf, routeEvents, undoRouteEvents } from '../src/ui/triage-intents.ts';
+import { setStartEvents, clearStartEvents, setDueEvents } from '../src/ui/detail-intents.ts';
 import { heldStatus } from '../src/held.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
@@ -82,7 +82,7 @@ test('HYGIENE: no range can hold a person, bother, container, Menu item, or fini
     ...underContainer(s, 'PROJ'),
     ...parkedAndBack(s, NOW),
     ...matchingQuery(s, 'a'),           // matches almost every title above
-    ...rangeChoices(s, NOW).flatMap(c => c.items()),
+    ...rangeChoices(() => s, () => NOW).flatMap(c => c.items()),
   ];
   for (const n of everyRange) {
     assert.ok(sortable(n), `${n.id} entered a range without being sortable`);
@@ -202,6 +202,56 @@ test('the start clock: set groups it "not before", clearing it is CURED in the s
   const after = s.nodes.get('D')!;
   assert.equal(after.clocks.start, undefined, 'cleared');
   assert.equal(silentNodes(s).length, 0, 'and nothing went silent — the cure fired');
+});
+
+// --- a Menu landing sheds every demand clock (1.3.1) -------------------------
+
+for (const route of ['someday', 'reference'] as ClarifyRoute[]) {
+  test(`"${route}" on a dated item sheds its demand clocks in the same batch`, () => {
+    // The audit's most severe finding: a due-dated item routed to Someday kept
+    // its date invisibly forever — the Menu group wins every surface, no
+    // replan card raises, the sheet hides temporal controls. A wish carries no
+    // demands; the route clears what the node carries, visibly, in the log.
+    let s = emptyState();
+    s = imported(s, 'DATED', 'a due-dated import');
+    s = write(s, setDueEvents(ctx(), 'DATED', '2026-08-09'));
+    s = imported(s, 'PARKED', 'a parked import');
+    s = write(s, [ev('park.set', 'PARKED', { returnAt: '2026-08-09T12:00:00.000Z' })]);
+    for (const id of ['DATED', 'PARKED'] as const) {
+      const n = s.nodes.get(id)!;
+      s = write(s, routeEvents(ctx(), id, route, n.kind, demandClocksOf(n)));
+      const after = s.nodes.get(id)!;
+      assert.ok(after.onMenu, `${id} landed on the Menu`);
+      for (const k of ['due', 'start', 'suspense', 'park'] as const) {
+        assert.equal(after.clocks[k], undefined, `${id} still carries a ${k} clock`);
+      }
+    }
+    assert.equal(silentNodes(s).length, 0, 'covered by the Menu, silent nowhere');
+  });
+}
+
+test('demandClocksOf names exactly what the node carries — never an unconditional clear', () => {
+  let s = emptyState();
+  s = imported(s, 'D', 'dated');
+  s = write(s, setStartEvents(ctx(), 'D', '2026-08-04'));
+  assert.deepEqual(demandClocksOf(s.nodes.get('D')), ['start'],
+    'the start it carries, not the due it does not — the log must not claim changes that did not happen');
+  assert.deepEqual(demandClocksOf(undefined), [], 'a missing node carries nothing');
+});
+
+// --- the wording when both kinds of date share a day (1.3.1) -----------------
+
+test('a due date at the same instant as the start keeps the DEADLINE wording', () => {
+  // "Not before" describes a door opening; with a due date on the same day the
+  // louder fact is the obligation, and describing it as pure deferral is a
+  // claim the data does not support (audit).
+  let s = emptyState();
+  s = imported(s, 'B', 'both dates, one day');
+  s = write(s, setStartEvents(ctx(), 'B', '2026-08-04'));
+  s = write(s, setDueEvents(ctx(), 'B', '2026-08-04'));
+  const words = heldStatus(s.nodes.get('B')!, NOW, TZ);
+  assert.ok(!/^not before /.test(words), `an obligation must not read as a door opening (got "${words}")`);
+  assert.match(words, /^in \d+ days$/, 'the generic demand words, naming the due clock');
 });
 
 test('a PASSED start raises no replan card and reads ready', () => {

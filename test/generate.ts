@@ -64,6 +64,10 @@ export function generateEvents(opts: GenOptions): AppEvent[] {
 
   const t0 = Date.UTC(2026, 0, 1, 9, 0, 0);
   let tick = 0;
+  /** Nodes the generated log has landed on the Menu. The 1.3.1 belt refuses a
+   *  batch ending with a Menu item under a demand clock, so a legal caller —
+   *  which is what this generator claims to be — never dates one. */
+  const menued = new Set<string>();
 
   const stamp = (vault: VaultId) => {
     const device = `dev-${Math.floor(r() * opts.devices)}`;
@@ -112,9 +116,12 @@ export function generateEvents(opts: GenOptions): AppEvent[] {
     if (roll < 0.42) {
       out.push({ ...s, kind: 'node.field.set', node, payload: { field: pick(r, ['note', 'tag', 'colour']), value: Math.floor(r() * 100) } });
     } else if (roll < 0.52) {
-      const targets = clockable(known);
+      const kind = pick(r, ['due', 'review', 'start'] as const);
+      // A demand clock never lands on a Menu item (the swallowed-date belt);
+      // a review clock is the app's own marker and stays legal anywhere.
+      const targets = clockable(known).filter(id => kind === 'review' || !menued.has(id));
       if (targets.length === 0) continue;
-      out.push({ ...s, kind: 'clock.set', node: pick(r, targets), payload: { clockKind: pick(r, ['due', 'review', 'start'] as const), at: new Date(t0 + tick * 120_000).toISOString() } });
+      out.push({ ...s, kind: 'clock.set', node: pick(r, targets), payload: { clockKind: kind, at: new Date(t0 + tick * 120_000).toISOString() } });
     } else if (roll < 0.60) {
       out.push({ ...s, kind: 'clock.cleared', node, payload: { clockKind: pick(r, ['due', 'review', 'start'] as const) } });
     } else if (roll < 0.68) {
@@ -131,7 +138,15 @@ export function generateEvents(opts: GenOptions): AppEvent[] {
     } else if (roll < 0.90) {
       out.push({ ...s, kind: 'node.trashed', node, payload: {} });
     } else if (roll < 0.94) {
-      out.push({ ...s, kind: 'menu.item.added', node, payload: { category: pick(r, ['read', 'try', 'go', 'make'] as const) } });
+      // A Menu landing sheds demand clocks FIRST — the 1.3.1 gate belt refuses
+      // a node ending a batch on the Menu with a due/start/suspense/park date
+      // (the swallowed-date class), and every real intent now clears before or
+      // with the landing. The generator models a legal caller: clear the two
+      // demand kinds it ever sets, then land. Each clear takes its own stamp.
+      out.push({ ...s, kind: 'clock.cleared', node, payload: { clockKind: 'due' } });
+      out.push({ ...stamp(vault), kind: 'clock.cleared', node, payload: { clockKind: 'start' } });
+      out.push({ ...stamp(vault), kind: 'menu.item.added', node, payload: { category: pick(r, ['read', 'try', 'go', 'make'] as const) } });
+      menued.add(node);
     } else if (roll < 0.97) {
       out.push({ ...s, kind: 'heat.set', node, payload: { heat: pick(r, ['hot', 'cold'] as const) } });
     } else {

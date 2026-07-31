@@ -1,6 +1,7 @@
 # ADR-0044 · Sort mode: the second triage, over a range the user names
 
-**Status:** Accepted · **Date:** 2026-07-31
+**Status:** Accepted · **Date:** 2026-07-31 · **Amended:** 2026-07-31 (1.3.1 —
+the fresh check and the lap rule)
 
 ## Decision
 
@@ -55,6 +56,16 @@ governs display (one card), the range governs reach.
   imported row is legal because `clarify.routed` has no captured precondition
   and never had one; parity with the daily conveyor is a property test
   (test/sort-range.test.ts).
+- **Every act re-checks the LIVE node** (1.3.1). A route button carries the
+  card it was painted for, and the detail sheet is reachable from here — so
+  the very item on screen can be completed, trashed, or sent to the Menu
+  between paint and tap. Acting on the stale copy writes decisions the user
+  just contradicted, permanently, in an append-only log. The act refuses in
+  words ("that one changed while it was on screen"), repaints, and writes
+  nothing; the smoke walk fires a genuinely stale click to prove it.
+- **"Leave it" always advances** (1.3.1). When only skipped cards remain the
+  lap restarts with the earliest of them, rather than wedging on the head item
+  forever while announcing "left". With one card left it says so honestly.
 
 ## What was deliberately not built
 

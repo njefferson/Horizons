@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.3.1 — ITERATION
+
+*2026-07-31*
+
+- **Fixed: sending a dated thing to Someday no longer swallows the date.** A due date, a &ldquo;not before&rdquo;, or a parked return date on something you shelve to the Menu is now cleared as part of the same act &mdash; visibly, in the record &mdash; instead of riding along invisibly where no screen could ever show it again. The app now refuses outright to leave a Menu item carrying a date, however the attempt is made.
+- **Fixed: sorting cannot act on a card that just changed.** If the thing on screen was completed, shelved, or let go while you had it open &mdash; the sheet is one tap away &mdash; tapping a route now says so and shows the fresh card, instead of quietly filing a decision you had just contradicted.
+- **&ldquo;Leave it&rdquo; always moves on.** When everything left in a batch has been left once, the round starts over instead of showing the same card again while claiming it was left &mdash; and with one card remaining, it says exactly that.
+- **Two dates on one day tell the truth.** Something due the same day it opens now reads as the obligation it is, not as &ldquo;not before&rdquo; &mdash; a deadline is the louder fact.
+- Also: a place created mid-filing can no longer collide with an existing project&rsquo;s name whatever screen it is on; estimates and date fields stay hidden on Menu items where they could never mean anything; keyboard focus lands somewhere real after every sorting action; a typed year below 1000 stays the year you typed; and the machinery that checks every write got a set of stricter refusals with the tests to hold them there.
+
 ## 1.3.0 — CAPABILITY
 
 *2026-07-31*

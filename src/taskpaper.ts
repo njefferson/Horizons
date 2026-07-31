@@ -49,7 +49,7 @@
 // PURE. No store, no clock of its own, no DOM.
 
 import type { AppEvent } from './events.ts';
-import { endOfLocalDay, isValidIso, localDayKey, localParts } from './time.ts';
+import { endOfLocalDay, isValidIso, localDayKey, localParts, utcMs } from './time.ts';
 
 export interface ImportContext {
   at: string;
@@ -108,7 +108,9 @@ export function isCalendarDay(text: string): boolean {
   if (!m) return false;
   const [y, mo, d] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (mo < 1 || mo > 12 || d < 1 || d > 31) return false;
-  const probe = new Date(Date.UTC(y, mo - 1, d));
+  // utcMs, not raw Date.UTC: with the two-digit-year trap the probe for a year
+  // below 100 lands in the 1900s and a REAL day gets refused as unreal.
+  const probe = new Date(utcMs(y, mo, d));
   return probe.getUTCFullYear() === y && probe.getUTCMonth() === mo - 1 && probe.getUTCDate() === d;
 }
 
@@ -324,8 +326,8 @@ function dayToInstant(day: string, zone: string): string {
   // Midday UTC can be the previous or next local day at the extremes, so the
   // offset is measured and corrected rather than assumed.
   const p = localParts(anchor, zone);
-  const drift = Date.UTC(p.year, p.month - 1, p.day) - Date.UTC(
-    Number(day.slice(0, 4)), Number(day.slice(5, 7)) - 1, Number(day.slice(8, 10)));
+  const drift = utcMs(p.year, p.month, p.day) - utcMs(
+    Number(day.slice(0, 4)), Number(day.slice(5, 7)), Number(day.slice(8, 10)));
   const corrected = new Date(Date.parse(anchor) - drift).toISOString();
   return endOfLocalDay(corrected, zone, 0);
 }

@@ -41,6 +41,23 @@ export interface LocalParts {
 }
 
 /**
+ * `Date.UTC` without the legacy two-digit-year trap: `Date.UTC(99, …)` means
+ * 1999, so any year below 100 that reached it silently landed nineteen
+ * centuries away — a typed "0099-08-04" became a date 27 years in the past and
+ * raised an instant replan card about a day nobody chose (audit). Every date
+ * built from PARTS in this codebase goes through here; out-of-range parts
+ * (day 32, month 13) normalise by rolling over, exactly as `Date.UTC` does.
+ */
+export const utcMs = (
+  year: number, month: number, day: number, hour = 0, minute = 0, second = 0,
+): number => {
+  const t = new Date(0);
+  t.setUTCFullYear(year, month - 1, day);
+  t.setUTCHours(hour, minute, second, 0);
+  return t.getTime();
+};
+
+/**
  * Is this a real instant? `Intl.formatToParts` throws `RangeError: Invalid time
  * value` on an invalid Date, and every projection here feeds it unvalidated
  * payload data — so one malformed `at` in the log (a hand-edited import, a
@@ -71,7 +88,7 @@ export function localParts(iso: string, tz: string): LocalParts {
 /** How far `tz` is from UTC at this instant, in ms (positive = ahead of UTC). */
 function offsetMsAt(instantMs: number, tz: string): number {
   const p = localParts(new Date(instantMs).toISOString(), tz);
-  const asIfUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  const asIfUTC = utcMs(p.year, p.month, p.day, p.hour, p.minute, p.second);
   // Both sides are truncated to the second, so compare at that resolution.
   return asIfUTC - Math.floor(instantMs / 1000) * 1000;
 }
@@ -106,7 +123,7 @@ function offsetMsAt(instantMs: number, tz: string): number {
  *   local time — still inside the day it names, which is what callers rely on.
  */
 function instantFromWallTime(p: LocalParts, tz: string): string {
-  const naive = Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second);
+  const naive = utcMs(p.year, p.month, p.day, p.hour, p.minute, p.second);
   let ms = naive - offsetMsAt(naive, tz);
   ms = naive - offsetMsAt(ms, tz);
   // Overlap resolution: if the hour after this instant carries a different
@@ -139,7 +156,7 @@ export function endOfLocalDay(iso: string, tz: string, plusDays = 0): string {
   const p = localParts(iso, tz);
   // Normalise through UTC arithmetic on the date parts only — no zone involved,
   // so month/year/leap rollover is the calendar's, not a guess.
-  const shifted = new Date(Date.UTC(p.year, p.month - 1, p.day + plusDays));
+  const shifted = new Date(utcMs(p.year, p.month, p.day + plusDays));
   return instantFromWallTime({
     year: shifted.getUTCFullYear(), month: shifted.getUTCMonth() + 1, day: shifted.getUTCDate(),
     hour: 23, minute: 59, second: 59,
@@ -151,7 +168,9 @@ export function endOfLocalDay(iso: string, tz: string, plusDays = 0): string {
 export function localDayKey(iso: string, tz: string): string {
   const p = localParts(iso, tz);
   const pad = (n: number): string => String(n).padStart(2, '0');
-  return `${p.year}-${pad(p.month)}-${pad(p.day)}`;
+  // The year is padded too: Intl renders year 99 as "99", and an unpadded key
+  // breaks the shape every consumer parses and compares ("0099-08-04").
+  return `${String(p.year).padStart(4, '0')}-${pad(p.month)}-${pad(p.day)}`;
 }
 
 /**
@@ -165,7 +184,7 @@ export function localDayKey(iso: string, tz: string): string {
 export function calendarDaysBetween(fromIso: string, toIso: string, tz: string): number {
   const [fy, fm, fd] = localDayKey(fromIso, tz).split('-').map(Number) as [number, number, number];
   const [ty, tm, td] = localDayKey(toIso, tz).split('-').map(Number) as [number, number, number];
-  return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86_400_000);
+  return Math.round((utcMs(ty, tm, td) - utcMs(fy, fm, fd)) / 86_400_000);
 }
 
 /** The device's zone, read at the UI edge and threaded inward. Falls back to UTC

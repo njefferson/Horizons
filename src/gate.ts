@@ -17,7 +17,7 @@ import {
   DEMAND_FREE_KINDS, isKnownKind, isSilentRisk,
   type AppEvent, type EventKind, type NodeId, type NodeKind, type VaultId,
 } from './events.ts';
-import { applyEvent, cloneShell, fold, type NodeState, type State } from './fold.ts';
+import { applyEvent, cloneShell, compareEvents, fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
 import { wouldCycle } from './dependencies.ts';
 import { wouldParentCycle } from './tree.ts';
@@ -222,9 +222,35 @@ export function admit(
 ): AppEvent[] {
   const out: AppEvent[] = [];
 
+  // The batch must arrive in its own event order. The accumulator applies in
+  // OFFERED order while fold sorts by (at, device, seq) — for LWW fields the
+  // two agree regardless, but `dependency.released` is the vocabulary's one
+  // non-commutative fold operation, and a stamp-disordered batch could slip a
+  // dependency CYCLE past `wouldCycle` that the sorted refold then makes real,
+  // permanently, in an append-only log (audit, verified). Every real caller
+  // already stamps one `at` with monotonic seq; this makes the precondition a
+  // refusal instead of an unstated assumption.
+  for (let i = 1; i < offered.length; i++) {
+    if (compareEvents(offered[i - 1]!, offered[i]!) > 0) {
+      throw new GateRejection(
+        'a batch must be offered in its own event order — sort by (at, device, seq) first',
+        offered[i]!);
+    }
+  }
+
   // The batch so far, applied — what `fold(out, priorState)` used to rebuild.
   const s = cloneShell(priorState);
   const touched = new Set<NodeId>();
+
+  // Nodes MINTED by this batch (ensureNode creates on first touch, whatever
+  // the event kind — heat.set at a stray id mints an uncovered ghost, and so
+  // can a payload reference like person.linked's `node`). The old whole-state
+  // scan saw such ghosts at the next silent-risk event and cured them; a
+  // dirty set keyed only on the current event's ids was blind to them, which
+  // rejected whole batches the oracle accepted — including the user's own
+  // capture riding in the same batch (audit). Every silent-risk check unions
+  // this set, restoring the oracle's answer exactly.
+  const born = new Set<NodeId>();
 
   // Map-insertion order of every node, so cures for one event's multiple
   // casualties emit in exactly the order the old whole-state scan produced —
@@ -255,7 +281,17 @@ export function admit(
     const beforeNode = e.node ? s.nodes.get(e.node) : undefined;
     const priorParent = beforeNode?.parent ?? null;
     const priorMerged = beforeNode?.mergedInto ?? null;
+    // Ids this event could mint: its own node and every payload reference —
+    // person.linked creates through payload.node, not e.node.
+    const couldMint = [e.node, ...referencedNodes(e)].filter((x): x is NodeId => !!x);
+    const existedBefore = new Set(couldMint.filter(id => s.nodes.has(id)));
     applyEvent(s, e, touched);
+    for (const id of couldMint) {
+      if (!existedBefore.has(id) && s.nodes.has(id)) {
+        born.add(id);
+        if (!orderIndex.has(id)) orderIndex.set(id, orderIndex.size);
+      }
+    }
     if (!e.node) return;
     if (!orderIndex.has(e.node)) orderIndex.set(e.node, orderIndex.size);
     const afterNode = s.nodes.get(e.node);
@@ -281,12 +317,18 @@ export function admit(
 
   /** id plus everything whose coverage could ride it, transitively, with a
    *  cycle guard — children inherit through ancestry, merged nodes through
-   *  their target. */
+   *  their target. An EXPLICIT stack, never recursion: a 5,000-deep chain blew
+   *  the call stack out of admit as a raw RangeError instead of a decision
+   *  (audit) — the same rule wouldCycle already follows. */
   const collectDependents = (id: NodeId, into: Set<NodeId>): void => {
-    if (into.has(id)) return;
-    into.add(id);
-    for (const c of childIndex.get(id) ?? []) collectDependents(c, into);
-    for (const m of mergeIndex.get(id) ?? []) collectDependents(m, into);
+    const stack = [id];
+    while (stack.length > 0) {
+      const cur = stack.pop()!;
+      if (into.has(cur)) continue;
+      into.add(cur);
+      for (const c of childIndex.get(cur) ?? []) stack.push(c);
+      for (const m of mergeIndex.get(cur) ?? []) stack.push(m);
+    }
   };
 
   for (const e of offered) {
@@ -394,6 +436,7 @@ export function admit(
     const dirty = new Set<NodeId>();
     if (e.node) collectDependents(e.node, dirty);
     for (const ref of referencedNodes(e)) collectDependents(ref, dirty);
+    for (const b of born) collectDependents(b, dirty);
     const casualties = [...dirty]
       .map(id => s.nodes.get(id))
       .filter((n): n is NodeState => !!n)
@@ -451,6 +494,28 @@ export function admit(
           `batch would leave ${n.kind} ${n.id} carrying a clock — demand-free kinds cannot (law 6)`,
           anchor);
       }
+    }
+  }
+
+  // A batch may not leave a node ON THE MENU carrying a demand clock (due,
+  // start, suspense, park). Law 6 governs KINDS; this governs PLACEMENT: a
+  // someday-routed action keeps kind 'action', so a date on it is kind-legal —
+  // and then unrenderable, because the Menu group wins every surface, no
+  // replan card can raise, and the sheet hides its temporal controls: a hard
+  // date swallowed whole (audit, CRITICAL — a due-dated import routed to
+  // Someday lost its date invisibly for ever). Delta form like every belt:
+  // a pre-existing state stays curable; the batch may not introduce one.
+  const DEMAND_CLOCKS = ['due', 'start', 'suspense', 'park'] as const;
+  for (const n of final.nodes.values()) {
+    if (n.onMenu === null) continue;
+    const carrying = DEMAND_CLOCKS.filter(k => n.clocks[k]);
+    if (carrying.length === 0) continue;
+    const prev = priorState.nodes.get(n.id);
+    const wasAlready = !!prev && prev.onMenu !== null && DEMAND_CLOCKS.some(k => prev.clocks[k]);
+    if (!wasAlready) {
+      throw new GateRejection(
+        `batch would leave ${n.id} on the Menu carrying a ${carrying[0]} date — a wish holds no demands; bring it back as real work first`,
+        anchor);
     }
   }
 

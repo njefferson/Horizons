@@ -24,8 +24,8 @@
 import type { Session } from './session.ts';
 import type { NodeState } from '../fold.ts';
 import type { ClarifyRoute, NodeKind } from '../events.ts';
-import { rangeChoices, matchingQuery, type RangeChoice } from '../range.ts';
-import { routeEvents, undoRouteEvents } from './triage-intents.ts';
+import { rangeChoices, matchingQuery, sortable, type RangeChoice } from '../range.ts';
+import { demandClocksOf, routeEvents, undoRouteEvents } from './triage-intents.ts';
 import { heldStatus } from '../held.ts';
 
 const ROUTES: { route: ClarifyRoute; label: string; hint: string }[] = [
@@ -96,9 +96,14 @@ export function mountSort(
   const nextItem = (): NodeState | null => {
     if (!activeItems) return null;
     const items = activeItems();
-    return items.find(n => !skipped.has(n.id) && !handled.has(n.id))
-      ?? items.find(n => !handled.has(n.id))
-      ?? null;
+    const fresh = items.find(n => !skipped.has(n.id) && !handled.has(n.id));
+    if (fresh) return fresh;
+    // Everything left this sitting has been left once: start the round again
+    // rather than wedging on the head item for ever while announcing success
+    // (audit). Clearing the lap is what makes "Leave it" always advance.
+    const rest = items.filter(n => !handled.has(n.id));
+    if (rest.length > 0) { skipped = new Set(); return rest[0]!; }
+    return null;
   };
 
   const showPicker = (): void => {
@@ -107,7 +112,7 @@ export function mountSort(
     PICKER.hidden = false;
     CARDR.hidden = true;
     UNDO.replaceChildren();
-    const list = rangeChoices(session.state(), nowIso());
+    const list = rangeChoices(() => session.state(), nowIso);
     CHOICES.replaceChildren(...list.map(c => {
       const li = el('li');
       const b = el('button', 'sort-choice');
@@ -138,6 +143,16 @@ export function mountSort(
     renderCard();
   };
 
+  /** After an action removes the control it was on, focus lands somewhere real
+   *  (WCAG 2.4.3) — the entry line mid-range, the back button once it is done.
+   *  The daily surface has done this since Phase 2; this one shipped without it
+   *  (audit), in the mode built for a thousand consecutive actions. */
+  const restoreFocus = (): void => {
+    if (!DLG.open) return;
+    if (CARD.disabled) q<HTMLButtonElement>('#sort-back')?.focus();
+    else ENTRY.focus();
+  };
+
   function renderCard(): void {
     const n = nextItem();
     showing = n;
@@ -146,6 +161,9 @@ export function mountSort(
       CARD.disabled = true;
       WHERE.textContent = '';
       ACTIONS.replaceChildren();
+      // Say it: the visual card changing is invisible to a screen reader, and
+      // finishing a range deserves words, not silence (audit).
+      say('That is all of them.');
       return;
     }
     CARD.disabled = false;
@@ -166,8 +184,13 @@ export function mountSort(
           el('span', 'route-hint', 'skip for now — writes nothing'));
         b.addEventListener('click', () => {
           skipped.add(n.id);
-          say('Left where it is.');
           renderCard();
+          // Honest words: with one thing left, "left it" and showing it again
+          // in the same breath would be the app contradicting itself.
+          say(showing && showing.id === n.id
+            ? 'Left where it is — and it is the only one left this sitting.'
+            : 'Left where it is.');
+          restoreFocus();
         });
         return b;
       })(),
@@ -176,11 +199,22 @@ export function mountSort(
 
   const act = async (n: NodeState, route: ClarifyRoute, label: string): Promise<void> => {
     if (busy) return;
+    // THE FRESH CHECK (audit, CRITICAL): the card's closure was captured at
+    // render time, and the world may have moved — the sheet is reachable from
+    // here, so the very item on screen can have been completed or sent to the
+    // Menu between paint and tap. Routing the stale copy writes decisions the
+    // user just contradicted, permanently. Refuse in words and repaint instead.
+    const fresh = session.state().nodes.get(n.id);
+    if (!fresh || !sortable(fresh)) {
+      say('That one changed while it was on screen — here is the fresh view.');
+      renderCard();
+      return;
+    }
     busy = true;
     UNDO.replaceChildren();
-    const fromKind = n.kind;
+    const fromKind = fresh.kind;
     try {
-      await session.commit(ctx => routeEvents(ctx, n.id, route, fromKind));
+      await session.commit(ctx => routeEvents(ctx, n.id, route, fromKind, demandClocksOf(fresh)));
       handled.add(n.id);
       say(`Sent to ${label}.`);
       showUndo(n.id, route, fromKind, label);
@@ -191,6 +225,7 @@ export function mountSort(
     }
     try { onChange(); } catch { /* a render bug must not contradict a landed write */ }
     renderCard();
+    restoreFocus();
   };
 
   /** The same last-action undo the daily surface has: names where it went, one
@@ -209,6 +244,7 @@ export function mountSort(
           say('Taken back — it is in the range again.');
           try { onChange(); } catch { /* renders next pass */ }
           renderCard();
+          restoreFocus();
         })
         .catch((err: Error) => { btn.disabled = false; say(`Couldn’t undo — ${err.message}`); });
     });
@@ -222,6 +258,11 @@ export function mountSort(
     if (fresh) openDetail(fresh);
   });
 
+  // Enter submits — the box says enterkeyhint="search" and a hint that lies is
+  // worse than none (audit; the rename box learned this first).
+  queryInput.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Enter') { e.preventDefault(); queryGo.click(); }
+  });
   queryGo.addEventListener('click', () => {
     const words = queryInput.value.trim();
     if (!words) { say('Type a word or two first.'); return; }

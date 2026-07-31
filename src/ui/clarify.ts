@@ -13,7 +13,7 @@
 
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
-import { heatEvents, routeEvents, undoRouteEvents } from './triage-intents.ts';
+import { demandClocksOf, heatEvents, routeEvents, undoRouteEvents } from './triage-intents.ts';
 import { doneEvents } from './work.ts';
 import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
 
@@ -296,7 +296,8 @@ export function mountTriage(
         // Supersede any earlier undo before committing — undo only ever takes
         // back the most recent route.
         clearUndo();
-        void commit(ctx => routeEvents(ctx, nodeId, route, kind as never), `Routed to ${label}.`)
+        void commit(ctx => routeEvents(ctx, nodeId, route, kind as never,
+          demandClocksOf(session.state().nodes.get(nodeId))), `Routed to ${label}.`)
           .then(ok => {
             // Offer to take it back, whichever route it was — the answer to
             // "where did it go and how do I undo it". Captured with the id, route
