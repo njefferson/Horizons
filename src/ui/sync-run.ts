@@ -20,8 +20,15 @@
 //
 // The one thing that road does not do for itself is live state: the import
 // button reloads the page afterwards. Exchange happens on open and cannot, so it
-// calls `session.refresh()` — serialized on the same queue as commits — and the
-// surface repaints from a state that is once again the fold of the whole log.
+// does TWO things when events land — and it took a device report to learn the
+// second was missing. First it calls `session.refresh()`, serialized on the same
+// queue as commits, so the in-memory state is once again the fold of the whole
+// log. That alone is NOT enough: the state object is correct but every surface is
+// still showing what it painted before the exchange, because nothing told it to
+// redraw. So it then calls `repaint()` — the app's own "repaint every surface"
+// — and only that makes the arrived events appear without a restart. The old
+// comment here claimed the refresh was sufficient; it wasn't, and a planner that
+// synced onto a phone showed a blank screen until the app was force-quit.
 
 import { takeInEvents } from '../portability.ts';
 import { exchangeOnce, emptyMark, gapWords, type ExchangeResult, type SyncMark } from '../sync.ts';
@@ -56,7 +63,7 @@ export interface SyncOutcome {
  * rather than an error. A genuine fault propagates, because a surface that
  * swallows one is a surface that lies about the state of somebody's data.
  */
-export async function runExchange(session: Session, now: () => string): Promise<SyncOutcome> {
+export async function runExchange(session: Session, now: () => string, repaint?: () => void): Promise<SyncOutcome> {
   const pair = await currentPairing(session.store);
   if (pair === null) return { ran: false, why: 'not-paired' };
 
@@ -70,10 +77,16 @@ export async function runExchange(session: Session, now: () => string): Promise<
     persist: async events => {
       const out = await takeInEvents(session.store, events, now());
       landed += out.taken;
-      // Live state, immediately. Without this the events are in the store and
-      // invisible until something else happens to reload — which on the surface
-      // is indistinguishable from sync not working.
+      // Re-fold, THEN repaint — both, because either alone leaves a lie on the
+      // screen. `session.refresh()` makes the in-memory state correct but redraws
+      // nothing; `repaint()` redraws the surfaces but from whatever state they can
+      // read, so it must follow the refresh. Without the repaint the events are in
+      // the store and in `state` and STILL invisible until a reload — which on a
+      // phone looked exactly like sync not working (it showed blank until a force
+      // quit). `repaint` is optional only so the fakes in the tests need not pass
+      // one; the app always does.
       await session.refresh();
+      repaint?.();
     },
     remember: async mark => { await session.store.setKv(MARK_KV, mark); },
   });

@@ -414,7 +414,7 @@ function friendly(iso: string, zone: string): string {
  * [ADR-0036](../../docs/adr/0036-two-builds.md) asks for, verifiable by reading
  * `public/app.js` rather than by trusting a flag.
  */
-export type Edition = (session: Session) => void | Promise<void>;
+export type Edition = (session: Session, repaint: () => void) => void | Promise<void>;
 
 export async function main(edition?: Edition): Promise<void> {
   const session = await openSession(now);
@@ -631,7 +631,11 @@ export async function main(edition?: Edition): Promise<void> {
   // nothing else — the same containment the (i) panel and the service worker get.
   if (edition) {
     try {
-      await edition(session);
+      // `refreshAll` is handed in so an exchange that lands events can repaint
+      // every surface — not just re-fold state. Without it a sync onto a fresh
+      // device wrote the events to the store and left the screen blank until a
+      // force-quit, which is indistinguishable from sync being broken.
+      await edition(session, refreshAll);
     } catch {
       // Reported by the surface itself where it can be; never fatal here.
     }

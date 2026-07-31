@@ -117,6 +117,39 @@ test('a thought captured on one device comes back on the other', async () => {
   assert.ok(Object.keys(node.clocks).length > 0, 'it arrived under a clock, not silent');
 });
 
+test('when a sync lands events it repaints the surfaces — not just the state', async () => {
+  // The device bug: a fresh phone paired, synced, wrote 2900 events into its
+  // store, and showed a BLANK screen until it was force-quit. Cause: the exchange
+  // re-folded state but never told the surfaces to redraw, so they kept showing
+  // what they painted before the events arrived. `runExchange` takes a `repaint`
+  // callback for exactly this, and it must fire when — and only when — something
+  // actually lands. Delete the `repaint?.()` call in sync-run.ts and the first
+  // assertion reds; the arrivals would be in the store and invisible.
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  const b = await makeDevice('device-b');
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptPairing(b.store, JSON.parse(JSON.stringify(file)));
+
+  await capture(a, 'this has to appear without a restart');
+  await runExchangeWith(a, fetchImpl, now);   // A uploads
+
+  let repaints = 0;
+  const down = await runExchangeWith(b, fetchImpl, now, () => { repaints += 1; });
+  assert.ok(down.landed! > 0, 'B took something in');
+  assert.ok(repaints > 0, 'landing events repainted the surfaces');
+
+  // And the mirror: an exchange that moves nothing must not repaint, or every
+  // idle app-open would redraw the whole tree for no reason.
+  let idleRepaints = 0;
+  const again = await runExchangeWith(b, fetchImpl, now, () => { idleRepaints += 1; });
+  assert.equal(again.landed, 0, 'nothing new the second time');
+  assert.equal(idleRepaints, 0, 'a no-op exchange left the surfaces alone');
+});
+
 test('both devices end up holding everything, whoever wrote it', async () => {
   const store = relayStore();
   const fetchImpl = relayFetch(store);
@@ -195,11 +228,12 @@ async function runExchangeWith(
   session: Session,
   fetchImpl: typeof fetch,
   now: () => string,
+  repaint?: () => void,
 ): ReturnType<typeof runExchange> {
   const real = globalThis.fetch;
   globalThis.fetch = fetchImpl;
   try {
-    return await runExchange(session, now);
+    return await runExchange(session, now, repaint);
   } finally {
     globalThis.fetch = real;
   }

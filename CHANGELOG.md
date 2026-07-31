@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.27.2 — ITERATION
+
+*2026-07-31*
+
+- **Fixed: work synced from your other device now appears straight away.** When a device received a planner from its pair, the items landed but the screen could stay blank until you closed the app and reopened it &mdash; which looked exactly like sync doing nothing. Now the moment anything arrives, what you are looking at updates to show it, with no restart.
+
 ## 0.27.1 — ITERATION
 
 *2026-07-30*

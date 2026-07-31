@@ -109,7 +109,7 @@ function deliverPairing(file: object, name: string): void {
  * rather than duplication — this one can say what went wrong in the surface, and
  * that one only stops it being fatal.
  */
-export async function mountSync(session: Session): Promise<void> {
+export async function mountSync(session: Session, repaint?: () => void): Promise<void> {
   const anchor = document.querySelector('#export')?.closest('.about-actions');
   if (!anchor?.parentElement) return;
 
@@ -318,7 +318,7 @@ export async function mountSync(session: Session): Promise<void> {
       syncBtn.disabled = true;
       note.textContent = 'Exchanging…';
       try {
-        note.textContent = outcomeWords(await runExchange(session, () => new Date().toISOString()));
+        note.textContent = outcomeWords(await runExchange(session, () => new Date().toISOString(), repaint));
       } catch (err) {
         note.textContent = `That exchange stopped — ${(err as Error).message} Nothing here was lost.`;
       } finally {
@@ -392,10 +392,10 @@ export async function mountSync(session: Session): Promise<void> {
  * and it never blocks first paint — the planner is usable while this is still in
  * flight, which is the same rule the service worker follows.
  */
-export const syncEdition = (session: Session): Promise<void> =>
-  mountSync(session).then(async () => {
+export const syncEdition = (session: Session, repaint?: () => void): Promise<void> =>
+  mountSync(session, repaint).then(async () => {
     try {
-      const outcome = await runExchange(session, () => new Date().toISOString());
+      const outcome = await runExchange(session, () => new Date().toISOString(), repaint);
       if (outcome.ran && (outcome.landed ?? 0) > 0) {
         // Only announced when something actually arrived. An exchange that moved
         // nothing is the ordinary case and does not deserve a line.
