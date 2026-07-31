@@ -13,9 +13,9 @@
 
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
-import { heatEvents, routeEvents } from './triage-intents.ts';
+import { heatEvents, routeEvents, undoRouteEvents } from './triage-intents.ts';
 import { doneEvents } from './work.ts';
-import type { AppEvent, ClarifyRoute, Heat } from '../events.ts';
+import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
 
 const ROUTES: { route: ClarifyRoute; label: string; hint: string }[] = [
   { route: 'do-now', label: 'Do now', hint: 'this one is for today — two minutes if you want them' },
@@ -50,6 +50,12 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
   // guard above established.
   const REGION = region, CARD = card, PROMPT = prompt, ACTIONS = actions, GAUGE = gauge, LIVE = live, DONOW = donow;
   const captureInput = (): HTMLElement | null => document.querySelector<HTMLElement>('#capture');
+
+  // The last-action undo lives OUTSIDE the triage section, beside the do-now
+  // offer — for the same reason that does: routing your last inbox item hides
+  // the whole section, and the way to take that route back must not vanish with
+  // it. Optional, so older markup without it simply has no undo.
+  const undoRegion = document.querySelector<HTMLElement>('#triage-undo');
 
   // The one running do-now timer, if any. It lives in DONOW (a stable region
   // outside the card carousel) so refresh() advancing the card never touches it.
@@ -197,6 +203,42 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
     stopBtn.addEventListener('click', () => finish('abandoned'));
   };
 
+  /** Drop the last-action undo. Any new triage action makes it stale — undo
+   *  reverses the MOST RECENT route, never an older one. */
+  const clearUndo = (): void => { undoRegion?.replaceChildren(); };
+
+  /**
+   * Offer to take the just-made route back. Names where the card went and, in
+   * one tap, returns it to the inbox — the direct answer to "it moved and I do
+   * not know how to get it back". The node id, route and prior kind are captured
+   * here, so undo reverses THAT card even after the surface has advanced to the
+   * next one.
+   */
+  const showUndo = (node: string, route: ClarifyRoute, fromKind: NodeKind, where: string): void => {
+    if (!undoRegion) return;
+    const bar = el('p', 'triage-undo-bar');
+    bar.append(el('span', 'triage-undo-where', `Sent to ${where}.`));
+    const btn = el('button', 'linklike triage-undo-btn', 'Undo');
+    btn.type = 'button';
+    btn.addEventListener('click', () => {
+      btn.disabled = true;
+      void session.commit(ctx => undoRouteEvents(ctx, node, route, fromKind))
+        .then(() => {
+          clearUndo();
+          LIVE.textContent = 'Back in your inbox.';
+          onChange();
+          refresh();
+          restoreFocus();
+        })
+        .catch((err: Error) => {
+          btn.disabled = false;
+          LIVE.textContent = `Couldn’t undo — ${err.message}`;
+        });
+    });
+    bar.append(btn);
+    undoRegion.replaceChildren(bar);
+  };
+
   const renderHeat = (nodeId: string, text: string): void => {
     PROMPT.textContent = 'Hot or cold?';
     CARD.textContent = text;
@@ -204,6 +246,8 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
       const b = el('button', 'route', h === 'hot' ? 'Hot' : 'Cold');
       b.type = 'button';
       b.addEventListener('click', () => {
+        // A heat pass is a new action, so any pending route-undo is now stale.
+        clearUndo();
         void commit(ctx => heatEvents(ctx, nodeId, h), `Marked ${h}.`).then(restoreFocus);
       });
       return b;
@@ -218,8 +262,15 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
       b.type = 'button';
       b.append(el('span', 'route-label', label), el('span', 'route-hint', hint));
       b.addEventListener('click', () => {
+        // Supersede any earlier undo before committing — undo only ever takes
+        // back the most recent route.
+        clearUndo();
         void commit(ctx => routeEvents(ctx, nodeId, route, kind as never), `Routed to ${label}.`)
           .then(ok => {
+            // Offer to take it back, whichever route it was — the answer to
+            // "where did it go and how do I undo it". Captured with the id, route
+            // and prior kind so it reverses this card after the queue advances.
+            if (ok) showUndo(nodeId, route, kind as NodeKind, label);
             // Start the timer only if the route actually landed, and only after
             // the card has advanced — the timer's own region is untouched by that.
             // OFFER, do not start. The route is the decision; the timer is a tool.

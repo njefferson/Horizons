@@ -99,6 +99,10 @@ export type ParkSet          = Ev<'park.set',           { returnAt: ISODateTime;
 export type CaptureRecorded  = Ev<'capture.recorded',   { text: string; source: CaptureSource; sourceTags?: string[] }>;
 export type HeatSet          = Ev<'heat.set',           { heat: Heat }>;
 export type ClarifyRouted    = Ev<'clarify.routed',     { route: ClarifyRoute }>;
+/** The reverse of a route: the item goes back to the inbox (`route` → null).
+ *  `from` records the route being taken back. The undo of a one-tap triage
+ *  decision — append-only, so it is an event, not a deletion. */
+export type ClarifyReopened  = Ev<'clarify.reopened',   { from: ClarifyRoute }>;
 export type DoNowTimed       = Ev<'do-now.timed',       { startedAt: ISODateTime; endedAt: ISODateTime; outcome: 'completed' | 'abandoned' }>;
 export type BotherReceived   = Ev<'bother.received',    { text: string }>;
 export type BotherOwned      = Ev<'bother.owned',       { ownership: Ownership }>;
@@ -182,6 +186,12 @@ export type JournalTagAttached  = Ev<'journal.tag.attached',  { tag: string }>;
 
 // --- I · menu and re-entry ---------------------------------------------------
 export type MenuItemAdded    = Ev<'menu.item.added',    { category: MenuCategory }>;
+/** Taken off the Menu WITHOUT being promoted to work (`onMenu` → null). The
+ *  reverse of `menu.item.added` — how a someday/reference route is sent back to
+ *  the inbox. `from` records the category it left. Distinct from
+ *  `menu.item.promoted`, which turns a wish into a demand and changes the kind;
+ *  this changes nothing but the placement. */
+export type MenuItemRemoved  = Ev<'menu.item.removed',  { from: MenuCategory }>;
 export type MenuItemPromoted = Ev<'menu.item.promoted', { toKind: NodeKind }>;
 export type SaveForUpdated   = Ev<'save-for.updated',   { target: number; saved: number }>;
 /** The lapse ritual. Named `lapse.migration.ran` and NEVER bare `migration.*`,
@@ -199,7 +209,7 @@ export type AppEvent =
   | NodeTrashed | NodeUntrashed | NodeMerged
   | ClockSet | ClockCleared | UpkeepIntervalSet | DoneMarked | DoneUnmarked
   | AnchorDefined | AnchorFired | ReplanRaised | ReplanResolved | ParkSet
-  | CaptureRecorded | HeatSet | ClarifyRouted | DoNowTimed
+  | CaptureRecorded | HeatSet | ClarifyRouted | ClarifyReopened | DoNowTimed
   | BotherReceived | BotherOwned | BotherRouted | AssistOffered | AssistApplied
   | FocusStarted | FocusEnded | InterruptCaptured
   | ResumeCardCreated | ResumeCardSpent | ResumeCardExpired
@@ -213,7 +223,7 @@ export type AppEvent =
   | SnapshotWritten | SchemaMigrated | ExportWritten | ImportSeeded | ShardFolded
   | TerminologySkinApplied | TemplateLoaded | ShardCompacted
   | PersonCreated | PersonLinked | JournalEntryWritten | JournalTagAttached
-  | MenuItemAdded | MenuItemPromoted | SaveForUpdated
+  | MenuItemAdded | MenuItemRemoved | MenuItemPromoted | SaveForUpdated
   | LapseMigrationRan | ReentryGreeted | AmnestyOffered | AmnestyAccepted;
 
 export type EventKind = AppEvent['kind'];
@@ -224,7 +234,7 @@ export const EVENT_KINDS = [
   'node.trashed','node.untrashed','node.merged',
   'clock.set','clock.cleared','upkeep.interval.set','done.marked','done.unmarked',
   'anchor.defined','anchor.fired','replan.raised','replan.resolved','park.set',
-  'capture.recorded','heat.set','clarify.routed','do-now.timed',
+  'capture.recorded','heat.set','clarify.routed','clarify.reopened','do-now.timed',
   'bother.received','bother.owned','bother.routed','assist.offered','assist.applied',
   'focus.started','focus.ended','interrupt.captured',
   'resume.card.created','resume.card.spent','resume.card.expired',
@@ -238,7 +248,7 @@ export const EVENT_KINDS = [
   'snapshot.written','schema.migrated','export.written','import.seeded','shard.folded',
   'terminology.skin.applied','template.loaded','shard.compacted',
   'person.created','person.linked','journal.entry.written','journal.tag.attached',
-  'menu.item.added','menu.item.promoted','save-for.updated',
+  'menu.item.added','menu.item.removed','menu.item.promoted','save-for.updated',
   'lapse.migration.ran','reentry.greeted','amnesty.offered','amnesty.accepted',
 ] as const;
 
@@ -257,6 +267,10 @@ export const SILENT_RISK_KINDS = [
   'capture.recorded', 'clarify.routed', 'bother.received', 'bother.owned',
   'interrupt.captured', 'waiting.closed', 'dependency.released',
   'project.role.set', 'request.declined', 'menu.item.promoted',
+  // Undo's two reversers. Sending a routed card back to the inbox, or taking an
+  // item off the Menu, can each leave a node with no clock and no surface — the
+  // gate cures both with the same same-day clock a fresh capture gets.
+  'clarify.reopened', 'menu.item.removed',
   // Coverage can be REMOVED at a distance: trashing or merging a parent
   // orphans children whose only claim was that ancestor's clock, and
   // re-parenting can move a node under an unclocked parent. All three were

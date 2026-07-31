@@ -18,7 +18,7 @@
 // These build events; they never touch the store. `app.ts` hands them to
 // `session.commit`, which runs them through the gate.
 
-import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
+import type { AppEvent, ClarifyRoute, Heat, MenuCategory, NodeKind } from '../events.ts';
 import type { StampContext } from './session.ts';
 import { endOfLocalDay } from '../time.ts';
 
@@ -72,5 +72,55 @@ export function routeEvents(ctx: StampContext, node: string, route: ClarifyRoute
       return [r, base(ctx, 'node.trashed', node, { reason: 'clarify:trash' })];
     default:
       return [r];
+  }
+}
+
+/**
+ * Put a just-routed card back in the inbox — the exact reverse of `routeEvents`.
+ *
+ * The complaint this answers: a route is one tap and the card is gone, and
+ * "gone" felt like "lost". Undo is the way back. Append-only means it is NOT a
+ * deletion — it is the honest inverse events, so the log reads "sent here, then
+ * taken back", which is what actually happened.
+ *
+ * Each route's effects are reversed with the events built to reverse them:
+ * `clarify.reopened` un-sets the route (the item returns to triage), and then
+ * the route's OTHER effect is undone — a kind change put back, the review clock
+ * cleared, the Menu placement removed, or the trashing undone. In every case the
+ * node lands back exactly where it started: `captured`, unrouted, and cured by
+ * the same same-day clock a fresh capture gets, so it is never silent for an
+ * instant.
+ *
+ * `fromKind` is the kind the node had BEFORE the route touched it — captured by
+ * the surface at route time, because `waiting-for` is the one route that changes
+ * the kind and the log does not otherwise remember what it was.
+ */
+export function undoRouteEvents(
+  ctx: StampContext, node: string, route: ClarifyRoute, fromKind: NodeKind,
+): AppEvent[] {
+  const reopen = base(ctx, 'clarify.reopened', node, { from: route });
+  const clearReview = base(ctx, 'clock.cleared', node, { clockKind: 'review' });
+  switch (route) {
+    case 'do-now':
+    case 'next-action':
+      // The route replaced the capture clock with its own review clock; clearing
+      // it lets the gate re-cure to a same-day clock, so the item is restored to
+      // the exact state a fresh capture is in.
+      return [reopen, clearReview];
+    case 'waiting-for':
+      return [
+        reopen,
+        base(ctx, 'node.kind.changed', node, { from: 'waiting-for' as NodeKind, to: fromKind }),
+        clearReview,
+      ];
+    case 'someday':
+    case 'reference':
+      // someday/reference land on the Menu with category 'read' (see `menu`
+      // above); take it back off, which the gate cures with a same-day clock.
+      return [reopen, base(ctx, 'menu.item.removed', node, { from: 'read' as MenuCategory })];
+    case 'trash':
+      return [reopen, base(ctx, 'node.untrashed', node, {})];
+    default:
+      return [reopen];
   }
 }

@@ -175,6 +175,13 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 - **`clarify.routed`**
   - Payload: `route: do-now | next-action | waiting-for | someday | reference | trash`
   - Silent risk: **yes — gated**
+- **`clarify.reopened`**
+  - Payload: `from: <the route being taken back>`
+  - Silent risk: **yes — gated** — undo of a route: the item returns to the inbox
+    (`route` → null), and reopening can leave it with no clock, so the gate cures
+    it with the same same-day clock a fresh capture gets. Append-only means undo
+    is an event, never a deletion; this competes for the same LWW field as
+    `clarify.routed`, so undo is safe on a synced log.
 - **`do-now.timed`**
   - Payload: `startedAt, endedAt, outcome: completed | abandoned`
   - Silent risk: no
@@ -369,6 +376,13 @@ agreed to survives a copy change (law 10).
 - **`menu.item.added`**
   - Payload: `category: read | try | go | make | research | save-for`
   - Silent risk: no — the Menu **is** a surface (law 1, clause c)
+- **`menu.item.removed`**
+  - Payload: `from: <the category it left>`
+  - Silent risk: **yes — gated** — taking an item **off** the Menu removes law 1's
+    clause (c), so the gate cures it with a same-day clock. It is the reverse of
+    `menu.item.added` (used to undo a someday/reference route), and NOT
+    `menu.item.promoted`: removing a wish from the list is not the deliberate act
+    of deciding to do it, so the kind is untouched.
 - **`menu.item.promoted`**
   - Payload: `toKind`
   - Silent risk: **yes — gated** — a deliberate promotion, never an accrued obligation

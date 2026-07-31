@@ -666,6 +666,16 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         if (wins(n.stamps['menu'], o)) { n.onMenu = e.payload.category; n.stamps['menu'] = o; }
         break;
       }
+      // Off the Menu, WITHOUT promoting to work — the reverse of menu.item.added,
+      // used to send a someday/reference route back to the inbox. Competes for
+      // the same stamped key as added and promoted, so LWW settles a race between
+      // two devices. Unlike promoted it leaves the kind untouched: taking a wish
+      // back off the list is not the same act as deciding to do it.
+      case 'menu.item.removed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
+        break;
+      }
       case 'menu.item.promoted': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
@@ -715,6 +725,17 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
       case 'clarify.routed': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['route'], o)) { n.route = e.payload.route; n.stamps['route'] = o; }
+        break;
+      }
+      // Undo of a route: back to the inbox. Competes for the SAME stamped key as
+      // clarify.routed, so a later reopen beats an earlier route and a later
+      // route beats an earlier reopen — the same per-field LWW everything else
+      // uses, which is what makes undo safe on a synced log rather than a local
+      // trick. `captured` is a latch and stays true, so the item re-enters the
+      // clarify queue exactly as it left it.
+      case 'clarify.reopened': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['route'], o)) { n.route = null; n.stamps['route'] = o; }
         break;
       }
 

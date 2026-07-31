@@ -287,6 +287,72 @@ button.ghost {
 .coverage-title { overflow-wrap: anywhere; }
 .coverage-when { flex: 0 1 auto; min-width: 0; color: var(--ink-soft); font-size: 0.9375rem; }
 
+/* --- last-action undo (triage) --------------------------------------------
+ *
+ * A plain line beside the do-now offer: where the card just went, and one tap to
+ * take it back. Every colour here is already registered against these
+ * backgrounds — ink-soft on the page, and `.linklike` for the button — so no new
+ * contrast pair is introduced. */
+.triage-undo { margin: 0.25rem 0 0.5rem; }
+.triage-undo:empty { margin: 0; }
+.triage-undo-bar {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0;
+}
+.triage-undo-where { color: var(--ink-soft); font-size: 0.9375rem; }
+
+/* --- search ----------------------------------------------------------------
+ *
+ * A tool, not a surface: the input is always there, the results only exist once
+ * you have typed. The input mirrors #capture exactly (same tokens, so the same
+ * registered contrast); results reuse the list card look. */
+.search { margin: 1.75rem 0 0.5rem; }
+.search-input {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  font-size: 1.0625rem; /* >=16px equivalent: iOS zooms the page below that */
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+}
+.search-input::placeholder { color: var(--ink-soft); opacity: 1; }
+.search-summary { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.9375rem; }
+.search-results {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.search-results:empty { margin: 0; }
+.search-open {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--gap);
+  flex-wrap: wrap;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  cursor: pointer;
+}
+.search-title { overflow-wrap: anywhere; }
+.search-where { flex: 0 1 auto; min-width: 0; color: var(--ink-soft); font-size: 0.9375rem; }
+
 /* --- dates that have gone by (law 3) ---------------------------------------
  *
  * Deliberately the SAME visual weight as Next up. No red, no border that reads

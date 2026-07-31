@@ -132,10 +132,21 @@ const REGISTRY = {
   'empty store': [
     '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
     '#capture-form button[type=submit]',
+    // Search is a tool that is always on screen even before anything is held,
+    // so its input and placeholder are audited here where they first appear.
+    '.search-input', { sel: '#search-input', pseudo: '::placeholder' },
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a', '.build',
     '#update-words', '#update-save', '#update-reload', '#update-dismiss',
   ],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
+  // Search results — only exist once you have typed, so a state of their own.
+  // The summary is the quiet count; the "where" is the held status word, the
+  // lowest-contrast text on the row and the whole point of showing it.
+  'search results': ['.search-summary', '.search-open', '.search-title', '.search-where'],
+  // The last-action undo the triage route raises. `.triage-undo-btn` is the
+  // `.linklike` accent-on-background pair the app's links use; the "where" line
+  // is the quiet token naming the destination.
+  'route undo': ['.triage-undo-where', '.triage-undo-btn'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
   // shows the six routes, each a label over a hint. Every visible pair is
   // audited — the hint is the lowest-contrast text on the surface, so it is
@@ -519,6 +530,18 @@ try {
     // 'next up' state below, once the item has been routed and can be completed.
     await auditFocusRings(page, 'with cards', theme, ['#cards .card-open']);
 
+    // State 3a: search. Type a word; the held card is found. The input is always
+    // present (audited in 'empty store'); the results are their own state, and a
+    // result is a real button with a focus ring like every other row.
+    await page.fill('#search-input', 'held');
+    await page.waitForSelector('#search-results .search-open');
+    await auditContrast(page, 'search results', theme);
+    await auditAxe(page, 'search results', theme);
+    await auditTargets(page, 'search results', theme);
+    await auditFocusRings(page, 'search results', theme, ['#search-input', '#search-results .search-open']);
+    await page.fill('#search-input', '');          // leave the box as we found it
+    await page.waitForSelector('#search-results .search-open', { state: 'detached' });
+
     // State 3b: the triage surface. Capturing a card left an unrouted node, so
     // the heat pass is already showing. Audit it, then take the heat tap to
     // reveal the six clarify routes and audit those too.
@@ -552,6 +575,15 @@ try {
     await auditAxe(page, 'do now offered', theme);
     await auditTargets(page, 'do now offered', theme);
     await auditFocusRings(page, 'do now offered', theme, ['.donow-done']);
+
+    // State 3c-iii: the last-action undo. Routing the card above raised it, and it
+    // lives beside the do-now offer, outliving the hidden triage surface for the
+    // same reason — the way to take a route back must not vanish with the section.
+    await page.waitForSelector('#triage-undo .triage-undo-btn');
+    await auditContrast(page, 'route undo', theme);
+    await auditAxe(page, 'route undo', theme);
+    await auditTargets(page, 'route undo', theme);
+    await auditFocusRings(page, 'route undo', theme, ['.triage-undo-btn']);
 
     // State 3d: Work mode — Next up, then the coverage list opened.
     await page.waitForSelector('#nextup:not([hidden])');

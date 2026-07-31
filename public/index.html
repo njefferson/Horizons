@@ -129,6 +129,12 @@
        true and not enough. -->
   <div id="triage-donow"></div>
 
+  <!-- Last-action undo for triage. OUTSIDE the triage section for the same
+       reason the do-now offer is: routing your last inbox item hides that whole
+       section, and the way to take the route back must not vanish with it. It
+       names where the card went and returns it to the inbox in one tap. -->
+  <div id="triage-undo" class="triage-undo"></div>
+
   <!-- Dates that have gone by (product law 3, ADR-0012/ADR-0034). NOT a list of
        failures — there is no such list in this app. Each row is a live decision,
        capped at three so returning after a fortnight is not a wall, with the
@@ -243,6 +249,19 @@
   <button id="menu-open" class="gauge" type="button" aria-expanded="false"
           aria-controls="menu" hidden></button>
   <section id="menu" class="menu" aria-labelledby="menu-open" hidden></section>
+
+  <!-- Find anything you are holding. Read-only: it opens what it finds and
+       changes nothing, and it keeps no record of the looking. The results only
+       exist once you have typed, so it is a tool you reach for, never a surface
+       that greets you. -->
+  <section id="search" class="search" aria-labelledby="search-label">
+    <label id="search-label" class="visually-hidden" for="search-input">Find something you are holding</label>
+    <input id="search-input" class="search-input" type="search" enterkeyhint="search"
+           autocomplete="off" autocapitalize="none" spellcheck="false"
+           placeholder="Find something you&rsquo;re holding" aria-describedby="search-summary">
+    <p id="search-summary" role="status" aria-live="polite" class="search-summary" hidden></p>
+    <ul id="search-results" class="search-results"></ul>
+  </section>
 
   <h2 class="section">What you are holding</h2>
   <!-- Tappable: the gauge's number is a claim, and the claim is checkable —

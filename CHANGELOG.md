@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.2.0 — CAPABILITY
+
+*2026-07-31*
+
+- **Undo, for when a card moves and you want it back.** Triage is meant to be quick &mdash; one tap and the card is gone &mdash; but quick can feel like lost. Now, right after you sort a card, it says where it went and offers to take it back. One tap returns it to your inbox, exactly as it was, whichever way you had sent it.
+- **Search: find anything you are holding.** Type a word and everything that matches is there, each one saying where it is now, and tapping it opens it. It only searches what you are actively holding, it never changes anything, and it keeps no record of what you looked for.
+
 ## 1.1.0 — CAPABILITY
 
 *2026-07-31*

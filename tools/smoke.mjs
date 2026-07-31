@@ -353,6 +353,72 @@ try {
   is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'law 1 holds across all six routes — the held gauge reads 0 silent');
 
+  console.log('\nUndo — a routed card can be taken straight back');
+  // The complaint this answers: triage is fast, and fast felt like lost. Route a
+  // fresh card away, then take it back in one tap. Made to FAIL if
+  // clarify.reopened stops returning the card to the inbox.
+  await tpage.fill('#capture', 'routed then reclaimed');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+  await tpage.click('#triage-actions .route');                   // Hot
+  await tpage.waitForSelector('#triage-actions .route .route-hint');
+  await tpage.locator('#triage-actions .route', { hasText: 'Waiting for' }).first().click();
+  await tpage.waitForSelector('#triage-undo .triage-undo-btn');
+  is((await tpage.locator('#triage-undo .triage-undo-where').textContent())?.includes('Waiting for'), true,
+    'the undo bar names where the card just went');
+  await tpage.click('#triage-undo .triage-undo-btn');
+  // It is back: the clarify queue shows again, and the log carries a
+  // clarify.reopened — the return is an event, not a deletion.
+  await tpage.waitForFunction(() => {
+    const g = document.querySelector('#triage-gauge')?.textContent || '';
+    return !document.querySelector('#triage')?.hidden && /1 to clarify/.test(g);
+  });
+  is((await tpage.locator('#triage-card').textContent()), 'routed then reclaimed',
+    'and the very card is back in the inbox, ready to route again');
+  const reopened = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result.filter((e) => e.kind === 'clarify.reopened').length);
+    });
+  });
+  is(reopened, 1, 'undo appended one clarify.reopened — the log explains the return');
+  is(await tpage.evaluate(() => (document.querySelector('#triage-undo')?.textContent ?? '').length), 0,
+    'and the undo bar clears itself once used');
+  // Clean up so the inbox is clear for the next section: send it to Trash.
+  await tpage.locator('#triage-actions .route', { hasText: 'Trash' }).first().click();
+  await tpage.waitForSelector('#triage', { state: 'hidden' });
+
+  console.log('\nSearch — find something you are holding, and open it');
+  // Read-only: it finds a held item and opens it, and writes nothing. Made to
+  // FAIL if the query stops matching or a result stops opening the sheet.
+  const logLenBeforeSearch = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  await tpage.fill('#search-input', 'owes');
+  await tpage.waitForSelector('#search-results .search-open');
+  is(await tpage.locator('#search-results .search-open').count(), 1,
+    'the query finds exactly the held item whose title matches');
+  is((await tpage.locator('#search-results .search-title').first().textContent()), 'someone owes me this',
+    'and it is the right one');
+  await tpage.click('#search-results .search-open');
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail[open]').count(), 1, 'tapping a result opens its detail sheet');
+  await tpage.click('#detail-close');
+  const logLenAfterSearch = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(logLenAfterSearch, logLenBeforeSearch, 'searching and opening a result wrote nothing to the log');
+  await tpage.fill('#search-input', '');            // leave the box as we found it
+
   console.log('\nDo now — the timer asks, it does not assume');
   // ITS OWN item. The one routed above is left alone deliberately: a later
   // section asserts that an item due today is filed under "Ready now", and

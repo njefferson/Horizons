@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.2.0',
+    kind: 'CAPABILITY',
+    date: '2026-07-31',
+    notes: [
+      '**Undo, for when a card moves and you want it back.** Triage is meant to be quick &mdash; one tap and the card is gone &mdash; but quick can feel like lost. Now, right after you sort a card, it says where it went and offers to take it back. One tap returns it to your inbox, exactly as it was, whichever way you had sent it.',
+      '**Search: find anything you are holding.** Type a word and everything that matches is there, each one saying where it is now, and tapping it opens it. It only searches what you are actively holding, it never changes anything, and it keeps no record of what you looked for.',
+    ],
+  },
+  {
     triplet: '1.1.0',
     kind: 'CAPABILITY',
     date: '2026-07-31',

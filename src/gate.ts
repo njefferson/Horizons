@@ -408,6 +408,11 @@ function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): AppEvent 
     case 'waiting.closed':
     case 'project.role.set':
     case 'node.kind.changed':
+    // Undo's reversers. Reopening a route or removing a Menu placement can strip
+    // a node's only coverage — the same-day clock a fresh capture gets is exactly
+    // the right cure, because both land the node back in the inbox to be sorted.
+    case 'clarify.reopened':
+    case 'menu.item.removed':
       return {
         ...stamp, kind: 'clock.set', node: node.id,
         payload: { clockKind: 'review', at: opts.sameDayClockAt(cause), source: `gate:${cause.kind}` },
