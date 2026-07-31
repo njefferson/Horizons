@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '0.27.3',
+    kind: 'ITERATION',
+    date: '2026-07-31',
+    notes: [
+      '**Two devices now catch up on their own — no need to press Sync.** While a device is open it quietly keeps in step with the other, and it checks the moment you switch to it. Before, a full catch-up could take a few taps of &ldquo;Sync now&rdquo; because each tap did only one leg of the back-and-forth; now opening both is enough.',
+      'A single &ldquo;Sync now&rdquo; also finishes the whole exchange in one go, rather than one step of it, and tells you the total it moved.',
+    ],
+  },
+  {
     triplet: '0.27.2',
     kind: 'ITERATION',
     date: '2026-07-31',

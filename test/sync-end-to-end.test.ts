@@ -28,7 +28,7 @@ import { openSession, captureEvent, type Session, type SessionStore } from '../s
 import { acceptKeyText, acceptPairing, beginPairing, currentKeyText, currentPairing } from '../src/ui/pairing.ts';
 import { eraseEverything } from '../src/purge.ts';
 import { MARK_KV } from '../src/sync-keys.ts';
-import { revokeMailbox, runExchange } from '../src/ui/sync-run.ts';
+import { type AutoSyncClock, keepInStep, revokeMailbox, runExchange } from '../src/ui/sync-run.ts';
 import { heldNodes } from '../src/gate.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -148,6 +148,69 @@ test('when a sync lands events it repaints the surfaces — not just the state',
   const again = await runExchangeWith(b, fetchImpl, now, () => { idleRepaints += 1; });
   assert.equal(again.landed, 0, 'nothing new the second time');
   assert.equal(idleRepaints, 0, 'a no-op exchange left the surfaces alone');
+});
+
+test('a single sync catches all the way up and reports the total moved', async () => {
+  // The loop-until-quiet promise: one call to runExchange drains everything this
+  // side can, and the words describe the WHOLE sync, not the last empty round.
+  const store = relayStore();
+  const fetchImpl = relayFetch(store);
+  const now = (): string => new Date('2026-07-30T12:00:00Z').toISOString();
+
+  const a = await makeDevice('device-a');
+  const b = await makeDevice('device-b');
+  const file = await beginPairing(a.store, HOST, now());
+  await acceptPairing(b.store, JSON.parse(JSON.stringify(file)));
+
+  await capture(a, 'one');
+  await capture(a, 'two');
+  await capture(a, 'three');
+  await runExchangeWith(a, fetchImpl, now);           // A uploads its three
+
+  const down = await runExchangeWith(b, fetchImpl, now);  // ONE call on B
+  assert.deepEqual(titles(b).sort(), ['one', 'three', 'two'], 'B caught all the way up in one sync');
+  assert.ok(down.landed! >= 3, 'the total landed is reported, not one round of it');
+  assert.match(down.result!.words, /took in/i, 'the words describe what moved');
+
+  // Terminates: a second sync with nothing to do says so and does not hang.
+  const again = await runExchangeWith(b, fetchImpl, now);
+  assert.equal(again.result!.received, 0);
+  assert.equal(again.result!.words, 'Already the same on both.');
+});
+
+test('keep-in-step syncs on a timer and when shown, never while hidden, never overlapping', async () => {
+  // The real fix for "I had to press Sync three times": a device syncs on its own
+  // while it is open. This proves the SCHEDULE without a timer or a DOM — the app
+  // supplies a clock backed by setInterval and page visibility; here it is a fake.
+  let visible = true;
+  let onTimer: (() => void) | null = null;
+  let onShown: (() => void) | null = null;
+  const clock: AutoSyncClock = {
+    every: (_ms, fn) => { onTimer = fn; },
+    onVisible: (fn) => { onShown = fn; },
+    visible: () => visible,
+  };
+
+  let ticks = 0;
+  let release: (() => void) | null = null;
+  keepInStep(() => new Promise<void>(res => { ticks += 1; release = res; }), clock);
+  const settle = (): Promise<void> => new Promise(r => setTimeout(r, 0));
+
+  onTimer!();
+  assert.equal(ticks, 1, 'a timer tick while visible syncs');
+
+  onTimer!();
+  assert.equal(ticks, 1, 'a second tick while the first is in flight does not stack');
+  release!(); await settle();
+
+  onShown!();
+  assert.equal(ticks, 2, 'becoming visible syncs — the switch-to-this-device case');
+  release!(); await settle();
+
+  visible = false;
+  onTimer!();
+  onShown!();
+  assert.equal(ticks, 2, 'a hidden tab never syncs — no wasted quota, no throttled work');
 });
 
 test('both devices end up holding everything, whoever wrote it', async () => {

@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 0.27.3 — ITERATION
+
+*2026-07-31*
+
+- **Two devices now catch up on their own — no need to press Sync.** While a device is open it quietly keeps in step with the other, and it checks the moment you switch to it. Before, a full catch-up could take a few taps of &ldquo;Sync now&rdquo; because each tap did only one leg of the back-and-forth; now opening both is enough.
+- A single &ldquo;Sync now&rdquo; also finishes the whole exchange in one go, rather than one step of it, and tells you the total it moved.
+
 ## 0.27.2 — ITERATION
 
 *2026-07-31*

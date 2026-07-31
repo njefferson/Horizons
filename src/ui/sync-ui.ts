@@ -30,7 +30,7 @@ import {
   forgetPairing, malformedPairing, pairingFilename, pairingWords,
 } from './pairing.ts';
 import { encodeQr, toSvg } from '../qr.ts';
-import { outcomeWords, revokeMailbox, runExchange } from './sync-run.ts';
+import { type AutoSyncClock, keepInStep, outcomeWords, revokeMailbox, runExchange } from './sync-run.ts';
 import { deviceLine, deviceRecords, devicesWords, REPLACE_KEY_WORDS, REPLACED_KEY_WORDS } from '../devices.ts';
 import type { Session } from './session.ts';
 
@@ -385,24 +385,44 @@ export async function mountSync(session: Session, repaint?: () => void): Promise
   });
 }
 
+/** The real clock: a timer plus the page's own visibility. Kept out of
+ *  `keepInStep` so that loop is testable without a DOM. */
+const domClock: AutoSyncClock = {
+  every: (ms, fn) => { setInterval(fn, ms); },
+  onVisible: (fn) => {
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') fn();
+    });
+  },
+  visible: () => typeof document === 'undefined' || document.visibilityState === 'visible',
+};
+
 /**
- * The whole edition, as `main` takes it: mount the surface, then exchange.
+ * The whole edition, as `main` takes it: mount the surface, exchange, then keep
+ * exchanging on its own.
  *
  * Exchange runs AFTER the surface exists so its result has somewhere to be said,
  * and it never blocks first paint — the planner is usable while this is still in
- * flight, which is the same rule the service worker follows.
+ * flight, which is the same rule the service worker follows. `keepInStep` then
+ * keeps the two devices converging with no press: the reason a single open used
+ * to need three manual syncs is that the handoff needs each side to act after the
+ * other, so this device now acts on its own while it is open and visible.
  */
 export const syncEdition = (session: Session, repaint?: () => void): Promise<void> =>
   mountSync(session, repaint).then(async () => {
-    try {
-      const outcome = await runExchange(session, () => new Date().toISOString(), repaint);
-      if (outcome.ran && (outcome.landed ?? 0) > 0) {
-        // Only announced when something actually arrived. An exchange that moved
-        // nothing is the ordinary case and does not deserve a line.
-        const status = document.querySelector('#status');
-        if (status) status.textContent = outcomeWords(outcome);
+    const tick = async (): Promise<void> => {
+      try {
+        const outcome = await runExchange(session, () => new Date().toISOString(), repaint);
+        if (outcome.ran && (outcome.landed ?? 0) > 0) {
+          // Only announced when something actually arrived. An exchange that moved
+          // nothing is the ordinary case and does not deserve a line.
+          const status = document.querySelector('#status');
+          if (status) status.textContent = outcomeWords(outcome);
+        }
+      } catch {
+        // Reported by the Sync now button if somebody asks; never fatal on open.
       }
-    } catch {
-      // Reported by the Sync now button if somebody asks; never fatal on open.
-    }
+    };
+    await tick();
+    keepInStep(tick, domClock);
   });
