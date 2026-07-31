@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.0.1',
+    kind: 'ITERATION',
+    date: '2026-07-31',
+    notes: [
+      '**The ⓘ panel now opens with what Quietkeep is, how to use it, and how to add it to your home screen** &mdash; not with the storage details. The first thing you see is the app explaining itself, and the install steps are there for iPhone, iPad, Android and computer.',
+      'Everything else in the panel is grouped into named areas &mdash; your data, extras, and about &mdash; instead of one long run of tools, and it points back to the rest of the free apps at noahjefferson.pages.dev.',
+    ],
+  },
+  {
     triplet: '1.0.0',
     kind: 'VERSION',
     date: '2026-07-31',

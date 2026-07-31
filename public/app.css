@@ -800,6 +800,23 @@ dialog, dialog * { overflow-wrap: anywhere; }
   font-weight: 600;
 }
 .about-section:first-of-type { margin-top: 0; }
+/* Group divider — one level up from a section heading, so the panel reads as a
+   handful of named areas (What it is / Your data / Extras / About) rather than a
+   flat run of tools. A rule above it makes the grouping visible, not just spaced. */
+.about-group {
+  margin: 1.8rem 0 0.2rem;
+  padding-top: 1.15rem;
+  border-top: 1px solid var(--line);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+/* The one place the panel uses a real list: the how-to and install steps read
+   as steps, not prose. */
+.about-list { margin: 0 0 0.6rem; padding-left: 1.15rem; color: var(--ink-soft); }
+.about-list li { margin: 0 0 0.4rem; }
 .about-p { margin: 0 0 0.6rem; color: var(--ink-soft); }
 .about-p a {
   color: var(--accent);

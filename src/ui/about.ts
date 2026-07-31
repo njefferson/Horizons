@@ -211,6 +211,22 @@ export async function mountAbout(session: Session): Promise<void> {
   // one tap, and free to everybody who never opens it.
   mountSecurity(document.querySelector('#sibling'));
 
+  // Install guidance adapts to whether Quietkeep is already on the home screen.
+  // The DISPLAY MODE is the honest signal — a standalone launch is an installed
+  // one — so there is no user-agent sniffing here. When it is not installed both
+  // platforms' steps are shown, because a page cannot offer iOS an install button
+  // (iOS fires no such event); the steps are all a browser can honestly give.
+  const installed = (() => {
+    try {
+      return globalThis.matchMedia?.('(display-mode: standalone)').matches === true
+        || (globalThis.navigator as { standalone?: boolean }).standalone === true;
+    } catch { return false; }
+  })();
+  const installSteps = document.querySelector<HTMLElement>('#install-steps');
+  const installDone = document.querySelector<HTMLElement>('#install-done');
+  if (installSteps) installSteps.hidden = installed;
+  if (installDone) installDone.hidden = !installed;
+
   const siblingP = document.querySelector<HTMLElement>('#sibling');
   if (siblingP) {
     const here = location.hostname;

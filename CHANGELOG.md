@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.0.1 — ITERATION
+
+*2026-07-31*
+
+- **The ⓘ panel now opens with what Quietkeep is, how to use it, and how to add it to your home screen** &mdash; not with the storage details. The first thing you see is the app explaining itself, and the install steps are there for iPhone, iPad, Android and computer.
+- Everything else in the panel is grouped into named areas &mdash; your data, extras, and about &mdash; instead of one long run of tools, and it points back to the rest of the free apps at noahjefferson.pages.dev.
+
 ## 1.0.0 — VERSION
 
 *2026-07-31*
