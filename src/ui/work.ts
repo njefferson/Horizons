@@ -136,6 +136,8 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
     const open = COVERAGE.hidden;
     COVERAGE.hidden = !open;
     GAUGE.setAttribute('aria-expanded', String(open));
+    // Built at the moment of opening, not before — see buildCoverage.
+    if (open) buildCoverage();
   });
 
   /** Plain words for when something returns — calendar days in the reader's
@@ -233,8 +235,19 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
       return li;
     }));
 
-    // The coverage list (item 21) — the gauge's claim, itemised and checkable.
-    // Both read `heldNodes`, so opening the claim can never contradict it.
+    // The coverage list (item 21) — built ONLY while it is on screen. It renders
+    // one row per held node, and it was being rebuilt hidden on every refresh:
+    // at 1,429 held things that is ~4,300 DOM elements constructed and thrown
+    // away per keystroke-adjacent repaint, for a list nobody was looking at
+    // (audit, measured). The gauge's click handler builds it at the moment of
+    // opening, and refresh keeps it live only while open.
+    if (!COVERAGE.hidden) buildCoverage();
+  }
+
+  /** The gauge's claim, itemised and checkable. Reads `heldNodes` — the same
+   *  definition the gauge counts — so opening the claim can never contradict it. */
+  function buildCoverage(): void {
+    const state = session.state();
     const held = [...heldNodes(state)].sort((a, b) => (a.id < b.id ? 1 : -1));
     COVERAGE.replaceChildren(...held.map(n => {
       const li = el('li', 'coverage-item');

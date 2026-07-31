@@ -368,3 +368,28 @@ test('the summary and the store agree about which dates came across', () => {
   assert.equal(events.filter(e => e.kind === 'clock.set').length, s.withDates);
   assert.equal(s.staleDates, 2);
 });
+
+test('REGRESSION 1.2.3: notes in the file are COUNTED and the loss is stated', () => {
+  // Notes are not carried yet — and the summary used to report 0 about a file
+  // full of them, which cost a 1,445-row import every note body with no
+  // mention. Counting is the floor of honesty until carrying ships.
+  const csv = [
+    'Task ID,Type,Name,Status,Project,Notes',
+    '1,Action,call the dentist,,,remember to ask about the crown',
+    '2,Action,plain thing,,,',
+    '3,Project,Boy Scouts,,,pack meeting is first Tuesdays',
+  ].join('\n');
+  const { lines, unreadable } = parseAnyExport(csv);
+  const s = importSummary(lines, unreadable);
+  assert.equal(s.notes, 2, 'both note-bearing rows counted, the empty one not');
+  const words = importWords(s);
+  assert.match(words, /2 notes were in the file/);
+  assert.match(words, /not carried across yet/, 'the loss is said in plain words');
+});
+
+test('TaskPaper note lines count toward the same stated loss', () => {
+  const { lines, unreadable } = parseTaskPaper('- A thing\n  a note under it\n');
+  const s = importSummary(lines, unreadable);
+  assert.equal(s.notes, 1);
+  assert.match(importWords(s), /One note was in the file/);
+});

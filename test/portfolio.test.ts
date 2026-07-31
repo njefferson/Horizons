@@ -17,7 +17,7 @@ import {
 import { highWaterMark } from '../src/snapshot.ts';
 import { nextUp } from '../src/nextup.ts';
 import { waitingOnAnyone } from '../src/people.ts';
-import { setTrackRoleEvents, setSuspenseEvents } from '../src/ui/detail-intents.ts';
+import { setTrackRoleEvents, setSuspenseEvents, linkPersonEvents } from '../src/ui/detail-intents.ts';
 import type { AppEvent } from '../src/events.ts';
 
 const TZ = 'America/Denver';
@@ -353,4 +353,41 @@ test('AUDIT: a report written before marks existed still works', () => {
   const before = fold(reportedBefore(log, { at: after.lastReportAt, upToSeqByDevice: after.lastReportMark }));
   const r = statusReport(before, after, after.lastReportAt, NOW, TZ);
   assert.deepEqual(r.changes.map(c => c.node.id), ['NEW'], 'and it still cuts at the right moment');
+});
+
+// --- the OPR reaches the portfolio (1.2.3 regression) ------------------------
+
+test('REGRESSION: an OPR named through the person link reaches the portfolio', () => {
+  // The live defect: the detail sheet only ever wrote person.linked{relation:
+  // 'opr'}, while NodeState.opr was set only by opr.assigned — which nothing
+  // emitted. So the portfolio said "nobody named yet" forever about people the
+  // user HAD named. The fold now reads the link into the same LWW key, which
+  // heals every log already written; this drives the exact events an existing
+  // store holds.
+  const s = apply(st(
+    mk('P', 'project'), clocked('P'), mk('p1', 'person', 'Ada'),
+    ev('person.linked', 'P', { node: 'P', person: 'p1', relation: 'opr' }),
+  ), setTrackRoleEvents(ctx, 'P', 'track'));
+  assert.equal(s.nodes.get('P')!.opr, 'p1', 'the link folds into NodeState.opr');
+  const words = trackWords(trackPortfolio(s, NOW, TZ)[0]!);
+  assert.match(words, /Ada is running it/, 'the portfolio names the person, not "nobody named yet"');
+});
+
+test('the sheet intent now emits opr.assigned alongside the link, and the two agree', () => {
+  const events = linkPersonEvents(ctx, 'P', 'p1', 'opr');
+  assert.ok(events.some(e => e.kind === 'opr.assigned'), 'the honest noun is written going forward');
+  assert.ok(events.some(e => e.kind === 'person.linked'), 'and the link is kept for the people list');
+  // Folding both together lands one answer — they share the LWW key.
+  const s = fold([mk('P', 'project'), clocked('P'), mk('p1', 'person', 'Ada'), ...events]);
+  assert.equal(s.nodes.get('P')!.opr, 'p1');
+});
+
+test('a stakeholder link does NOT claim to be running it', () => {
+  // The healing must be scoped to the opr relation alone — a stakeholder or a
+  // waiting-on link says nothing about who runs the thing.
+  const s = st(
+    mk('P', 'project'), clocked('P'), mk('p1', 'person', 'Ada'),
+    ev('person.linked', 'P', { node: 'P', person: 'p1', relation: 'stakeholder' }),
+  );
+  assert.equal(s.nodes.get('P')!.opr, null, 'no OPR from a non-opr relation');
 });

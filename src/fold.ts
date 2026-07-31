@@ -429,6 +429,17 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         if (!n.people.some(x => x.person === e.payload.person && x.relation === rel)) {
           n.people = [...n.people, { person: e.payload.person, relation: rel }];
         }
+        // "They are running it" IS an OPR assignment. The detail sheet has only
+        // ever written person.linked{relation:'opr'}, while `n.opr` — the field
+        // the portfolio reads — was set only by opr.assigned, which nothing
+        // emitted. So the portfolio printed "nobody named yet" forever about
+        // people the user had named (audit, live defect). Folding the link into
+        // the SAME LWW key heals every existing log on its next fold; the
+        // intent also emits opr.assigned going forward, and ties between the
+        // two resolve identically because they share the stamp.
+        if (rel === 'opr' && wins(n.stamps['opr'], o)) {
+          n.opr = e.payload.person; n.stamps['opr'] = o;
+        }
         break;
       }
       case 'waiting.opened': {
@@ -743,6 +754,15 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         // Every other kind is recorded in the log and contributes to history,
         // but does not change the structural projection Phase 0 computes.
         // Later phases add projections over these; the log already holds them.
+        //
+        // DELIBERATELY UNFOLDED, recorded so the omission reads as a decision
+        // rather than an oversight: `do-now.timed` (emitted by the triage
+        // timer since 0.10.1). No surface reads a folded form of it, and this
+        // repo has already shipped the lesson that a field no surface reads is
+        // the log lying rather than merely silent (ADR-0031). The per-node
+        // history surface (roadmapped, 1.4.0) reads the LOG, not state, so it
+        // will show timer outcomes without a fold. Fold it only when a
+        // projection actually consumes it.
         break;
     }
   }

@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.2.3',
+    kind: 'ITERATION',
+    date: '2026-07-31',
+    notes: [
+      '**Fixed: naming who is running a tracked project now actually shows their name.** Saying &ldquo;they are running it&rdquo; on a project recorded the person but the carrying report went on saying &ldquo;nobody named yet&rdquo; forever. The names you already entered come back on their own &mdash; nothing to redo.',
+      '**The import summary now tells you about notes.** Notes are not carried across yet, and the summary used to imply a file had none when it was full of them. It now says how many notes were in the file and that they do not come across &mdash; plainly, before anything is written. Carrying them in is on the roadmap.',
+      'And the app does less invisible work: a long list it builds behind a closed panel is now built only when you open it, which keeps big planners quick.',
+    ],
+  },
+  {
     triplet: '1.2.2',
     kind: 'ITERATION',
     date: '2026-07-31',

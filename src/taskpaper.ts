@@ -32,8 +32,12 @@
 //   mood. Recording it as a fake clock would invent a demand nobody made.
 // - `@estimate`, `@context`, `@tags` other than the above are dropped for now, and
 //   the importer SAYS SO rather than quietly discarding them.
-// - notes (indented plain lines) are kept as the node's note text where the schema
-//   has somewhere to put them, and counted otherwise.
+// - **notes are NOT yet carried** — TaskPaper note lines are parsed and then
+//   dropped by the event mapper, and the CSV Notes column is not read at all.
+//   An earlier version of this header claimed notes were kept, which was false
+//   (audit): Noah's 1,445-row import lost every note body with the summary
+//   reporting zero. Until the note field ships (roadmapped, 1.4.0), the
+//   summary states the loss in plain words rather than a silent 0.
 //
 // ## Dates
 //
@@ -74,6 +78,10 @@ export interface TaskLine {
    *  they belong to — so a name is resolved by lookup, and a project named by a
    *  child but never listed itself is created rather than dropped. */
   parentName?: string;
+  /** CSV only: this row carried a Notes value. Counted so the summary can state
+   *  the loss — notes are not yet carried, and a silent zero about data in the
+   *  file is the lie the drops-are-named rule forbids. */
+  hasNote?: boolean;
 }
 
 export interface ImportSummary {
@@ -408,6 +416,8 @@ export function parseOmniFocusCsv(text: string): { lines: TaskLine[]; unreadable
       // Only for non-projects, and only when named — a project claiming itself as
       // its own parent would be a cycle the write boundary would rightly refuse.
       ...(isProject || projectName === '' || projectName === title ? {} : { parentName: projectName }),
+      // Counted, not carried (yet). The summary owes the reader this number.
+      ...(pick(row, at, 'Notes', 'Note') !== '' ? { hasNote: true } : {}),
     });
   }
   return { lines, unreadable };
@@ -447,7 +457,9 @@ export function importSummary(
   return {
     projects: parsed.filter(l => l.kind === 'project').length,
     actions: parsed.filter(l => l.kind === 'action').length,
-    notes: parsed.filter(l => l.kind === 'note').length,
+    // Note LINES (TaskPaper) plus note-BEARING rows (CSV): everything in the
+    // file that is a note and does not come across. One number, stated.
+    notes: parsed.filter(l => l.kind === 'note' || l.hasNote).length,
     done: parsed.filter(l => l.done).length,
     // Only dates that actually came across, so this number and the store agree.
     withDates: parsed.filter(live).length,
@@ -474,6 +486,12 @@ export function importWords(s: ImportSummary): string {
   if (s.withDates > 0) parts.push(`${s.withDates} with a date`);
   if (s.done > 0) parts.push(`${s.done} already finished`);
   let out = `${parts.join(', ')}.`;
+  if (s.notes > 0) {
+    // The loss, stated in full. A silent zero about note bodies that were in
+    // the file cost a 1,445-row import every note it had, with the summary
+    // implying nothing was there (audit).
+    out += ` ${s.notes === 1 ? 'One note was' : `${s.notes} notes were`} in the file — notes are not carried across yet, so ${s.notes === 1 ? 'it does' : 'they do'} not come with ${s.notes === 1 ? 'its item' : 'their items'}.`;
+  }
   if (s.staleDates > 0) {
     // Said in full, because it is the single most surprising thing about importing
     // a long-running planner and somebody will otherwise think the dates were lost.

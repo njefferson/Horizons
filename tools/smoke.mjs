@@ -2712,8 +2712,14 @@ try {
   await tpage.fill('#purge-word', 'CLEAR ');
   is(await tpage.locator('#purge-go').isDisabled(), false,
     'case and a stray space are forgiven — this tests intent, not dexterity');
+  // Wait for the app's own reload as an EVENT, never as a timeout. The old
+  // shape (a fixed 900ms then a selector) raced the commit-plus-500ms reload
+  // timer: on a slow run the old page was still up, its data-ready already
+  // true, and the check read 102 stale cards — a poll that cannot fail telling
+  // you nothing, the exact class this repo has recorded twice.
+  const purgeNav = tpage.waitForEvent('framenavigated');
   await tpage.click('#purge-go');
-  await tpage.waitForTimeout(900);
+  await purgeNav;
   await tpage.waitForSelector('body[data-ready=true]');
   is(await purgeRows() < beforeRows, true, `the surfaces emptied (${beforeRows} -> ${await purgeRows()})`);
   is(await logCount() > beforeLog, true,

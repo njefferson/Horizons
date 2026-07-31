@@ -286,6 +286,12 @@ export function linkPersonEvents(
   } as AppEvent);
   if (opts.createNamed) out.push(mk('person.created', person, { name: opts.createNamed }));
   out.push(mk('person.linked', node, { node, person, relation }));
+  // "They are running it" is an OPR assignment, and the vocabulary has a noun
+  // for exactly that. The link alone left `n.opr` unset — opr.assigned had no
+  // emitter anywhere — so the portfolio printed "nobody named yet" about people
+  // the user had named (audit). The fold now also reads the link (healing old
+  // logs); this writes the honest noun going forward.
+  if (relation === 'opr') out.push(mk('opr.assigned', node, { person }));
   if (opts.openWaiting) {
     out.push(mk('waiting.opened', node, {
       person, forWhat: opts.forWhat ?? '', since: ctx.at,
