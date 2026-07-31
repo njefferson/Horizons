@@ -818,6 +818,12 @@ dialog, dialog * { overflow-wrap: anywhere; }
 .about-list { margin: 0 0 0.6rem; padding-left: 1.15rem; color: var(--ink-soft); }
 .about-list li { margin: 0 0 0.4rem; }
 
+/* Help — a small stack of question disclosures sharing the .disclosure summary
+   (its 44px target); this only sets the rhythm between them and the answer. */
+.help-q { margin: 0.1rem 0; }
+.help-q > summary { font-weight: 600; }
+.help-q > .about-p { margin: 0.4rem 0 0.7rem; }
+
 /* The walkthrough (src/ui/tour.ts). Inherits the base `dialog` look; this is
    only the calm inner layout — no animation, so reduced-motion is honoured by
    there being no motion. */
