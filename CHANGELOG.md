@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.3.0 — CAPABILITY
+
+*2026-07-31*
+
+- **&ldquo;Sort things out&rdquo; &mdash; a triage that can finally reach everything.** Pick a batch in your own words &mdash; the loose things a big import brought in, everything under one project, whatever matches a word &mdash; and work through it one card at a time with the same six choices triage has always had. Nothing gets rendered as a wall, there is no countdown and no score, and leaving is always one tap that records nothing. The batch is simply smaller when you come back.
+- **Tap any triage card to open it.** Renaming, a real date, filing it somewhere, naming who it is with &mdash; all reachable mid-sort now, on both triage surfaces, without losing your place.
+- **&ldquo;Not before&rdquo; &mdash; the date that opens instead of asking.** Give something a day and it stays out of the way until then, comes back ready on its own, and nothing happens if the day passes &mdash; a door opening, not a deadline. Defer dates imported from another planner finally show up here too, editable at last.
+- **Filing got fast.** The &ldquo;what is this part of&rdquo; list narrows as you type, each place says where it sits, and typing a place that does not exist yet offers to create the project and file under it in one go.
+- Also: an optional &ldquo;about how long?&rdquo; minutes note on anything (kept for a future version that learns how long things really take &mdash; nothing checks up on it), and the machinery underneath got two orders of magnitude faster at taking in large batches, which the coming wholesale actions will stand on.
+
 ## 1.2.3 — ITERATION
 
 *2026-07-31*

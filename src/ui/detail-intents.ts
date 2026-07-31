@@ -107,6 +107,60 @@ export const clearDueEvents = (ctx: StampContext, node: string): AppEvent[] =>
   [base(ctx, 'clock.cleared', node, { clockKind: 'due' })];
 
 /**
+ * "Not before Thursday." The defer verb (1.3.0) — and the schema finished this
+ * feature before any surface asked for it: `start` has been a ClockKind since
+ * the vocabulary was written, the importer already writes start clocks from
+ * OmniFocus defer dates, and `soonestDemand` counts them — so a future start
+ * groups "Coming up" and returns as "Ready now" on the day, while a PASSED
+ * start raises no replan card (HARD is due/suspense only). Exactly defer
+ * semantics, zero fold changes. This emitter is what makes the stored dates
+ * visible, settable, and clearable at last.
+ */
+export const setStartEvents = (ctx: StampContext, node: string, dayKey: string): AppEvent[] =>
+  [base(ctx, 'clock.set', node, {
+    clockKind: 'start', at: endOfDayKey(dayKey, ctx.zone), source: 'detail:start',
+  })];
+
+/** Take the "not before" off. Silent-risk like every clear — the gate re-cures
+ *  with a same-day clock if this was the only thing covering it. */
+export const clearStartEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'clock.cleared', node, { clockKind: 'start' })];
+
+/**
+ * "About twenty minutes." The one v1 data commitment that was never met:
+ * NOTES.md carries "duration estimates are logged from v1... impossible to
+ * backfill later", and `estimate.recorded` had no emitter anywhere. Logged,
+ * displayed nowhere — the learning is v2; the data cannot wait for it.
+ */
+export const estimateEvents = (ctx: StampContext, node: string, minutes: number): AppEvent[] =>
+  [base(ctx, 'estimate.recorded', node, { durationMinutes: minutes, basis: 'guess' })];
+
+/**
+ * "New project named ⟨what you just typed⟩" — create the container and file
+ * under it, one gated commit (1.3.0). ADR-0013's own consequence: "creating a
+ * goal or area must be cheap and optional." Filing an imported backlog is
+ * exactly where the destination usually does not exist yet, and the old
+ * journey — leave the sheet, capture, triage it, make it a project, reopen,
+ * pick — was nine taps and a lost train of thought. The gate cures the fresh
+ * container with a same-day clock precisely as it cures any creation.
+ */
+export function createParentEvents(
+  ctx: StampContext, node: string, title: string, priorParent?: string | null,
+): AppEvent[] {
+  const clean = cleanTitle(title);
+  if (!clean) return [];
+  const parentId = ctx.id();
+  return [
+    base(ctx, 'node.created', parentId, {
+      nodeKind: CONTAINER_DEFAULT, title: clean, provenance: { for: 'self' },
+    }),
+    base(ctx, 'node.parented', node, {
+      parent: parentId, ...(priorParent ? { priorParent } : {}),
+    }),
+  ];
+}
+
+/**
  * "This one repeats." The only path to the decay primitive
  * ([ADR-0010](../../docs/adr/0010-decay-primitive.md)) — an interval, a comfort
  * window of its own, and a review clock so the thing is covered under law 1 and

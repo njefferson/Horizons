@@ -314,15 +314,15 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
 }
 
 /**
- * Fold a batch of events into state.
+ * A top-level copy of a state whose NODES are shared until first touch.
  *
- * Sorts by (at, device, seq) first, so shards arriving in ANY order — or the
- * same shard replayed twice — produce identical state. A device's own events
- * still fold in seq order regardless of clock skew, because seq is the final
- * tiebreak within a device.
+ * The copy-on-write half of `ensureNode`: the maps and scalars are fresh, the
+ * node objects are aliased, and the caller's `touched` set is what makes a node
+ * clone before its first mutation. Extracted so the gate's accumulator can use
+ * the identical mechanism fold does — two copies of this preamble would drift.
  */
-export function fold(events: readonly AppEvent[], base: State = emptyState()): State {
-  const s: State = {
+export function cloneShell(base: State): State {
+  return {
     nodes: new Map(base.nodes),
     vaults: new Map(base.vaults),
     devices: new Set(base.devices),
@@ -334,11 +334,42 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
     lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
     lastActivityAt: base.lastActivityAt,
   };
+}
 
+/**
+ * Fold a batch of events into state.
+ *
+ * Sorts by (at, device, seq) first, so shards arriving in ANY order — or the
+ * same shard replayed twice — produce identical state. A device's own events
+ * still fold in seq order regardless of clock skew, because seq is the final
+ * tiebreak within a device.
+ */
+export function fold(events: readonly AppEvent[], base: State = emptyState()): State {
+  const s = cloneShell(base);
   const ordered = [...events].sort(compareEvents);
   const touched = new Set<NodeId>();
+  for (const e of ordered) applyEvent(s, e, touched);
+  return s;
+}
 
-  for (const e of ordered) {
+/**
+ * Apply ONE event to state, IN PLACE — the write path's inner loop.
+ *
+ * This is `fold` with the ordering taken off its hands: the caller owns event
+ * order and the copy-on-write `touched` set. It exists so the gate's `admit`
+ * can keep a single running accumulator instead of refolding the accumulated
+ * batch from scratch for every offered event — which was quadratic with a
+ * large linear term (three full refolds per event, each copying the whole
+ * nodes map; 500 events at a 10k-node state measured at ~6-9 SECONDS, the
+ * verified blocker for every bulk act). Mutating `s` is safe against the
+ * caller's base state because `ensureNode` clones every node on its first
+ * touch per `touched` set — the same mechanism fold has always used.
+ *
+ * NOT a public API for surfaces: everything outside fold and the gate reads
+ * state, never writes it.
+ */
+export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
+  {
     const o = orderingOf(e);
     // Every event is activity, whatever it is. Taken as a maximum so a shard of
     // older history cannot make it look as though you have been away since then.
@@ -757,15 +788,15 @@ export function fold(events: readonly AppEvent[], base: State = emptyState()): S
         //
         // DELIBERATELY UNFOLDED, recorded so the omission reads as a decision
         // rather than an oversight: `do-now.timed` (emitted by the triage
-        // timer since 0.10.1). No surface reads a folded form of it, and this
-        // repo has already shipped the lesson that a field no surface reads is
-        // the log lying rather than merely silent (ADR-0031). The per-node
-        // history surface (roadmapped, 1.4.0) reads the LOG, not state, so it
-        // will show timer outcomes without a fold. Fold it only when a
-        // projection actually consumes it.
+        // timer since 0.10.1) and `estimate.recorded` (emitted by the detail
+        // sheet since 1.3.0 — logged from v1 per NOTES.md because the data
+        // cannot be backfilled; the learning that reads it is v2). No surface
+        // reads a folded form of either, and this repo has already shipped the
+        // lesson that a field no surface reads is the log lying rather than
+        // merely silent (ADR-0031). The per-node history surface (roadmapped,
+        // 1.4.0) reads the LOG, not state, so both show there without a fold.
+        // Fold them only when a projection actually consumes them.
         break;
     }
   }
-
-  return s;
 }

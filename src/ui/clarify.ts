@@ -36,8 +36,13 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
 export interface TriageUI { refresh(): void }
 
 /** Mount the triage surface. `onChange` lets the shell re-render its own list
- *  (the held-items view) when triage moves an item. */
-export function mountTriage(session: Session, onChange: () => void): TriageUI {
+ *  (the held-items view) when triage moves an item. `openDetail` opens the
+ *  card's detail sheet — what makes rename, a real date, filing and a person
+ *  reachable mid-triage (1.3.0) without the six routes growing a seventh. */
+export function mountTriage(
+  session: Session, onChange: () => void,
+  openDetail?: (n: import('../fold.ts').NodeState) => void,
+): TriageUI {
   const region = document.querySelector<HTMLElement>('#triage');
   const card = document.querySelector<HTMLElement>('#triage-card');
   const prompt = document.querySelector<HTMLElement>('#triage-prompt');
@@ -60,6 +65,15 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
   // The one running do-now timer, if any. It lives in DONOW (a stable region
   // outside the card carousel) so refresh() advancing the card never touches it.
   let active: { stop: (outcome: 'completed' | 'abandoned') => void } | null = null;
+
+  // Which node the card currently shows, so tapping it can open the right
+  // sheet. The card is a real <button> since 1.3.0.
+  let showing: string | null = null;
+  CARD.addEventListener('click', () => {
+    if (!showing || !openDetail) return;
+    const n = session.state().nodes.get(showing);
+    if (n) openDetail(n);
+  });
 
   /** Commit a batch; report success so callers only chain success-only effects
    *  (like starting the do-now timer). Announces the outcome in the live region;
@@ -256,6 +270,7 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
 
   const renderHeat = (nodeId: string, text: string): void => {
     PROMPT.textContent = 'Hot or cold?';
+    showing = nodeId;
     CARD.textContent = text;
     ACTIONS.replaceChildren(...(['hot', 'cold'] as Heat[]).map(h => {
       const b = el('button', 'route', h === 'hot' ? 'Hot' : 'Cold');
@@ -271,6 +286,7 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
 
   const renderClarify = (nodeId: string, text: string, kind: string, heat: Heat | null): void => {
     PROMPT.textContent = heat ? `Clarify (${heat}):` : 'Clarify:';
+    showing = nodeId;
     CARD.textContent = text;
     ACTIONS.replaceChildren(...ROUTES.map(({ route, label, hint }) => {
       const b = el('button', 'route');
@@ -320,6 +336,7 @@ export function mountTriage(session: Session, onChange: () => void): TriageUI {
       renderClarify(clarifyItem.id, clarifyItem.title, clarifyItem.kind, clarifyItem.heat);
     } else {
       REGION.hidden = true;
+      showing = null;
       CARD.textContent = '';
       ACTIONS.replaceChildren();
     }

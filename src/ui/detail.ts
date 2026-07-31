@@ -21,7 +21,9 @@ import { pressureOf, pressureWords } from '../pressure.ts';
 import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
+  setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
 } from './detail-intents.ts';
+import { normalize } from '../search.ts';
 import { doneEvents } from './work.ts';
 import { declareFeedsEvents, releaseFeedsEvents } from './detail-intents.ts';
 import { makeContainerEvents, parentEvents, unparentEvents } from './detail-intents.ts';
@@ -59,6 +61,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const leadInput = q<HTMLInputElement>('#detail-lead');
   const feedsList = q('#detail-feeds-list');
   const parentSel = q<HTMLSelectElement>('#detail-parent');
+  const parentFilter = q<HTMLInputElement>('#detail-parent-filter');
+  const parentCreate = q<HTMLButtonElement>('#detail-parent-create');
+  const startInput = q<HTMLInputElement>('#detail-start');
+  const estimateInput = q<HTMLInputElement>('#detail-estimate');
   const personInput = q<HTMLInputElement>('#detail-person');
   const relationSel = q<HTMLSelectElement>('#detail-relation');
   const peopleData = q<HTMLDataListElement>('#detail-people');
@@ -78,6 +84,58 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   let busy = false;
 
   const btn = (sel: string): HTMLButtonElement | null => q<HTMLButtonElement>(sel);
+
+  /**
+   * The parent picker, painted against the filter box (1.3.0). At 45 imported
+   * projects a bare select was a scroll test; typing narrows it, each option
+   * names where IT sits ("Boy Scouts — in Volunteering") so same-named places
+   * stay tellable apart, and when the typed words name no existing container
+   * the create button offers to make the project AND file this under it in one
+   * gated commit.
+   */
+  function paintParents(n: NodeState): void {
+    if (!PARENT) return;
+    const st = session.state();
+    const legal = legalParents(st, n);
+    const query = normalize(parentFilter?.value ?? '');
+    const shown = query
+      ? legal.filter(t => normalize(t.title || '').includes(query))
+      : legal;
+    const keep = PARENT.value;
+    const lineage = (t: NodeState): string => {
+      const p = t.parent ? st.nodes.get(t.parent) : undefined;
+      const alive = p && !p.trashed && !p.mergedInto;
+      return alive ? `${t.title || '(untitled)'} — in ${p.title || '(untitled)'}` : (t.title || '(untitled)');
+    };
+    PARENT.replaceChildren(...[
+      Object.assign(document.createElement('option'), {
+        value: '',
+        // The empty option's words change with what is actually possible. A
+        // fixed "pick one" over an empty list tells someone to do something
+        // the app cannot let them do yet.
+        textContent: legal.length === 0 ? 'nothing to put it under yet'
+          : shown.length === 0 ? 'nothing matches that'
+            : 'pick something',
+      }),
+      ...shown.map(t => Object.assign(document.createElement('option'), {
+        value: t.id, textContent: lineage(t),
+      })),
+    ]);
+    if (shown.some(t => t.id === keep)) PARENT.value = keep;
+    PARENT.disabled = legal.length === 0;
+
+    // Offer creation only when the typed words are a usable title that names no
+    // existing container — an exact match means the place already exists and
+    // the offer would mint a duplicate.
+    if (parentCreate) {
+      const raw = parentFilter?.value ?? '';
+      const clean = cleanTitle(raw);
+      const exact = clean !== '' && legal.some(t => normalize(t.title || '') === normalize(clean));
+      const offer = clean !== '' && !exact;
+      parentCreate.hidden = !offer;
+      if (offer) parentCreate.textContent = `New project named “${clean}” — put it under that`;
+    }
+  }
 
   /** Say it where it can be seen AND where it can be heard. A failure reported
    *  only to a visually-hidden region is a failure a sighted user never learns
@@ -128,6 +186,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // keystroke precisely because interruption is the expected case (audit).
     if (document.activeElement !== NAME || NAME.value.trim() === '') NAME.value = n.title;
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
+    if (startInput) startInput.value = n.clocks.start ? localDayKey(n.clocks.start.at, session.zone) : '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
 
@@ -174,22 +233,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // Containment (law 4). Where it sits, what may hold it, and what it holds.
     if (PARENT && PLACE && KIDS) {
       const st = session.state();
-      const legal = legalParents(st, n);
-      const keep = PARENT.value;
-      PARENT.replaceChildren(...[
-        Object.assign(document.createElement('option'), {
-          value: '',
-          // The empty option's words change with what is actually possible. A
-          // fixed "pick one" over an empty list tells someone to do something
-          // the app cannot let them do yet.
-          textContent: legal.length ? 'pick something' : 'nothing to put it under yet',
-        }),
-        ...legal.map(t => Object.assign(document.createElement('option'), {
-          value: t.id, textContent: t.title || '(untitled)',
-        })),
-      ]);
-      if (legal.some(t => t.id === keep)) PARENT.value = keep;
-      PARENT.disabled = legal.length === 0;
+      paintParents(n);
 
       const place = placeWords(st, n);
       PLACE.textContent = place ?? '';
@@ -270,7 +314,22 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       if (b) b.hidden = !on;
     };
     const repeats = n.kind === 'upkeep' && (n.intervalDays ?? 0) > 0;
+    // A Menu item shows NO temporal controls. The gate's law-6 check guards
+    // demand-free KINDS, not Menu membership — a someday-routed action keeps
+    // kind 'action', so a date set here would be ACCEPTED and then unrenderable
+    // (the Menu group wins every surface). The sheet's own rule covers it: only
+    // what is possible is shown, and dating a wish goes through "Bring back as
+    // real work" first, which is the deliberate act law 6 wants it to be.
+    const temporal = !n.onMenu;
+    const grp = (sel: string, on: boolean): void => {
+      const g = q<HTMLElement>(sel);
+      if (g) g.hidden = !on;
+    };
+    grp('#detail-date-group', temporal);
+    grp('#detail-start-group', temporal);
+    grp('#detail-repeat-group', temporal);
     show('#detail-date-clear', Boolean(n.clocks.due));
+    show('#detail-start-clear', Boolean(n.clocks.start));
     show('#detail-repeat-stop', repeats);
     show('#detail-done', !n.lastDone && !n.trashed);
     show('#detail-undone', Boolean(n.lastDone));
@@ -340,6 +399,22 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   btn('#detail-date-clear')?.addEventListener('click', () => {
     void run(ctx => clearDueEvents(ctx, current!.id), 'Date removed — it comes back to you today.');
   });
+  btn('#detail-start-set')?.addEventListener('click', () => {
+    const key = startInput?.value ?? '';
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) { say('Pick a day first.'); return; }
+    void run(ctx => setStartEvents(ctx, current!.id, key),
+      `Out of the way until ${key} — it comes back on its own.`);
+  });
+  btn('#detail-start-clear')?.addEventListener('click', () => {
+    void run(ctx => clearStartEvents(ctx, current!.id),
+      'Cleared — it is back with you today.');
+  });
+  btn('#detail-estimate-set')?.addEventListener('click', () => {
+    if (!estimateInput) return;
+    const v = Number(estimateInput.value);
+    if (!Number.isInteger(v) || v < 1) { say('Whole minutes, at least 1.'); return; }
+    void run(ctx => estimateEvents(ctx, current!.id, v), 'Noted — nothing checks up on it.');
+  });
   btn('#detail-repeat-set')?.addEventListener('click', () => {
     const i = positiveInt(EVERY), c = positiveInt(SLACK);
     if (i === null || c === null) { say('Both numbers need to be whole days, at least 1.'); return; }
@@ -392,6 +467,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const prior = current.parent;
     void run(ctx => unparentEvents(ctx, current!.id, prior),
       'On its own again — it still comes back to you.');
+  });
+  // Narrowing repaints the options live; creating makes the typed place real
+  // and files this under it, one gated commit — the gate cures the fresh
+  // container with a same-day clock exactly as it cures any creation.
+  parentFilter?.addEventListener('input', () => { if (current) paintParents(current); });
+  parentCreate?.addEventListener('click', () => {
+    if (!current || !parentFilter) return;
+    const title = cleanTitle(parentFilter.value);
+    if (!title) return;
+    const prior = current.parent;
+    parentFilter.value = '';
+    void run(ctx => createParentEvents(ctx, current!.id, title, prior),
+      `Made “${title}” and put this under it.`);
   });
   btn('#detail-make-project')?.addEventListener('click', () => {
     if (!current) return;

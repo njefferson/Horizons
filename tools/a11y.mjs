@@ -135,9 +135,22 @@ const REGISTRY = {
     // Search is a tool that is always on screen even before anything is held,
     // so its input and placeholder are audited here where they first appear.
     '.search-input', { sel: '#search-input', pseudo: '::placeholder' },
+    // Sort mode's door is always on screen too (1.3.0).
+    '#sort-open',
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a', '.build',
     '#update-words', '#update-save', '#update-reload', '#update-dismiss',
   ],
+  // Sort mode (1.3.0): the picker — sentences and counts, never lists — and
+  // the one-card conveyor. The count and the entry line are the quiet tokens;
+  // the route hints are the lowest-contrast text, named like triage's own.
+  'sort picker': ['#sort-title', '.sort-choice', '.sort-choice-words', '.sort-choice-count',
+    '#sort-query', { sel: '#sort-query', pseudo: '::placeholder' }, '#sort-query-go', '#sort-close'],
+  'sort card': ['#sort-entry', '#sort-card', '#sort-where',
+    '#sort-actions .route', '#sort-actions .route-label', '#sort-actions .route-hint',
+    '#sort-back', '#sort-close'],
+  // The picker's create-in-place offer, which only exists once unknown words
+  // have been typed — a control someone meets mid-filing is still a control.
+  'detail sheet, creating a place': ['#detail-parent-filter', '#detail-parent-create'],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // Search results — only exist once you have typed, so a state of their own.
   // The summary is the quiet count; the "where" is the held status word, the
@@ -168,6 +181,9 @@ const REGISTRY = {
   'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
     '.detail-hint', '#detail-name', '#detail-date', '#detail-every', '#detail-rename',
     '#detail-date-set', '#detail-close',
+    // 1.3.0's verbs: the defer date, the estimate, and the picker's filter.
+    '#detail-start', '#detail-start-set', '#detail-estimate', '#detail-estimate-set',
+    '#detail-parent-filter', { sel: '#detail-parent-filter', pseudo: '::placeholder' },
     // The dependency picker. A <select> and a number box are the two smallest
     // targets on the densest surface in the app.
     '#detail-feeds', '#detail-lead', '#detail-feeds-set',
@@ -953,7 +969,62 @@ try {
     } else {
       fail(`${theme}: nothing could be put under anything — the containment state went unaudited`);
     }
+
+    // The create-in-place offer (1.3.0): typing words that name no existing
+    // container reveals the button that makes the project and files this under
+    // it. A control someone meets mid-filing is still a control.
+    await page.fill('#detail-parent-filter', 'A place that does not exist yet');
+    await page.waitForSelector('#detail-parent-create:not([hidden])');
+    await auditContrast(page, 'detail sheet, creating a place', theme);
+    await auditAxe(page, 'detail sheet, creating a place', theme);
+    await auditTargets(page, 'detail sheet, creating a place', theme);
+    await auditFocusRings(page, 'detail sheet, creating a place', theme, ['#detail-parent-create']);
+    await page.fill('#detail-parent-filter', '');
     await page.click('#detail-close');
+
+    // Sort mode (1.3.0): the picker over a named range, then the conveyor. The
+    // container parented above guarantees an "Everything under…" choice exists,
+    // so neither state can silently audit an empty surface.
+    // Stage a real range first: the store at this point holds containers whose
+    // only children are resume cards — which the kind filter rightly excludes —
+    // so the picker would honestly offer nothing, and both sort states would
+    // wait forever. Capture a sortable item, route it, and FILE it under a
+    // container through search + the sheet (deterministic — no guessing which
+    // list row is which).
+    await page.fill('#capture', 'a sortable thing under something');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForSelector('#triage:not([hidden]) .route');
+    for (let i = 0; i < 12; i++) {
+      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
+      await page.click('#triage-actions .route');
+      await page.waitForTimeout(120);
+    }
+    await page.locator('#triage-actions .route', { hasText: 'Next action' }).first().click();
+    await page.waitForTimeout(250);
+    await page.fill('#search-input', 'sortable thing');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');
+    await page.waitForSelector('#detail[open]');
+    await page.selectOption('#detail-parent', { index: 1 });
+    await page.click('#detail-parent-set');
+    await page.waitForTimeout(250);
+    await page.click('#detail-close');
+    await page.fill('#search-input', '');
+
+    await page.click('#sort-open');
+    await page.waitForSelector('#sort[open]');
+    await page.waitForSelector('.sort-choice');
+    await auditContrast(page, 'sort picker', theme);
+    await auditAxe(page, 'sort picker', theme);
+    await auditTargets(page, 'sort picker', theme);
+    await auditFocusRings(page, 'sort picker', theme, ['.sort-choice', '#sort-query']);
+    await page.locator('.sort-choice').first().click();
+    await page.waitForSelector('#sort-card-region:not([hidden])');
+    await auditContrast(page, 'sort card', theme);
+    await auditAxe(page, 'sort card', theme);
+    await auditTargets(page, 'sort card', theme);
+    await auditFocusRings(page, 'sort card', theme, ['#sort-card', '#sort-actions .route']);
+    await page.click('#sort-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

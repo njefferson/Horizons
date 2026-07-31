@@ -17,7 +17,7 @@ import {
   DEMAND_FREE_KINDS, isKnownKind, isSilentRisk,
   type AppEvent, type EventKind, type NodeId, type NodeKind, type VaultId,
 } from './events.ts';
-import { fold, type NodeState, type State } from './fold.ts';
+import { applyEvent, cloneShell, fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
 import { wouldCycle } from './dependencies.ts';
 import { wouldParentCycle } from './tree.ts';
@@ -195,6 +195,25 @@ export function structuralRefusal(e: AppEvent): string | null {
  * Returns the events that should be appended — which may be MORE than were
  * offered, because a cure is itself an event (the log must explain the state).
  * Throws GateRejection if a write cannot be cured.
+ *
+ * ONE running accumulator, not a refold per event. The original control flow
+ * refolded the accumulated batch from scratch two to three times per offered
+ * event, each refold copying the whole nodes map — quadratic with a large
+ * linear term, measured at ~6 seconds for 500 events against a 10k-node state,
+ * which made every bulk act unshippable (1.3.0's verified blocker). The
+ * accumulator applies each admitted event once, in place, through the same
+ * `applyEvent` fold uses; copy-on-write (`ensureNode` + the shared `touched`
+ * set) keeps `priorState` untouched, so a REJECTED batch still leaves no trace
+ * — the audit's severe finding that motivated copy-on-write holds unchanged.
+ *
+ * The silent check runs over a DIRTY SET instead of the whole state: the
+ * event's own node, every node its payload references, and everything whose
+ * coverage could have ridden the touched node — descendants via the parent
+ * index, and nodes merged into it via the merge index, transitively. A miss in
+ * that reasoning CANNOT corrupt state: the whole-batch belt-and-braces delta
+ * scan below is retained untouched and fails closed as a rejection. The old
+ * control flow survives verbatim in test/admit-reference.ts, and an
+ * equivalence property test holds this one to it event-for-event.
  */
 export function admit(
   offered: readonly AppEvent[],
@@ -203,19 +222,84 @@ export function admit(
 ): AppEvent[] {
   const out: AppEvent[] = [];
 
+  // The batch so far, applied — what `fold(out, priorState)` used to rebuild.
+  const s = cloneShell(priorState);
+  const touched = new Set<NodeId>();
+
+  // Map-insertion order of every node, so cures for one event's multiple
+  // casualties emit in exactly the order the old whole-state scan produced —
+  // the equivalence the oracle test checks is event-for-event, order included.
+  const orderIndex = new Map<NodeId, number>();
+  for (const id of s.nodes.keys()) orderIndex.set(id, orderIndex.size);
+
+  // parent -> live children, and merge-target -> nodes merged into it. Both
+  // maintained as events apply, because "whose coverage rode this node" is
+  // exactly (descendants ∪ merge-dependents), transitively.
+  const childIndex = new Map<NodeId, Set<NodeId>>();
+  const mergeIndex = new Map<NodeId, Set<NodeId>>();
+  for (const n of s.nodes.values()) {
+    if (n.parent) {
+      let set = childIndex.get(n.parent);
+      if (!set) childIndex.set(n.parent, set = new Set());
+      set.add(n.id);
+    }
+    if (n.mergedInto) {
+      let set = mergeIndex.get(n.mergedInto);
+      if (!set) mergeIndex.set(n.mergedInto, set = new Set());
+      set.add(n.id);
+    }
+  }
+
+  /** Apply one admitted event to the accumulator, keeping the indexes true. */
+  const apply = (e: AppEvent): void => {
+    const beforeNode = e.node ? s.nodes.get(e.node) : undefined;
+    const priorParent = beforeNode?.parent ?? null;
+    const priorMerged = beforeNode?.mergedInto ?? null;
+    applyEvent(s, e, touched);
+    if (!e.node) return;
+    if (!orderIndex.has(e.node)) orderIndex.set(e.node, orderIndex.size);
+    const afterNode = s.nodes.get(e.node);
+    const newParent = afterNode?.parent ?? null;
+    const newMerged = afterNode?.mergedInto ?? null;
+    if (priorParent !== newParent) {
+      if (priorParent) childIndex.get(priorParent)?.delete(e.node);
+      if (newParent) {
+        let set = childIndex.get(newParent);
+        if (!set) childIndex.set(newParent, set = new Set());
+        set.add(e.node);
+      }
+    }
+    if (priorMerged !== newMerged) {
+      if (priorMerged) mergeIndex.get(priorMerged)?.delete(e.node);
+      if (newMerged) {
+        let set = mergeIndex.get(newMerged);
+        if (!set) mergeIndex.set(newMerged, set = new Set());
+        set.add(e.node);
+      }
+    }
+  };
+
+  /** id plus everything whose coverage could ride it, transitively, with a
+   *  cycle guard — children inherit through ancestry, merged nodes through
+   *  their target. */
+  const collectDependents = (id: NodeId, into: Set<NodeId>): void => {
+    if (into.has(id)) return;
+    into.add(id);
+    for (const c of childIndex.get(id) ?? []) collectDependents(c, into);
+    for (const m of mergeIndex.get(id) ?? []) collectDependents(m, into);
+  };
+
   for (const e of offered) {
     // Shape first, from the one definition import also uses.
     const bad = structuralRefusal(e);
     if (bad) throw new GateRejection(bad, e);
-
-    const before = fold(out, priorState);
 
     // A capture/creation aimed at an id that already exists would silently
     // overwrite its kind and title — the audit turned a project into an action
     // named "milk". Creation events create; they do not rename.
     if ((e.kind === 'node.created' || e.kind === 'capture.recorded' ||
          e.kind === 'interrupt.captured' || e.kind === 'bother.received' ||
-         e.kind === 'person.created') && e.node && before.nodes.has(e.node)) {
+         e.kind === 'person.created') && e.node && s.nodes.has(e.node)) {
       throw new GateRejection(`node ${e.node} already exists — a creation event cannot land on it`, e);
     }
 
@@ -226,7 +310,7 @@ export function admit(
     // batch adopts the ghost and clocks it. The result is a node the user never
     // created, carrying a title from a rename, landing in "Ready now" (audit).
     // Alone it is caught by the belt-and-braces delta check; batched it was not.
-    if (e.kind === 'node.renamed' && (!e.node || !before.nodes.get(e.node))) {
+    if (e.kind === 'node.renamed' && (!e.node || !s.nodes.get(e.node))) {
       throw new GateRejection('cannot rename a node that does not exist', e);
     }
 
@@ -241,11 +325,11 @@ export function admit(
         throw new GateRejection('a dependency must name what it feeds', e);
       }
       if (!e.node) throw new GateRejection('a dependency must belong to a node', e);
-      const target = before.nodes.get(feeds);
+      const target = s.nodes.get(feeds);
       if (!target || target.trashed || target.mergedInto) {
         throw new GateRejection(`nothing here to feed: ${feeds}`, e);
       }
-      if (wouldCycle(before, e.node, feeds)) {
+      if (wouldCycle(s, e.node, feeds)) {
         throw new GateRejection(
           'that would make two things each wait for the other', e);
       }
@@ -263,29 +347,29 @@ export function admit(
         throw new GateRejection('a parenting must name what it goes under', e);
       }
       if (!e.node) throw new GateRejection('a parenting must belong to a node', e);
-      const target = before.nodes.get(parent);
+      const target = s.nodes.get(parent);
       if (!target || target.trashed || target.mergedInto) {
         throw new GateRejection(`nothing here to put it under: ${parent}`, e);
       }
-      if (wouldParentCycle(before, e.node, parent)) {
+      if (wouldParentCycle(s, e.node, parent)) {
         throw new GateRejection('that would put a thing inside itself', e);
       }
     }
 
     if (e.kind === 'node.merged') {
       const into = (e.payload as { into?: unknown }).into;
-      const target = typeof into === 'string' ? before.nodes.get(into) : undefined;
+      const target = typeof into === 'string' ? s.nodes.get(into) : undefined;
       if (!target) throw new GateRejection('merge target does not exist', e);
       if (into === e.node) throw new GateRejection('a node cannot merge into itself', e);
       if (target.trashed) throw new GateRejection('merge target is in the trash', e);
     }
 
     out.push(e);
+    apply(e);
 
     // --- cross-vault refusal (ADR-0005) --------------------------------------
-    const interim = fold(out, priorState);
     for (const ref of referencedNodes(e)) {
-      const target = interim.nodes.get(ref);
+      const target = s.nodes.get(ref);
       if (target && target.vault !== e.vault) {
         throw new GateRejection(
           `cross-vault reference: event in "${e.vault}" refers to node in "${target.vault}"`, e);
@@ -294,7 +378,7 @@ export function admit(
 
     // --- demand-free kinds cannot carry a clock (law 6, ADR-0014) ------------
     if (e.kind === 'clock.set' || e.kind === 'park.set') {
-      const n = interim.nodes.get(e.node!);
+      const n = s.nodes.get(e.node!);
       if (n && isDemandFree(n.kind)) {
         throw new GateRejection(
           `a ${n.kind} cannot carry a clock — acting on one is a deliberate promotion`, e);
@@ -304,8 +388,30 @@ export function admit(
     // --- law 1: cure anything now silent ------------------------------------
     if (!isSilentRisk(e.kind)) continue;
 
-    const after = fold(out, priorState);
-    for (const node of newlySilent(after, priorState)) {
+    // The dirty set: this event's node, everything it points at, and everything
+    // whose coverage could have ridden any of them. Casualties emit in map-
+    // insertion order — the order the old whole-state scan produced.
+    const dirty = new Set<NodeId>();
+    if (e.node) collectDependents(e.node, dirty);
+    for (const ref of referencedNodes(e)) collectDependents(ref, dirty);
+    const casualties = [...dirty]
+      .map(id => s.nodes.get(id))
+      .filter((n): n is NodeState => !!n)
+      .filter(n => isSilent(n, s))
+      .filter(n => {
+        const prev = priorState.nodes.get(n.id);
+        return !prev || !isSilent(prev, priorState);
+      })
+      .sort((a, b) => (orderIndex.get(a.id) ?? 0) - (orderIndex.get(b.id) ?? 0));
+    for (const node of casualties) {
+      // Merge-borne silence cannot be cured by a clock: isSilent rides the
+      // merge chain BEFORE it ever looks at clocks, so a cure here would be a
+      // junk event that changes nothing. (The old control flow emitted exactly
+      // that — one ineffective cure per subsequent silent-risk event, found by
+      // the equivalence oracle.) The whole-batch belt below owns this case: if
+      // nothing later in the batch resurrects the chain, the batch is rejected
+      // there, with the same message the old flow ended at.
+      if (node.mergedInto) continue;
       const cure = cureFor(node, e, opts);
       if (!cure) {
         throw new GateRejection(
@@ -313,6 +419,7 @@ export function admit(
           `every node must be on a surface, under a clock, on the Menu, or parented to something under a clock`, e);
       }
       out.push(cure);
+      apply(cure);
     }
   }
 
@@ -350,8 +457,10 @@ export function admit(
   return out;
 }
 
-/** Node ids an event points AT (not the node it is about). */
-function referencedNodes(e: AppEvent): NodeId[] {
+/** Node ids an event points AT (not the node it is about).
+ *  Exported for the equivalence oracle in test/ — the old admit control flow
+ *  kept as a reference implementation must ask the same questions. */
+export function referencedNodes(e: AppEvent): NodeId[] {
   const p = e.payload as Record<string, unknown>;
   const out: NodeId[] = [];
   for (const key of ['parent', 'priorParent', 'into', 'feeds', 'person', 'forNode', 'node', 'anchor']) {
@@ -369,8 +478,10 @@ function referencedNodes(e: AppEvent): NodeId[] {
  * The cure for each silent-risk event, decided in advance rather than improvised
  * (ADR-0011). A cure is an EVENT, so the log explains why the node is not
  * silent — the state is never patched behind the log's back.
+ *
+ * Exported for the equivalence oracle in test/ only.
  */
-function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): AppEvent | null {
+export function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): AppEvent | null {
   const stamp = {
     id: `${cause.id}~cure~${node.id}`,
     vault: node.vault,

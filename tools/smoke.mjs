@@ -2656,6 +2656,149 @@ try {
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#about-close');
 
+  console.log('\nSort mode — a triage that can reach everything (1.3.0)');
+  // Three LOOSE rows — top-level, no project — the shape daily triage can
+  // never reach, because the captured latch bars anything arriving by
+  // node.created. This is Noah's 1,222, at fixture scale.
+  const gaugeBeforeLoose = await tpage.locator('#triage-gauge').textContent().catch(() => '') || '';
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.setInputFiles('#other-file', {
+    name: 'loose.taskpaper', mimeType: 'text/plain',
+    buffer: Buffer.from('- Sort me one\n- Sort me two\n- Sort me three\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 5000 });
+  const looseNav = tpage.waitForEvent('framenavigated');
+  await tpage.click('#other-go');
+  await looseNav;
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // THE BOUNDARY (law 8): importing loose rows changes NOTHING about daily
+  // triage — no new headline, no queue growth. Sort mode is where they live.
+  const gaugeAfterLoose = await tpage.locator('#triage-gauge').textContent().catch(() => '') || '';
+  is(gaugeAfterLoose, gaugeBeforeLoose,
+    `the daily triage gauge is untouched by an import ("${gaugeBeforeLoose}" -> "${gaugeAfterLoose}")`);
+
+  await tpage.click('#sort-open');
+  await tpage.waitForSelector('#sort[open]');
+  const choiceWords = await tpage.locator('#sort-choices .sort-choice-words').allTextContents();
+  is(choiceWords.some(w => /Loose things brought in/.test(w)), true,
+    `the picker offers the loose-import range (${JSON.stringify(choiceWords)})`);
+  // Sentences and counts, never lists: no item title may appear in the picker.
+  const pickerText = await tpage.locator('#sort-picker').textContent() || '';
+  is(/Sort me one/.test(pickerText), false, 'the picker shows sentences and counts, never the items');
+
+  // Enter by QUERY (deterministic against whatever else this walk imported).
+  await tpage.fill('#sort-query', 'Sort me');
+  await tpage.click('#sort-query-go');
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  is(/3 things, oldest first/.test(await tpage.locator('#sort-entry').textContent() || ''), true,
+    'the range states its true total once, at entry');
+  is(await tpage.locator('#sort-card').textContent(), 'Sort me one', 'oldest first');
+
+  // Route it away, take it back: the same conveyor, the same undo.
+  await tpage.locator('#sort-actions .route', { hasText: 'Next action' }).first().click();
+  await tpage.waitForSelector('#sort-undo .triage-undo-btn');
+  await tpage.click('#sort-undo .triage-undo-btn');
+  await tpage.waitForFunction(() =>
+    document.querySelector('#sort-card')?.textContent === 'Sort me one');
+  is(await tpage.locator('#sort-card').textContent(), 'Sort me one',
+    'undo returns the card to the range, recomputed live');
+
+  // Route for real; the card advances. Leave the next; it cycles without a write.
+  const sortCount = () => tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    return await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').count();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+  });
+  const sortLogBefore = await sortCount();
+  await tpage.locator('#sort-actions .route', { hasText: 'Someday' }).first().click();
+  await tpage.waitForFunction(() =>
+    document.querySelector('#sort-card')?.textContent === 'Sort me two');
+  await tpage.locator('#sort-actions .route', { hasText: 'Leave it' }).first().click();
+  is(await tpage.locator('#sort-card').textContent(), 'Sort me three', 'Leave it advances');
+
+  // Open it: the detail sheet, with the 1.3.0 verbs — a real date the app never
+  // had (Not before), filing into a project that does not exist yet, and the
+  // estimate that could never be backfilled.
+  await tpage.click('#sort-card');
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-start', '2026-12-01');
+  await tpage.click('#detail-start-set');
+  await tpage.waitForTimeout(150);
+  await tpage.fill('#detail-parent-filter', 'Sorted pile');
+  await tpage.waitForSelector('#detail-parent-create:not([hidden])');
+  is(/New project named/.test(await tpage.locator('#detail-parent-create').textContent() || ''), true,
+    'typing an unknown place offers to create it');
+  await tpage.click('#detail-parent-create');
+  await tpage.waitForFunction(() => /Part of Sorted pile/.test(
+    document.querySelector('#detail-place')?.textContent ?? ''));
+  await tpage.fill('#detail-estimate', '55');
+  await tpage.click('#detail-estimate-set');
+  await tpage.waitForTimeout(150);
+  await tpage.click('#detail-close');
+
+  // Law 5, asserted on the DOM: sorting shows no progress arithmetic, ever.
+  const sortText = await tpage.locator('#sort').textContent() || '';
+  is(/%|remaining|sorted this sitting|\bof the\b \d+/.test(sortText), false,
+    'no tally, no countdown, no percentage anywhere in sort mode');
+  is(await tpage.locator('#sort progress').count(), 0, 'and no progress element');
+  await tpage.click('#sort-close');
+
+  // The log tells the same story: a route landed on a NEVER-CAPTURED node, the
+  // undo wrote its reopen, the start clock carries its source, the estimate is
+  // down, and the created project holds the filed row.
+  const sortLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const created = rows.filter(e => e.kind === 'node.created');
+    const sortMe = created.filter(e => /^Sort me/.test(e.payload?.title ?? '')).map(e => e.node);
+    const pile = created.find(e => e.payload?.title === 'Sorted pile');
+    return {
+      capturedSortMe: rows.some(e => e.kind === 'capture.recorded' && sortMe.includes(e.node)),
+      routed: rows.filter(e => e.kind === 'clarify.routed' && sortMe.includes(e.node)).length,
+      reopened: rows.filter(e => e.kind === 'clarify.reopened' && sortMe.includes(e.node)).length,
+      startClock: rows.some(e => e.kind === 'clock.set' && e.payload?.clockKind === 'start'
+        && e.payload?.source === 'detail:start' && sortMe.includes(e.node)),
+      estimate: rows.some(e => e.kind === 'estimate.recorded' && e.payload?.durationMinutes === 55),
+      pileKind: pile?.payload?.nodeKind,
+      filedUnderPile: rows.some(e => e.kind === 'node.parented'
+        && e.payload?.parent === pile?.node && sortMe.includes(e.node)),
+    };
+  });
+  is(sortLog.capturedSortMe, false, 'the rows were never captures — the latch stays honest');
+  is(sortLog.routed >= 2, true, `routes landed on never-captured nodes (${sortLog.routed})`);
+  is(sortLog.reopened >= 1, true, 'the undo wrote its clarify.reopened');
+  is(sortLog.startClock, true, 'the Not-before clock landed with its source');
+  is(sortLog.estimate, true, 'the estimate is in the log — the data that cannot be backfilled');
+  is(sortLog.pileKind, 'project', 'the created-in-place parent is a real project');
+  is(sortLog.filedUnderPile, true, 'and the card was filed under it in the same commit');
+  is(await sortCount() > sortLogBefore, true, 'sorting wrote real events');
+
+  // And the daily triage card is a door now too: capture, tap the card, the
+  // sheet opens on that very item.
+  await tpage.fill('#capture', 'open me from triage');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForSelector('#triage:not([hidden])');
+  const triageShows = await tpage.locator('#triage-card').textContent();
+  await tpage.click('#triage-card');
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-title').textContent(), triageShows,
+    `tapping the triage card opens the sheet on THAT item ("${triageShows}") — rename and dates mid-triage`);
+  await tpage.click('#detail-close');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {

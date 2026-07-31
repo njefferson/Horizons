@@ -21,6 +21,7 @@ import { mountTriage } from './clarify.ts';
 import { mountWork } from './work.ts';
 import { mountDetail } from './detail.ts';
 import { mountSearch } from './search.ts';
+import { mountSort } from './sort.ts';
 import { mountFocus, type FocusUI } from './focus.ts';
 import { mountReentry } from './reentry.ts';
 import { mountBother } from './bother.ts';
@@ -457,6 +458,7 @@ export async function main(edition?: Edition): Promise<void> {
   // unreachable. Capture is the promise; everything else is a surface.
   let detail: { open(n: NodeState): void } = { open() {} };
   let search: { refresh(): void } = { refresh() {} };
+  let sort: { refresh(): void } = { refresh() {} };
   let work: { refresh(): void } = { refresh() {} };
   let triage: { refresh(): void } = { refresh() {} };
   let replan: { refresh(): void } = { refresh() {} };
@@ -506,7 +508,7 @@ export async function main(edition?: Edition): Promise<void> {
   // while its row was still on screen — one item, two questions, which is
   // exactly what the exclusion exists to prevent. This is what work.ts is handed
   // as its onChange, since work refreshes itself afterwards.
-  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); search.refresh(); };
+  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); search.refresh(); sort.refresh(); };
   rerenderAll = rerenderLists;
   const refreshAll = (): void => { rerenderLists(); work.refresh(); };
 
@@ -520,6 +522,11 @@ export async function main(edition?: Edition): Promise<void> {
   // after detail, because a result opens the detail sheet. Contained like every
   // other surface — a broken search must never cost capture.
   try { search = mountSearch(session, now, n => detail.open(n)); } catch { /* a surface */ }
+
+  // Sort mode: the one-card conveyor over a named range (1.3.0). Mounted after
+  // detail for the same reason search is — "Open it" hands the card to the
+  // sheet. Contained: a broken sorter must never cost capture.
+  try { sort = mountSort(session, now, refreshAll, n => detail.open(n)); } catch { /* a surface */ }
 
   // Dates that have gone by (law 3). Mounted BEFORE work, because work's queue
   // is defined by what replan is not already asking about.
@@ -560,7 +567,7 @@ export async function main(edition?: Edition): Promise<void> {
 
   // The triage surface (heat pass + clarify). It re-renders the held list when
   // it moves an item, and capture refreshes it (a new item joins the inbox).
-  try { triage = mountTriage(session, refreshAll); } catch { /* a surface */ }
+  try { triage = mountTriage(session, refreshAll, n => detail.open(n)); } catch { /* a surface */ }
 
   // Three URL entrances, all landing in the same capture (ADR-0008):
   //  - ?capture=1     the manifest shortcut — just focus the empty line

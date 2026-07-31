@@ -230,6 +230,15 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
     return `parked until ${dateWords(park, zone, d)}`;
   }
   const { days, at } = soon;
+  // A future START names itself: "not before Sep 3" is a fact about a choice
+  // the reader made (or imported), and "in 5 days" hides which kind of date is
+  // talking — a due date asks, a start date merely opens (1.3.0, the defer
+  // verb). Only when the start IS the soonest demand: a nearer due date is the
+  // louder fact and keeps the generic words.
+  const start = n.clocks.start;
+  if (start && isValidIso(start.at) && start.at === at && days > 0) {
+    return `not before ${days === 1 ? 'tomorrow' : dateWords(at, zone, days)}`;
+  }
   if (days < 0) return 'ready now';
   if (days === 0) return 'today';
   if (days === 1) return 'tomorrow';

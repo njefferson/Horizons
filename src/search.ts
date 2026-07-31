@@ -18,7 +18,9 @@ import { heldNodes } from './gate.ts';
  * matters, and a stray double space does not hide a result. NFD + stripping the
  * combining marks is what makes it accent-insensitive without a lookup table.
  */
-const normalize = (s: string): string =>
+/** Exported since 1.3.0: the parent picker's type-to-narrow and the matching
+ *  range reuse the same folding, so "does this match" has one answer app-wide. */
+export const normalize = (s: string): string =>
   s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
 /** Capped like every other list in this app — a two-letter query must not be

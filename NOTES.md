@@ -433,6 +433,50 @@ decided by a session.**
 
 ### Log
 
+- **2026-07-31 (evening)** — **The roadmap session: from return engine to real
+  planner.** Noah: *"You do not have any direction from here… you have nothing
+  that a real planner system needs for humans to use it."* An 8-agent
+  plan-mode workflow (3 recon, 3 design lenses, 2 adversarial judges) produced
+  the approved direction — 1.2.3 → 1.3.0 → 1.4.0 ("what a thing carries, and
+  what the app did") → 1.5.0 ("wholesale") → 1.6.0 ("seeing and choosing") —
+  recorded in the session plan file; the releases land here as they ship.
+  · **1.2.3 "Say true things"** (Spine run 160 green): the OPR defect fixed at
+  both ends — `person.linked{relation:'opr'}` now folds into `NodeState.opr`
+  (every existing log heals on refold) and the sheet emits `opr.assigned`
+  forward; the importer's false notes header corrected and the summary states
+  the loss ("N notes were in the file — notes are not carried across yet");
+  the coverage list is built only while open (it was rebuilding ~4,300 hidden
+  DOM elements per repaint at 1,429 held). `do-now.timed` and
+  `estimate.recorded` are recorded IN the fold as deliberately unfolded.
+  · The smoke's purge-reload check was a RACE, not a fact — a fixed 900ms then
+  a selector already true on the old page, so a slow run read 102 stale cards.
+  It waits for the navigation as an event now. The instructive part: my
+  1.2.3 changes made it flip by timing alone, and the first bisection blamed
+  an innocent edit — three consecutive greens after the deterministic wait is
+  the actual sample.
+  · **1.3.0 "A triage that can reach everything"** ([ADR-0044](docs/adr/0044-sort-mode-and-named-ranges.md),
+  [ADR-0045](docs/adr/0045-the-start-verb.md), [ADR-0046](docs/adr/0046-admit-accumulator.md)):
+  sort mode over named ranges (the 1,222 loose imported rows were structurally
+  untriageable — the `captured` latch is correct AND meant no interaction
+  could reach them); the triage card is a button opening the sheet; the parent
+  picker narrows as you type, names each option's lineage, and creates-and-
+  files in one commit; "Not before" rides the start clock the importer had
+  been writing with no surface able to show it; the estimate emitter closes
+  the unmet logged-from-v1 commitment. The admit() rework underneath: ONE
+  accumulator + dirty-set silent check, whole-batch belts retained, held to
+  the old control flow by a 150-seed equivalence oracle
+  (test/admit-reference.ts) — **500 events @10k nodes: ~6,250ms → ~55ms**,
+  with a CI perf gate the old code reds by an order of magnitude. The oracle
+  also found the old flow spraying ineffective cures at merge-silenced nodes;
+  the rework skips them and the belt owns the case (the one deliberate
+  divergence, tested three ways).
+  · Two defects the new gates caught before ship: within-one-commit ULIDs are
+  not monotonic, so "oldest first by id" was shuffle order inside an import
+  batch (ordering now rides the genesis stamp); and the sheet's temporal rows
+  never hid for Menu items, so a date set there would be gate-legal and then
+  unrenderable — the rows hide now, with promotion as the door (law 6's
+  drift, caught in the same class the plan's law-judge struck for park).
+
 - **2026-07-29 (evening, second promote)** — **`main` fast-forwarded to `44478be` on
   Noah's "Promote"**, carrying 0.21.0 (today on paper) and **0.21.1 (the way out of the (i)
   panel)**. Spine run 88 watched green on that exact commit before the fast-forward.

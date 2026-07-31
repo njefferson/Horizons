@@ -116,7 +116,11 @@
     <!-- tabindex=-1 so focus can land here after a card is replaced: activating a
          route removes the button, and focus must not fall to <body> (WCAG 2.4.3). -->
     <h2 id="triage-prompt" class="triage-prompt" tabindex="-1"></h2>
-    <p id="triage-card" class="triage-card"></p>
+    <!-- A BUTTON since 1.3.0: tapping the card opens its detail sheet, which is
+         what makes rename, a real date, filing and a person reachable
+         mid-triage — the six routes stay the six routes. -->
+    <button id="triage-card" type="button" class="triage-card"
+            aria-label="Open this item to edit it"></button>
     <div id="triage-actions" class="triage-actions"></div>
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
@@ -134,6 +138,12 @@
        section, and the way to take the route back must not vanish with it. It
        names where the card went and returns it to the inbox in one tap. -->
   <div id="triage-undo" class="triage-undo"></div>
+
+  <!-- Sort mode (1.3.0): the same one-card conveyor, pointed at a range you
+       NAME — a big import, everything under one project, whatever matches a
+       word. Opt-in, behind this control, never the landing view. -->
+  <button id="sort-open" class="gauge" type="button">Sort things out
+    &mdash; work through a batch, one card at a time</button>
 
   <!-- Dates that have gone by (product law 3, ADR-0012/ADR-0034). NOT a list of
        failures — there is no such list in this app. Each row is a live decision,
@@ -278,6 +288,40 @@
   <div id="cards" class="cards" tabindex="-1"></div>
 </main>
 
+<!-- Sort mode (1.3.0). A dialog, so it is never the landing view and focus is
+     contained. The picker shows SENTENCES AND COUNTS, never lists (law 8); the
+     card shows one thing; the only number sorting ever states is the range's
+     true total, once, at entry. No tally, no countdown, no bar (law 5). -->
+<dialog id="sort" aria-labelledby="sort-title">
+  <h2 id="sort-title" class="detail-title">Sort things out</h2>
+  <div id="sort-picker">
+    <p class="detail-hint">Pick a batch. One card at a time, oldest first
+      &mdash; leave whenever you like, nothing minds.</p>
+    <ul id="sort-choices" class="sort-choices"></ul>
+    <div class="detail-row">
+      <label class="visually-hidden" for="sort-query">Things matching your words</label>
+      <input id="sort-query" type="text" autocomplete="off" spellcheck="false"
+             enterkeyhint="search" placeholder="or type a word&hellip;">
+      <button id="sort-query-go" type="button">Matching things</button>
+    </div>
+  </div>
+  <div id="sort-card-region" hidden>
+    <p id="sort-entry" class="sort-entry"></p>
+    <button id="sort-card" type="button" class="triage-card"
+            aria-label="Open this item to edit it"></button>
+    <p id="sort-where" class="sort-where"></p>
+    <div id="sort-actions" class="triage-actions"></div>
+    <div id="sort-undo" class="triage-undo"></div>
+    <div class="detail-row">
+      <button id="sort-back" type="button" class="ghost">Pick a different batch</button>
+    </div>
+  </div>
+  <p id="sort-live" role="status" aria-live="polite" class="visually-hidden"></p>
+  <div class="detail-actions">
+    <button id="sort-close" type="button" class="ghost">Close</button>
+  </div>
+</dialog>
+
 <!-- The replan sheet: one passed date, its context, and what to do about it.
      The options are built in JS from REPLAN_CHOICES so the surface cannot offer
      an option the intent layer does not implement, or drift from ADR-0012's
@@ -342,7 +386,11 @@
     <p id="detail-name-hint" class="detail-hint">Fix a typo, or say it better.</p>
   </div>
 
-  <div class="detail-group">
+  <!-- The three temporal groups hide for a Menu item: a wish that can sprout a
+       clock is a want becoming a commitment by accident (law 6's drift, ADR-0014)
+       — and a Menu item carrying a user clock is a state no surface can render,
+       since the Menu group wins. "Bring back as real work" is the door. -->
+  <div class="detail-group" id="detail-date-group">
     <label class="detail-label" for="detail-date">Give it a date</label>
     <div class="detail-row">
       <input id="detail-date" type="date">
@@ -351,7 +399,41 @@
     </div>
   </div>
 
+  <!-- The defer verb (1.3.0). A start date OPENS a thing rather than asking for
+       it: it stays out of the way until the day, comes back as ready on it, and
+       a passed start is never a card demanding a new plan — that is what makes
+       it different from a due date, and why it gets its own words. -->
+  <div class="detail-group" id="detail-start-group">
+    <label class="detail-label" for="detail-start">Not before</label>
+    <div class="detail-row">
+      <input id="detail-start" type="date" aria-describedby="detail-start-hint">
+      <button id="detail-start-set" type="button">Set</button>
+      <button id="detail-start-clear" type="button" class="ghost">Clear</button>
+    </div>
+    <p id="detail-start-hint" class="detail-hint">
+      It stays out of the way until that day, then comes back on its own.
+      Nothing happens if the day passes &mdash; this is a door opening, not a
+      deadline.
+    </p>
+  </div>
+
+  <!-- The estimate — logged from v1 because it can never be backfilled; the
+       learning that reads it comes later. Optional, one number, no judgement. -->
   <div class="detail-group">
+    <label class="detail-label" for="detail-estimate">About how long?</label>
+    <div class="detail-row">
+      <input id="detail-estimate" type="number" min="1" max="6000" inputmode="numeric"
+             aria-describedby="detail-estimate-hint">
+      <label class="detail-inline" for="detail-estimate">minutes</label>
+      <button id="detail-estimate-set" type="button">Note it</button>
+    </div>
+    <p id="detail-estimate-hint" class="detail-hint">
+      A guess is fine and nothing checks up on it. It is kept so a later version
+      can learn how long things really take.
+    </p>
+  </div>
+
+  <div class="detail-group" id="detail-repeat-group">
     <span class="detail-label" id="detail-repeat-label">Make it repeat</span>
     <div class="detail-row" role="group" aria-labelledby="detail-repeat-label">
       <label class="detail-inline" for="detail-every">every</label>
@@ -377,10 +459,20 @@
   <div class="detail-group">
     <p id="detail-place" class="detail-hint"></p>
     <label class="detail-label" for="detail-parent">What is this part of?</label>
+    <!-- Type-to-narrow (1.3.0): at 45 projects a bare select is a scroll test.
+         The filter narrows the options; when what was typed names no existing
+         place, one tap creates the project AND files this under it — the
+         nine-tap create-then-file journey collapsed to two. -->
     <div class="detail-row">
+      <input id="detail-parent-filter" type="text" autocomplete="off" spellcheck="false"
+             enterkeyhint="search" placeholder="narrow the list"
+             aria-label="Narrow the list of places">
       <select id="detail-parent"></select>
       <button id="detail-parent-set" type="button">Put it under</button>
       <button id="detail-unparent" type="button" class="ghost">On its own</button>
+    </div>
+    <div class="detail-row">
+      <button id="detail-parent-create" type="button" class="ghost" hidden></button>
     </div>
     <div class="detail-row">
       <button id="detail-make-project" type="button" class="ghost">This is bigger than one step</button>
