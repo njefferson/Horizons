@@ -14,155 +14,165 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.7.1 — ITERATION
+
+*2026-08-01*
+
+- **“What’s new” prints properly now.** Bold is bold and quotation marks are quotation marks — the raw codes that were showing on this very list are gone.
+- **The stray lines in the ⓘ panel are gone.** A status line only draws its separator when it has something to say, so each section holds together instead of being cut apart by rules that meant nothing.
+- **The small print reads as small print.** The caveat under each control is set in italics now — the same honest words, in a quieter posture, so the panel skims by heading and button and the detail is there when you want it.
+- The walkthrough’s last step now names the button that is actually on it — “Get started” — and says plainly what it does: it opens the ⓘ panel so keeping your data safe is the first thing you do.
+- In the ⓘ panel, the number on the app icon has its own heading now, and the calendar’s “it is a snapshot” caveat sits with the calendar again — it is about the copy you sent, and it read as if it were about the icon.
+
 ## 1.7.0 — CAPABILITY
 
 *2026-08-01*
 
-- **The same thing twice? Fold it into one.** When two entries are really one worry &mdash; seven years of inbox will do that &mdash; open either one and fold it into the other. Its dates, note, people, and anything under it go along; nothing is swallowed, and the one that stays keeps its own words wherever both spoke. The sheet of the one that stays lists what folded into it, and &ldquo;Split it back out&rdquo; undoes the fold any time &mdash; a promise that outlives the sitting, not just the undo bar.
-- **&ldquo;Sharing a name with something else&rdquo;** joins the sorting batches: everything whose name exactly matches another thing you hold, oldest first, so twins meet each other on the conveyor. Only exact matches &mdash; the app never guesses that two things that merely sound alike are the same.
-- **A lens for looking at one part of your life.** When you have places like Home or Work, a small &ldquo;Looking at&rdquo; chooser sits above your held list: pick one and the list shows only what lives under it. Everything else is still held, still clocked, and still comes back &mdash; the lens changes what you see, never what Quietkeep holds, and it says so right there every time it is on. Next up, the gauge, search, and dates that come back are never narrowed: those speak for the whole of what you hold, always.
+- **The same thing twice? Fold it into one.** When two entries are really one worry — seven years of inbox will do that — open either one and fold it into the other. Its dates, note, people, and anything under it go along; nothing is swallowed, and the one that stays keeps its own words wherever both spoke. The sheet of the one that stays lists what folded into it, and “Split it back out” undoes the fold any time — a promise that outlives the sitting, not just the undo bar.
+- **“Sharing a name with something else”** joins the sorting batches: everything whose name exactly matches another thing you hold, oldest first, so twins meet each other on the conveyor. Only exact matches — the app never guesses that two things that merely sound alike are the same.
+- **A lens for looking at one part of your life.** When you have places like Home or Work, a small “Looking at” chooser sits above your held list: pick one and the list shows only what lives under it. Everything else is still held, still clocked, and still comes back — the lens changes what you see, never what Quietkeep holds, and it says so right there every time it is on. Next up, the gauge, search, and dates that come back are never narrowed: those speak for the whole of what you hold, always.
 
 ## 1.6.0 — CAPABILITY
 
 *2026-08-01*
 
-- **&ldquo;How it hangs together&rdquo; &mdash; the whole shape, when you ask for it.** A tap opens the tree: every area, goal, and project with what sits under it, indented. It is a way of seeing, not a place to work &mdash; a row opens the thing itself, big branches say truthfully how much more they hold, and it never becomes the front page.
-- **Every list is a door now.** The &ldquo;also asking&rdquo; rows under Next up, every row of &ldquo;What you are holding&rdquo;, and the things listed under a project on its sheet &mdash; all open the thing itself with a tap. Nothing on screen is words you can only look at.
-- **Review finishes its four questions.** Alongside stalled projects and orphaned items, it now notices a goal nothing is feeding, and an area holding work where nothing has finished in a month &mdash; said calmly, three at a time, with the true count. Rest is legitimate; the question is only whether it is rest.
-- **A quiet close to a working session.** Finishing or stopping now ends on what was true: what happened to the thing you were on, and that everything you hold is covered &mdash; in words. No timer totals, no score. And if a thread from earlier is still waiting, it asks the one question: have a look, or let it go.
-- **Composing your day &mdash; optional, and off until you ask.** Turn it on under Extras and anything you hold can be chosen for today from its own sheet, up to five, sitting quietly above Next up. At midnight the choosing simply lapses &mdash; nothing counts what was chosen and not done, and the app never picks for you. Turn it off and it is gone.
+- **“How it hangs together” — the whole shape, when you ask for it.** A tap opens the tree: every area, goal, and project with what sits under it, indented. It is a way of seeing, not a place to work — a row opens the thing itself, big branches say truthfully how much more they hold, and it never becomes the front page.
+- **Every list is a door now.** The “also asking” rows under Next up, every row of “What you are holding”, and the things listed under a project on its sheet — all open the thing itself with a tap. Nothing on screen is words you can only look at.
+- **Review finishes its four questions.** Alongside stalled projects and orphaned items, it now notices a goal nothing is feeding, and an area holding work where nothing has finished in a month — said calmly, three at a time, with the true count. Rest is legitimate; the question is only whether it is rest.
+- **A quiet close to a working session.** Finishing or stopping now ends on what was true: what happened to the thing you were on, and that everything you hold is covered — in words. No timer totals, no score. And if a thread from earlier is still waiting, it asks the one question: have a look, or let it go.
+- **Composing your day — optional, and off until you ask.** Turn it on under Extras and anything you hold can be chosen for today from its own sheet, up to five, sitting quietly above Next up. At midnight the choosing simply lapses — nothing counts what was chosen and not done, and the app never picks for you. Turn it off and it is gone.
 
 ## 1.5.0 — CAPABILITY
 
 *2026-08-01*
 
-- **Act on a whole batch at once.** Inside &ldquo;Sort things out&rdquo;, any batch now takes wholesale acts: file them all under a place, send them all to the Menu, park them all until a day, or let them all go. You see the exact sentence of what will happen &mdash; counted from the real changes, including anything that cannot take the act and why &mdash; before anything is written, and one tap takes the whole act back.
-- **Nothing is ever swallowed on the way.** Sending dated things to the Menu sheds their dates visibly, letting things go saves a copy of everything first &mdash; before anything is touched, checked by machine &mdash; and the record explains every wholesale act in one line: what you did, to how many, in the very words you agreed to.
-- **Fixed: &ldquo;You can still keep it after all&rdquo; is now always true.** Letting something go used to be final the moment its sheet closed &mdash; the button that promised a way back was unreachable. &ldquo;Things you let go&rdquo;, behind the &#9432; panel, now lists everything you let go, newest first; open one and keep it after all. It is recovery, not an archive: nothing there nags, decays, or counts.
-- **Wishes get their own wholesale door.** Batches like &ldquo;On the Menu &mdash; read&rdquo; appear in the picker now, offering exactly what a wish can take: bring them all back as real work, or let them go. No dates, no filing &mdash; a wish holds no demands.
-- Also: &ldquo;Export a copy of these&rdquo; on any batch &mdash; a reading copy of those things and their history, honestly named as not-a-backup (the whole-store export remains the real one).
+- **Act on a whole batch at once.** Inside “Sort things out”, any batch now takes wholesale acts: file them all under a place, send them all to the Menu, park them all until a day, or let them all go. You see the exact sentence of what will happen — counted from the real changes, including anything that cannot take the act and why — before anything is written, and one tap takes the whole act back.
+- **Nothing is ever swallowed on the way.** Sending dated things to the Menu sheds their dates visibly, letting things go saves a copy of everything first — before anything is touched, checked by machine — and the record explains every wholesale act in one line: what you did, to how many, in the very words you agreed to.
+- **Fixed: “You can still keep it after all” is now always true.** Letting something go used to be final the moment its sheet closed — the button that promised a way back was unreachable. “Things you let go”, behind the ⓘ panel, now lists everything you let go, newest first; open one and keep it after all. It is recovery, not an archive: nothing there nags, decays, or counts.
+- **Wishes get their own wholesale door.** Batches like “On the Menu — read” appear in the picker now, offering exactly what a wish can take: bring them all back as real work, or let them go. No dates, no filing — a wish holds no demands.
+- Also: “Export a copy of these” on any batch — a reading copy of those things and their history, honestly named as not-a-backup (the whole-store export remains the real one).
 
 ## 1.4.0 — CAPABILITY
 
 *2026-08-01*
 
-- **Notes on things.** Anything you hold can now carry words &mdash; details, links, half-thoughts &mdash; edited on its own sheet and shown only there, so lists stay one calm line each. Clearing the box removes the note, and that is recorded honestly too.
-- **Imports bring their notes along.** A file from another planner now arrives with every note attached to its item, and the summary says how many came &mdash; the loss this app once inflicted silently, then admitted, is now simply over.
-- **&ldquo;What happened to this&rdquo; &mdash; every item can explain itself.** Open anything and unfold its history: when it arrived, where you sent it, what date it was given, and every time the app stepped in &mdash; each of the app&rsquo;s own moves saying why (&ldquo;so it would not go silent&rdquo;). The permanent answer to &ldquo;where did it go?&rdquo;.
-- **You can read the record itself.** Behind the &#9432; panel: the append-only record everything is worked out from, every line in plain words, newest day first, with its true size stated. Reading changes nothing, and no line ever shows a note&rsquo;s or journal&rsquo;s contents &mdash; it says one was written, not what it said.
-- Also: an item&rsquo;s sheet now quietly says how it was sorted (&ldquo;sorted as reference&rdquo;), and typing a year below 1000 anywhere no longer lands you in the wrong millennium.
+- **Notes on things.** Anything you hold can now carry words — details, links, half-thoughts — edited on its own sheet and shown only there, so lists stay one calm line each. Clearing the box removes the note, and that is recorded honestly too.
+- **Imports bring their notes along.** A file from another planner now arrives with every note attached to its item, and the summary says how many came — the loss this app once inflicted silently, then admitted, is now simply over.
+- **“What happened to this” — every item can explain itself.** Open anything and unfold its history: when it arrived, where you sent it, what date it was given, and every time the app stepped in — each of the app’s own moves saying why (“so it would not go silent”). The permanent answer to “where did it go?”.
+- **You can read the record itself.** Behind the ⓘ panel: the append-only record everything is worked out from, every line in plain words, newest day first, with its true size stated. Reading changes nothing, and no line ever shows a note’s or journal’s contents — it says one was written, not what it said.
+- Also: an item’s sheet now quietly says how it was sorted (“sorted as reference”), and typing a year below 1000 anywhere no longer lands you in the wrong millennium.
 
 ## 1.3.1 — ITERATION
 
 *2026-07-31*
 
-- **Fixed: sending a dated thing to Someday no longer swallows the date.** A due date, a &ldquo;not before&rdquo;, or a parked return date on something you shelve to the Menu is now cleared as part of the same act &mdash; visibly, in the record &mdash; instead of riding along invisibly where no screen could ever show it again. The app now refuses outright to leave a Menu item carrying a date, however the attempt is made.
-- **Fixed: sorting cannot act on a card that just changed.** If the thing on screen was completed, shelved, or let go while you had it open &mdash; the sheet is one tap away &mdash; tapping a route now says so and shows the fresh card, instead of quietly filing a decision you had just contradicted.
-- **&ldquo;Leave it&rdquo; always moves on.** When everything left in a batch has been left once, the round starts over instead of showing the same card again while claiming it was left &mdash; and with one card remaining, it says exactly that.
-- **Two dates on one day tell the truth.** Something due the same day it opens now reads as the obligation it is, not as &ldquo;not before&rdquo; &mdash; a deadline is the louder fact.
-- Also: a place created mid-filing can no longer collide with an existing project&rsquo;s name whatever screen it is on; estimates and date fields stay hidden on Menu items where they could never mean anything; keyboard focus lands somewhere real after every sorting action; a typed year below 1000 stays the year you typed; and the machinery that checks every write got a set of stricter refusals with the tests to hold them there.
+- **Fixed: sending a dated thing to Someday no longer swallows the date.** A due date, a “not before”, or a parked return date on something you shelve to the Menu is now cleared as part of the same act — visibly, in the record — instead of riding along invisibly where no screen could ever show it again. The app now refuses outright to leave a Menu item carrying a date, however the attempt is made.
+- **Fixed: sorting cannot act on a card that just changed.** If the thing on screen was completed, shelved, or let go while you had it open — the sheet is one tap away — tapping a route now says so and shows the fresh card, instead of quietly filing a decision you had just contradicted.
+- **“Leave it” always moves on.** When everything left in a batch has been left once, the round starts over instead of showing the same card again while claiming it was left — and with one card remaining, it says exactly that.
+- **Two dates on one day tell the truth.** Something due the same day it opens now reads as the obligation it is, not as “not before” — a deadline is the louder fact.
+- Also: a place created mid-filing can no longer collide with an existing project’s name whatever screen it is on; estimates and date fields stay hidden on Menu items where they could never mean anything; keyboard focus lands somewhere real after every sorting action; a typed year below 1000 stays the year you typed; and the machinery that checks every write got a set of stricter refusals with the tests to hold them there.
 
 ## 1.3.0 — CAPABILITY
 
 *2026-07-31*
 
-- **&ldquo;Sort things out&rdquo; &mdash; a triage that can finally reach everything.** Pick a batch in your own words &mdash; the loose things a big import brought in, everything under one project, whatever matches a word &mdash; and work through it one card at a time with the same six choices triage has always had. Nothing gets rendered as a wall, there is no countdown and no score, and leaving is always one tap that records nothing. The batch is simply smaller when you come back.
-- **Tap any triage card to open it.** Renaming, a real date, filing it somewhere, naming who it is with &mdash; all reachable mid-sort now, on both triage surfaces, without losing your place.
-- **&ldquo;Not before&rdquo; &mdash; the date that opens instead of asking.** Give something a day and it stays out of the way until then, comes back ready on its own, and nothing happens if the day passes &mdash; a door opening, not a deadline. Defer dates imported from another planner finally show up here too, editable at last.
-- **Filing got fast.** The &ldquo;what is this part of&rdquo; list narrows as you type, each place says where it sits, and typing a place that does not exist yet offers to create the project and file under it in one go.
-- Also: an optional &ldquo;about how long?&rdquo; minutes note on anything (kept for a future version that learns how long things really take &mdash; nothing checks up on it), and the machinery underneath got two orders of magnitude faster at taking in large batches, which the coming wholesale actions will stand on.
+- **“Sort things out” — a triage that can finally reach everything.** Pick a batch in your own words — the loose things a big import brought in, everything under one project, whatever matches a word — and work through it one card at a time with the same six choices triage has always had. Nothing gets rendered as a wall, there is no countdown and no score, and leaving is always one tap that records nothing. The batch is simply smaller when you come back.
+- **Tap any triage card to open it.** Renaming, a real date, filing it somewhere, naming who it is with — all reachable mid-sort now, on both triage surfaces, without losing your place.
+- **“Not before” — the date that opens instead of asking.** Give something a day and it stays out of the way until then, comes back ready on its own, and nothing happens if the day passes — a door opening, not a deadline. Defer dates imported from another planner finally show up here too, editable at last.
+- **Filing got fast.** The “what is this part of” list narrows as you type, each place says where it sits, and typing a place that does not exist yet offers to create the project and file under it in one go.
+- Also: an optional “about how long?” minutes note on anything (kept for a future version that learns how long things really take — nothing checks up on it), and the machinery underneath got two orders of magnitude faster at taking in large batches, which the coming wholesale actions will stand on.
 
 ## 1.2.3 — ITERATION
 
 *2026-07-31*
 
-- **Fixed: naming who is running a tracked project now actually shows their name.** Saying &ldquo;they are running it&rdquo; on a project recorded the person but the carrying report went on saying &ldquo;nobody named yet&rdquo; forever. The names you already entered come back on their own &mdash; nothing to redo.
-- **The import summary now tells you about notes.** Notes are not carried across yet, and the summary used to imply a file had none when it was full of them. It now says how many notes were in the file and that they do not come across &mdash; plainly, before anything is written. Carrying them in is on the roadmap.
+- **Fixed: naming who is running a tracked project now actually shows their name.** Saying “they are running it” on a project recorded the person but the carrying report went on saying “nobody named yet” forever. The names you already entered come back on their own — nothing to redo.
+- **The import summary now tells you about notes.** Notes are not carried across yet, and the summary used to imply a file had none when it was full of them. It now says how many notes were in the file and that they do not come across — plainly, before anything is written. Carrying them in is on the roadmap.
 - And the app does less invisible work: a long list it builds behind a closed panel is now built only when you open it, which keeps big planners quick.
 
 ## 1.2.2 — ITERATION
 
 *2026-07-31*
 
-- **Things you are holding now say where they sit.** An item that belongs to a project shows &ldquo;in &lt;project&gt;&rdquo; right on its row, and a project shows how many things are under it. Before, an imported action that already had a home looked exactly like a loose one &mdash; so a big import (say, from OmniFocus) arrived as one flat pile with no way to tell what was already filed from what still needs sorting. Now the loose ones are the ones with nothing beside them, which is what makes a backlog possible to work through.
+- **Things you are holding now say where they sit.** An item that belongs to a project shows “in ⟨project⟩” right on its row, and a project shows how many things are under it. Before, an imported action that already had a home looked exactly like a loose one — so a big import (say, from OmniFocus) arrived as one flat pile with no way to tell what was already filed from what still needs sorting. Now the loose ones are the ones with nothing beside them, which is what makes a backlog possible to work through.
 
 ## 1.2.1 — ITERATION
 
 *2026-07-31*
 
-- **Sending something to &ldquo;Do now&rdquo; no longer feels like a trap.** The offer that follows now says which thing it is asking about by name, and adds &ldquo;Leave it for now&rdquo; &mdash; so you can agree it is for today without being made to either mark it done or start a timer. It stays on your list under Next up either way.
-- **The &ldquo;also asking&rdquo; list under Next up reads as a list again.** Each thing is on its own line with its name in full, above a quiet note of why &mdash; instead of name and note run together on one line, which read like a paragraph rather than a set of separate things.
+- **Sending something to “Do now” no longer feels like a trap.** The offer that follows now says which thing it is asking about by name, and adds “Leave it for now” — so you can agree it is for today without being made to either mark it done or start a timer. It stays on your list under Next up either way.
+- **The “also asking” list under Next up reads as a list again.** Each thing is on its own line with its name in full, above a quiet note of why — instead of name and note run together on one line, which read like a paragraph rather than a set of separate things.
 
 ## 1.2.0 — CAPABILITY
 
 *2026-07-31*
 
-- **Undo, for when a card moves and you want it back.** Triage is meant to be quick &mdash; one tap and the card is gone &mdash; but quick can feel like lost. Now, right after you sort a card, it says where it went and offers to take it back. One tap returns it to your inbox, exactly as it was, whichever way you had sent it.
+- **Undo, for when a card moves and you want it back.** Triage is meant to be quick — one tap and the card is gone — but quick can feel like lost. Now, right after you sort a card, it says where it went and offers to take it back. One tap returns it to your inbox, exactly as it was, whichever way you had sent it.
 - **Search: find anything you are holding.** Type a word and everything that matches is there, each one saying where it is now, and tapping it opens it. It only searches what you are actively holding, it never changes anything, and it keeps no record of what you looked for.
 
 ## 1.1.0 — CAPABILITY
 
 *2026-07-31*
 
-- **A short walkthrough the first time you open Quietkeep.** Four calm steps on what it is and how it works &mdash; put something down, it sorts and times itself, it is all on your device. You can Skip at any point, and it never interrupts again.
-- Want it back? &ldquo;Show the walkthrough again&rdquo; is under the ⓘ, beside how to use the app.
-- **A Help section under the ⓘ** &mdash; short, tap-to-open answers to the things people ask: getting a thought out of your head, what happens after, how it picks what is next, dates that have gone by, reminders, privacy, backups, and two devices.
-- And, for the curious, &ldquo;Why does it work this way?&rdquo; opens the full reasoning behind Quietkeep &mdash; a readable page right here in the app on how memory, attention and motivation actually work, with every source named and tagged by how well established it is.
+- **A short walkthrough the first time you open Quietkeep.** Four calm steps on what it is and how it works — put something down, it sorts and times itself, it is all on your device. You can Skip at any point, and it never interrupts again.
+- Want it back? “Show the walkthrough again” is under the ⓘ, beside how to use the app.
+- **A Help section under the ⓘ** — short, tap-to-open answers to the things people ask: getting a thought out of your head, what happens after, how it picks what is next, dates that have gone by, reminders, privacy, backups, and two devices.
+- And, for the curious, “Why does it work this way?” opens the full reasoning behind Quietkeep — a readable page right here in the app on how memory, attention and motivation actually work, with every source named and tagged by how well established it is.
 
 ## 1.0.1 — ITERATION
 
 *2026-07-31*
 
-- **The ⓘ panel now opens with what Quietkeep is, how to use it, and how to add it to your home screen** &mdash; not with the storage details. The first thing you see is the app explaining itself, and the install steps are there for iPhone, iPad, Android and computer.
-- Everything else in the panel is grouped into named areas &mdash; your data, extras, and about &mdash; instead of one long run of tools, and it points back to the rest of the free apps at noahjefferson.pages.dev.
+- **The ⓘ panel now opens with what Quietkeep is, how to use it, and how to add it to your home screen** — not with the storage details. The first thing you see is the app explaining itself, and the install steps are there for iPhone, iPad, Android and computer.
+- Everything else in the panel is grouped into named areas — your data, extras, and about — instead of one long run of tools, and it points back to the rest of the free apps at noahjefferson.pages.dev.
 
 ## 1.0.0 — VERSION
 
 *2026-07-31*
 
-- **This is version one.** Every capability the planner was built to have is in place and in daily use &mdash; friction-free capture, triage, a single Next-up, dates and repeats, the Review that surfaces only what has stalled, the person lens, the carrying report, and calendar reminders. Nothing here is a preview any more.
+- **This is version one.** Every capability the planner was built to have is in place and in daily use — friction-free capture, triage, a single Next-up, dates and repeats, the Review that surfaces only what has stalled, the person lens, the carrying report, and calendar reminders. Nothing here is a preview any more.
 - It stays exactly what it always was: yours, on your device, with no account, no telemetry, and no server holding your data. Keeping two devices in step is a separate edition you opt into; the planner itself still cannot reach anything at all.
 
 ## 0.27.3 — ITERATION
 
 *2026-07-31*
 
-- **Two devices now catch up on their own — no need to press Sync.** While a device is open it quietly keeps in step with the other, and it checks the moment you switch to it. Before, a full catch-up could take a few taps of &ldquo;Sync now&rdquo; because each tap did only one leg of the back-and-forth; now opening both is enough.
-- A single &ldquo;Sync now&rdquo; also finishes the whole exchange in one go, rather than one step of it, and tells you the total it moved.
+- **Two devices now catch up on their own — no need to press Sync.** While a device is open it quietly keeps in step with the other, and it checks the moment you switch to it. Before, a full catch-up could take a few taps of “Sync now” because each tap did only one leg of the back-and-forth; now opening both is enough.
+- A single “Sync now” also finishes the whole exchange in one go, rather than one step of it, and tells you the total it moved.
 
 ## 0.27.2 — ITERATION
 
 *2026-07-31*
 
-- **Fixed: work synced from your other device now appears straight away.** When a device received a planner from its pair, the items landed but the screen could stay blank until you closed the app and reopened it &mdash; which looked exactly like sync doing nothing. Now the moment anything arrives, what you are looking at updates to show it, with no restart.
+- **Fixed: work synced from your other device now appears straight away.** When a device received a planner from its pair, the items landed but the screen could stay blank until you closed the app and reopened it — which looked exactly like sync doing nothing. Now the moment anything arrives, what you are looking at updates to show it, with no restart.
 
 ## 0.27.1 — ITERATION
 
 *2026-07-30*
 
-- **Dropping a device now actually clears its access.** &ldquo;Replace the key&rdquo; used to stop only new work from reaching a device you let go; the last few weeks already waiting at the handover point could still be collected. Now, if this device is online, it empties that too &mdash; and says plainly when it could not, so you are never told a device is cut off when it is not.
-- **A page you can open to see the handover point&rsquo;s health.** If your other device is not catching up, you can now check in plain words whether the handover point is up, and what a hold-up most likely means &mdash; it is almost always a daily limit that resets on its own, with nothing lost.
-- **Taking a key in now carries a warning, where before only giving one out did.** A key someone hands you lets them read this planner, so the app now says so at the moment you paste or open one, and tells you to check the pairing name against your other device&rsquo;s screen.
-- Several places where the app described its own safety more confidently than it should have are now corrected to say exactly what is and is not protected &mdash; what leaves the device, what a handover point can tell, and what replacing a key can and cannot undo.
+- **Dropping a device now actually clears its access.** “Replace the key” used to stop only new work from reaching a device you let go; the last few weeks already waiting at the handover point could still be collected. Now, if this device is online, it empties that too — and says plainly when it could not, so you are never told a device is cut off when it is not.
+- **A page you can open to see the handover point’s health.** If your other device is not catching up, you can now check in plain words whether the handover point is up, and what a hold-up most likely means — it is almost always a daily limit that resets on its own, with nothing lost.
+- **Taking a key in now carries a warning, where before only giving one out did.** A key someone hands you lets them read this planner, so the app now says so at the moment you paste or open one, and tells you to check the pairing name against your other device’s screen.
+- Several places where the app described its own safety more confidently than it should have are now corrected to say exactly what is and is not protected — what leaves the device, what a handover point can tell, and what replacing a key can and cannot undo.
 - Fixed: a device whose key was replaced could stay quiet until you next wrote something, instead of bringing a fresh device fully up to date straight away.
 
 ## 0.27.0 — CAPABILITY
 
 *2026-07-30*
 
-- **Two devices can keep each other up to date &mdash; in a separate app called Quietkeep Sync.** Pair them once, and from then on each brings the other up to date when you open it. No account, nothing to sign in to.
-- Pairing shows a code and a key. Scan the code with your other device, or paste the key into it &mdash; nothing is written to a file unless you ask for one, so there is no copy of it left in a downloads folder afterwards.
-- You can see which devices have written here, and when each one last did. If you want to drop one, replacing the key stops it receiving anything from this device from that moment on &mdash; though whatever it already holds, it keeps.
+- **Two devices can keep each other up to date — in a separate app called Quietkeep Sync.** Pair them once, and from then on each brings the other up to date when you open it. No account, nothing to sign in to.
+- Pairing shows a code and a key. Scan the code with your other device, or paste the key into it — nothing is written to a file unless you ask for one, so there is no copy of it left in a downloads folder afterwards.
+- You can see which devices have written here, and when each one last did. If you want to drop one, replacing the key stops it receiving anything from this device from that moment on — though whatever it already holds, it keeps.
 - Your writing is sealed on your device before any of it leaves, with a key only your devices hold. The handover point in between stores something it cannot read and is never given the key.
-- Both devices show the same short pairing name. If one shows something different they are not a pair &mdash; worth being able to see, rather than working it out from the fact that nothing ever arrives.
+- Both devices show the same short pairing name. If one shows something different they are not a pair — worth being able to see, rather than working it out from the fact that nothing ever arrives.
 - **Quietkeep itself still cannot reach anything at all, and that does not change.** It is the more private of the two and stays the one you get by default; the browser refuses to let it contact anything, whatever it is asked to do. Moving your work across is an export and an import, once.
-- Taking in another device&rsquo;s work only ever adds. It never replaces and never removes, so neither side can lose anything to the other.
+- Taking in another device’s work only ever adds. It never replaces and never removes, so neither side can lose anything to the other.
 
 ## 0.26.0 — CAPABILITY
 
 *2026-07-30*
 
-- **When a newer version is ready, it says so and offers you a copy first.** A line above the app, not something over it, with &ldquo;Save a copy&rdquo;, &ldquo;Reload now&rdquo; and &ldquo;Not now&rdquo;. Ignore it and nothing changes.
+- **When a newer version is ready, it says so and offers you a copy first.** A line above the app, not something over it, with “Save a copy”, “Reload now” and “Not now”. Ignore it and nothing changes.
 - It does not pretend anything is at risk, because nothing is — this app only ever adds to its record and an update cannot rewrite it. A copy is a point to come back to, and that is all it claims to be.
 - It appears once. Declining is an answer, not a question to ask again.
 
@@ -170,7 +180,7 @@ triplet and what it did for you.
 
 *2026-07-30*
 
-- **&ldquo;Ready now&rdquo; means somebody set a date.** A thousand things you had never dated were being counted as ready today, and the number on the icon said so. What the app puts on something to make sure it comes back is not a date you chose, and it no longer pretends to be.
+- **“Ready now” means somebody set a date.** A thousand things you had never dated were being counted as ready today, and the number on the icon said so. What the app puts on something to make sure it comes back is not a date you chose, and it no longer pretends to be.
 - **When nothing is asking, it says what is actually going on** — how many things are here without a date, waiting on you to decide — instead of the section quietly vanishing.
 - A card you were interrupted in the middle of now carries its own return, so it is offered back whatever else changes.
 
@@ -186,7 +196,7 @@ triplet and what it did for you.
 
 *2026-07-30*
 
-- **Buttons stay with the thing they belong to.** On a long title, &ldquo;Done&rdquo; used to wrap onto a line of its own and sit directly above the *next* item — so it looked like it belonged to that one instead. The box is now drawn around the whole row, including its buttons, at every width and text size.
+- **Buttons stay with the thing they belong to.** On a long title, “Done” used to wrap onto a line of its own and sit directly above the *next* item — so it looked like it belonged to that one instead. The box is now drawn around the whole row, including its buttons, at every width and text size.
 - A gate now measures this, so it cannot come back quietly.
 
 ## 0.24.0 — CAPABILITY

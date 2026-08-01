@@ -433,6 +433,35 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (his screenshots)** — **1.7.1** — five ⓘ-panel defects Noah
+  photographed on device, all confirmed against source and fixed the same
+  hour.
+  · The walkthrough's last step said *"Next opens it…"* while the button on
+  that step is relabelled **"Get started"** (tour.ts renames it on the final
+  step; the copy was written against the old name) — it now names the real
+  button and says what it opens.
+  · The badge explainer had been wedged into the middle of "Reminders that
+  reach you", ahead of the calendar's own snapshot caveat — whose "It" then
+  read as the icon number. The caveat moved up beside the calendar's story
+  and the badge block got its own heading.
+  · **What's new printed raw code**: the release notes are rendered with
+  textContent (innerHTML is banned), but the strings carried `&ldquo;`-class
+  entities and `**` marks — so the panel showed the markup itself. The
+  strings now carry real Unicode punctuation, and the renderer translates a
+  note's `**lead**` into a real `<strong>` built from text nodes.
+  CHANGELOG.md regenerates from the same array, so the two stay one.
+  · **Stray rules cut the panel apart**: every `.storage-note` status region
+  draws a `border-top`, and a dozen of them sit empty through the whole panel
+  — each drew a full-width line, so "Save a copy first" was fenced off from
+  the clearing buttons it guards and a section's caveat read as the next
+  section's. `.storage-note:empty` now takes no room and draws no rule; the
+  live regions stay in the tree.
+  · **Caveats read as body text**: the small print under each control now
+  sits in italics at the same registered `--ink-soft` pair — his words: all
+  the words are needed, but it was not done smartly. Posture changed,
+  contrast did not.
+  No behaviour changes; changelog 1.7.1 (ITERATION) + SW cache together.
+
 - **2026-08-01 (after the promote)** — **1.7.0 "Duplicate handling and the
   lens"** — Noah's direct instruction in the promote message; the watch-list's
   first trigger fired and Q-10's recorded shape built

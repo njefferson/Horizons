@@ -1142,6 +1142,16 @@ dialog, dialog * { overflow-wrap: anywhere; }
   border-top: 1px solid var(--line);
   color: var(--warm);
 }
+/* A status region with nothing to say must take no room and draw no rule.
+   A dozen of these sit empty through the whole panel, and each was drawing a
+   full-width line — stray separators cutting sections mid-flow, so a section's
+   own caveat read as belonging to the next one (Noah, on device, 1.7.1). The
+   element stays in the tree (it is a live region); only its furniture goes. */
+.storage-note:empty {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
 
 /* Patch notes. Written for the reader, so they are set as prose, not a table. */
 .note-head {
@@ -1241,7 +1251,12 @@ dialog, dialog * { overflow-wrap: anywhere; }
 
 /* The snapshot caveat: quieter than the offer above it, but never hidden — a
    calendar that silently goes stale would be the app implying it is live. */
-.about-caveat { color: var(--ink-soft); font-size: 0.9375rem; }
+/* Caveats are the quiet honesty under a control — subordinate to the section's
+   own prose, so the eye can skim headings and buttons and drop into the small
+   print only when it wants it (Noah: the words are all needed, but they were
+   not presented smartly). Italic at the same registered --ink-soft pair —
+   posture changes, contrast does not. */
+.about-caveat { color: var(--ink-soft); font-size: 0.875rem; font-style: italic; }
 
 /* The record itself (1.4.0). Lines WRAP — the (i) dialog's 320px overflow gate
    holds for this list too, so nothing here may scroll sideways. Cures indent

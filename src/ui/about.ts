@@ -134,12 +134,32 @@ export async function mountAbout(
   // hard to reach.
   //
   // Nothing is removed. It is one tap away and it says how many.
+  // A note's `**lead**` becomes a real <strong> — built from text nodes only,
+  // never innerHTML. The first version handed the raw string to textContent,
+  // which printed the asterisks and (worse) the entity names literally on the
+  // panel — “&ldquo;” as seven characters (Noah, on device, 1.7.1). The
+  // strings now carry real Unicode punctuation; only the bold marks need
+  // translating, and an unpaired ** is rendered as the text it is.
+  const noteLine = (text: string): HTMLLIElement => {
+    const li = el('li');
+    const parts = text.split('**');
+    if (parts.length % 2 === 0) {            // an unpaired ** is just text
+      li.textContent = text;
+      return li;
+    }
+    parts.forEach((part, i) => {
+      if (!part) return;
+      if (i % 2 === 1) li.append(el('strong', undefined, part));
+      else li.append(document.createTextNode(part));
+    });
+    return li;
+  };
   const noteBlock = (r: typeof RELEASES[number]): HTMLElement[] => {
     const h = el('h3', 'note-head');
     h.append(el('span', 'note-triplet', r.triplet));
     h.append(el('span', 'note-kind', r.kind.toLowerCase()));
     const ul = el('ul', 'note-list');
-    ul.append(...r.notes.map((n) => el('li', undefined, n)));
+    ul.append(...r.notes.map(noteLine));
     return [h, ul];
   };
   const [latest, ...older] = RELEASES;

@@ -548,6 +548,32 @@ try {
     await page.goto(url, { waitUntil: 'load' });
     await page.waitForSelector('body[data-ready=true]');
 
+    // Fill-and-verify for the search box. A plain fill has been observed (here
+    // and in smoke, at more than one site) to resolve without the value
+    // landing when a commit-triggered refresh is in flight — rarely, and only
+    // on loaded runners. Verifying keeps the check honest: a lost fill
+    // retries; a genuinely broken search still fails, with the observed value.
+    const fillSearch = async (text) => {
+      for (let tries = 0; ; tries++) {
+        // The mechanism, finally caught: filling while a modal dialog is open
+        // (or still closing) resolves without the value landing — the fill's
+        // focus step cannot reach an element the dialog has made inert, so
+        // the inserted text goes to whatever holds focus. Wait the modal out.
+        await page.waitForFunction(() => !document.querySelector('dialog[open]'),
+          null, { timeout: 5000 }).catch(() => {});
+        await page.fill('#search-input', text);
+        const landed = await page.waitForFunction(
+          (t) => document.querySelector('#search-input')?.value === t, text,
+          { timeout: 2000 },
+        ).then(() => true).catch(() => false);
+        if (landed) return;
+        if (tries >= 2) {
+          fail(`${theme}: the search fill "${text}" would not land after ${tries + 1} tries`);
+          return;
+        }
+      }
+    };
+
     // The update line is hidden until a newer version exists, so it is revealed for
     // the audit — a control somebody only meets on an update day is still a control,
     // and leaving it out would exempt exactly the surfaces people meet under strain.
@@ -606,13 +632,13 @@ try {
     // State 3a: search. Type a word; the held card is found. The input is always
     // present (audited in 'empty store'); the results are their own state, and a
     // result is a real button with a focus ring like every other row.
-    await page.fill('#search-input', 'held');
+    await fillSearch('held');
     await page.waitForSelector('#search-results .search-open');
     await auditContrast(page, 'search results', theme);
     await auditAxe(page, 'search results', theme);
     await auditTargets(page, 'search results', theme);
     await auditFocusRings(page, 'search results', theme, ['#search-input', '#search-results .search-open']);
-    await page.fill('#search-input', '');          // leave the box as we found it
+    await fillSearch('');          // leave the box as we found it
     await page.waitForSelector('#search-results .search-open', { state: 'detached' });
 
     // State 3b: the triage surface. Capturing a card left an unrouted node, so
@@ -1090,7 +1116,7 @@ try {
       return false;
     }, null, { timeout: 20000, polling: 300 });
     await page.waitForTimeout(400);
-    await page.fill('#search-input', 'sortable thing');
+    await fillSearch('sortable thing');
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');
     await page.waitForSelector('#detail[open]');
@@ -1098,7 +1124,7 @@ try {
     await page.click('#detail-parent-set');
     await page.waitForTimeout(250);
     await page.click('#detail-close');
-    await page.fill('#search-input', '');
+    await fillSearch('');
 
     await page.click('#sort-open');
     await page.waitForSelector('#sort[open]');
@@ -1197,20 +1223,7 @@ try {
     await page.waitForFunction(() => /^On\./.test(
       document.querySelector('#today-note')?.textContent ?? ''));
     await page.click('#about-close');
-    // Fill-and-verify. On this exact beat — the first search after the module
-    // toggle's refresh — a plain fill has been observed (here and in smoke) to
-    // resolve without the value landing, rarely and only on loaded runners.
-    // Verifying the value keeps the check honest: a lost fill retries, and a
-    // genuinely broken search still fails, now with the observed value.
-    for (let tries = 0; ; tries++) {
-      await page.fill('#search-input', 'sortable thing');
-      const landed = await page.waitForFunction(
-        () => document.querySelector('#search-input')?.value === 'sortable thing',
-        null, { timeout: 2000 },
-      ).then(() => true).catch(() => false);
-      if (landed) break;
-      if (tries >= 2) { fail(`${theme}: the search fill would not land after ${tries + 1} tries`); break; }
-    }
+    await fillSearch('sortable thing');
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');
     await page.waitForSelector('#detail[open]');
@@ -1219,7 +1232,7 @@ try {
     await page.waitForFunction(() => /Chosen for today/.test(
       document.querySelector('#detail-live')?.textContent ?? ''));
     await page.click('#detail-close');
-    await page.fill('#search-input', '');
+    await fillSearch('');
     await page.waitForSelector('#composed:not([hidden])');
     await auditContrast(page, 'composed strip', theme);
     await auditAxe(page, 'composed strip', theme);
@@ -1236,14 +1249,14 @@ try {
     // let it go through its own sheet — the app's real path, no seeding.
     await page.fill('#capture', 'a thing let go');
     await page.click('#capture-form button[type=submit]');
-    await page.fill('#search-input', 'thing let go');
+    await fillSearch('thing let go');
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');
     await page.waitForSelector('#detail[open]');
     await page.click('#detail-trash');
     await page.waitForSelector('#detail-untrash:not([hidden])');
     await page.click('#detail-close');
-    await page.fill('#search-input', '');
+    await fillSearch('');
 
     // Folding a duplicate (1.7.0, ADR-0053): two captures of the same errand,
     // so the filter isolates the twin and every state below is deterministic.
@@ -1255,11 +1268,12 @@ try {
     await page.fill('#capture', 'The same errand TWICE');
     await page.click('#capture-form button[type=submit]');
     await page.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
-    await page.fill('#search-input', 'same errand');
+    await fillSearch('same errand');
     await page.waitForSelector('#search-results .search-open');
     await page.locator('#search-results .search-open', { hasText: /the same errand twice/ }).click();
     await page.waitForSelector('#detail[open]');
-    await page.fill('#search-input', '');
+    // The search box is cleared AFTER the sheet closes, not here — a fill
+    // cannot reach an element the modal has made inert.
     await page.fill('#detail-merge-filter', 'same errand');
     await page.waitForFunction(() => document.querySelectorAll('#detail-merge option').length === 2);
     await auditContrast(page, 'detail sheet, folding', theme);
@@ -1274,11 +1288,10 @@ try {
     await auditTargets(page, 'detail sheet, folded away', theme);
     await auditFocusRings(page, 'detail sheet, folded away', theme, ['#detail-unmerge']);
     await page.click('#detail-close');
-    await page.fill('#search-input', 'same errand');
+    await fillSearch('same errand');
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');   // the merged one is off search
     await page.waitForSelector('#detail[open]');
-    await page.fill('#search-input', '');
     await page.waitForSelector('#detail-merged-group:not([hidden])');
     await auditContrast(page, 'detail sheet, survivor', theme);
     await auditAxe(page, 'detail sheet, survivor', theme);
@@ -1287,6 +1300,7 @@ try {
     await page.locator('#detail-merged-list button').first().click();
     await page.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
     await page.click('#detail-close');
+    await fillSearch('');              // now the modal is gone, the box clears
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

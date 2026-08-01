@@ -55,7 +55,7 @@ const STEPS: readonly Step[] = [
     heading: 'It is yours, and it is all here',
     body: [
       'Everything stays on your device — no account, no sign-in, no server holding your writing.',
-      'The ⓘ at the top has how to install it, how to keep your data safe, and this walkthrough again whenever you want it. Next opens it so you can keep your data now.',
+      'The ⓘ at the top has how to install it, how to keep your data safe, and this walkthrough again whenever you want it. Get started opens that panel, so keeping your data safe is the first thing you do.',
     ],
   },
 ];

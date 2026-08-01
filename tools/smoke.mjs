@@ -249,6 +249,25 @@ try {
   // the gate's generic cure.
   const tctx = await browser.newContext({ timezoneId: 'America/Denver', locale: 'en-US', acceptDownloads: true });
   const tpage = await tctx.newPage();
+  // Fill-and-verify for the search box (shared shape with a11y.mjs): a plain
+  // fill has been observed at more than one site to resolve without the value
+  // landing when a commit-triggered refresh is in flight. A lost fill retries;
+  // a genuinely broken search still fails at the selector wait that follows.
+  const fillSearch = async (text) => {
+    for (let tries = 0; ; tries++) {
+      // Filling while a modal dialog is open (or still closing) resolves
+      // without the value landing — the focus step cannot reach an inert
+      // element (found via a11y.mjs's verified fills). Wait the modal out.
+      await tpage.waitForFunction(() => !document.querySelector('dialog[open]'),
+        null, { timeout: 5000 }).catch(() => {});
+      await tpage.fill('#search-input', text);
+      const landed = await tpage.waitForFunction(
+        (t) => document.querySelector('#search-input')?.value === t, text,
+        { timeout: 2000 },
+      ).then(() => true).catch(() => false);
+      if (landed || tries >= 2) return;
+    }
+  };
   const tErrors = [];
   tpage.on('pageerror', (e) => tErrors.push(String(e)));
   tpage.on('console', (m) => { if (m.type() === 'error') tErrors.push(m.text()); });
@@ -406,7 +425,7 @@ try {
       tx.onsuccess = () => res(tx.result);
     });
   });
-  await tpage.fill('#search-input', 'owes');
+  await fillSearch('owes');
   await tpage.waitForSelector('#search-results .search-open');
   is(await tpage.locator('#search-results .search-open').count(), 1,
     'the query finds exactly the held item whose title matches');
@@ -424,7 +443,7 @@ try {
     });
   });
   is(logLenAfterSearch, logLenBeforeSearch, 'searching and opening a result wrote nothing to the log');
-  await tpage.fill('#search-input', '');            // leave the box as we found it
+  await fillSearch('');            // leave the box as we found it
 
   console.log('\nDo now — the timer asks, it does not assume');
   // ITS OWN item. The one routed above is left alone deliberately: a later
@@ -3160,18 +3179,7 @@ try {
 
   // Choose two things from their own sheets, via search — the verb's one home.
   const chooseBySearch = async (words, title) => {
-    // Fill-and-verify: on this exact beat — the first search after the module
-    // toggle's refresh — a plain fill has been observed (here and in a11y) to
-    // resolve without the value landing, rarely and only on loaded runners.
-    for (let tries = 0; ; tries++) {
-      await tpage.fill('#search-input', words);
-      const landed = await tpage.waitForFunction(
-        (w) => document.querySelector('#search-input')?.value === w, words,
-        { timeout: 2000 },
-      ).then(() => true).catch(() => false);
-      if (landed) break;
-      if (tries >= 2) break;   // let the selector wait below state the failure
-    }
+    await fillSearch(words);
     await tpage.waitForSelector('#search-results .search-open');
     await tpage.locator('#search-results .search-open', { hasText: title }).first().click();
     await tpage.waitForSelector('#detail[open]');
@@ -3180,7 +3188,7 @@ try {
     await tpage.waitForFunction(() => /Chosen for today/.test(
       document.querySelector('#detail-live')?.textContent ?? ''));
     await tpage.click('#detail-close');
-    await tpage.fill('#search-input', '');
+    await fillSearch('');
   };
   await chooseBySearch('open me', 'open me from triage');
   await chooseBySearch('Noted thing', 'Noted thing');
@@ -3241,11 +3249,12 @@ try {
   await tpage.click('#sort-close');
 
   // The sheet carries the fold verb; the older twin folds into the newer.
-  await tpage.fill('#search-input', 'samovar');
+  await fillSearch('samovar');
   await tpage.waitForSelector('#search-results .search-open');
   await tpage.locator('#search-results .search-open', { hasText: /Polish the samovar/ }).click();
   await tpage.waitForSelector('#detail[open]');
-  await tpage.fill('#search-input', '');
+  // The box is cleared after the sheet closes — a fill cannot reach an
+  // element the modal has made inert.
   is(await tpage.locator('#detail-merge-group').isVisible(), true,
     'a thing that is its own thing offers the fold');
   await tpage.fill('#detail-merge-filter', 'samovar');
@@ -3264,6 +3273,7 @@ try {
   is(await tpage.locator('#detail-merge-group').isHidden(), true,
     'a folded thing does not fold again');
   await tpage.click('#detail-close');
+  await fillSearch('');              // the modal is gone; now the box clears
 
   // The range recomputes live: the pair folded away, the count falls back.
   is(await twinsCount(), twinsBefore,
@@ -3271,7 +3281,7 @@ try {
 
   // The folded twin is off every surface; the survivor lists what it holds,
   // and the split is one tap from there.
-  await tpage.fill('#search-input', 'samovar');
+  await fillSearch('samovar');
   await tpage.waitForSelector('#search-results .search-open');
   const samovarHits = await tpage.locator('#search-results .search-open').count();
   is(samovarHits, 1, 'the folded twin is off every surface — search shows one samovar');
@@ -3285,7 +3295,7 @@ try {
     document.querySelector('#detail-live')?.textContent ?? ''));
   await tpage.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
   await tpage.click('#detail-close');
-  await tpage.fill('#search-input', '');
+  await fillSearch('');
 
   // The log tells the story: the fold, the split, and the split's cure — a
   // split-out node is silent-risk and the gate clocked it in the same batch.
@@ -3437,6 +3447,15 @@ try {
   await tpage.waitForSelector('#about[open]');
   is(/number on the app icon/i.test(await tpage.locator('#badge-explainer').textContent() || ''), true,
     'and the panel says what the number on the icon means');
+  // The patch notes are rendered with textContent, so any entity name or **
+  // mark in the strings prints AS the markup (Noah, on device, 1.7.1). Pin:
+  // no entity-shaped token and no ** anywhere in the rendered notes, and the
+  // lead of a note is a real <strong>, not asterisks.
+  const notesText = await tpage.locator('#patch-notes').textContent() || '';
+  is(/&[a-z]+;|&#\d+;|\*\*/.test(notesText), false,
+    'the patch notes print words, never markup');
+  is(await tpage.locator('#patch-notes .note-list strong').count() > 0, true,
+    'and a note’s lead is real bold');
   await tpage.click('#about-close');
   is(badge.calls.every(c => c === 'clear' || Number.isInteger(c)), true,
     'and it is a whole count or an explicit clear, never a stale string');
