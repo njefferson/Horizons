@@ -227,13 +227,30 @@ reproduction case. Voluntary, shown in full before it leaves, never automatic.
 
 ## 5 · CI gates
 
-> **Status, 2026-07-28.** Live in `spine.yml`: typecheck, tests, the changelog/
-> triplet gate, build, the headless smoke walk, the rendered-app a11y gate, the
-> brand gate, and the banned-vocabulary grep. **Not yet built** (named here as
-> the commitment, not as a running gate): grayscale legibility (no pressure
-> surface exists to render), the closed-event-list check, and the write-gate-
-> bypass import check. Those land with the code that makes them meaningful. This
-> block used to read as if all seven already ran — the audit corrected it.
+> **Status, 2026-08-01 (1.9.1).** Live in `spine.yml`: typecheck, tests, the
+> changelog/triplet gate, build, the headless smoke walk, the rendered-app a11y
+> gate, the brand gate, the banned-vocabulary grep, **the closed-event-list
+> check** and **the write-gate-bypass check** — plus five gates this list never
+> mentioned and which have been running all along: `storage:check`
+> (localStorage is banned outright), `headers:check` (the default build can
+> reach nothing but itself), `editions:check` (the sync module is absent from
+> the default bundle), `workflows:check`, and `thesis:check`.
+>
+> **Still not built, named honestly:** grayscale legibility. The escape clause
+> it used to carry — "no pressure surface exists to render" — had gone stale:
+> pressure words ship on Next up, the behind list, and the detail sheet. The
+> true reason is narrower and better — pressure rides on **position and text
+> only**, because B-01's fill bar and luminance ramp were never built, so there
+> is no hue to strip. The check becomes meaningful the day a hue-bearing
+> pressure surface ships, and it lands in that commit (B-08's rule).
+>
+> **And one claim below was simply wrong.** Check 3 named four banned words;
+> `npm run vocabulary` greps two. `overdue` and `streak` have no legitimate use
+> and are gated at the source. `late` and `missed` DO have legitimate uses —
+> nearly every occurrence in `src/` is a comment explaining that the app never
+> says them — and a grep cannot tell a prohibition from a violation. What
+> matters is that a person never SEES one, so that is what is now checked, on
+> the rendered page, in the smoke walk.
 
 Each exits non-zero. A gate that warns is not a gate.
 
@@ -242,9 +259,17 @@ Each exits non-zero. A gate that warns is not a gate.
 2. **Grayscale legibility** — pressure surfaces rendered without hue must stay
    readable. This is the machine-checkable form of "meaning survives a grayscale
    render" (binding B-01).
-3. **Banned vocabulary** — no `overdue` / `late` / `missed` / `streak`.
-4. **Closed event list** — no emitted `kind` absent from the vocabulary.
-5. **Write-gate bypass** — nothing outside the gate imports the store's write API.
+3. **Banned vocabulary** — `overdue` and `streak` are gated at the source
+   (`npm run vocabulary`); all four, including `late` and `missed`, are gated
+   on the RENDERED page by the smoke walk, which is where it matters and where
+   a comment about a prohibition cannot be mistaken for one.
+4. ~~**Closed event list** — no emitted `kind` absent from the vocabulary.~~
+   **(built 1.9.1 — `npm run events:check`: both directions, plus the Silent?
+   column against `SILENT_RISK_KINDS`.)**
+5. ~~**Write-gate bypass** — nothing outside the gate imports the store's write API.~~
+   **(built 1.9.1 — `npm run writegate:check`: an allowlist carrying a reason
+   per entry, and a stale entry fails too. Five modules write raw today and
+   every one of them now says why.)**
 6. **Viewport matrix** — including small-phone-at-200%-text. No fixed size may
    ignore available space; no floor may exceed it (binding B-04).
 7. **Cold-start budget** — capture interaction under 2 s.

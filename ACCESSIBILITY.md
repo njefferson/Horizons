@@ -27,11 +27,24 @@ redundant channels**, of which hue is the least important:
 - ****Text**** — Every item states its own status in words ("ready again", "ready in 3 days").
 
 Hue may reinforce, never carry. **A grayscale render of any pressure surface
-must remain fully readable.** No pressure surface exists yet (Phase 0/1 ship
-capture and a flat list), so there is nothing to render — but when the first one
-lands, a grayscale screenshot check lands in the same commit, per B-08's rule.
-Until then this is a design commitment, **not** a running gate, and it is named
-as such rather than claimed as one.
+must remain fully readable.**
+
+**Corrected 2026-08-01 (1.9.1).** This paragraph used to say "no pressure
+surface exists yet (Phase 0/1 ship capture and a flat list)", and that stopped
+being true a long time ago: pressure words ship on Next up, on the behind
+list, and on the detail sheet. It also contradicted B-05 below, which names a
+"pressure gradient" as something that exists. Both cannot be right.
+
+The true position is narrower, and better. Of B-01's four channels, **only
+position and text were ever built** — the fill bar and the luminance ramp do
+not exist in `app.css`, and no pressure surface carries hue at all. So there
+is nothing for a grayscale render to strip, which is why the check still has
+nothing to measure. That is a much stronger place to be than the sentence it
+replaces implied, and it is stated here so the gap is visible rather than
+comfortable: two of the four redundant channels are a design commitment, not a
+shipped feature. The day a hue-bearing pressure surface lands, the grayscale
+check lands in the same commit (B-08's rule) — and if the fill and luminance
+channels are built, they arrive with it.
 
 **No red walls.** Rising pressure never terminates in an alarm colour, because
 there is no failure state to alarm about (product law 5). The gradient runs
@@ -68,9 +81,16 @@ not claim otherwise. The 320px/240px place-card failure in a sibling app is why
 the viewport check is a gate and not an intention.
 
 ### B-05 · Motion
-Reduced-motion is honoured throughout. The pressure gradient, the gauge, and the
-replan card all have static presentations. No animation is load-bearing for
-meaning.
+Reduced-motion is honoured throughout: `app.css` carries a global
+`prefers-reduced-motion: reduce` block that collapses every animation and
+transition, so the honouring is one rule rather than a habit. No animation is
+load-bearing for meaning.
+
+**Corrected 2026-08-01 (1.9.1).** This row used to say "the pressure gradient,
+the gauge, and the replan card all have static presentations", which named a
+pressure gradient B-01 said did not exist. There is no gradient: pressure is
+carried by position and words alone (see B-01's correction). The gauge and the
+replan card are static, and always were.
 
 ### B-06 · Interaction and focus
 Keyboard always. `:focus-visible` rings are never removed — the gate Tab-navigates

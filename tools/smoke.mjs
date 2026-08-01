@@ -3697,6 +3697,20 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(badge.calls.every(c => c === 'clear' || Number.isInteger(c)), true,
     'and it is a whole count or an explicit clear, never a stale string');
 
+  // The shame-vocabulary sweep AGAIN, on the far richer state the walk has
+  // built by now (1.9.1). The first pass runs early in Work mode, when the
+  // page holds a handful of cards; by here it holds the portfolio, the people
+  // lens, replan cards, the Menu, the tree, a composed strip and a decision
+  // log — many more chances for one of these words to reach a person.
+  //
+  // The MAIN PAGE only, panel closed and deliberately so: the (i) panel
+  // carries the patch notes, which say "late" in the course of promising the
+  // app never says it. A record of a prohibition is not a violation of it,
+  // and a sweep that cannot tell them apart is one somebody switches off.
+  const lateSurface = await tpage.evaluate(() => document.body.innerText);
+  is(/\b(overdue|late|missed|streak)s?\b/i.test(lateSurface), false,
+    'still no shame vocabulary, with every surface the walk can reach carrying real content');
+
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
   await tctx.close();

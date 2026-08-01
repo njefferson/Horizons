@@ -433,6 +433,50 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (Noah: "Promote. Continue")** — **1.9.1 "The gates it
+  claimed"** — the "say true things" patch turned on the repo itself. A sweep
+  of everything the docs claim to check found three claims with nothing behind
+  them, and two records that contradicted each other.
+  · **The closed-event-list gate** (`npm run events:check`, tools/event-list.mjs):
+  `isKnownKind` has refused unlisted kinds at runtime since Phase 0, and
+  NOTHING ever asked whether the code's list and `docs/event-vocabulary.md`
+  still named the same events — the file CLAUDE.md calls the source of truth
+  could drift in silence. Now checked in both directions, plus the Silent?
+  column, which the vocabulary itself calls "the machine-checkable form of
+  product law 1" and which nothing had ever machine-checked. 88 kinds, both
+  sides. Its first run FAILED — on my own parser, which read only the first
+  backticked name and so dropped the ten nouns written as shared entries
+  (`stakeholder.added` / `.removed`). The gate reported the doc as the thing
+  at fault, which is the failure mode a gate must never have; fixed, and the
+  fix is commented where it happened.
+  · **The write-gate-bypass gate** (`npm run writegate:check`): "nothing
+  outside the gate imports the store's write API" — claimed since the build
+  plan was written, checked by nothing, while five legitimate raw-write sites
+  accumulated. Raw writes are not forbidden; UNRECORDED ones are. The
+  allowlist carries a reason per entry, and a stale entry fails too. Its first
+  run found two I had not thought of (purge's `replaceAll([])`, snapshot's
+  `putSnapshot`) — both fine, both now argued in writing.
+  · **The four-banned-words claim was wrong, and the fix is the opposite of
+  the obvious one.** The build plan named `overdue`/`late`/`missed`/`streak`;
+  the grep covers two. `late` and `missed` cannot be gated at source —
+  nearly every occurrence in `src/` is a comment explaining that the app never
+  says them, and a grep cannot tell a prohibition from a violation. What
+  matters is that a person never SEES one, and the smoke walk has swept the
+  rendered page for all four all along. So the claim was corrected to describe
+  what is actually true, and a second sweep added late in the walk, where the
+  page carries far more real content than at the first.
+  · **Two records that contradicted each other**: B-01 said no pressure
+  surface exists (stale since 0.5.0 or so); B-05 named a "pressure gradient"
+  as something that does. Neither was right. Of B-01's four redundant
+  channels, **only position and text were ever built** — there is no fill bar
+  and no luminance ramp in `app.css`, which is why the grayscale check still
+  has nothing to strip. That is a stronger position than the old sentence
+  implied and a visible gap at the same time, so both rows now say it.
+  · Also corrected: the build plan's gate list never mentioned five gates that
+  have been running all along (storage, headers, editions, workflows, thesis),
+  and `deploy.yml` still carried an honesty note saying the deploy had never
+  run green and the repo had no app shell — both long false.
+
 - **2026-08-01 (after 1.9.0)** — **`main` fast-forwarded to `f237a1f` on
   Noah's "Promote"**, carrying 1.8.0 (request slots, the Not Now ledger,
   the bother flow aligned to its own vocabulary) and 1.9.0 (stakeholders

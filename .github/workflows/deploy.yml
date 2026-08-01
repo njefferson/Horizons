@@ -7,11 +7,17 @@ name: Deploy
 # is what turns the §7 staging gate from a convention I observe into a URL he can
 # open on the iPad.
 #
-# HONESTY NOTE (Doctrine §5): the deploy STEPS below have never run green, because
-# there is nothing to deploy yet — this repo has no public/ and no app shell. The
-# guard immediately below makes that state explicit and skips instead of
-# publishing an empty directory over a live site. Until a run reaches the wrangler
-# step and succeeds, this file is a prepared path and NOT a proven deploy.
+# HONESTY NOTE (Doctrine §5), corrected 2026-08-01 (1.9.1): this used to read
+# "the deploy STEPS below have never run green, because there is nothing to
+# deploy yet — this repo has no public/ and no app shell", and every clause of
+# that went stale long ago. public/ is the shipped app; the wrangler step has
+# reached success repeatedly, and each promote is watched green on its exact sha
+# before it is reported (V-10). The guard below still skips rather than
+# publishing an empty directory over a live site, which is the part worth
+# keeping. What remains TRUE and is worth stating in its place: a green deploy
+# run is the strongest confirmation available from here — reading production
+# back is not possible from a session (V-15) — so "deployed" always means
+# "the run went green on this sha", never "I looked at the site".
 #
 # Actions are pinned by SHA, not tag (Doctrine §16.1) — a tag is a mutable pointer
 # someone else controls, and these steps execute holding a live Pages:Edit token.

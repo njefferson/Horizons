@@ -27,7 +27,9 @@
     "vocabulary": "if grep -rniE '\\b(overdue|streak)\\b' src/ | grep -viE 'no |never|banned|forbid|law 5'; then echo 'banned vocabulary found in src/ \u2014 see ADR-0010' >&2; exit 1; fi; echo clean",
     "storage:check": "if grep -rnE '\\b(localStorage|sessionStorage)\\b' src/ public/sw.js public/index.html | grep -viE 'banned|never|no localStorage|not localStorage'; then echo 'localStorage/sessionStorage found \u2014 storage is IndexedDB via Dexie, and the ban is outright' >&2; exit 1; fi; echo clean",
     "thesis": "node tools/thesis.mjs",
-    "thesis:check": "node tools/thesis.mjs --check"
+    "thesis:check": "node tools/thesis.mjs --check",
+    "events:check": "node --experimental-strip-types tools/event-list.mjs",
+    "writegate:check": "node tools/write-gate.mjs"
   },
   "//build": "esbuild strips types and bundles src/ui into one ES module. It is the ONLY build step and it does no transpiling down \u2014 target es2022 is what the reference platform already runs. See ADR-0026 for why a build exists at all in a family that avoids them.",
   "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR \u2014 see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",

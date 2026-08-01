@@ -93,6 +93,25 @@ jobs:
       - name: No banned vocabulary
         run: npm run vocabulary
 
+      # The closed list, checked against the DOCUMENT that governs it (1.9.1).
+      # `isKnownKind` has always refused an unlisted kind at runtime, and
+      # nothing ever asked whether the code's list and
+      # docs/event-vocabulary.md still name the same events — so the file
+      # CLAUDE.md calls the source of truth could drift from the code in
+      # silence. It also checks the Silent? column, which the vocabulary
+      # itself calls "the machine-checkable form of product law 1" and which
+      # nothing had ever machine-checked.
+      - name: The closed event list matches the vocabulary
+        run: npm run events:check
+
+      # "Nothing outside the gate imports the store's write API" — claimed in
+      # the build plan since it was written, checked by nothing, while four
+      # legitimate raw-write sites accumulated (1.9.1). Raw writes are not
+      # forbidden; unrecorded ones are. The allowlist carries a reason per
+      # entry, and a stale entry fails too.
+      - name: No unrecorded write-gate bypass
+        run: npm run writegate:check
+
       # Storage is IndexedDB via Dexie and localStorage is banned outright. That
       # ban rested on review alone until a security audit pointed out it was the
       # only invariant in CLAUDE.md with no gate behind it — unlike connect-src

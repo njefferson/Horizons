@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.9.1 — ITERATION
+
+*2026-08-01*
+
+- Nothing changes on screen in this one. It makes three checks real that this app had only ever *claimed* — the kind of gap that is invisible until the day it matters, which is exactly when you would least want to find it.
+- **The list of things that can be stored is now checked against the document that defines it.** Every event this app can write has to be named in its written vocabulary, and every name in that vocabulary has to exist in the code — including whether each one can leave something of yours without a way back. That was true of the running app and unverified against the document; now the build fails if they ever disagree.
+- **Every write to your data is now accounted for.** The rule was always that writes go through the boundary that refuses to leave anything of yours unreachable. Five places legitimately write around it — snapshots, importing, clearing, and two bookkeeping notes — and each of those now has to say in writing why it is safe. A sixth appearing without that argument fails the build.
+- Also corrected: several notes in this repo’s own records that had quietly gone out of date, including two that contradicted each other about whether a screen feature exists. They describe what is actually built now.
+
 ## 1.9.0 — CAPABILITY
 
 *2026-08-01*
