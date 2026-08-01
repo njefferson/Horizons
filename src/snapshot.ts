@@ -28,6 +28,8 @@ export function serialiseState(s: State): unknown {
     lastReportMark: s.lastReportMark,
     lastActivityAt: s.lastActivityAt,
     modules: [...s.modules],
+    requestSlot: s.requestSlot,
+    requestSlotStamp: s.requestSlotStamp,
   });
 }
 
@@ -44,6 +46,8 @@ export function deserialiseState(raw: unknown): State {
     lastReportMark?: Record<string, number> | null;
     lastActivityAt?: string | null;
     modules?: string[];
+    requestSlot?: State['requestSlot'];
+    requestSlotStamp?: State['requestSlotStamp'];
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -83,6 +87,8 @@ export function deserialiseState(raw: unknown): State {
       // history in place once already (audit).
       feeds: [...(n.feeds ?? [])],
       todayFor: n.todayFor ?? null,
+      // A pre-1.8.0 snapshot stored no declines — none were standing.
+      notNow: n.notNow ?? null,
       fields: { ...(n.fields ?? {}) },
       stamps: { ...(n.stamps ?? {}) },
       clocks: { ...(n.clocks ?? {}) },
@@ -102,6 +108,9 @@ export function deserialiseState(raw: unknown): State {
     // A pre-1.6.0 snapshot stored no modules — none were on, which is exactly
     // what an empty set says.
     modules: new Set(r.modules ?? []),
+    // A pre-1.8.0 snapshot stored no slot — none was set.
+    requestSlot: r.requestSlot ?? null,
+    requestSlotStamp: r.requestSlotStamp ?? null,
   };
 }
 

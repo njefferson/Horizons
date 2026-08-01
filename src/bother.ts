@@ -49,7 +49,7 @@ export const OWNERSHIP_WORDS: Record<Ownership, { label: string; hint: string }>
   },
   'not-mine-to-carry': {
     label: 'Not mine to carry',
-    hint: 'it is let go, and it does not come back',
+    hint: 'you stop carrying it — the decision is kept in the Not Now ledger',
   },
 };
 
@@ -114,5 +114,8 @@ export function botherWords(n: number): string {
 export function outcomeWords(o: Ownership): string {
   if (o === 'mine-to-solve') return 'In your inbox. Sort it whenever you get to it.';
   if (o === 'mine-to-track') return 'Nothing to do yet. It comes back to you in a week.';
-  return 'Let go.';
+  // The relief holds (1.8.0, ADR-0056): the decision is KEPT, but a park never
+  // demands — nothing chases you, and the ledger only speaks when you go
+  // looking. "Point at it when the same request comes back" is why it is kept.
+  return 'Let go. The decision is kept, and nothing will chase you.';
 }

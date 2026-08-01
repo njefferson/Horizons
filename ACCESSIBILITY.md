@@ -642,6 +642,31 @@ the rendered gate in this same commit.**
   Styles moved to `/why.css` (same tokens), and the smoke walk now visits
   the page.
 
+### B-27 · Asking, and declining (1.8.0)
+
+**No new tokens; three new surfaces on the existing bindings, each in the
+rendered gate in this same commit.**
+
+- **The decline group** (`detail sheet` base state gains `#detail-decline`;
+  `detail sheet, declined` and `detail sheet, slot offered` are their own
+  states — a control that renders only in a state is audited in that state,
+  the registry rule). The declined words and the fact line are `.detail-hint`
+  class text on the registered pair; the slot-park button NAMES the real
+  return day, so what it will do is readable before it is pressed.
+- **The Not Now ledger** (`ledger open` state): the trash view's exact
+  species — rows are full-target doors; the fact line (`.trash-when`,
+  `--ink-soft` on `--surface`) is the quietest text and the row's whole
+  content: a name and a date, never a count (law 5 asserted over the
+  rendered words in smoke). Toggle labels state the next press.
+- **The slot control** (`#slot-day`/`#slot-set`, in `DIALOG_COMMON`): a
+  native select and a ghost button on existing tokens; the status note rides
+  the registered `--warm` storage-note pair and states the chosen day in
+  words, never colour.
+
+---
+
+## Part 2 — Findings register
+
 Rows are appended as found.
 
 ### F-01 · Storage details invalid as a definition list to assistive tech

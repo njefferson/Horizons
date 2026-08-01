@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.8.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-01',
+    notes: [
+      '**“Not mine to carry” — and the decision is kept.** Anything someone asked of you can be declined from its own sheet. Declining is a decision, not a deletion: it lands in the Not Now ledger, behind the ⓘ under Your data, with the words it was declined under, who asked, and the day — the thing to point at when the same request comes back. “Carry it after all” is one tap behind it, any time.',
+      '**Nothing chases you.** A declined thing is parked, not deleted and not nagging: it sits quietly, comes back only where parked things already do, and the ledger keeps a name and a date — never a count. There is no “declined three times”. There never will be.',
+      '**A day for requests.** Under Extras, choose a weekday and requests can wait for it: anything someone asks of you can be parked to your day from its own sheet — so it is dealt with when you decide, not the moment it lands. Declining sends things to the same day. No day chosen, nothing changes.',
+      '**Letting a worry go now keeps the decision too.** The bother flow’s “Not mine to carry” used to promise the thing would never come back — by quietly trashing it. It now lands in the ledger like any decline, parked and silent. The relief is the same; the record is finally honest.',
+      'Also: importing from another planner now says how many things repeat on a rhythm — rhythms are not carried, and rebuilding the real ones as upkeep should start from the true number, not from a tag name.',
+    ],
+  },
+  {
     triplet: '1.7.2',
     kind: 'ITERATION',
     date: '2026-08-01',

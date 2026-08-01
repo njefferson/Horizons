@@ -106,6 +106,8 @@ const DIALOG_COMMON = [
   '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
   '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',
   '#purge-cancel', '#purge-consequence',
+  // 1.8.0: the ledger's door and the request-slot control (ADR-0056).
+  '#notnow-open', '#slot-day', '#slot-set',
   // The always-reachable way out. This panel is thousands of pixels tall, so a
   // close button only at the bottom meant scrolling the entire release history
   // to shut it (Noah, on device).
@@ -224,7 +226,9 @@ const REGISTRY = {
     // SELECT is not here — with nothing else held it renders disabled, so it
     // is audited in 'detail sheet, folding', where legal targets exist.
     '#detail-merge-filter', { sel: '#detail-merge-filter', pseudo: '::placeholder' },
-    '#detail-merge-set'],
+    '#detail-merge-set',
+    // 1.8.0: the decline is offered on every live off-Menu work item.
+    '#detail-decline'],
   // The fold, with somewhere to fold into (1.7.0, ADR-0053): the select is
   // live only when another legal target exists, so it gets its own state
   // rather than a selector the base sheet can only match disabled.
@@ -239,6 +243,13 @@ const REGISTRY = {
   // The lens (1.7.0, ADR-0054): the row above the held list, and the law-1
   // line that renders ONLY while a lens is active — audited in that state.
   'lens row': ['.lens-row .detail-inline', '#lens', '#lens-note'],
+  // The Not Now ledger, open (1.8.0, ADR-0056): the trash view's species —
+  // the fact line is the quietest text and it is the row's whole content.
+  'ledger open': ['#notnow-open', '#notnow-total', '#notnow-list .trash-row', '.trash-when'],
+  // The sheet once something IS declined: the standing words and the way back.
+  'detail sheet, declined': ['#detail-declined-words', '#detail-carry'],
+  // The sheet when a request slot is set: the park button names the real day.
+  'detail sheet, slot offered': ['#detail-slot-park'],
   // Per-node history, open (1.4.0). The cure lines are the quietest text in
   // the whole app's story — --ink-soft, indented — and exactly the lines that
   // explain the app's own writes, so they must clear the gate, not hide.
@@ -1322,6 +1333,64 @@ try {
     await page.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
     await page.click('#detail-close');
     await fillSearch('');              // now the modal is gone, the box clears
+
+    // Asking, and declining (1.8.0, ADR-0056): decline a thing through its own
+    // sheet, audit the declined state, then the ledger, then the slot flow —
+    // the states a person actually meets, in the order they meet them.
+    await page.fill('#capture', 'a thing asked of me');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+    await fillSearch('asked of me');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');
+    await page.waitForSelector('#detail[open]');
+    await page.waitForSelector('#detail-decline:not([hidden])');
+    await page.click('#detail-decline');
+    await page.waitForSelector('#detail-declined:not([hidden])');
+    await auditContrast(page, 'detail sheet, declined', theme);
+    await auditAxe(page, 'detail sheet, declined', theme);
+    await auditTargets(page, 'detail sheet, declined', theme);
+    await auditFocusRings(page, 'detail sheet, declined', theme, ['#detail-carry']);
+    await page.click('#detail-close');
+    await fillSearch('');
+    await page.click('#open-about');
+    await expandGroups();
+    await page.click('#notnow-open');
+    await page.waitForSelector('#notnow-view:not([hidden])');
+    await page.waitForSelector('#notnow-list .trash-row');
+    await auditContrast(page, 'ledger open', theme);
+    await auditAxe(page, 'ledger open', theme);
+    await auditTargets(page, 'ledger open', theme);
+    await auditFocusRings(page, 'ledger open', theme, ['#notnow-list .trash-row', '#notnow-open']);
+    await page.click('#notnow-open');
+    // The slot: set a day, audit the sheet's offer, then clear it so every
+    // later state sees the resting default.
+    await page.selectOption('#slot-day', 'fri');
+    await page.click('#slot-set');
+    await page.waitForFunction(() => /^On\./.test(
+      document.querySelector('#slot-note')?.textContent ?? ''));
+    await page.click('#about-close');
+    await fillSearch('asked of me');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');
+    await page.waitForSelector('#detail[open]');
+    // The declined thing shows Carry, not the slot button — carry it first so
+    // the slot offer renders, which also audits the way back working.
+    await page.click('#detail-carry');
+    await page.waitForSelector('#detail-slot-park:not([hidden])');
+    await auditContrast(page, 'detail sheet, slot offered', theme);
+    await auditAxe(page, 'detail sheet, slot offered', theme);
+    await auditTargets(page, 'detail sheet, slot offered', theme);
+    await auditFocusRings(page, 'detail sheet, slot offered', theme, ['#detail-slot-park']);
+    await page.click('#detail-close');
+    await fillSearch('');
+    await page.click('#open-about');
+    await expandGroups();
+    await page.selectOption('#slot-day', '');
+    await page.click('#slot-set');
+    await page.waitForFunction(() =>
+      (document.querySelector('#slot-note')?.textContent ?? 'x') === '');
+    await page.click('#about-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

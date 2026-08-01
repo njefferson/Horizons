@@ -137,7 +137,17 @@ export type StakeholderRemoved=Ev<'stakeholder.removed',{ person: NodeId }>;
 export type DecisionLogged   = Ev<'decision.logged',    { text: string; at: ISODateTime; meeting?: string }>;
 export type DeltaRecorded    = Ev<'delta.recorded',     { since: 'anchor' | 'export'; text: string }>;
 export type StatusReportExported=Ev<'status.report.exported',{ format: 'clipboard'|'markdown'|'print'|'csv'; scope: string }>;
-export type RequestDeclined  = Ev<'request.declined',   { person: NodeId; what: string; reason?: string }>;
+/** Declining someone's request is a decision worth keeping (the Not Now
+ *  ledger, ADR-0056). `person` is null when nobody has said who — the
+ *  `waitingOn` precedent: an ordinary state, not a defect. `what` is the
+ *  title SNAPSHOT at decline time (the consent-sentence rule: the record
+ *  survives a later rename). `reason` is a fixed provenance string
+ *  ('detail' | 'bother'), never free text. */
+export type RequestDeclined  = Ev<'request.declined',   { person: NodeId | null; what: string; reason?: string }>;
+/** The one request slot (stimulus control, ADR-0056). `node: null`.
+ *  `recurrence` is 'weekly:mon'…'weekly:sun'; '' clears the slot (the
+ *  note-field precedent: an empty value is an honest removal). An
+ *  unrecognised string reads as no slot — refused, never guessed. */
 export type RequestSlotSet   = Ev<'request.slot.set',   { recurrence: string }>;
 export type CommsSweepScheduled=Ev<'comms.sweep.scheduled',{ at: ISODateTime }>;
 export type CommsSweepRan    = Ev<'comms.sweep.ran',    { at: ISODateTime }>;

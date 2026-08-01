@@ -1303,6 +1303,13 @@ dialog, dialog * { overflow-wrap: anywhere; }
    verb only — skinned like list rows, never like a to-do card. */
 .trash-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
 .trash-list li { margin: 0 0 0.4rem; }
+/* A ledger row's quiet fact line (1.8.0): a name and a date, never a count. */
+.trash-when {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
 .trash-row {
   display: block;
   width: 100%;

@@ -37,6 +37,8 @@ import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
 import { eventWords, isCure } from '../log-words.ts';
 import { choosable, composedFull, todayIsOn } from '../composed.ts';
 import { foldedInto, legalMergeTargets, mergeEvents, unmergeEvents } from './merge-intents.ts';
+import { carryEvents, declineEvents, parkToSlotEvents } from './request-intents.ts';
+import { nextSlotOccurrence, slotDayWords, slotOf } from '../requests.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
  *  closed set; these are what a person reads. */
@@ -181,6 +183,44 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     mergeSel.disabled = legal.length === 0;
   }
 
+  /** Someone asked (1.8.0, ADR-0056): the fact line, the decline, the way
+   *  back, and the slot button naming the REAL day it would come back —
+   *  a control that says what it will do (the composed-cap rule). */
+  function paintRequest(n: NodeState): void {
+    const st = session.state();
+    const fact = q<HTMLElement>('#detail-request-fact');
+    const asked = [...n.people].reverse().find(p => p.relation === 'requested-by');
+    if (fact) {
+      const who = asked ? (st.nodes.get(asked.person)?.title || null) : null;
+      fact.hidden = !who;
+      if (who) fact.textContent = `${who} asked for this.`;
+    }
+    const declined = n.notNow !== null;
+    const declineBtn = btn('#detail-decline');
+    if (declineBtn) declineBtn.hidden = declined;
+    const declinedBox = q<HTMLElement>('#detail-declined');
+    if (declinedBox) declinedBox.hidden = !declined;
+    const words = q<HTMLElement>('#detail-declined-words');
+    if (words && n.notNow) {
+      const day = localDayKey(n.notNow.at, session.zone);
+      const who = n.notNow.person ? (st.nodes.get(n.notNow.person)?.title || null) : null;
+      words.textContent = who
+        ? `Declined ${day} — ${who} asked. It sits in the Not Now ledger.`
+        : `Declined ${day}. It sits in the Not Now ledger.`;
+    }
+    const slotBtn = btn('#detail-slot-park');
+    if (slotBtn) {
+      const day = slotOf(st);
+      const offer = !declined && day !== null && !n.clocks.park;
+      slotBtn.hidden = !offer;
+      if (offer && day) {
+        const back = localDayKey(
+          nextSlotOccurrence(day, new Date(now()).toISOString(), session.zone), session.zone);
+        slotBtn.textContent = `Park it until the request slot — back ${back} (${slotDayWords(day)})`;
+      }
+    }
+  }
+
   /** Say it where it can be seen AND where it can be heard. A failure reported
    *  only to a visually-hidden region is a failure a sighted user never learns
    *  about (F-08). */
@@ -223,6 +263,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // The quiet fact line (1.4.0): where a sorted thing went, in the sorting's
     // own words — the sheet is where "it feels lost" gets its answer.
     if (n.route && n.route !== 'trash') bits.push(`sorted as ${String(n.route).replace(/-/g, ' ')}`);
+    if (n.notNow) bits.push('in the Not Now ledger');
     const words = pressureWords(p);
     if (words) bits.push(words);
     const clock = n.clocks.due ?? n.clocks.review ?? n.clocks.start;
@@ -399,6 +440,15 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // items and people — anything you hold can carry words. Only a thing let
     // go loses the editor; "Keep it after all" is the door back.
     grp('#detail-note-group', !n.trashed);
+    // Someone asked (1.8.0, ADR-0056). Hidden on Menu items — park is a
+    // demand clock and the gate's belt refuses it on a wish, so the verb is
+    // never offered where it cannot land — and on people and resume cards.
+    {
+      const canDecline = !n.trashed && !n.mergedInto && n.onMenu === null
+        && !['person', 'resume-card'].includes(n.kind);
+      grp('#detail-request-group', canDecline);
+      if (canDecline) paintRequest(n);
+    }
     // The fold verb (1.7.0): only for a thing that is its own thing. A merged
     // node shows the way BACK instead, and the survivor lists what it holds.
     grp('#detail-merge-group', !n.trashed && !n.mergedInto);
@@ -563,6 +613,23 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   btn('#detail-unmerge')?.addEventListener('click', () => {
     void run(ctx => unmergeEvents(ctx, current!.id),
       'Split back out — its own thing again, with a clock of its own.');
+  });
+  // Someone asked (1.8.0). Fresh on commit — the node the batch is built from
+  // is live state's, never the stale copy the sheet opened with.
+  btn('#detail-decline')?.addEventListener('click', () => {
+    void run(ctx => {
+      const st = session.state();
+      const fresh = st.nodes.get(current!.id);
+      return fresh ? declineEvents(ctx, st, fresh) : [];
+    }, 'Declined — kept in the Not Now ledger. Nothing will chase you.');
+  });
+  btn('#detail-carry')?.addEventListener('click', () => {
+    void run(ctx => carryEvents(ctx, current!.id),
+      'Carried after all — its own thing again, back with you today.');
+  });
+  btn('#detail-slot-park')?.addEventListener('click', () => {
+    void run(ctx => parkToSlotEvents(ctx, session.state(), current!.id),
+      'Parked until the request slot.');
   });
   mergeFilter?.addEventListener('input', () => {
     if (current && !current.trashed && !current.mergedInto) paintMergeTargets(current);

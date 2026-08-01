@@ -2144,8 +2144,11 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(hints.every(h => h.trim().length > 0), true,
     `each says what it will do (${hints.join(' | ')})`);
 
-  // THE ONE THAT MATTERS. "Not mine to carry" must be honoured completely: not
-  // parked, not sent to triage, not brought back "just to check".
+  // THE ONE THAT MATTERS. "Not mine to carry" is honoured AND kept (1.8.0,
+  // ADR-0056): the vocabulary said "lands on the Not Now ledger with a park"
+  // from the start, and the first build trashed it instead. The relief still
+  // holds — a park never demands, nothing chases you — and the decision is
+  // there to point at when the same request comes back.
   const beforeIds = await tpage.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
@@ -2171,15 +2174,36 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   }, beforeIds[beforeIds.length - 1]);
   is(gone.owned.includes('not-mine-to-carry'), true, 'the answer is recorded as given');
   is(gone.routed, 1, 'and the flow terminated, as the vocabulary requires');
-  is(gone.parked, 0, 'NOT parked \u2014 it does not come back "just to check"');
-  is(gone.trashed, 1, 'let go, explicitly');
+  is(gone.parked, 1, 'parked \u2014 the lawful comeback the vocabulary always specified');
+  is(gone.trashed, 0, 'NOT trashed \u2014 declining is a decision, not a deletion');
 
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('#bother').isVisible(), false,
     'and it is still gone after a reload \u2014 a release taken back is worse than none');
-  const heldText = await tpage.locator('#cards').textContent();
-  is((heldText || '').includes('brother'), false, 'it is not on your list either');
+  // It is still HELD (law 1) \u2014 parked, so it may sit quietly in the Later
+  // group like any tracked bother \u2014 but nothing ASKS: it is not in triage,
+  // and no surface demands it.
+  const triageAfterDecline = await tpage.evaluate(() =>
+    document.querySelector('#triage')?.innerText ?? '');
+  is(triageAfterDecline.includes('brother'), false,
+    'a declined worry is never sent to triage');
+
+  // And the decision is FINDABLE: the Not Now ledger, behind the (i).
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.click('#notnow-open');
+  await tpage.waitForSelector('#notnow-view:not([hidden])');
+  is(/brother/.test(await tpage.locator('#notnow-list').textContent() || ''), true,
+    'the declined worry stands in the ledger, by the words it was declined under');
+  is(/decision/.test(await tpage.locator('#notnow-total').textContent() || ''), true,
+    'with its true count stated in words');
+  // Law 5 over the ledger's rendered words: a name and a date, never a tally.
+  const ledgerText = await tpage.locator('#notnow-view').textContent() || '';
+  is(/%|\d+\s*(times|of|\/)\s*\d*|remaining/.test(ledgerText), false,
+    'the ledger never counts against anyone');
+  await tpage.click('#notnow-open');
+  await tpage.click('#about-close');
 
   // "Mine to do something about" becomes ordinary work and joins the inbox.
   // DRAIN FIRST: triage shows one card at a time, so with earlier items still
@@ -3398,6 +3422,69 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.waitForFunction((n) =>
     document.querySelectorAll('#cards .card').length === n, preLensCards);
   is(true, true, 'back to everything — nothing was lost to the looking');
+
+  console.log('\nAsking, and declining (1.8.0)');
+  // Decline from the sheet: the record, the park, the state bit — and the way
+  // back, a door away in the ledger.
+  await tpage.fill('#capture', 'Take on the newsletter for Dana');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+  await fillSearch('newsletter');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: 'newsletter' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await fillSearch('');
+  is(await tpage.locator('#detail-request-group').isVisible(), true,
+    'the sheet offers the decline');
+  await tpage.click('#detail-decline');
+  await tpage.waitForFunction(() => /Not Now ledger/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.waitForSelector('#detail-declined:not([hidden])');
+  is(/in the Not Now ledger/.test(await tpage.locator('#detail-state').textContent() || ''), true,
+    'the sheet states where it stands');
+  await tpage.click('#detail-close');
+
+  // The ledger's row is a DOOR, and "Carry it after all" is one tap behind it.
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.click('#notnow-open');
+  await tpage.waitForSelector('#notnow-view:not([hidden])');
+  is(/newsletter/.test(await tpage.locator('#notnow-list').textContent() || ''), true,
+    'the new decline stands beside the earlier one');
+  await tpage.locator('#notnow-list .trash-row', { hasText: 'newsletter' }).click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.waitForSelector('#detail-declined:not([hidden])');
+  await tpage.click('#detail-carry');
+  await tpage.waitForFunction(() => /Carried after all/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.click('#detail-close');
+  await tpage.click('#notnow-open');   // collapse
+  await tpage.click('#notnow-open');   // re-open repaints
+  await tpage.waitForFunction(() => !/newsletter/.test(
+    document.querySelector('#notnow-list')?.textContent ?? ''));
+  is(true, true, 'carried after all — and the ledger no longer lists it');
+
+  // The slot: set a day, and the sheet's park button names the REAL day.
+  await tpage.selectOption('#slot-day', 'fri');
+  await tpage.click('#slot-set');
+  await tpage.waitForFunction(() => /^On\./.test(
+    document.querySelector('#slot-note')?.textContent ?? ''));
+  is(/Friday/.test(await tpage.locator('#slot-note').textContent() || ''), true,
+    'the note states the day that was chosen');
+  await tpage.click('#about-close');
+  await fillSearch('newsletter');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: 'newsletter' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await fillSearch('');
+  await tpage.waitForSelector('#detail-slot-park:not([hidden])');
+  const slotBtnWords = await tpage.locator('#detail-slot-park').textContent() || '';
+  is(/back \d{4}-\d{2}-\d{2}/.test(slotBtnWords), true,
+    `the button names the day it would come back ("${slotBtnWords}")`);
+  await tpage.click('#detail-slot-park');
+  await tpage.waitForFunction(() => /Parked until the request slot/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.click('#detail-close');
 
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();

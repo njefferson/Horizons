@@ -99,6 +99,11 @@ export interface ImportSummary {
   /** Dates that had already gone by at the moment of import, and therefore did NOT
    *  come across as dates. Counted so the summary can say so plainly. */
   staleDates: number;
+  /** Rows whose repeat/rhythm was dropped-and-named. COUNTED (1.8.0): the bare
+   *  tag list said "repeat" once for a file where sixty things repeat — the
+   *  same unnumbered-loss shape as the pre-1.4.0 note bug. Rebuilding real
+   *  rhythms as upkeep is a guided act only if the number is stated. */
+  repeats: number;
 }
 
 const TAG = /@([A-Za-z][A-Za-z0-9_-]*)(?:\(([^)]*)\))?/g;
@@ -485,6 +490,7 @@ export function importSummary(
 ): ImportSummary {
   const tags = new Set<string>();
   for (const l of parsed) for (const t of l.dropped) tags.add(t);
+  const repeats = parsed.filter(l => l.dropped.some(t => t === 'repeat' || t === 'repeatrule')).length;
   const gone = (d: string | null): boolean =>
     d !== null && nowIso !== undefined && zone !== undefined && isPastDay(d, nowIso, zone);
   const live = (l: TaskLine): boolean =>
@@ -505,6 +511,7 @@ export function importSummary(
     droppedTags: [...tags].sort(),
     unreadable: [...unreadable],
     staleDates: parsed.filter(l => gone(l.due) || gone(l.start)).length,
+    repeats,
   };
 }
 
@@ -535,6 +542,12 @@ export function importWords(s: ImportSummary): string {
     // Said in full, because it is the single most surprising thing about importing
     // a long-running planner and somebody will otherwise think the dates were lost.
     out += ` ${s.staleDates === 1 ? 'One date had' : `${s.staleDates} dates had`} already gone by, so ${s.staleDates === 1 ? 'it comes' : 'they come'} in without a date rather than as something asking today.`;
+  }
+  if (s.repeats > 0) {
+    // The number, not just the tag name (1.8.0): rhythms are not carried, and
+    // the honest next step — rebuilding the real ones as upkeep — needs to
+    // know whether that is three things or sixty.
+    out += ` ${s.repeats === 1 ? 'One of them repeats' : `${s.repeats} of them repeat`} on a rhythm — rhythms are not carried; rebuild the real ones as upkeep when they matter.`;
   }
   if (s.droppedTags.length > 0) {
     out += ` These will not come with them: ${s.droppedTags.join(', ')}.`;

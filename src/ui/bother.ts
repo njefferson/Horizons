@@ -71,7 +71,7 @@ export function mountBother(session: Session, onChange: () => void): BotherUI {
       hint.textContent = OWNERSHIP_WORDS[o].hint;
       btn.append(label, hint);
       btn.addEventListener('click', () => {
-        void run(ctx => answerBotherEvents(ctx, b.node.id, o), outcomeWords(o))
+        void run(ctx => answerBotherEvents(ctx, session.state(), b.node.id, o), outcomeWords(o))
           .then(() => {
             // Focus must not fall to <body> when the button it was on is
             // replaced or removed (WCAG 2.4.3). The prompt if there is another

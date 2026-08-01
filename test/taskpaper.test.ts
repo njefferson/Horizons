@@ -433,3 +433,20 @@ test('1.4.0: an imported note folds to where the sheet reads it', () => {
   const n = [...state.nodes.values()].find(x => x.title === 'call the dentist')!;
   assert.equal(noteOf(n), 'ask about the crown', 'noteOf — the one reader — sees it');
 });
+
+test('repeats are COUNTED, not just named — the unnumbered-loss shape again (1.8.0)', () => {
+  // A 400-row export with sixty repeating tasks used to say only "These will
+  // not come with them: repeat." — the same shape as the pre-1.4.0 note bug.
+  const text = '- water plants @repeat(FREQ=WEEKLY)\n- pay rent @repeat(FREQ=MONTHLY)\n- one-off thing\n';
+  const s = importSummary(parseAnyExport(text).lines, [], NOW, DENVER);
+  assert.equal(s.repeats, 2);
+  const w = importWords(s);
+  assert.match(w, /2 of them repeat on a rhythm/);
+  assert.match(w, /rebuild the real ones as upkeep/);
+});
+
+test('a repeat-free file says nothing about rhythms', () => {
+  const s = importSummary(parseAnyExport('- just a thing\n').lines, [], NOW, DENVER);
+  assert.equal(s.repeats, 0);
+  assert.doesNotMatch(importWords(s), /rhythm/);
+});

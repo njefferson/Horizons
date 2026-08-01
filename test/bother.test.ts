@@ -82,7 +82,7 @@ test('all three answers exist, and each says what it will do', () => {
 
 test('mine-to-solve becomes ordinary work and enters triage', () => {
   const s0 = worry('b1', 'the roof');
-  const s1 = apply(s0, answerBotherEvents(ctx, 'b1', 'mine-to-solve'));
+  const s1 = apply(s0, answerBotherEvents(ctx, s0, 'b1', 'mine-to-solve'));
   const n = s1.nodes.get('b1')!;
   assert.equal(n.kind, 'action', 'it stops being a worry and starts being work');
   assert.deepEqual(openBothers(s1), [], 'and it leaves the flow');
@@ -98,7 +98,7 @@ test('mine-to-solve becomes ordinary work and enters triage', () => {
 
 test('mine-to-track parks it and brings it back once', () => {
   const s0 = worry('b1', 'the roof');
-  const s1 = apply(s0, answerBotherEvents(ctx, 'b1', 'mine-to-track'));
+  const s1 = apply(s0, answerBotherEvents(ctx, s0, 'b1', 'mine-to-track'));
   const n = s1.nodes.get('b1')!;
   assert.equal(n.trashed, false, 'nothing is lost');
   assert.equal(Boolean(n.clocks.park), true, 'it is parked, not asked about');
@@ -113,21 +113,26 @@ test('THE ONE THAT MATTERS: not-mine-to-carry is honoured completely', () => {
   // is an app that did not believe you, and a release taken back is worse than
   // one never offered.
   const s0 = worry('b1', 'my brother’s job situation');
-  const s1 = apply(s0, answerBotherEvents(ctx, 'b1', 'not-mine-to-carry'));
+  const s1 = apply(s0, answerBotherEvents(ctx, s0, 'b1', 'not-mine-to-carry'));
   const n = s1.nodes.get('b1')!;
 
-  assert.equal(n.trashed, true, 'let go');
+  // 1.8.0 (ADR-0056): the decision is KEPT, not trashed — the vocabulary said
+  // "lands on the Not Now ledger with a park.set" from the start, and the
+  // first build trashed it instead. The relief still holds: a park never
+  // demands, so nothing chases you; the ledger speaks only when you look.
+  assert.equal(n.trashed, false, 'not trashed — declining is a decision, not a deletion');
+  assert.notEqual(n.notNow, null, 'it stands in the Not Now ledger');
+  assert.equal(n.notNow!.what, 'my brother’s job situation', 'the words are the snapshot');
+  assert.equal(n.notNow!.person, null, 'nobody was asked who — an ordinary state');
+  assert.equal(Boolean(n.clocks.park), true, 'parked — the lawful comeback, never a nag');
   assert.deepEqual(openBothers(s1), [], 'it is not asked about again');
-  assert.equal(Boolean(n.clocks.park), false, 'and NOT parked to come back "just to check"');
   assert.equal(unclarified(s1).some((x: { id: string }) => x.id === 'b1'), false, 'nor sent to triage');
-  assert.deepEqual(silentNodes(s1), [],
-    'an explicit end is a decision, not a silence — law 1 needs no clock for it');
+  assert.deepEqual(silentNodes(s1), [], 'law 1 holds');
 
   // It is not deleted from history. It happened, and the log says so.
   assert.equal(s1.nodes.has('b1'), true);
   assert.equal(n.title, 'my brother’s job situation');
-  const reason = s1.nodes.get('b1')!;
-  assert.equal(reason.kind, 'bother', 'and it is still recorded as what it was');
+  assert.equal(n.kind, 'bother', 'and it is still recorded as what it was');
 });
 
 test('the ownership answer itself is recorded, whichever it was', () => {
@@ -141,7 +146,7 @@ test('a routed worry does not come back into the flow', () => {
   // A latch. Being asked the same question twice about the same worry is exactly
   // what this exists to stop.
   const s0 = worry('b1', 'the roof');
-  const s1 = apply(s0, answerBotherEvents(ctx, 'b1', 'mine-to-track'));
+  const s1 = apply(s0, answerBotherEvents(ctx, s0, 'b1', 'mine-to-track'));
   assert.deepEqual(openBothers(s1), []);
   // Even if something later touches the node.
   const s2 = fold([ev('node.renamed', 'b1', { title: 'the roof, still' })], s1);
@@ -165,7 +170,7 @@ test('one at a time, and the true number is stated', () => {
 test('answering moves to the next one', () => {
   let s = worry('b1', 'first');
   s = apply(s, botherEvents({ ...ctx, id: () => 'b2' }, 'b2', 'second'));
-  s = apply(s, answerBotherEvents(ctx, 'b1', 'not-mine-to-carry'));
+  s = apply(s, answerBotherEvents(ctx, s, 'b1', 'not-mine-to-carry'));
   assert.equal(currentBother(s)!.node.id, 'b2');
   assert.equal(botherCount(s), 1);
 });
@@ -186,7 +191,8 @@ test('nothing here calls them problems, or you a worrier', () => {
 test('letting something go gets the plainest sentence in the app', () => {
   // A congratulation would make the decision into a performance. The point is
   // that it was allowed to be ordinary.
-  assert.equal(outcomeWords('not-mine-to-carry'), 'Let go.');
+  assert.equal(outcomeWords('not-mine-to-carry'),
+    'Let go. The decision is kept, and nothing will chase you.');
   for (const bad of ['well done', 'great', 'good for you', 'brave', '!']) {
     assert.doesNotMatch(outcomeWords('not-mine-to-carry'), new RegExp(bad, 'i'), bad);
   }
@@ -200,7 +206,8 @@ test('the count line is silent when there is nothing', () => {
 test('every answer terminates the flow — none of them can leave it hanging', () => {
   // The vocabulary's own rule: "must terminate in a route or a park".
   for (const o of OWNERSHIPS as Ownership[]) {
-    const s = apply(worry('b1', 'x'), answerBotherEvents(ctx, 'b1', o));
+    const w = worry('b1', 'x');
+    const s = apply(w, answerBotherEvents(ctx, w, 'b1', o));
     assert.deepEqual(openBothers(s), [], o);
     assert.deepEqual(silentNodes(s), [], `${o} leaves nothing silent`);
   }

@@ -218,7 +218,8 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 
 `not-mine-to-carry` still produces a node — it lands on the Not Now ledger with a
 `park.set`. Declining to carry something is recorded, not discarded; that is the
-point of the ledger.
+point of the ledger. (Built 1.8.0, ADR-0056 — the first bother build trashed it
+instead, and this paragraph was the record of what it should have done.)
 
 ### D · Focus and resumption
 
@@ -278,12 +279,25 @@ is a valid, unremarkable value, never nagged about.
 - **`status.report.exported`**
   - Payload: `format: clipboard | markdown | print | csv, scope`
   - Silent risk: no — this is the provenance "delta since last export" reads from
-- **`request.declined`**
-  - Payload: `person, what, reason?`
-  - Silent risk: **yes — gated** → Not Now ledger + park
-- **`request.slot.set`**
-  - Payload: `recurrence`
+- **`request.declined`** (emitters 1.8.0, ADR-0056)
+  - Payload: `person (NodeId | null), what, reason?`
+  - Silent risk: **yes — gated** → Not Now ledger + park. The write paths carry
+    their own park in the same batch (to the request slot when one is set, else
+    end of today); the gate's cure is the backstop for a bare event from an
+    import or an older shard.
+  - `person` is null when nobody has said who — the `waitingOn` precedent: an
+    ordinary state, not a defect (the bother flow never asks). `what` is the
+    title SNAPSHOT at decline time, so the record survives a rename (the
+    consent-sentence rule). `reason` is a fixed provenance string
+    (`detail` | `bother`), never free text.
+  - Folds to `n.notNow {person, what, at}` under its own LWW key; cleared by
+    `clock.cleared{park}` (carrying it after all) and `done.marked`.
+- **`request.slot.set`** (emitter 1.8.0, ADR-0056)
+  - Payload: `recurrence` — `weekly:mon` … `weekly:sun`; `''` clears. `node: null`.
   - Silent risk: no
+  - Folds to `State.requestSlot` (state-level LWW, the `focus` shape). An
+    unrecognised recurrence reads as no slot — refused at read time, never
+    guessed. Null slot = the feature is invisible; setting a day IS the opt-in.
 - **`comms.sweep.scheduled`**
   - Payload: `at`
   - Silent risk: no

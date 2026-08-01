@@ -39,6 +39,8 @@ import { TODAY_MODULE, todayIsOn } from '../composed.ts';
 import { enableModuleEvents, disableModuleEvents } from './detail-intents.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 import { mountSecurity } from './security.ts';
+import { ledgerRowWords, notNowLedger, slotDayWords, slotOf } from '../requests.ts';
+import { setSlotEvents } from './request-intents.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -885,6 +887,78 @@ export async function mountAbout(
       // Same rule as the record: the label says what the next press does.
       trashOpen.textContent = opening ? 'Close the list' : 'Things you let go';
       if (opening) paintTrash();
+    });
+  }
+
+  // The Not Now ledger (1.8.0, ADR-0056) — the trash view's species: a capped,
+  // true-counted record of decisions, rows are doors, one verb, built on
+  // reveal. A row is a title, a name, and a date — NEVER a count per person
+  // (law 5: "declined three times" is a score, and it is not this app's to keep).
+  const notnowOpen = document.querySelector<HTMLButtonElement>('#notnow-open');
+  const notnowView = document.querySelector<HTMLElement>('#notnow-view');
+  const notnowList = document.querySelector<HTMLElement>('#notnow-list');
+  const notnowTotal = document.querySelector<HTMLElement>('#notnow-total');
+  if (notnowOpen && notnowView && notnowList && notnowTotal) {
+    const LEDGER_CAP = 25;
+    const paintLedger = (): void => {
+      const st = session.state();
+      const rows = notNowLedger(st);
+      const titleOf = (id: string): string | null => st.nodes.get(id)?.title || null;
+      notnowTotal.textContent = rows.length === 0
+        ? 'Nothing here — you have not declined anything.'
+        : rows.length === 1 ? 'One decision, kept.'
+          : rows.length <= LEDGER_CAP ? `${rows.length} decisions, newest first.`
+            : `${rows.length} decisions — the ${LEDGER_CAP} most recent are shown.`;
+      notnowList.replaceChildren(...rows.slice(0, LEDGER_CAP).map(n => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'trash-row';
+        const title = document.createElement('span');
+        title.textContent = n.notNow?.what || n.title || '(untitled)';
+        const fact = document.createElement('span');
+        fact.className = 'trash-when';
+        fact.textContent = ledgerRowWords(n, titleOf, session.zone);
+        b.append(title, fact);
+        b.addEventListener('click', () => {
+          const fresh = session.state().nodes.get(n.id);
+          if (fresh) openDetail?.(fresh);
+        });
+        li.append(b);
+        return li;
+      }));
+    };
+    notnowOpen.addEventListener('click', () => {
+      const opening = notnowView.hidden;
+      notnowView.hidden = !opening;
+      notnowOpen.setAttribute('aria-expanded', String(opening));
+      notnowOpen.textContent = opening ? 'Close the ledger' : 'The Not Now ledger';
+      if (opening) paintLedger();
+    });
+  }
+
+  // The request slot (1.8.0, ADR-0056): one weekday, one LWW setting. Setting
+  // a day IS the opt-in; "no day" clears it honestly. The note states what is,
+  // never what should be.
+  const slotDay = document.querySelector<HTMLSelectElement>('#slot-day');
+  const slotSet = document.querySelector<HTMLButtonElement>('#slot-set');
+  const slotNote = document.querySelector<HTMLElement>('#slot-note');
+  if (slotDay && slotSet && slotNote) {
+    const paintSlot = (): void => {
+      const day = slotOf(session.state());
+      slotDay.value = day ?? '';
+      slotNote.textContent = day
+        ? `On. Requests you park or decline wait for ${slotDayWords(day)}.`
+        : '';
+    };
+    paintSlot();
+    slotSet.addEventListener('click', () => {
+      const chosen = (slotDay.value || null) as Parameters<typeof setSlotEvents>[1];
+      void session.commit(ctx => setSlotEvents(ctx, chosen))
+        .then(() => { paintSlot(); try { onChange?.(); } catch { /* a surface */ } })
+        .catch((err: unknown) => {
+          slotNote.textContent = `Not set — ${(err as Error).message}`;
+        });
     });
   }
 

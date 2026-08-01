@@ -173,8 +173,20 @@ export function eventWords(
     case 'status.report.exported': return 'A status report went out.';
 
     // --- load and capacity ---------------------------------------------------
-    case 'request.declined': return 'Declined, and kept in the Not Now ledger.';
-    case 'request.slot.set': return 'A request slot was set.';
+    case 'request.declined':
+      return p['person']
+        ? `Declined — ${name(p['person'])} asked. Kept in the Not Now ledger.`
+        : 'Declined, and kept in the Not Now ledger.';
+    case 'request.slot.set': {
+      const r = str(p['recurrence']);
+      if (r === '') return 'The request slot was cleared.';
+      const d = r.startsWith('weekly:') ? r.slice('weekly:'.length) : '';
+      const words: Record<string, string> = {
+        mon: 'Mondays', tue: 'Tuesdays', wed: 'Wednesdays', thu: 'Thursdays',
+        fri: 'Fridays', sat: 'Saturdays', sun: 'Sundays',
+      };
+      return words[d] ? `Requests now wait for ${words[d]}.` : 'A request slot was set.';
+    }
     case 'comms.sweep.scheduled': return 'A comms sweep was scheduled.';
     case 'comms.sweep.ran': return 'A comms sweep ran.';
     case 'pebble.raised': return 'A pebble was raised.';

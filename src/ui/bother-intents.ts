@@ -12,9 +12,11 @@
 // These build events; they never touch the store.
 
 import type { AppEvent, NodeKind, Ownership } from '../events.ts';
+import type { State } from '../fold.ts';
 import type { StampContext } from './session.ts';
 import { endOfLocalDay } from '../time.ts';
 import { cleanTitle } from './detail-intents.ts';
+import { declinePair } from './request-intents.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -57,13 +59,16 @@ export const ownBotherEvents = (
  *   only honest way for a worry to become a task: by you saying so.
  * - **mine-to-track** — parked with a return in a week. Nothing to do, and it
  *   comes back once so it is not being carried in your head in the meantime.
- * - **not-mine-to-carry** — let go, with the reason recorded. **No return clock.**
- *   Bringing it back "just to check" would undo the entire point: the relief IS
- *   the feature, and an app that quietly re-raises what you released is an app
- *   that did not believe you.
+ * - **not-mine-to-carry** — declined, and the decision KEPT: it lands on the
+ *   Not Now ledger with a park (1.8.0, ADR-0056 — the vocabulary said this
+ *   from the start; the first build trashed it instead). The relief holds
+ *   because the park never demands: a passed park raises nothing and appears
+ *   only where you go looking — the ledger is its comeback surface, and
+ *   "point at it when the same request comes back" is the whole point of
+ *   keeping it.
  */
 export function routeBotherEvents(
-  ctx: StampContext, node: string, ownership: Ownership,
+  ctx: StampContext, state: State, node: string, ownership: Ownership,
 ): AppEvent[] {
   const out: AppEvent[] = [];
   if (ownership === 'mine-to-solve') {
@@ -84,10 +89,12 @@ export function routeBotherEvents(
     }));
     return out;
   }
-  // not-mine-to-carry. An explicit end is a decision, not a silence (law 1), so
-  // this needs no clock and gets none.
-  out.push(base(ctx, 'bother.routed', node, { route: 'let-go' }));
-  out.push(base(ctx, 'node.trashed', node, { reason: 'bother:not-mine-to-carry' }));
+  // not-mine-to-carry: the decline, through the ONE write shape the ledger
+  // has (request-intents.ts). Nobody is asked who — the flow's one-question
+  // design is the point, and person: null is an ordinary state.
+  const title = state.nodes.get(node)?.title ?? '';
+  out.push(base(ctx, 'bother.routed', node, { park: true }));
+  out.push(...declinePair(ctx, state, node, title, null, 'bother'));
   return out;
 }
 
@@ -95,8 +102,8 @@ export function routeBotherEvents(
  *  answer once and the thing is resolved once. Two round trips would leave a
  *  window in which a worry had an owner and no destination. */
 export const answerBotherEvents = (
-  ctx: StampContext, node: string, ownership: Ownership,
+  ctx: StampContext, state: State, node: string, ownership: Ownership,
 ): AppEvent[] => [
   ...ownBotherEvents(ctx, node, ownership),
-  ...routeBotherEvents(ctx, node, ownership),
+  ...routeBotherEvents(ctx, state, node, ownership),
 ];

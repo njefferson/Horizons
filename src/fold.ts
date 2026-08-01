@@ -160,6 +160,15 @@ export interface NodeState {
    * and not done" is structurally uncomputable (laws 3 and 5).
    */
   todayFor: string | null;
+  /**
+   * The standing decline, or null (1.8.0, ADR-0056 — the Not Now ledger).
+   * Set by `request.declined`; cleared by `clock.cleared{park}` (carrying it
+   * after all — clearing the park IS taking the thing back) and by
+   * `done.marked` (a completed thing is not a declined thing; the LOG keeps
+   * the decline either way). Its own LWW key `'notNow'`, so shard order
+   * cannot matter. `person` null means nobody said who — an ordinary state.
+   */
+  notNow: { person: NodeId | null; what: string; at: ISODateTime } | null;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -224,6 +233,16 @@ export interface State {
    * stamp-disordered batch. First customer: `today` (Composed Today).
    */
   modules: Set<string>;
+  /**
+   * The one request slot, or null (1.8.0, ADR-0056). Stimulus control for
+   * incoming demand: a weekday requests wait for, so they are not evaluated
+   * at arrival. `recurrence` is 'weekly:mon'…'weekly:sun'; a cleared slot is
+   * null, and null makes the feature invisible everywhere — setting it IS
+   * the opt-in. State-level LWW like `focus`.
+   */
+  requestSlot: { recurrence: string } | null;
+  /** Ordering of the last event that moved `requestSlot`, so it folds LWW. */
+  requestSlotStamp: Ordering | null;
 }
 
 /**
@@ -250,6 +269,8 @@ export const emptyState = (): State => ({
   lastReportMark: null,
   lastActivityAt: null,
   modules: new Set(),
+  requestSlot: null,
+  requestSlotStamp: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -313,6 +334,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       feeds: [],
       leadDays: null,
       todayFor: null,
+      notNow: null,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -364,6 +386,8 @@ export function cloneShell(base: State): State {
     lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
     lastActivityAt: base.lastActivityAt,
     modules: new Set(base.modules),
+    requestSlot: base.requestSlot,
+    requestSlotStamp: base.requestSlotStamp,
   };
 }
 
@@ -710,6 +734,13 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
           delete n.clocks[e.payload.clockKind];
           setField(n.stamps, key, o);
         }
+        // Clearing the park is taking the thing back into your day — the
+        // un-decline (1.8.0, ADR-0056). Its own LWW key, checked separately:
+        // notNow and clock.park each converge on their own later decision.
+        if (e.payload.clockKind === 'park' && wins(n.stamps['notNow'], o)) {
+          n.notNow = null;
+          setField(n.stamps, 'notNow', o);
+        }
         break;
       }
       case 'park.set': {
@@ -733,6 +764,9 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
       case 'done.marked': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['lastDone'], o)) { n.lastDone = e.payload.at; n.stamps['lastDone'] = o; }
+        // A completed thing is not a declined thing — the ledger row would be
+        // the state lying. The LOG keeps the decline either way (ADR-0056).
+        if (wins(n.stamps['notNow'], o)) { n.notNow = null; setField(n.stamps, 'notNow', o); }
         break;
       }
       case 'done.unmarked': {
@@ -772,6 +806,29 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
       }
       case 'module.disabled': {
         s.modules.delete(e.payload.module);
+        break;
+      }
+
+      // The Not Now ledger (1.8.0, ADR-0056). A decline is a decision worth
+      // keeping: its own LWW key, set here, cleared by clock.cleared{park}
+      // (carrying it after all) and done.marked. The gate cures the decline
+      // with a park, so law 1 holds and law 3's comeback is the park itself.
+      case 'request.declined': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['notNow'], o)) {
+          n.notNow = { person: e.payload.person, what: e.payload.what, at: e.at };
+          n.stamps['notNow'] = o;
+        }
+        break;
+      }
+      // The one request slot (1.8.0, ADR-0056): state-level LWW like focus.
+      // '' is the honest clear; an unrecognised recurrence is REFUSED at read
+      // time (parseSlot), never guessed at here — the fold keeps what was said.
+      case 'request.slot.set': {
+        if (wins(s.requestSlotStamp ?? undefined, o)) {
+          s.requestSlot = e.payload.recurrence === '' ? null : { recurrence: e.payload.recurrence };
+          s.requestSlotStamp = o;
+        }
         break;
       }
 

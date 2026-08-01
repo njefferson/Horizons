@@ -237,8 +237,8 @@ is not obvious when you come to build them.
 **(done, 0.18.0 — [ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md); the
 re-entry vocabulary had been complete and unreachable since the first draft)** ·
 bother
-flow · staff-call lens · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · request slots
-+ Not Now ledger.
+flow · staff-call lens · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
++ Not Now ledger~~ **(done, 1.8.0 — ADR-0056)**.
 
 > **Binding condition:** journal **encryption ships in the same commit as the
 > journal**, including its exports. It is never retrofitted. If encryption isn't
@@ -432,6 +432,42 @@ decided by a session.**
   before being trusted.
 
 ### Log
+
+- **2026-08-01 (Noah: "Continue")** — **1.8.0 "Asking, and declining"** —
+  request slots + the Not Now ledger
+  ([ADR-0056](docs/adr/0056-request-slots-and-the-not-now-ledger.md)); the
+  v1.5 line's last cheap item, built the moment its precondition (the park
+  verbs, ADR-0045) had soaked. The direction was chosen by a full backlog
+  sweep after the roadmap closed; the staff-call pack (anchors, delta,
+  stakeholders, decision log) is the recorded runner-up.
+  · **One noun, two homes, one write shape**: `request.declined` finally has
+  emitters — the sheet's "Someone asked for this?" group and the bother
+  flow's third branch, both through `declinePair` (the record + a deliberate
+  park in one batch; the gate's cure stays as backstop only). `person` was
+  widened to `NodeId | null` (the `waitingOn` precedent); `what` is the
+  title snapshot (the consent-sentence rule; rename-proof, pinned).
+  · **The bother flow aligned to the vocabulary**: event-vocabulary.md said
+  "lands on the Not Now ledger with a park.set" from the start — the build
+  trashed it and promised "it does not come back". The trash is gone; the
+  relief holds because a park never demands. Copy, tests, and smoke all
+  rewritten to the new truth.
+  · **The ledger** lives behind ⓘ beside "Things you let go" — ADR-0050's
+  species: capped 25, true count in words, rows are doors, one verb, a name
+  and a date and NEVER a count (law 5, regex-asserted over the rendered
+  words in smoke).
+  · **The slot**: one weekday, `weekly:mon`…`weekly:sun`, `''` clears,
+  refused-not-guessed; NOT a module — null slot means invisible, setting a
+  day IS the opt-in. Exactly two effects: the sheet's "Park it until the
+  request slot — back ⟨day⟩" button, and declines parking to the slot.
+  Nothing at capture, ever.
+  · **Un-declining is `clock.cleared{park}`** — no new noun; the gate cures
+  the clear so the carried thing lands back today, covered. LWW convergence
+  property-tested in both shard orders.
+  · Rider: **imported repeats are counted** — "60 of them repeat on a
+  rhythm" instead of the bare tag name "repeat" (the pre-1.4.0
+  unnumbered-loss shape, closed).
+  · Also found and fixed: the 1.7.0 ACCESSIBILITY.md edit had swallowed the
+  "Part 2 — Findings register" heading; restored with B-27.
 
 - **2026-08-01 (after 1.7.2)** — **`main` fast-forwarded to `e99aa80` on
   Noah's "Promote"**, carrying 1.7.0 (folding duplicates, the twins range,

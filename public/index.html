@@ -687,6 +687,30 @@
     <ul id="detail-people-list" class="detail-feeds"></ul>
   </div>
 
+  <!-- Someone asked (1.8.0, ADR-0056). Declining is a decision worth keeping —
+       it lands on the Not Now ledger with a park, so it comes back lawfully
+       and nothing chases you. Hidden on Menu items: park is a demand clock and
+       a wish holds no demands (the gate's belt would refuse it). -->
+  <div class="detail-group" id="detail-request-group">
+    <span class="detail-label">Someone asked for this?</span>
+    <p id="detail-request-fact" class="detail-hint" hidden></p>
+    <div class="detail-row">
+      <button id="detail-decline" type="button" class="ghost">Not mine to carry</button>
+      <button id="detail-slot-park" type="button" class="ghost" hidden></button>
+    </div>
+    <div id="detail-declined" hidden>
+      <p class="detail-hint" id="detail-declined-words"></p>
+      <div class="detail-row">
+        <button id="detail-carry" type="button">Carry it after all</button>
+      </div>
+    </div>
+    <p class="detail-hint">
+      Declining is a decision, and it is kept &mdash; the Not Now ledger, behind
+      the &#9432;, is the thing to point at when the same request comes back.
+      Nothing here chases you.
+    </p>
+  </div>
+
   <!-- The dependency edge (build-plan item 27). "What breaks if I do not do
        this?" is the question, so the edge points forward from here. -->
   <div class="detail-group">
@@ -1075,6 +1099,26 @@
     <ul id="trash-list" class="trash-list"></ul>
   </div>
 
+  <!-- The Not Now ledger (1.8.0, ADR-0056). The trash's species: a capped,
+       true-counted record of deliberate decisions, rows are doors, one verb.
+       Declining is recorded, not discarded — this is the thing to point at
+       when the same request comes back. Never a to-do list, never a tally. -->
+  <h3 class="about-section">The Not Now ledger</h3>
+  <p class="about-p">
+    Things other people asked of you, that you decided not to carry. Each is
+    parked &mdash; it comes back on its own day, quietly &mdash; and each is
+    kept, so when the same request comes back you can point at the decision
+    instead of making it again.
+  </p>
+  <div class="about-actions">
+    <button id="notnow-open" type="button" class="ghost" aria-expanded="false"
+            aria-controls="notnow-view">The Not Now ledger</button>
+  </div>
+  <div id="notnow-view" hidden>
+    <p id="notnow-total" class="storage-note"></p>
+    <ul id="notnow-list" class="trash-list"></ul>
+  </div>
+
   </div>
 
   <h2 class="about-group"><button id="group-extras-open" type="button" class="about-group-toggle" aria-expanded="false" aria-controls="group-extras">Extras</button></h2>
@@ -1113,6 +1157,36 @@
     It is off unless you ask for it, it counts nothing, and an unfinished choice
     is not a failure &mdash; at midnight the choosing simply lapses, with no
     record of a miss.
+  </p>
+
+  <!-- The request slot (1.8.0, ADR-0056). Stimulus control: a weekday where
+       requests wait, so they are not evaluated at arrival. Setting a day IS
+       the opt-in — no slot, no feature, nothing anywhere. -->
+  <h3 class="about-section">A day for requests</h3>
+  <p class="about-p">
+    If you choose a day, anything someone asks of you can be parked to wait for
+    it from its own sheet &mdash; so a request is dealt with on your day, not at
+    the moment it lands. Declining sends things to the same day.
+  </p>
+  <div class="about-actions">
+    <label class="detail-inline" for="slot-day">Requests wait for</label>
+    <select id="slot-day">
+      <option value="">no day</option>
+      <option value="mon">Mondays</option>
+      <option value="tue">Tuesdays</option>
+      <option value="wed">Wednesdays</option>
+      <option value="thu">Thursdays</option>
+      <option value="fri">Fridays</option>
+      <option value="sat">Saturdays</option>
+      <option value="sun">Sundays</option>
+    </select>
+    <button id="slot-set" type="button" class="ghost">Set the day</button>
+  </div>
+  <p id="slot-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    It is off unless you choose a day, it counts nothing, and nothing arrives
+    on its own &mdash; a waiting request comes back the way any parked thing
+    does, quietly, when its day ends.
   </p>
 
   <h3 class="about-section">Today, on paper</h3>
