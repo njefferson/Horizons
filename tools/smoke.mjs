@@ -2908,7 +2908,13 @@ try {
   await tpage.click('#open-about');
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#log-open');
-  await tpage.waitForSelector('#log-view:not([hidden])');
+  // The container unhides synchronously; the CONTENT lands after the async
+  // store read. Waiting on the container read an empty total on the 2-core CI
+  // runner while the local machine won the race (the V-10 shape, again) — so
+  // wait for the words themselves. The total is written before the first page
+  // renders, in the same task, so once it reads the lines are there too.
+  await tpage.waitForFunction(() => /event/.test(
+    document.querySelector('#log-total')?.textContent ?? ''), null, { timeout: 5000 });
   const logTotalWords = await tpage.locator('#log-total').textContent() || '';
   const logTotalN = Number(logTotalWords.match(/^(\d+) events/)?.[1] ?? '0');
   is(logTotalN > 0, true, `the record states its true size (${logTotalN})`);
