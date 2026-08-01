@@ -3423,6 +3423,101 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     document.querySelectorAll('#cards .card').length === n, preLensCards);
   is(true, true, 'back to everything — nothing was lost to the looking');
 
+  console.log('\nWhat a meeting needs (1.9.0)');
+  // Who cares how it goes: the relation has been writable since 0.15.0 and
+  // readable by nothing. Link one on a project, and it must appear in its own
+  // group — NOT twice — and on the portfolio row.
+  await tpage.fill('#capture', 'the fielding review');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+  await fillSearch('fielding review');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: 'fielding review' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await fillSearch('');
+  await tpage.click('#detail-make-project');
+  await tpage.waitForTimeout(250);
+  await tpage.fill('#detail-person', 'Priya');
+  await tpage.selectOption('#detail-relation', 'stakeholder');
+  await tpage.click('#detail-person-set');
+  await tpage.waitForFunction(() => /Priya/.test(
+    document.querySelector('#detail-stakeholder-list')?.textContent ?? ''));
+  is(/Priya/.test(await tpage.locator('#detail-stakeholder-list').textContent() || ''), true,
+    'who cares how it goes lists them');
+  is(/Priya/.test(await tpage.locator('#detail-people-list').textContent() || ''), false,
+    'and NOT twice — one link, one place on the sheet');
+
+  // What was decided: append-only, newest first, no verb on a row.
+  await tpage.fill('#detail-decision', 'we ship on the 12th');
+  await tpage.click('#detail-decision-set');
+  await tpage.waitForFunction(() => /we ship on the 12th/.test(
+    document.querySelector('#detail-decision-list')?.textContent ?? ''));
+  is(await tpage.locator('#detail-decision').inputValue(), '',
+    'the box empties on a successful log');
+  is(await tpage.locator('#detail-decision-list button').count(), 0,
+    'a decision row carries no verb — the log is read-only');
+  is(/One decision, kept/.test(await tpage.locator('#detail-decision-count').textContent() || ''), true,
+    'and the count line states it in words');
+  await tpage.fill('#detail-decision', '   ');
+  await tpage.click('#detail-decision-set');
+  await tpage.waitForFunction(() => /needs to say something/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.fill('#detail-decision', '');
+  await tpage.click('#detail-close');
+
+  // Both survive a reload — the whole point of a record.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await fillSearch('fielding review');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: 'fielding review' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await fillSearch('');
+  is(/Priya/.test(await tpage.locator('#detail-stakeholder-list').textContent() || ''), true,
+    'who cares survives a reload');
+  is(/we ship on the 12th/.test(await tpage.locator('#detail-decision-list').textContent() || ''), true,
+    'and so does what was decided');
+  // Law 5 over the whole decision surface: a record may state a true count,
+  // and it may never grade anybody.
+  const decisionText = await tpage.locator('#detail-decision-group').textContent() || '';
+  is(/%|\d+\s*(times|of|\/)\s*\d*|remaining/.test(decisionText), false,
+    'the decision log never counts against anyone');
+
+  // Taking somebody off: gone from the sheet, and the record keeps that they
+  // were on it.
+  await tpage.locator('#detail-stakeholder-list button', { hasText: 'Take them off' }).click();
+  await tpage.waitForFunction(() => !/Priya/.test(
+    document.querySelector('#detail-stakeholder-list')?.textContent ?? ''));
+  is(true, true, 'off the list');
+  await tpage.click('#detail-close');
+
+  // THE REPORT, walked for the first time. It lives under Extras, which
+  // ADR-0055 folds closed — unfold before reaching for it.
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  // Capture what the clipboard is handed — the primary path. (The visible
+  // preview only appears when the clipboard is REFUSED, which is its own
+  // fallback and not what a working device does.)
+  await tpage.evaluate(() => {
+    window.__reports = [];
+    navigator.clipboard.writeText = (t) => { window.__reports.push(t); return Promise.resolve(); };
+  });
+  await tpage.click('#report-copy');
+  await tpage.waitForFunction(() => (window.__reports ?? []).length === 1);
+  const report = await tpage.evaluate(() => window.__reports[0]);
+  is(/Decided/.test(report), true, 'the report carries what was decided');
+  is(/we ship on the 12th/.test(report), true, 'in the words it was logged in');
+  is(/Started/.test(report), false,
+    'and no section that can never render — the 1.9.0 defect is gone');
+  // A second report immediately after: the decision has been told, so it does
+  // not repeat. A delta, not a roster.
+  await tpage.click('#report-copy');
+  await tpage.waitForFunction(() => (window.__reports ?? []).length === 2);
+  const reportAgain = await tpage.evaluate(() => window.__reports[1]);
+  is(/we ship on the 12th/.test(reportAgain), false,
+    'what they have already heard does not repeat');
+  await tpage.click('#about-close');
+
   console.log('\nAsking, and declining (1.8.0)');
   // Decline from the sheet: the record, the park, the state bit — and the way
   // back, a door away in the ledger.

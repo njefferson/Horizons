@@ -386,6 +386,11 @@ export function linkPersonEvents(
   // the user had named (audit). The fold now also reads the link (healing old
   // logs); this writes the honest noun going forward.
   if (relation === 'opr') out.push(mk('opr.assigned', node, { person }));
+  // The same shape for "they care how it goes" (1.9.0, ADR-0057): the fold
+  // reads the LINK as well, so every stakeholder linked since 0.15.0 already
+  // shows without anything being re-entered; this writes the honest noun
+  // forward, and the two can never disagree because they fold identically.
+  if (relation === 'stakeholder') out.push(mk('stakeholder.added', node, { person }));
   if (opts.openWaiting) {
     out.push(mk('waiting.opened', node, {
       person, forWhat: opts.forWhat ?? '', since: ctx.at,
@@ -459,3 +464,37 @@ export const setSaveForEvents = (
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
   kind: 'save-for.updated', node, payload: { target, saved },
 } as AppEvent];
+
+/**
+ * Take somebody off the list of who cares how a thing goes (1.9.0, ADR-0057).
+ *
+ * The only noun in the whole vocabulary that subtracts a person link, so the
+ * fold scopes it hard — person AND relation. The record keeps that they were
+ * on it; this is state, not history.
+ */
+export const removeStakeholderEvents = (
+  ctx: StampContext, node: string, person: string,
+): AppEvent[] => [base(ctx, 'stakeholder.removed', node, { person })];
+
+/**
+ * Log what was decided (1.9.0, ADR-0057).
+ *
+ * `cleanNote` rather than a cleaner of its own — ADR-0047's rule that two
+ * cleaners is how one file comes to import differently from how it types.
+ * Prose keeps its newlines; control and format characters go.
+ *
+ * An empty decision writes NOTHING. Unlike a note, where an empty box is the
+ * honest removal of a note, there is no such thing as removing a decision —
+ * so there is nothing for an empty one to mean.
+ *
+ * `meeting` is deliberately not written: nothing in the app resolves a
+ * meeting name yet. The fold reserves the field so an import or a later
+ * shard can carry one (law 9).
+ */
+export function logDecisionEvents(
+  ctx: StampContext, node: string, text: string,
+): AppEvent[] {
+  const clean = cleanNote(text);
+  if (!clean) return [];
+  return [base(ctx, 'decision.logged', node, { text: clean, at: ctx.at })];
+}

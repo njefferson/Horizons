@@ -89,6 +89,9 @@ export function deserialiseState(raw: unknown): State {
       todayFor: n.todayFor ?? null,
       // A pre-1.8.0 snapshot stored no declines — none were standing.
       notNow: n.notNow ?? null,
+      // MUTABLE, and the third place the rule bites: a pre-1.9.0 snapshot
+      // stored no decisions — none had been logged.
+      decisions: [...(n.decisions ?? [])],
       fields: { ...(n.fields ?? {}) },
       stamps: { ...(n.stamps ?? {}) },
       clocks: { ...(n.clocks ?? {}) },

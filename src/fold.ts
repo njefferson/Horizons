@@ -57,6 +57,17 @@ export interface Clock {
 export const isAppClock = (c: Clock | undefined | null): boolean =>
   c != null && c.source === 'gate:node.created';
 
+/** One line of a node's decision log. `meeting` is folded and rendered when
+ *  present, and written by nothing in 1.9.0 — nothing resolves a meeting
+ *  name yet, and reserving the field additively is law 9. */
+export interface DecisionEntry {
+  /** The logging event's id — what makes the append idempotent. */
+  id: string;
+  text: string;
+  at: ISODateTime;
+  meeting: string | null;
+}
+
 export interface NodeState {
   id: NodeId;
   vault: VaultId;
@@ -169,6 +180,15 @@ export interface NodeState {
    * cannot matter. `person` null means nobody said who — an ordinary state.
    */
   notNow: { person: NodeId | null; what: string; at: ISODateTime } | null;
+  /**
+   * What was decided about this, in the order it was decided (1.9.0,
+   * ADR-0057). APPEND-ONLY: a log is not a slot, so there is no LWW stamp
+   * and no removal — two devices logging different decisions must end with
+   * both. Idempotent by event id, because a shard union can deliver the
+   * same event twice. Display order is computed at read time, so state
+   * stays a pure function of the event set.
+   */
+  decisions: DecisionEntry[];
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -335,6 +355,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       leadDays: null,
       todayFor: null,
       notNow: null,
+      decisions: [],
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -357,6 +378,8 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       // Same rule, same reason: `people` is a mutable array on a structural
       // field, so a bare spread would alias it into the base state.
       people: [...n.people],
+      // And the decision log, for the same reason a third time (1.9.0).
+      decisions: [...n.decisions],
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -526,6 +549,54 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         if (rel === 'opr' && wins(n.stamps['opr'], o)) {
           n.opr = e.payload.person; n.stamps['opr'] = o;
         }
+        break;
+      }
+      // Stakeholders (1.9.0, ADR-0057): `people[]` is their ONE home, so a
+      // link written any time since 0.15.0 is already in state — only the
+      // reader was missing. `stakeholder.added` is the forward event and
+      // folds byte-identically to the link, so the two can never disagree.
+      case 'stakeholder.added': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const person = e.payload.person;
+        if (typeof person !== 'string' || !person) break;
+        if (!n.people.some(x => x.person === person && x.relation === 'stakeholder')) {
+          n.people = [...n.people, { person, relation: 'stakeholder' }];
+        }
+        break;
+      }
+      // The ONLY noun in the vocabulary that subtracts a person link, so it
+      // is scoped hard: person AND relation. Sam can be the OPR and someone
+      // who cares how it goes, and taking one off must not strip the other.
+      // Order-dependence is the `dependency.released` discipline — fold
+      // sorts totally, so replay is a pure function of the event SET, and a
+      // per-person payload makes that exactly per-person LWW. A removal
+      // carrying no person is a NO-OP, never a remove-all: refused, not
+      // guessed.
+      case 'stakeholder.removed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const person = e.payload.person;
+        if (typeof person !== 'string' || !person) break;
+        n.people = n.people.filter(l => !(l.person === person && l.relation === 'stakeholder'));
+        break;
+      }
+      // The decision log (1.9.0, ADR-0057). APPEND-ONLY and idempotent by
+      // event id — a log is not a slot, so LWW is wrong: two devices logging
+      // different decisions must end with both. Never edited, never removed;
+      // the way back is to log the new decision, which is what a decision
+      // log is for. `meeting` is folded but written by nothing in 1.9.0 —
+      // reserved additively, because an import or a later shard may carry
+      // one and data is never lost to updates.
+      case 'decision.logged': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        const text = e.payload.text;
+        if (typeof text !== 'string' || !text) break;
+        if (n.decisions.some(d => d.id === e.id)) break;
+        const at = typeof e.payload.at === 'string' && isValidIso(e.payload.at)
+          ? e.payload.at : e.at;
+        n.decisions = [...n.decisions, {
+          id: e.id, text, at,
+          meeting: typeof e.payload.meeting === 'string' ? e.payload.meeting : null,
+        }];
         break;
       }
       case 'waiting.opened': {

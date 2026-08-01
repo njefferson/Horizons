@@ -267,12 +267,27 @@ is a valid, unremarkable value, never nagged about.
 - **`opr.assigned`**
   - Payload: `person`
   - Silent risk: no
-- **`stakeholder.added` / `.removed`**
+- **`stakeholder.added` / `.removed`** (emitters + folds 1.9.0, ADR-0057)
   - Payload: `person`
   - Silent risk: no
-- **`decision.logged`**
+  - Both fold into `n.people[]` — the ONE home. `added` appends the
+    `stakeholder` link idempotently, byte-identically to
+    `person.linked{relation:'stakeholder'}`, so a link written any time since
+    0.15.0 already reads without anything being re-entered.
+  - `removed` is the ONLY event in this vocabulary that subtracts a person
+    link, and it is scoped to person AND relation: taking somebody off the
+    list must never strip the same person's `opr` or `waiting-on`. A removal
+    naming nobody is a no-op, never a remove-all.
+- **`decision.logged`** (emitter + fold 1.9.0, ADR-0057)
   - Payload: `text, at, meeting?`
   - Silent risk: no
+  - Folds into `n.decisions[]` — APPEND-ONLY and idempotent by event id. No
+    LWW stamp: a log is not a slot, and two devices logging different
+    decisions must end with both. Never edited, never removed; the way back
+    is to log the new decision.
+  - `meeting` is folded and rendered when present, and written by nothing in
+    1.9.0 — nothing resolves a meeting name yet, and the field is reserved
+    additively (law 9).
 - **`delta.recorded`**
   - Payload: `sinceAnchor | sinceExport, text`
   - Silent risk: no

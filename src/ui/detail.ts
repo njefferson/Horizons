@@ -39,6 +39,8 @@ import { choosable, composedFull, todayIsOn } from '../composed.ts';
 import { foldedInto, legalMergeTargets, mergeEvents, unmergeEvents } from './merge-intents.ts';
 import { carryEvents, declineEvents, parkToSlotEvents } from './request-intents.ts';
 import { nextSlotOccurrence, slotDayWords, slotOf } from '../requests.ts';
+import { stakeholdersOf } from '../people.ts';
+import { logDecisionEvents, removeStakeholderEvents } from './detail-intents.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
  *  closed set; these are what a person reads. */
@@ -79,6 +81,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const relationSel = q<HTMLSelectElement>('#detail-relation');
   const peopleData = q<HTMLDataListElement>('#detail-people');
   const peopleList = q('#detail-people-list');
+  const stakeList = q('#detail-stakeholder-list');
+  const decisionInput = q<HTMLTextAreaElement>('#detail-decision');
+  const decisionList = q('#detail-decision-list');
+  const decisionCount = q('#detail-decision-count');
   const placeLine = q('#detail-place');
   const kidsList = q('#detail-children');
   if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
@@ -183,6 +189,60 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     mergeSel.disabled = legal.length === 0;
   }
 
+  /** Who cares how it goes, and what was decided (1.9.0, ADR-0057).
+   *  Stakeholders come from `people[]` — the one home — so a link written
+   *  any time since 0.15.0 appears with nothing re-entered. A decision row
+   *  carries NO verb: the log is read-only, and the way back is to log the
+   *  new decision. */
+  const DECISIONS_SHOWN = 5;
+  function paintMeeting(n: NodeState): void {
+    const st = session.state();
+    if (stakeList) {
+      stakeList.replaceChildren(...stakeholdersOf(st, n).map(p => {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const label = document.createElement('span');
+        const who = p.title || '(unnamed)';
+        label.textContent = who;
+        const off = document.createElement('button');
+        off.type = 'button';
+        off.className = 'ghost';
+        off.textContent = 'Take them off';
+        off.setAttribute('aria-label', `Take ${who} off the list`);
+        off.addEventListener('click', () => {
+          void run(ctx => removeStakeholderEvents(ctx, n.id, p.id),
+            'Off the list. The record keeps that they were on it.');
+        });
+        li.append(label, off);
+        return li;
+      }));
+    }
+    const rows = [...n.decisions].sort((a, b) =>
+      (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? -1 : 1));
+    if (decisionCount) {
+      decisionCount.textContent = rows.length === 0 ? ''
+        : rows.length === 1 ? 'One decision, kept.'
+          : rows.length <= DECISIONS_SHOWN ? `${rows.length} decisions, newest first.`
+            : `${rows.length} decisions — the ${DECISIONS_SHOWN} most recent are shown.`;
+    }
+    if (decisionList) {
+      decisionList.replaceChildren(...rows.slice(0, DECISIONS_SHOWN).map(d => {
+        const li = document.createElement('li');
+        li.className = 'detail-feed';
+        const text = document.createElement('span');
+        text.textContent = d.text;
+        const when = document.createElement('span');
+        when.className = 'detail-when';
+        const day = new Intl.DateTimeFormat('en-GB', {
+          timeZone: session.zone, day: 'numeric', month: 'short',
+        }).format(new Date(d.at));
+        when.textContent = d.meeting ? `${day} · ${d.meeting}` : day;
+        li.append(text, when);
+        return li;
+      }));
+    }
+  }
+
   /** Someone asked (1.8.0, ADR-0056): the fact line, the decline, the way
    *  back, and the slot button naming the REAL day it would come back —
    *  a control that says what it will do (the composed-cap rule). */
@@ -282,6 +342,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // The note rides the same no-clobber rule as the rename box: `render` runs
     // after every commit here, and prose is the costliest thing to eat.
     if (noteInput && document.activeElement !== noteInput) noteInput.value = noteOf(n) ?? '';
+    // The decision box obeys the same rule for the same reason — `render`
+    // runs after every commit here, and prose is the costliest thing to eat.
+    // It is cleared explicitly on a successful log, never by a repaint.
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
 
@@ -293,7 +356,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       PEOPLE.replaceChildren(...peopleNodes(st).map(p =>
         Object.assign(document.createElement('option'), { value: p.title || '' })));
 
-      PEOPLE_LIST.replaceChildren(...n.people.map(l => {
+      // Stakeholders render in their OWN group (1.9.0) — listing them here
+      // too would put one link on the sheet twice, and a removal would leave
+      // the stale copy contradicting the record (the OPR defect's shape).
+      PEOPLE_LIST.replaceChildren(...n.people.filter(l => l.relation !== 'stakeholder').map(l => {
         const li = document.createElement('li');
         li.className = 'detail-feed';
         const label = document.createElement('span');
@@ -440,6 +506,20 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // items and people — anything you hold can carry words. Only a thing let
     // go loses the editor; "Keep it after all" is the door back.
     grp('#detail-note-group', !n.trashed);
+    // The meeting furniture (1.9.0, ADR-0057): a container's people and its
+    // decisions. Shown for containers off the Menu — and for anything that
+    // ALREADY carries one, so a stakeholder or a decision can never become
+    // invisible because the thing it is attached to changed kind.
+    {
+      const stakes = stakeholdersOf(session.state(), n);
+      const container = isContainer(n) && !n.trashed && !n.onMenu;
+      grp('#detail-stakeholder-group', container || stakes.length > 0);
+      grp('#detail-decision-group', container || n.decisions.length > 0);
+      // The editor goes when a thing is let go; the record stays readable.
+      show('#detail-decision-set', !n.trashed);
+      if (decisionInput) decisionInput.hidden = n.trashed;
+      paintMeeting(n);
+    }
     // Someone asked (1.8.0, ADR-0056). Hidden on Menu items — park is a
     // demand clock and the gate's belt refuses it on a wish, so the verb is
     // never offered where it cannot land — and on people and resume cards.
@@ -626,6 +706,15 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   btn('#detail-carry')?.addEventListener('click', () => {
     void run(ctx => carryEvents(ctx, current!.id),
       'Carried after all — its own thing again, back with you today.');
+  });
+  // What was decided (1.9.0). Empty writes nothing — unlike a note, an empty
+  // decision is not the honest removal of anything.
+  btn('#detail-decision-set')?.addEventListener('click', () => {
+    if (!decisionInput || !current) return;
+    if (!cleanNote(decisionInput.value)) { say('It needs to say something.'); return; }
+    const text = decisionInput.value;
+    void run(ctx => logDecisionEvents(ctx, current!.id, text), 'Logged. It stays as written.')
+      .then(() => { decisionInput.value = ''; });
   });
   btn('#detail-slot-park')?.addEventListener('click', () => {
     void run(ctx => parkToSlotEvents(ctx, session.state(), current!.id),

@@ -433,6 +433,57 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (Noah: "Continue")** — **1.9.0 "What a meeting needs"** —
+  build-plan item 31's remainder
+  ([ADR-0057](docs/adr/0057-stakeholders-and-the-decision-log.md)). Three
+  nouns that had existed since Phase 0 with no fold, no emitter and no
+  reader got all three; one shipped surface lost a section that could never
+  render.
+  · **Stakeholders that are read**, and the design ruling I want kept: the
+  obvious move was a dedicated `NodeState.stakeholders` on the OPR
+  precedent, and it was WRONG — `n.opr` is a field because its cardinality
+  differs, while stakeholders are multi-valued, which is what `people[]`
+  already is. A second home would have contradicted itself on day one (a
+  removal clearing the field while the sheet's people list and the person
+  lens kept rendering the name — the OPR defect reintroduced by its own
+  fix) and been silently dropped by a merge. Keeping one home also makes
+  the healing perfect: every stakeholder linked since 0.15.0 appears with
+  nothing re-entered.
+  · **`stakeholder.removed` is the only subtraction in the vocabulary**
+  (there is no `person.unlinked` noun at all), so it is scoped to person
+  AND relation — taking somebody off must never strip their OPR. A removal
+  naming nobody is a no-op, never a remove-all. Convergence is replay over
+  the log's total order, which for a per-person payload IS per-person LWW —
+  the `dependency.released` discipline.
+  · **The decision log**: append-only, idempotent by event id, no LWW slot
+  (two devices logging different decisions must end with both). Never
+  edited, never removed — ADR-0048's rule — and the way back is stated in
+  the hint: log the new decision, which is what a decision log is for.
+  `meeting` is folded and rendered but written by nothing yet (law 9).
+  · **A "Decided" section in the status report**, and the empty-guard
+  taught about it — a fourth section without that is a document listing
+  real decisions that also says "Nothing to report", which is the audit
+  finding delta.ts already carries.
+  · **The "Started" defect**: `ChangeKind` declared it, `HEADS` gave it a
+  heading, `ORDER` gave it a slot, and nothing ever emitted it — every
+  report shipped with a section that could not render. REMOVED rather than
+  implemented: started-and-not-finished would become computable by
+  subtraction across two consecutive reports, in a document you hand your
+  manager, and this app has no in-progress state on purpose. Every
+  candidate definition was dishonest (the `start` clock is the DEFER verb)
+  or uncomputable (focus is invisible to a two-State diff; `todayFor` is
+  deliberately unaskable). **The durable half is the invariant**: a
+  `Record<ChangeKind, witness>` totality test now proves every declared
+  kind reachable.
+  · **Anchors deferred** (build-plan 34 stays open, and says so): an anchor
+  node would be SILENT under law 1 today — not demand-free, no cure — so
+  the coverage gauge would stop reading zero, and the gauge is what proves
+  law 1. Plus `anchor.fired` carries no watermark, so its delta cut would
+  be the degraded at-only one an audit already rescued the export path
+  from. Needs a gate change plus a shipped surface: its own release.
+  · Also: the report walked in smoke for the first time, and a dead
+  `periodWords` import swept.
+
 - **2026-08-01 (Noah: "Continue")** — **1.8.0 "Asking, and declining"** —
   request slots + the Not Now ledger
   ([ADR-0056](docs/adr/0056-request-slots-and-the-not-now-ledger.md)); the

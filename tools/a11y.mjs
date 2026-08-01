@@ -243,6 +243,14 @@ const REGISTRY = {
   // The lens (1.7.0, ADR-0054): the row above the held list, and the law-1
   // line that renders ONLY while a lens is active — audited in that state.
   'lens row': ['.lens-row .detail-inline', '#lens', '#lens-note'],
+  // Who cares how it goes (1.9.0, ADR-0057): a name and one ghost verb.
+  'detail sheet, who cares': ['#detail-stakeholders-label',
+    '#detail-stakeholder-list .detail-feed', '#detail-stakeholder-list button'],
+  // The decision log (1.9.0): the day on a row is the quietest text here, and
+  // it is a DAY — never a count, never a verdict.
+  'detail sheet, decisions': ['#detail-decision', '#detail-decision-set',
+    '#detail-decision-hint', '#detail-decision-count',
+    '#detail-decision-list .detail-feed', '.detail-when'],
   // The Not Now ledger, open (1.8.0, ADR-0056): the trash view's species —
   // the fact line is the quietest text and it is the row's whole content.
   'ledger open': ['#notnow-open', '#notnow-total', '#notnow-list .trash-row', '.trash-when'],
@@ -1333,6 +1341,34 @@ try {
     await page.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
     await page.click('#detail-close');
     await fillSearch('');              // now the modal is gone, the box clears
+
+    // What a meeting needs (1.9.0, ADR-0057). The walk already made a
+    // container above; give it somebody who cares and one decision, and
+    // audit both groups in the state a person meets them in.
+    await page.locator('#cards .card-open').first().click();
+    await page.waitForSelector('#detail[open]');
+    if (await page.locator('#detail-make-project').isVisible()) {
+      await page.click('#detail-make-project');
+      await page.waitForTimeout(250);
+    }
+    await page.fill('#detail-person', 'Priya');
+    await page.selectOption('#detail-relation', 'stakeholder');
+    await page.click('#detail-person-set');
+    await page.waitForFunction(() => /Priya/.test(
+      document.querySelector('#detail-stakeholder-list')?.textContent ?? ''));
+    await auditContrast(page, 'detail sheet, who cares', theme);
+    await auditAxe(page, 'detail sheet, who cares', theme);
+    await auditTargets(page, 'detail sheet, who cares', theme);
+    await auditFocusRings(page, 'detail sheet, who cares', theme, ['#detail-stakeholder-list button']);
+    await page.fill('#detail-decision', 'we ship on the 12th');
+    await page.click('#detail-decision-set');
+    await page.waitForFunction(() => /we ship on the 12th/.test(
+      document.querySelector('#detail-decision-list')?.textContent ?? ''));
+    await auditContrast(page, 'detail sheet, decisions', theme);
+    await auditAxe(page, 'detail sheet, decisions', theme);
+    await auditTargets(page, 'detail sheet, decisions', theme);
+    await auditFocusRings(page, 'detail sheet, decisions', theme, ['#detail-decision', '#detail-decision-set']);
+    await page.click('#detail-close');
 
     // Asking, and declining (1.8.0, ADR-0056): decline a thing through its own
     // sheet, audit the declined state, then the ledger, then the slot flow —

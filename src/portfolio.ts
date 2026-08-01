@@ -17,7 +17,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { CONTAINER_KINDS } from './tree.ts';
-import { isOpenWaiting, openDays, personName } from './people.ts';
+import { isOpenWaiting, openDays, personName, stakeholderWords, stakeholdersOf } from './people.ts';
 import { calendarDaysBetween, isValidIso, localDayKey } from './time.ts';
 import type { NodeKind } from './events.ts';
 
@@ -37,6 +37,9 @@ export interface TrackLine {
   /** Days until that date. Negative means it has gone by (law 3 handles the
    *  card; this is only the number). */
   suspenseDays: number | null;
+  /** Who cares how it goes, by name (1.9.0, ADR-0057). Live people only.
+   *  The people to tell when it moves — never a demand on anyone. */
+  stakeholders: string[];
   /** Open waiting-fors underneath it — the only demand a tracked project makes. */
   waiting: { node: NodeState; days: number | null }[];
   /** When anything under it was last finished. Null when nothing ever has been. */
@@ -69,6 +72,7 @@ export function trackPortfolio(state: State, nowIso: string, zone: string): Trac
     out.push({
       node: n,
       opr: personName(state, n.opr),
+      stakeholders: stakeholdersOf(state, n).map(p => p.title || '(unnamed)'),
       suspense: hasDate ? localDayKey(s.at, zone) : null,
       suspenseDays: hasDate ? calendarDaysBetween(nowIso, s.at, zone) : null,
       waiting: children.filter(isOpenWaiting)
@@ -108,6 +112,9 @@ function lastMoved(children: NodeState[], nowIso: string, zone: string): number 
 export function trackWords(l: TrackLine): string {
   const bits: string[] = [];
   bits.push(l.opr ? `${l.opr} is running it` : 'nobody named yet');
+  // Who cares, before when it is owed: people first, then dates (1.9.0).
+  const cares = stakeholderWords(l.stakeholders);
+  if (cares) bits.push(cares);
   if (l.suspense) {
     const d = l.suspenseDays;
     bits.push(d === null ? `answer due ${l.suspense}`

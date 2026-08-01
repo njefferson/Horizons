@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.9.0 — CAPABILITY
+
+*2026-08-01*
+
+- **A project can say who cares how it goes.** You have been able to mark someone as “they care about it” for a long time, and nothing ever showed it back to you. Now they have their own place on the thing’s own sheet, and the list of what you are carrying names them — so “who do I tell when this moves” has an answer you can read instead of remember. Anyone you marked before is already there; nothing needs re-entering. They are people to tell, never people who owe you anything.
+- **What was decided, kept where the work is.** A meeting’s real product is decisions, and they had nowhere to go. Any project or area now carries a decision log on its own sheet: write the decision, log it, and it stays — newest first, with the day. It cannot be edited or deleted, and that is the point: if a decision changes, you log the new one, which is what a decision log is for.
+- **Your status report says what was decided.** The report you hand to somebody now carries a “Decided” section covering the period it reports on — only what is new since the last one, like every other part of it.
+- **Fixed: the report had a section that could never appear.** “Started” was listed in the report’s own structure and nothing could ever fill it. It is gone rather than invented: this app has no half-done state on purpose, and a heading that exists to be filled would have made “started and not finished” something a reader could work out about you. A new check makes it impossible for a section like that to be added again.
+
 ## 1.8.0 — CAPABILITY
 
 *2026-08-01*

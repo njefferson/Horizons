@@ -15,7 +15,7 @@
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
 import { exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
-import { statusReport, renderReport, periodWords, reportedBefore, type ReportFormat } from '../delta.ts';
+import { statusReport, renderReport, reportedBefore, type ReportFormat } from '../delta.ts';
 import { commsNode } from '../comms.ts';
 import { printText } from './print.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';

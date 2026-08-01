@@ -687,6 +687,41 @@
     <ul id="detail-people-list" class="detail-feeds"></ul>
   </div>
 
+  <!-- Who cares how it goes (1.9.0, ADR-0057). The relation has been
+       writable since 0.15.0 and readable by nothing — a project could not
+       list who to tell. `people[]` stays the one home, so every link
+       already written appears here without anything being re-entered.
+       These are people to TELL, never people who owe you anything. -->
+  <div class="detail-group" id="detail-stakeholder-group">
+    <span class="detail-label" id="detail-stakeholders-label">Who cares how this goes</span>
+    <p class="detail-hint">
+      The people to tell when this moves. Nothing here asks anyone to do
+      anything &mdash; add them with &ldquo;Who is this with?&rdquo; above,
+      as &ldquo;they care about it&rdquo;.
+    </p>
+    <ul id="detail-stakeholder-list" class="detail-feeds"></ul>
+  </div>
+
+  <!-- The decision log (1.9.0, ADR-0057). `decision.logged` has been in the
+       vocabulary since Phase 0 with no fold, no emitter and no surface, and
+       a meeting's actual product is decisions. APPEND-ONLY: no edit, no
+       delete — ADR-0048's rule, because a decision log whose entries can be
+       revised is not a decision log. The way back is to log the new one. -->
+  <div class="detail-group" id="detail-decision-group">
+    <label class="detail-label" for="detail-decision">What was decided</label>
+    <textarea id="detail-decision" rows="2" spellcheck="true"
+              aria-describedby="detail-decision-hint"></textarea>
+    <div class="detail-row">
+      <button id="detail-decision-set" type="button">Log it</button>
+    </div>
+    <p id="detail-decision-hint" class="detail-hint">
+      A decision stays. It is not a note and it cannot be edited &mdash; if it
+      changes, log the new one. That is what a decision log is for.
+    </p>
+    <p id="detail-decision-count" class="detail-hint"></p>
+    <ul id="detail-decision-list" class="detail-feeds"></ul>
+  </div>
+
   <!-- Someone asked (1.8.0, ADR-0056). Declining is a decision worth keeping —
        it lands on the Not Now ledger with a park, so it comes back lawfully
        and nothing chases you. Hidden on Menu items: park is a demand clock and
@@ -1206,9 +1241,9 @@
   <h3 class="about-section">Telling someone where things are</h3>
   <p class="about-p">
     What has changed since the last time you told anyone &mdash; finished, come
-    back, now with someone else &mdash; plus what is still outstanding and what
-    is coming up. It is worked out from your own history, so nothing has to be
-    kept up to date for it to be right.
+    back, now with someone else, and what was decided &mdash; plus what is still
+    outstanding and what is coming up. It is worked out from your own history,
+    so nothing has to be kept up to date for it to be right.
   </p>
   <div class="about-actions">
     <button id="report-copy" type="button">Copy it</button>

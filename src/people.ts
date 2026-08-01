@@ -159,3 +159,45 @@ export function peopleWords(total: number): string {
   if (total === 1) return 'One thing is with someone else.';
   return `${total} things are with other people.`;
 }
+
+/**
+ * Who cares how a piece of work goes (1.9.0, ADR-0057).
+ *
+ * `people[]` is the ONE home for these links, so this reads what the sheet
+ * has been writing since 0.15.0 — nothing to heal, nothing to re-enter, and
+ * no second array to fall out of step with the sheet's own list. Let-go
+ * people are dropped, which is `personName`'s recorded lesson applied here
+ * rather than re-derived: one concept, one place that checks.
+ *
+ * Sorted by name then id, so the order is TOTAL and two renders of one
+ * state can never disagree.
+ */
+export function stakeholdersOf(state: State, n: NodeState): NodeState[] {
+  const out: NodeState[] = [];
+  const seen = new Set<string>();
+  for (const l of n.people) {
+    if (l.relation !== 'stakeholder' || seen.has(l.person)) continue;
+    const p = state.nodes.get(l.person);
+    if (!p || !alive(p)) continue;
+    seen.add(l.person);
+    out.push(p);
+  }
+  return out.sort((a, b) =>
+    (a.title || '').localeCompare(b.title || '') || (a.id < b.id ? -1 : 1));
+}
+
+/**
+ * The portfolio's clause for them: NAMES, never a bare number.
+ *
+ * The overflow count is the caps convention — a true count of what is not
+ * shown, the same grammar as "N decisions — the 5 most recent are shown".
+ * It never grades the work and no adjective enters the string, because a
+ * number of people attached to a project must not read as its importance.
+ */
+export function stakeholderWords(names: readonly string[]): string | null {
+  if (names.length === 0) return null;
+  if (names.length === 1) return `${names[0]} cares how it goes`;
+  if (names.length === 2) return `${names[0]} and ${names[1]} care how it goes`;
+  const rest = names.length - 2;
+  return `${names[0]}, ${names[1]} and ${rest} ${rest === 1 ? 'other' : 'others'} care how it goes`;
+}

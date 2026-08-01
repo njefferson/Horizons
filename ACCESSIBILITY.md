@@ -663,6 +663,28 @@ rendered gate in this same commit.**
   the registered `--warm` storage-note pair and states the chosen day in
   words, never colour.
 
+### B-28 · Who cares, and what was decided (1.9.0)
+
+**No new tokens; two new sheet groups on the existing bindings, both in the
+rendered gate in this same commit.**
+
+- **Who cares how this goes** (`detail sheet, who cares`): a name in ordinary
+  `--ink` and one ghost verb per row at full target size, each carrying its
+  own `aria-label` ("Take Sam off the list") so a screen-reader user hears
+  WHICH person a repeated button is about — the merged-list precedent.
+- **What was decided** (`detail sheet, decisions`): the textarea takes the
+  note editor's registered rules (prose-shaped, vertical resize only so a
+  drag cannot push the sheet past 320px, and **no placeholder** by design).
+  The row's day (`.detail-when`, `--ink-soft` on `--surface`) is the quietest
+  text on the sheet and it is a DAY — never a count, never a verdict. Rows
+  carry no control at all: the log is read-only, asserted structurally in
+  smoke rather than by reading copy.
+- **Nothing anywhere is keyed to how many** stakeholders or decisions a thing
+  has — no colour, no weight, no ordering by volume. That absence is the
+  measurement (B-01, law 5). The portfolio's clause names people rather than
+  counting them, and its overflow number is a true count of what is not
+  shown, in the caps convention's own grammar.
+
 ---
 
 ## Part 2 — Findings register

@@ -158,12 +158,12 @@ Where the gate is actually won or lost. Without this the desk paper stays. Runs 
 personal iPad like everything else — there is no separate work-machine configuration
 to build or verify.
 
-31. `project` extended attributes — OPR, stakeholders, suspense list, decision log.
+31. ~~`project` extended attributes — OPR, stakeholders, suspense list, decision log.~~ **(done — OPR 0.16.0, suspense 0.16.0, stakeholders and the decision log 1.9.0, ADR-0057)**
 32. `role: Execute | Track`. **Track emits no next actions** — Waiting-Fors and
     Upkeep check-ins only, so children must re-home on the role change.
 33. Person lens — owed-me / owed-them / their projects with delta / their
     requests / open threads.
-34. Anchors and delta computation.
+34. Anchors and delta computation. **(half done — the delta shipped 0.16.0, ADR-0041; ANCHORS DEFERRED, ADR-0057: an anchor node would be silent under law 1 today, and `anchor.fired` carries no watermark, so its delta cut would be the degraded one. Needs a gate change plus a shipped surface, in a release of its own.)**
 35. Status report generator — clipboard / Markdown / print / CSV.
 
 ### Phase 7 — Review

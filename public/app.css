@@ -1303,6 +1303,30 @@ dialog, dialog * { overflow-wrap: anywhere; }
    verb only — skinned like list rows, never like a to-do card. */
 .trash-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
 .trash-list li { margin: 0 0 0.4rem; }
+/* A decision row's day (1.9.0): the quietest text on the sheet, and it is a
+   day — never a count, never a verdict. */
+.detail-when {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+}
+/* The decision box: prose-shaped like the note, vertical resize only so a
+   horizontal drag cannot push the sheet past 320px (B-16's gate). */
+#detail-decision {
+  display: block;
+  width: 100%;
+  min-height: 3.5rem;
+  resize: vertical;
+  padding: 0.5rem 0.6rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  line-height: 1.5;
+}
+
 /* A ledger row's quiet fact line (1.8.0): a name and a date, never a count. */
 .trash-when {
   display: block;
