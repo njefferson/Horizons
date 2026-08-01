@@ -433,6 +433,16 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (after 1.6.0)** — **`main` fast-forwarded to `c47e21e` on
+  Noah's "Promote"**, carrying 1.4.0 (notes, the readable record, per-node
+  history), 1.5.0 (wholesale acts, "Things you let go", range copies), and
+  1.6.0 (the tree, doors, Review's four, the session close, optional
+  Composed Today). Spine runs 167–169 were watched green on those heads
+  before the fast-forward; Deploy run 166 green on `main` at the same sha
+  (V-10). The approved roadmap is now fully in production. Next, on his
+  word in the same message: duplicate handling and the Home/Work lens
+  (Q-10's recorded shape).
+
 - **2026-08-01 (late night)** — **1.6.0 "Seeing and choosing"** — the roadmap's
   last slotted release ([ADR-0051](docs/adr/0051-composed-today.md),
   [ADR-0052](docs/adr/0052-session-close.md)); build-plan items 26, 36, 39,
