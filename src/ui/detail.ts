@@ -22,7 +22,7 @@ import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
-  cleanNote, noteEvents,
+  cleanNote, noteEvents, chooseTodayEvents, releaseTodayEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
 import { doneEvents } from './work.ts';
@@ -35,6 +35,7 @@ import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting 
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
 import { eventWords, isCure } from '../log-words.ts';
+import { choosable, composedFull, todayIsOn } from '../composed.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
  *  closed set; these are what a person reads. */
@@ -259,12 +260,20 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       // the outside, and someone looking at the container deserves the same
       // answer without being sent anywhere.
       const kids = childrenOf(st, n.id);
+      // Doors (1.6.0): a child row opens the CHILD's sheet — the same sheet,
+      // re-rendered on the fresh node, which is how every list travels now.
       KIDS.replaceChildren(...kids.map(k => {
         const li = document.createElement('li');
         li.className = 'detail-feed';
-        const label = document.createElement('span');
-        label.textContent = k.title || '(untitled)';
-        li.append(label);
+        const open = document.createElement('button');
+        open.type = 'button';
+        open.className = 'linklike detail-child-open';
+        open.textContent = k.title || '(untitled)';
+        open.addEventListener('click', () => {
+          const fresh = session.state().nodes.get(k.id);
+          if (fresh) { render(fresh); LIVE.textContent = ''; }
+        });
+        li.append(open);
         return li;
       }));
       if (isContainer(n) && kids.length === 0) {
@@ -352,6 +361,29 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // items and people — anything you hold can carry words. Only a thing let
     // go loses the editor; "Keep it after all" is the door back.
     grp('#detail-note-group', !n.trashed);
+    // Composed Today's verb (1.6.0): only when the module is on, only for
+    // choosable things. At the cap the button says so and disables — a
+    // control that would fail after the tap is a control that lies.
+    {
+      const stNow = session.state();
+      const on = todayIsOn(stNow) && choosable(n);
+      grp('#detail-today-group', on);
+      if (on) {
+        const iso = new Date(now()).toISOString();
+        const chosenNow = n.todayFor !== null && n.todayFor === localDayKey(iso, session.zone);
+        show('#detail-today-add', !chosenNow);
+        show('#detail-today-remove', chosenNow);
+        const add = btn('#detail-today-add');
+        if (add && !chosenNow) {
+          const full = composedFull(stNow, iso, session.zone);
+          add.disabled = full;
+          add.textContent = full ? 'Today is full — a hand fits five' : 'Put it in today';
+        } else if (add) {
+          add.disabled = false;
+          add.textContent = 'Put it in today';
+        }
+      }
+    }
     show('#detail-date-clear', Boolean(n.clocks.due));
     show('#detail-start-clear', Boolean(n.clocks.start));
     show('#detail-repeat-stop', repeats);
@@ -444,6 +476,12 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const v = Number(estimateInput.value);
     if (!Number.isInteger(v) || v < 1) { say('Whole minutes, at least 1.'); return; }
     void run(ctx => estimateEvents(ctx, current!.id, v), 'Noted — nothing checks up on it.');
+  });
+  btn('#detail-today-add')?.addEventListener('click', () => {
+    void run(ctx => chooseTodayEvents(ctx, current!.id), 'Chosen for today.');
+  });
+  btn('#detail-today-remove')?.addEventListener('click', () => {
+    void run(ctx => releaseTodayEvents(ctx, current!.id), 'Out of today — nothing is counted.');
   });
   btn('#detail-note-set')?.addEventListener('click', () => {
     if (!noteInput || !current) return;

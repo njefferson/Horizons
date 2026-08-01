@@ -318,6 +318,9 @@ feature can be late; the data cannot be backfilled.
 - **`module.enabled` / `.disabled`**
   - Payload: `module`
   - Silent risk: no
+  - Folds into `State.modules` as of 1.6.0 (a set; enabled adds, disabled
+    removes — order-dependent like `dependency.released`, covered by the same
+    discipline). First customer: `today` (Composed Today, ADR-0051).
 - **`consent.granted`**
   - Payload: `scope, whatLeaves: string, rung`
   - Silent risk: no
@@ -412,6 +415,17 @@ agreed to survives a copy change (law 10).
 The re-entry greeting is **bounded by schema**: `reentry.greeted.shown` has room
 for exactly Next-up, at most three triage items, and the gauge. There is no
 shape it could take that shows the backlog (law 8).
+
+### K · Composed today (1.6.0, ADR-0051)
+
+- **`today.chosen` / `today.released`**
+  - Payload: `day` — the LOCAL day key the choice is for/from
+  - Silent risk: no — a choice adds no coverage and removes none
+  - Folds to one LWW slot per node (`todayFor`). Read ONLY through
+    `composedFor`, which answers for the current day — the expiry IS the
+    projection: no exported reader takes a day argument, so "chosen yesterday
+    and not done" is structurally uncomputable (laws 3 and 5). The whole
+    capability is an opt-in module (`today`), off by default.
 
 ### J · Wholesale acts (1.5.0)
 

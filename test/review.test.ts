@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { fold, type State } from '../src/fold.ts';
-import { stalled, orphaned, reviewExceptions, reviewWords, idleDays, REVIEW_CAP } from '../src/review.ts';
+import { stalled, orphaned, reviewExceptions, reviewWords, idleDays, REVIEW_CAP, unfedGoals, quietAreas, QUIET_DAYS } from '../src/review.ts';
 import type { AppEvent } from '../src/events.ts';
 
 const TZ = 'America/Denver';
@@ -26,7 +26,7 @@ const mk = (id: string, kind: string, title = id, parent?: string): AppEvent =>
 
 test('nothing broken means nothing to show — not a congratulation', () => {
   const s = st(mk('P', 'project'), mk('A', 'action', 'a real next step', 'P'));
-  const v = reviewExceptions(s);
+  const v = reviewExceptions(s, NOW, TZ);
   assert.equal(v.total, 0);
   assert.deepEqual(v.shown, [], 'the surface has nothing to render, so it renders nothing');
   // And no copy exists for a clean review, because there is no clean-review
@@ -89,10 +89,17 @@ test('only containers can stall — an action is not a container', () => {
     const s = st(mk('N', kind));
     assert.deepEqual(stalled(s), [], `a bare ${kind} is not stalled, it is just itself`);
   }
-  for (const kind of ['project', 'outcome', 'area', 'goal']) {
+  for (const kind of ['project', 'outcome', 'area']) {
     const s = st(mk('N', kind));
     assert.equal(stalled(s).length, 1, `an empty ${kind} has stalled`);
   }
+  // A goal partitioned OUT of stalled at 1.6.0: an empty goal is the UNFED
+  // class with its own words, and the classes partition by kind so a node is
+  // never listed twice.
+  const g = st(mk('N', 'goal'));
+  assert.deepEqual(stalled(g), [], 'an empty goal is not stalled — it is unfed');
+  assert.equal(unfedGoals(g).length, 1, 'and the unfed class holds it');
+  assert.equal(unfedGoals(g)[0]!.words, 'nothing is feeding it');
 });
 
 test('a finished container is not stalled', () => {
@@ -131,7 +138,7 @@ test('orphans lead — a broken structure outranks a decision waiting', () => {
     mk('P', 'project'),                                  // stalled
     mk('Q', 'project'), mk('A', 'action', 'x', 'Q'), ev('node.trashed', 'Q', {}),  // orphan
   );
-  const v = reviewExceptions(s);
+  const v = reviewExceptions(s, NOW, TZ);
   assert.equal(v.shown[0]!.node.id, 'A', 'the orphan is first');
   assert.equal(v.total, 2);
 });
@@ -139,7 +146,7 @@ test('orphans lead — a broken structure outranks a decision waiting', () => {
 test('capped, and honest about the cap', () => {
   const events: AppEvent[] = [];
   for (let i = 0; i < 7; i++) events.push(mk(`p${i}`, 'project'));
-  const v = reviewExceptions(st(...events));
+  const v = reviewExceptions(st(...events), NOW, TZ);
   // A LITERAL 3. Asserting against the constant the code uses is self-referential
   // — the same theatre an audit found in the replan cap.
   assert.equal(v.shown.length, 3, 'at most three');
@@ -174,7 +181,7 @@ test('idle days is reported only where it is knowable', () => {
 test('the order is total, so a render never reshuffles what it just showed', () => {
   const events: AppEvent[] = [];
   for (let i = 5; i >= 0; i--) events.push(mk(`p${i}`, 'project'));
-  const ids = () => reviewExceptions(st(...events)).shown.map(x => x.node.id);
+  const ids = () => reviewExceptions(st(...events), NOW, TZ).shown.map(x => x.node.id);
   assert.deepEqual(ids(), ['p0', 'p1', 'p2'], 'by id, regardless of insertion order');
 });
 
@@ -201,4 +208,65 @@ test('a spent resume card does not keep a container looking alive', () => {
     ev('resume.card.created', 'D', { forNode: 'Q', cue: null }),
   );
   assert.deepEqual(stalled(live), [], 'a way back into it is something happening');
+});
+
+// --- the two 1.6.0 classes: quiet areas and unfed goals ----------------------
+
+test('1.6.0: a quiet area holds live work with nothing finished in a month', () => {
+  const OLD = '2026-06-10T12:00:00.000Z';                 // 49 days before NOW
+  const s = st(
+    mk('A', 'area'),
+    mk('W', 'action', 'live work', 'A'),
+    mk('D', 'action', 'done long ago', 'A'),
+    ev('done.marked', 'D', { at: OLD }),
+  );
+  const out = quietAreas(s, NOW, TZ);
+  assert.deepEqual(out.map(x => x.node.id), ['A']);
+  assert.equal(out[0]!.words, 'holding work, and nothing has finished in a month');
+  assert.ok(QUIET_DAYS === 30, 'a month, stated');
+});
+
+test('1.6.0: a recently-moving area is not quiet, and unknowable rest does not count', () => {
+  const RECENT = '2026-07-25T12:00:00.000Z';              // 4 days before NOW
+  const moving = st(
+    mk('A', 'area'), mk('W', 'action', 'w', 'A'), mk('D', 'action', 'd', 'A'),
+    ev('done.marked', 'D', { at: RECENT }),
+  );
+  assert.deepEqual(quietAreas(moving, NOW, TZ), [], 'something finished this week');
+  // Nothing has EVER finished: idleDays is null, and a number derived from
+  // nothing is not a fact — the area stays out rather than reading as quiet
+  // the day it is made.
+  const fresh = st(mk('A', 'area'), mk('W', 'action', 'w', 'A'));
+  assert.deepEqual(quietAreas(fresh, NOW, TZ), [], 'never-finished is unknowable, not quiet');
+});
+
+test('1.6.0: an empty area is stalled, never quiet — the classes are disjoint', () => {
+  const s = st(mk('A', 'area'));
+  assert.equal(stalled(s).length, 1);
+  assert.deepEqual(quietAreas(s, NOW, TZ), [], 'no live work is stalled’s case');
+});
+
+test('1.6.0: a fed goal is neither unfed nor stalled', () => {
+  const s = st(mk('G', 'goal'), mk('P', 'project', 'feeds it', 'G'), mk('W', 'action', 'w', 'P'));
+  assert.deepEqual(unfedGoals(s), []);
+  assert.deepEqual(stalled(s).map(x => x.node.id), [], 'the project under it has live work');
+});
+
+test('1.6.0: PARTITION — across all four classes, no node is listed twice', () => {
+  const OLD = '2026-06-10T12:00:00.000Z';
+  const s = st(
+    mk('G', 'goal'),                                       // unfed
+    mk('P', 'project'),                                    // stalled
+    mk('A', 'area'), mk('W', 'action', 'w', 'A'),
+    mk('D', 'action', 'd', 'A'), ev('done.marked', 'D', { at: OLD }),  // quiet
+    mk('PARENT', 'project'), mk('C', 'action', 'c', 'PARENT'),
+    ev('node.trashed', 'PARENT', {}),                      // C orphaned
+  );
+  const v = reviewExceptions(s, NOW, TZ);
+  const ids = [...v.orphaned, ...v.stalled, ...v.unfed, ...v.quiet].map(x => x.node.id);
+  assert.equal(new Set(ids).size, ids.length, `a node appears once (${ids.join(', ')})`);
+  assert.ok(v.total >= 4, 'all four classes fired');
+  // The ranking: structural breaks, then decisions waiting, then rhythm.
+  assert.equal(v.shown[0]!.node.id, 'C', 'the orphan leads');
+  assert.equal(v.shown.length, REVIEW_CAP, 'law 8 holds whatever the classes add');
 });

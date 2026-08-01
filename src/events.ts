@@ -204,6 +204,14 @@ export type ReentryGreeted   = Ev<'reentry.greeted',    { absenceDays: number; s
 export type AmnestyOffered   = Ev<'amnesty.offered',    { scope: string }>;
 export type AmnestyAccepted  = Ev<'amnesty.accepted',   { scope: string }>;
 
+// --- K · composed today (1.6.0, ADR-0051) ------------------------------------
+/** A hand-chosen "this is for today". `day` is the LOCAL day key it was chosen
+ *  for; the choice EXPIRES BY PROJECTION — the only reader answers for the
+ *  current day, so "chosen yesterday and not done" is structurally
+ *  uncomputable (laws 3 and 5). Nothing here is a score. */
+export type TodayChosen      = Ev<'today.chosen',       { day: string }>;
+export type TodayReleased    = Ev<'today.released',     { day: string }>;
+
 // --- J · wholesale acts (1.5.0) ----------------------------------------------
 /** The receipt written FIRST in each chunk of a bulk act, so the log explains
  *  the pile of ordinary events that follows it — without this, a wholesale
@@ -236,7 +244,7 @@ export type AppEvent =
   | PersonCreated | PersonLinked | JournalEntryWritten | JournalTagAttached
   | MenuItemAdded | MenuItemRemoved | MenuItemPromoted | SaveForUpdated
   | LapseMigrationRan | ReentryGreeted | AmnestyOffered | AmnestyAccepted
-  | RangeActed;
+  | RangeActed | TodayChosen | TodayReleased;
 
 export type EventKind = AppEvent['kind'];
 
@@ -262,7 +270,7 @@ export const EVENT_KINDS = [
   'person.created','person.linked','journal.entry.written','journal.tag.attached',
   'menu.item.added','menu.item.removed','menu.item.promoted','save-for.updated',
   'lapse.migration.ran','reentry.greeted','amnesty.offered','amnesty.accepted',
-  'range.acted',
+  'range.acted','today.chosen','today.released',
 ] as const;
 
 const KIND_SET: ReadonlySet<string> = new Set(EVENT_KINDS);

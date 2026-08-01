@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.6.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-01',
+    notes: [
+      '**&ldquo;How it hangs together&rdquo; &mdash; the whole shape, when you ask for it.** A tap opens the tree: every area, goal, and project with what sits under it, indented. It is a way of seeing, not a place to work &mdash; a row opens the thing itself, big branches say truthfully how much more they hold, and it never becomes the front page.',
+      '**Every list is a door now.** The &ldquo;also asking&rdquo; rows under Next up, every row of &ldquo;What you are holding&rdquo;, and the things listed under a project on its sheet &mdash; all open the thing itself with a tap. Nothing on screen is words you can only look at.',
+      '**Review finishes its four questions.** Alongside stalled projects and orphaned items, it now notices a goal nothing is feeding, and an area holding work where nothing has finished in a month &mdash; said calmly, three at a time, with the true count. Rest is legitimate; the question is only whether it is rest.',
+      '**A quiet close to a working session.** Finishing or stopping now ends on what was true: what happened to the thing you were on, and that everything you hold is covered &mdash; in words. No timer totals, no score. And if a thread from earlier is still waiting, it asks the one question: have a look, or let it go.',
+      '**Composing your day &mdash; optional, and off until you ask.** Turn it on under Extras and anything you hold can be chosen for today from its own sheet, up to five, sitting quietly above Next up. At midnight the choosing simply lapses &mdash; nothing counts what was chosen and not done, and the app never picks for you. Turn it off and it is gone.',
+    ],
+  },
+  {
     triplet: '1.5.0',
     kind: 'CAPABILITY',
     date: '2026-08-01',

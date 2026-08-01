@@ -106,6 +106,27 @@ export { cleanNote, NOTE_MAX } from '../note.ts';
 export const noteEvents = (ctx: StampContext, node: string, text: string): AppEvent[] =>
   [base(ctx, 'node.field.set', node, { field: 'note', value: cleanNote(text) })];
 
+/**
+ * "This one is for today." / "Not today after all." (1.6.0, ADR-0051.)
+ * The day is stamped from the CONTEXT's clock and zone — the user's day, not
+ * UTC's — and the choice expires by projection at midnight: `composedFor` is
+ * the only reader and answers only for the current day. Not silent-risk: a
+ * choice adds no coverage and removes none.
+ */
+export const chooseTodayEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'today.chosen', node, { day: localDayKey(ctx.at, ctx.zone) })];
+
+export const releaseTodayEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'today.released', node, { day: localDayKey(ctx.at, ctx.zone) })];
+
+/** Turn an optional module on or off (1.6.0 — the first emitters for two
+ *  Phase-0 nouns). A decision, recorded; the log viewer already has the words. */
+export const enableModuleEvents = (ctx: StampContext, module: string): AppEvent[] =>
+  [base(ctx, 'module.enabled', null as never, { module })];
+
+export const disableModuleEvents = (ctx: StampContext, module: string): AppEvent[] =>
+  [base(ctx, 'module.disabled', null as never, { module })];
+
 /** "This is due Thursday." A real, hard date — the immovable kind that Next-up
  *  ranks above everything computed. */
 export const setDueEvents = (ctx: StampContext, node: string, dayKey: string): AppEvent[] =>

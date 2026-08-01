@@ -27,6 +27,7 @@ export function serialiseState(s: State): unknown {
     lastReportAt: s.lastReportAt,
     lastReportMark: s.lastReportMark,
     lastActivityAt: s.lastActivityAt,
+    modules: [...s.modules],
   });
 }
 
@@ -42,6 +43,7 @@ export function deserialiseState(raw: unknown): State {
     lastReportAt?: string | null;
     lastReportMark?: Record<string, number> | null;
     lastActivityAt?: string | null;
+    modules?: string[];
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -80,6 +82,7 @@ export function deserialiseState(raw: unknown): State {
       // shared array between a snapshot and running state is how a fold rewrote
       // history in place once already (audit).
       feeds: [...(n.feeds ?? [])],
+      todayFor: n.todayFor ?? null,
       fields: { ...(n.fields ?? {}) },
       stamps: { ...(n.stamps ?? {}) },
       clocks: { ...(n.clocks ?? {}) },
@@ -96,6 +99,9 @@ export function deserialiseState(raw: unknown): State {
     // MUTABLE — copied on deserialise, like every other container here.
     lastReportMark: r.lastReportMark ? { ...r.lastReportMark } : null,
     lastActivityAt: r.lastActivityAt ?? null,
+    // A pre-1.6.0 snapshot stored no modules — none were on, which is exactly
+    // what an empty set says.
+    modules: new Set(r.modules ?? []),
   };
 }
 

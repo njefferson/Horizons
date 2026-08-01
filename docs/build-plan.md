@@ -135,7 +135,9 @@ The first point the app is worth opening in the morning.
 23. Focus anchor — manual, one tap.
 24. Auto-paired resume cards; skippable five-word cue.
 25. Resume cards rank above pressure in Next-up.
-26. Unspent cards → day-end review question.
+26. ~~Unspent cards → day-end review question.~~ **(done, 1.6.0 — the session
+    close asks the one question; `toReviewQuestion` finally set true by it,
+    ADR-0052)**
 
 ### Phase 5 — Time and dependency
 
@@ -166,15 +168,21 @@ to build or verify.
 
 ### Phase 7 — Review
 
-36. The four exceptions: stalled · orphan · dormant · unsupported goal.
+36. ~~The four exceptions: stalled · orphan · dormant · unsupported goal.~~
+    **(done, 1.6.0 — dormant ships as "quiet area", unsupported as "unfed
+    goal"; the classes partition so a node is never listed twice)**
 37. **Short-ranked, top handful only.** An exhaustive exception list is a backlog
     ([ADR-0013](adr/0013-levels-push-down.md)).
 38. Attention-distribution readout — descriptive, never prescriptive.
-39. Full alignment tree **on request**, never the landing view.
+39. ~~Full alignment tree **on request**, never the landing view.~~ **(done,
+    1.6.0 — behind its control, per-branch cap 25 with true totals, rows are
+    doors to the sheet and nothing else)**
 
 ### Phase 8 — Gate readiness
 
-40. Session close screen — a win and a green gauge (peak-end).
+40. ~~Session close screen — a win and a green gauge (peak-end).~~ **(done,
+    1.6.0 — the gauge speaks in WORDS, never colour, per B-02; the second
+    rider on the comms chip's ramp, ADR-0052)**
 41. Accessibility pass against every binding in
     [`ACCESSIBILITY.md`](../ACCESSIBILITY.md), both themes.
 42. Cold-start and capture-budget measurement **on the iPad**.

@@ -14,11 +14,13 @@
 
 import type { Session } from './session.ts';
 import type { AppEvent } from '../events.ts';
+import type { NodeState } from '../fold.ts';
 import { heldNodes } from '../gate.ts';
 import { workSurface, type NextUpItem } from '../nextup.ts';
 import { undatedCount } from '../held.ts';
 import { pressureWords } from '../pressure.ts';
 import { calendarDaysBetween } from '../time.ts';
+import { treeRows } from '../tree-view.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
   const n = document.createElement(tag);
@@ -39,7 +41,12 @@ export const doneEvents = (
 
 export interface WorkUI { refresh(): void }
 
-export function mountWork(session: Session, now: () => number, onChange: () => void): WorkUI {
+export function mountWork(
+  session: Session, now: () => number, onChange: () => void,
+  /** Opens the detail sheet (1.6.0 — the dead lists became doors). Optional,
+   *  like clarify's: rows render regardless, doors need the sheet. */
+  openDetail?: (n: NodeState) => void,
+): WorkUI {
   const q = <T extends HTMLElement>(sel: string): T | null => document.querySelector<T>(sel);
   const region = q('#nextup');
   const heading = q('#nextup-heading');
@@ -183,10 +190,19 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
       COUNT.textContent = up.total === 1
         ? 'This is the only thing asking.'
         : `${up.total} things are asking. This one first.`;
+      // Doors, not words-in-a-paragraph (1.6.0): each row opens its sheet, on
+      // the FRESH node — a row built at refresh time can be clicked later.
       BEHIND.replaceChildren(...up.behind.map(item => {
         const li = el('li', 'behind-item');
-        li.append(el('span', 'behind-title', item.node.title || '(untitled)'));
-        li.append(el('span', 'behind-why', item.reason === 'pressure' ? pressureWords(item.pressure) : item.words));
+        const b = el('button', 'behind-open');
+        b.type = 'button';
+        b.append(el('span', 'behind-title', item.node.title || '(untitled)'));
+        b.append(el('span', 'behind-why', item.reason === 'pressure' ? pressureWords(item.pressure) : item.words));
+        if (openDetail) b.addEventListener('click', () => {
+          const fresh = session.state().nodes.get(item.node.id);
+          if (fresh) openDetail(fresh);
+        });
+        li.append(b);
         return li;
       }));
     } else {
@@ -242,6 +258,8 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
     // (audit, measured). The gauge's click handler builds it at the moment of
     // opening, and refresh keeps it live only while open.
     if (!COVERAGE.hidden) buildCoverage();
+    // The tree obeys the same rule, for the same measured reason.
+    if (treeList && !treeList.hidden) buildTree();
   }
 
   /** The gauge's claim, itemised and checkable. Reads `heldNodes` — the same
@@ -251,13 +269,70 @@ export function mountWork(session: Session, now: () => number, onChange: () => v
     const held = [...heldNodes(state)].sort((a, b) => (a.id < b.id ? 1 : -1));
     COVERAGE.replaceChildren(...held.map(n => {
       const li = el('li', 'coverage-item');
-      li.append(el('span', 'coverage-title', n.title || '(untitled)'));
+      // A door (1.6.0), still lazily built — the row count is why this list
+      // builds on open, and a listener per row does not change that rule.
+      const b = el('button', 'coverage-open');
+      b.type = 'button';
+      b.append(el('span', 'coverage-title', n.title || '(untitled)'));
       const clock = n.clocks.due ?? n.clocks.review ?? n.clocks.start ?? n.clocks.suspense ?? n.clocks.park;
-      li.append(el('span', 'coverage-when',
+      b.append(el('span', 'coverage-when',
         clock ? `returns ${returns(clock.at)}` : n.onMenu ? 'on the Menu' : 'held'));
+      if (openDetail) b.addEventListener('click', () => {
+        const fresh = session.state().nodes.get(n.id);
+        if (fresh) openDetail(fresh);
+      });
+      li.append(b);
       return li;
     }));
   }
+
+  // --- the alignment tree, on request (1.6.0, ADR-0013/item 39) -------------
+  // Queried SEPARATELY from the guard list above: a missing tree control must
+  // cost the tree, never Next-up (the no-op-on-missing-selector trap).
+  const treeOpen = q<HTMLButtonElement>('#tree-open');
+  const treeList = q('#tree');
+  /** Branches revealed past the cap THIS SITTING — memory only, like every
+   *  reveal; the cap returns with the next visit. */
+  const treeRevealed = new Set<string>();
+  function buildTree(): void {
+    if (!treeList) return;
+    const rows = treeRows(session.state(), treeRevealed);
+    treeList.replaceChildren(...rows.map(entry => {
+      const li = el('li', 'tree-item');
+      li.style.setProperty('--tree-depth', String(entry.depth));
+      if (entry.kind === 'more') {
+        const b = el('button', 'tree-more');
+        b.type = 'button';
+        b.textContent = entry.hidden === 1
+          ? `1 more under ${entry.parent.title || '(untitled)'}`
+          : `${entry.hidden} more under ${entry.parent.title || '(untitled)'}`;
+        b.addEventListener('click', () => { treeRevealed.add(entry.parent.id); buildTree(); });
+        li.append(b);
+        return li;
+      }
+      const b = el('button', 'tree-open-row');
+      b.type = 'button';
+      b.append(el('span', 'tree-title', entry.node.title || '(untitled)'));
+      if (openDetail) b.addEventListener('click', () => {
+        const fresh = session.state().nodes.get(entry.node.id);
+        if (fresh) openDetail(fresh);
+      });
+      li.append(b);
+      return li;
+    }));
+    if (rows.length === 0) {
+      treeList.append(el('li', 'tree-empty',
+        'Nothing has a place inside anything else yet — the tree appears as things are filed.'));
+    }
+  }
+  treeOpen?.addEventListener('click', () => {
+    if (!treeList) return;
+    const open = treeList.hidden;
+    treeList.hidden = !open;
+    treeOpen.setAttribute('aria-expanded', String(open));
+    // Built at the moment of opening, not before — the coverage list's rule.
+    if (open) buildTree();
+  });
 
   refresh();
   return { refresh };

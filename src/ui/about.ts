@@ -35,6 +35,8 @@ import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../
 import { deliverCopy } from './export-copy.ts';
 import { eventWords, isCure } from '../log-words.ts';
 import { localDayKey } from '../time.ts';
+import { TODAY_MODULE, todayIsOn } from '../composed.ts';
+import { enableModuleEvents, disableModuleEvents } from './detail-intents.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 import { mountSecurity } from './security.ts';
 
@@ -76,6 +78,10 @@ export async function mountAbout(
   /** Opens the detail sheet — the trash view's rows lead there and nowhere
    *  else, because "Keep it after all" is the only verb the trash offers. */
   openDetail?: (n: NodeState) => void,
+  /** Repaints the main surfaces. Needed since 1.6.0: toggling a module from
+   *  here changes what the landing view renders, and a strip that lingers
+   *  after "off" is the panel lying about what it just did. */
+  onChange?: () => void,
 ): Promise<void> {
   const dialog = document.querySelector<HTMLDialogElement>('#about');
   const open = document.querySelector<HTMLButtonElement>('#open-about');
@@ -747,6 +753,37 @@ export async function mountAbout(
     });
     logMore.addEventListener('click', renderMore);
   }
+
+  // --- composed today, opt-in (1.6.0, ADR-0051) -----------------------------
+  // OFF until asked for — Noah's own condition ("Can you make it optional?").
+  // The comms-sweep shape: two mutually-exclusive buttons painted from folded
+  // state, never a cached flag, and the caveat carries the three beats: off by
+  // default, counts nothing, an unfinished choice is not a failure.
+  const todayNote = document.querySelector<HTMLElement>('#today-note');
+  const paintToday = (): void => {
+    const on = todayIsOn(session.state());
+    const start = document.querySelector<HTMLButtonElement>('#today-start');
+    const stop = document.querySelector<HTMLButtonElement>('#today-stop');
+    if (start) start.hidden = on;
+    if (stop) stop.hidden = !on;
+  };
+  paintToday();
+  document.querySelector<HTMLButtonElement>('#today-start')?.addEventListener('click', () => {
+    void session.commit(ctx => enableModuleEvents(ctx, TODAY_MODULE))
+      .then(() => {
+        if (todayNote) todayNote.textContent = 'On. Open anything you hold and “Put it in today” is on its sheet — up to five. The chosen few sit above Next up.';
+      })
+      .catch((err: Error) => { if (todayNote) todayNote.textContent = `That did not work. (${err.message})`; })
+      .finally(() => { paintToday(); try { onChange?.(); } catch { /* next pass */ } });
+  });
+  document.querySelector<HTMLButtonElement>('#today-stop')?.addEventListener('click', () => {
+    void session.commit(ctx => disableModuleEvents(ctx, TODAY_MODULE))
+      .then(() => {
+        if (todayNote) todayNote.textContent = 'Off. Nothing composes, and the record keeps what you chose.';
+      })
+      .catch((err: Error) => { if (todayNote) todayNote.textContent = `That did not work. (${err.message})`; })
+      .finally(() => { paintToday(); try { onChange?.(); } catch { /* next pass */ } });
+  });
 
   // --- things you let go (1.5.0, ADR-0050) ----------------------------------
   //

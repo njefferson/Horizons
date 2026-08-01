@@ -571,6 +571,33 @@ rendered gate in this same commit.**
 - The status line and receipt are `role="status"` live regions; the a11y
   driver's tab-walk covers the new controls within the raised 60-stop budget.
 
+### B-24 · Seeing and choosing (1.6.0)
+
+**No new tokens; five new surfaces on the existing bindings, each in the
+rendered gate in this same commit.**
+
+- **The tree** (`tree open` state): rows are full-width buttons on
+  `--surface` with `--line` borders; depth is INDENTATION ONLY — structure
+  never rides on colour or weight (B-01 applied to hierarchy). The branch
+  remainder ("N more under it") is a real dashed-border button in
+  `--ink-soft`, measured, not decoration.
+- **The doors** (the behind-list and coverage rows became buttons): the
+  coverage row keeps its two-span layout inside a bordered button
+  (`.coverage-open`, in the `coverage open` state); the behind-list button is
+  borderless inside the Next-up card and relies on the global focus ring,
+  audited via the `next up` state's ring pass. Both open the sheet on the
+  FRESH node.
+- **Composed Today** (`composed strip` + `today opt-in` states): the strip's
+  rows are doors at full target size; the opt-in Extra follows the comms
+  shape and is audited in its RESTING (off) state — the state every user
+  actually meets first. The sheet's Today buttons join the detail-sheet
+  audit implicitly via the group's standard controls.
+- **The session close** (`close strip` state): the words are the whole
+  surface — the win line and the gauge line are ordinary `--ink`-class text
+  and the gauge is stated in words, never colour (B-02's rule made load-
+  bearing). Driven by actually ending a session, then lowered so later
+  states see the ordinary page.
+
 ---
 
 ## Part 2 — Findings register

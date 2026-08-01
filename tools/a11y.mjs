@@ -186,8 +186,18 @@ const REGISTRY = {
   // Work mode. The "why" lines and the behind-list are the lowest-contrast text
   // on these surfaces, so they are named rather than left to axe alone.
   'next up': ['#nextup-heading', '.nextup-title', '.nextup-why', '.nextup-count',
-    '#nextup-done', '#nextup-skip', '#gauge', '.card-done'],
-  'coverage open': ['#gauge', '.coverage-title', '.coverage-when'],
+    '#nextup-done', '#nextup-skip', '#gauge', '.card-done', '#tree-open'],
+  'coverage open': ['#gauge', '.coverage-title', '.coverage-when', '.coverage-open'],
+  // The tree, open (1.6.0, ADR-0013/item 39): rows are doors, depth is
+  // indentation, and the branch remainder is a real button.
+  'tree open': ['#tree-open', '.tree-open-row', '.tree-title'],
+  // Composed Today's strip (1.6.0, ADR-0051): quiet doors above Next up.
+  'composed strip': ['#composed-heading', '.composed-open', '#composed .detail-hint'],
+  // The session close (1.6.0, ADR-0052): the words are the whole surface.
+  'close strip': ['#close-heading', '#close-win', '#close-gauge', '#close-ok'],
+  // Composed Today's opt-in Extra (1.6.0) — the comms opt-in's shape. The
+  // status note is audited via the dialog pass once it carries words.
+  'today opt-in': ['#today-start', '.about-caveat'],
   // The detail sheet. The hint and the inline labels are the lowest-contrast
   // text on it, and the number inputs are the smallest targets.
   'detail sheet': ['#detail-title', '.detail-state', '.detail-label', '.detail-inline',
@@ -959,6 +969,17 @@ try {
     await page.click('#focus-sheet-stop');
     await page.waitForTimeout(350);
 
+    // The session close (1.6.0, ADR-0052): stopping raised the strip — the
+    // words ARE the surface, so they are measured, then the ramp is lowered
+    // so later states see the page as any other act would leave it.
+    await page.waitForSelector('#close:not([hidden])');
+    await auditContrast(page, 'close strip', theme);
+    await auditAxe(page, 'close strip', theme);
+    await auditTargets(page, 'close strip', theme);
+    await auditFocusRings(page, 'close strip', theme, ['#close-ok']);
+    await page.click('#close-ok');
+    await page.waitForSelector('#close', { state: 'hidden' });
+
     // State 3g: containment and Review (law 4). A container with nothing under
     // it is the app's quietest failure — it reads as an ordinary row everywhere
     // else — so the surface that finally says so must be as calm as the rest of
@@ -1119,6 +1140,52 @@ try {
       fail(`${theme}: after a sort route, focus landed on "${where}" instead of the entry line or back control`);
     }
     await page.click('#sort-close');
+
+    // The tree, open (1.6.0, ADR-0013): the sort staging filed things under a
+    // real container, so the rows measured are real ones. On request only.
+    await page.click('#tree-open');
+    await page.waitForSelector('#tree:not([hidden])');
+    await page.waitForSelector('.tree-open-row');
+    await auditContrast(page, 'tree open', theme);
+    await auditAxe(page, 'tree open', theme);
+    await auditTargets(page, 'tree open', theme);
+    await auditFocusRings(page, 'tree open', theme, ['.tree-open-row', '#tree-open']);
+    await page.click('#tree-open');
+    await page.waitForSelector('#tree', { state: 'hidden' });
+
+    // Composed Today (1.6.0, ADR-0051): audit the opt-in Extra OFF (its resting
+    // state), turn it on, choose one staged thing from its sheet, audit the
+    // strip, then turn it off again so every later state is unchanged.
+    await page.click('#open-about');
+    await page.waitForSelector('#today-start:not([hidden])');
+    await auditContrast(page, 'today opt-in', theme);
+    await auditTargets(page, 'today opt-in', theme);
+    await auditFocusRings(page, 'today opt-in', theme, ['#today-start']);
+    await page.click('#today-start');
+    await page.waitForFunction(() => /^On\./.test(
+      document.querySelector('#today-note')?.textContent ?? ''));
+    await page.click('#about-close');
+    await page.fill('#search-input', 'sortable thing');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');
+    await page.waitForSelector('#detail[open]');
+    await page.waitForSelector('#detail-today-add:not([hidden])');
+    await page.click('#detail-today-add');
+    await page.waitForFunction(() => /Chosen for today/.test(
+      document.querySelector('#detail-live')?.textContent ?? ''));
+    await page.click('#detail-close');
+    await page.fill('#search-input', '');
+    await page.waitForSelector('#composed:not([hidden])');
+    await auditContrast(page, 'composed strip', theme);
+    await auditAxe(page, 'composed strip', theme);
+    await auditTargets(page, 'composed strip', theme);
+    await auditFocusRings(page, 'composed strip', theme, ['.composed-open']);
+    await page.click('#open-about');
+    await page.waitForSelector('#about[open]');
+    await page.click('#today-stop');
+    await page.waitForFunction(() => /^Off\./.test(
+      document.querySelector('#today-note')?.textContent ?? ''));
+    await page.click('#about-close');
 
     // Stage a trashed thing for the trash view (1.5.0): capture, find it,
     // let it go through its own sheet — the app's real path, no seeding.

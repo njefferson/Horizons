@@ -125,9 +125,14 @@ export function resumeEvents(ctx: StampContext, state: State, card: string, targ
 }
 
 /** Let a thread go without picking it up. Not a failure and not a deletion —
- *  the card is retired and the work itself is untouched, still on your list. */
-export const dropResumeEvents = (ctx: StampContext, card: string): AppEvent[] =>
-  [base(ctx, 'resume.card.expired', card, { toReviewQuestion: false })];
+ *  the card is retired and the work itself is untouched, still on your list.
+ *  `fromReviewQuestion` (1.6.0, item 26): true when the drop came from the
+ *  session-close question about a lapsed thread — the flag the vocabulary
+ *  carried from Phase 0 and nothing had ever set. */
+export const dropResumeEvents = (
+  ctx: StampContext, card: string, fromReviewQuestion = false,
+): AppEvent[] =>
+  [base(ctx, 'resume.card.expired', card, { toReviewQuestion: fromReviewQuestion })];
 
 // --- the card itself --------------------------------------------------------
 

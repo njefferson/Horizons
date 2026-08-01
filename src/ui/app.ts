@@ -30,6 +30,7 @@ import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus, liveChildCounts, placeWords } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
+import { composedFor, todayIsOn } from '../composed.ts';
 import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
 import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
 import { menuGroups, menuCount, menuWords, saveForWords, MENU_WORDS } from '../menu.ts';
@@ -352,10 +353,40 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
     // A surface. It must never take the list down with it.
   }
 
+  // Composed Today (1.6.0, ADR-0051): renders ONLY when the module is on AND
+  // something is chosen for the CURRENT day — `composedFor` is the one reader
+  // and its answer expires at midnight by construction. Rows are DOORS to the
+  // sheet, where the choose/release verbs live; the render pass commits
+  // nothing, as ever.
+  try {
+    const region = document.querySelector<HTMLElement>('#composed');
+    const list = document.querySelector<HTMLElement>('#composed-list');
+    if (region && list) {
+      const chosen = todayIsOn(st) ? composedFor(st, nowIso, session.zone) : [];
+      region.hidden = chosen.length === 0;
+      list.replaceChildren(...chosen.map(n => {
+        const li = document.createElement('li');
+        li.className = 'composed-item';
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'composed-open';
+        b.textContent = n.title || '(untitled)';
+        if (openDetail) b.addEventListener('click', () => {
+          const fresh = session.state().nodes.get(n.id);
+          if (fresh) openDetail(fresh);
+        });
+        li.append(b);
+        return li;
+      }));
+    }
+  } catch {
+    // A surface. It must never take the list down with it.
+  }
+
   // Review — exceptions only. Rendered from the same `render` pass as the list,
   // because it is a fact about the list and nothing else needs to co-ordinate.
   try {
-    const rv = reviewExceptions(session.state());
+    const rv = reviewExceptions(st, nowIso, session.zone);
     const region = document.querySelector<HTMLElement>('#review');
     const count = document.querySelector<HTMLElement>('#review-count');
     const list = document.querySelector<HTMLElement>('#review-list');
@@ -532,13 +563,15 @@ export async function main(edition?: Edition): Promise<void> {
   // is defined by what replan is not already asking about.
   try { replan = mountReplan(session, now, refreshAll); } catch { /* a surface */ }
 
-  // Work mode: Next up, Upkeep chips, and the coverage list behind the gauge.
-  try { work = mountWork(session, now, rerenderLists); } catch { /* a surface */ }
+  // Work mode: Next up, Upkeep chips, the coverage list behind the gauge, and
+  // (1.6.0) the tree behind its control — its rows and the behind-list's are
+  // doors to the sheet now, so it takes openDetail like clarify does.
+  try { work = mountWork(session, now, rerenderLists, n => detail.open(n)); } catch { /* a surface */ }
 
   // Focus: one thing, and a way to be interrupted without losing it. Mounted
   // after work so its own refresh can run inside `rerenderLists` — an interrupt
   // adds an inbox item, which changes triage, the list and the gauge.
-  try { focus = mountFocus(session, now, refreshAll); } catch { /* a surface */ }
+  try { focus = mountFocus(session, now, refreshAll, n => detail.open(n)); } catch { /* a surface */ }
 
   // Naming a worry (v1.5). Mounted before re-entry, which must be last.
   try { bother = mountBother(session, refreshAll); } catch { /* a surface */ }
@@ -644,8 +677,8 @@ export async function main(edition?: Edition): Promise<void> {
   // here must not take capture down with it, or block readiness.
   try {
     // The trash view's rows open the detail sheet — the same door every other
-    // list uses, and the one where "Keep it after all" lives.
-    await mountAbout(session, n => detail.open(n));
+    // list uses — and module toggles repaint the landing view (1.6.0).
+    await mountAbout(session, n => detail.open(n), refreshAll);
   } catch {
     // The (i) failing is a lost nicety; capture still works.
   }

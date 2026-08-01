@@ -1727,8 +1727,20 @@ try {
   await tpage.waitForTimeout(350);
   is(await tpage.locator('#focus').isVisible(), false, 'stopping puts the surface away');
 
+  // The session close (1.6.0, item 40): the second rider on the exit ramp — a
+  // win in words and the gauge in WORDS. Peak-end, never a report card.
+  await tpage.waitForSelector('#close:not([hidden])');
+  const closeText = await tpage.evaluate(() => document.querySelector('#close')?.innerText ?? '');
+  is(/is left where you can pick it back up/.test(closeText), true,
+    'the win is stated in words — stopping is not failing');
+  is(/covered — (\d+ things, none silent|one thing, not silent)/.test(closeText), true,
+    `the gauge speaks in words, never colour ("${closeText.replace(/\n/g, ' / ').slice(0, 100)}")`);
+  is(/%|streak|minutes/.test(closeText), false, 'no score, no duration, no streak');
+
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
+  is(await tpage.locator('#close').isVisible(), false,
+    'the close strip never greets a cold start — the ramp is memory, not history');
   // ONE card, not two. The cue offered on the way out must land on the card the
   // interruption already wrote, rather than creating a second one competing with
   // it for the same thread.
@@ -3107,6 +3119,87 @@ try {
     document.querySelector('#trash-list')?.textContent ?? ''));
   is(true, true, 'kept after all — and the trash view no longer lists it');
   await tpage.click('#about-close');
+
+  console.log('\nSeeing and choosing (1.6.0)');
+  // THE TREE, on request and never the landing view: hidden until asked.
+  is(await tpage.locator('#tree').isVisible(), false, 'the tree is not the landing view');
+  await tpage.click('#tree-open');
+  await tpage.waitForSelector('#tree:not([hidden])');
+  const treeText = await tpage.locator('#tree').textContent() || '';
+  is(/Sorted pile/.test(treeText), true, 'containers hang in the tree');
+  const treeDepths = await tpage.evaluate(() =>
+    [...document.querySelectorAll('#tree .tree-item')].map(li =>
+      Number(getComputedStyle(li).getPropertyValue('--tree-depth') || '0')));
+  is(treeDepths.some(d => d > 0), true, 'children indent under their containers');
+  await tpage.locator('#tree .tree-open-row', { hasText: 'Sorted pile' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-title').textContent(), 'Sorted pile',
+    'a tree row is a door to the sheet — the one verb it carries');
+  await tpage.click('#detail-close');
+  await tpage.click('#tree-open');   // collapse again
+
+  // DOORS: the coverage rows open sheets now.
+  await tpage.click('#gauge');
+  await tpage.waitForSelector('#coverage:not([hidden])');
+  const firstCovered = await tpage.locator('#coverage .coverage-open .coverage-title').first().textContent();
+  await tpage.locator('#coverage .coverage-open').first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-title').textContent(), firstCovered,
+    'a coverage row is a door to that very item');
+  await tpage.click('#detail-close');
+  await tpage.click('#gauge');       // collapse
+
+  // COMPOSED TODAY, optional and off by default: nothing anywhere until asked.
+  is(await tpage.locator('#composed').isVisible(), false, 'off by default — nothing renders');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#today-start');
+  await tpage.waitForFunction(() => /^On\./.test(
+    document.querySelector('#today-note')?.textContent ?? ''));
+  await tpage.click('#about-close');
+
+  // Choose two things from their own sheets, via search — the verb's one home.
+  const chooseBySearch = async (words, title) => {
+    await tpage.fill('#search-input', words);
+    await tpage.waitForSelector('#search-results .search-open');
+    await tpage.locator('#search-results .search-open', { hasText: title }).first().click();
+    await tpage.waitForSelector('#detail[open]');
+    await tpage.waitForSelector('#detail-today-add:not([hidden])');
+    await tpage.click('#detail-today-add');
+    await tpage.waitForFunction(() => /Chosen for today/.test(
+      document.querySelector('#detail-live')?.textContent ?? ''));
+    await tpage.click('#detail-close');
+    await tpage.fill('#search-input', '');
+  };
+  await chooseBySearch('open me', 'open me from triage');
+  await chooseBySearch('Noted thing', 'Noted thing');
+  await tpage.waitForSelector('#composed:not([hidden])');
+  is(await tpage.locator('#composed-list .composed-open').count(), 2,
+    'the chosen few sit above Next up');
+  const composedText = await tpage.locator('#composed').textContent() || '';
+  is(/%|\d+ of \d+|remaining/.test(composedText), false, 'no fraction, ever (laws 3+5)');
+
+  // A composed row is a door; the sheet offers the release.
+  await tpage.locator('#composed-list .composed-open', { hasText: 'Noted thing' }).click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.waitForSelector('#detail-today-remove:not([hidden])');
+  await tpage.click('#detail-today-remove');
+  await tpage.waitForFunction(() => /Out of today/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.click('#detail-close');
+  await tpage.waitForFunction(() =>
+    document.querySelectorAll('#composed-list .composed-open').length === 1);
+
+  // Turning the module OFF removes every surface of it; the record stays.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#today-stop');
+  await tpage.waitForFunction(() => /^Off\./.test(
+    document.querySelector('#today-note')?.textContent ?? ''));
+  await tpage.click('#about-close');
+  is(await tpage.locator('#composed').isVisible(), false, 'optional means gone when off');
+  const todayLog = await sortCount();
+  is(todayLog > 0, true, `and the log kept the record (${todayLog} events)`);
 
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();

@@ -203,6 +203,27 @@
     <p id="comms-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
 
+  <!-- The session close (1.6.0 — build-plan item 40, ADR-0052). The second
+       rider on the focus-exit ramp: a win in words and the gauge in words —
+       peak-end, never a score, no duration, no streak. Carries the one
+       day-end question (item 26) when a thread from EARLIER is still waiting.
+       In-memory like the comms chip: it never greets a cold start. -->
+  <section id="close" class="comms" aria-labelledby="close-heading" hidden>
+    <h2 id="close-heading" class="section" tabindex="-1">That was a session.</h2>
+    <p id="close-win" class="comms-words"></p>
+    <p id="close-gauge" class="comms-words"></p>
+    <div id="close-thread" hidden>
+      <p id="close-thread-words" class="comms-words"></p>
+      <div class="comms-actions">
+        <button id="close-thread-open" type="button" class="ghost">Have a look</button>
+        <button id="close-thread-drop" type="button" class="ghost">Let the thread go</button>
+      </div>
+    </div>
+    <div class="comms-actions">
+      <button id="close-ok" type="button" class="ghost">Carry on</button>
+    </div>
+  </section>
+
   <!-- The track portfolio (v1 Must). Some work you do; some you CARRY. What you
        hold is a name, a date you owe an answer, and whether it has moved. No
        health word anywhere — "at risk" and "slipping" are this app grading
@@ -229,6 +250,18 @@
     <h2 id="review-heading" class="section" tabindex="-1">Worth a look</h2>
     <p id="review-count" class="review-count"></p>
     <ul id="review-list" class="review-list"></ul>
+  </section>
+
+  <!-- Composed Today (1.6.0, ADR-0051). OPTIONAL, off by default — renders
+       only when the `today` module is on AND something is chosen. Hand-chosen
+       from each item's own sheet, capped at five; at midnight the choosing
+       lapses BY PROJECTION, so no surface can ever say "chosen and not done".
+       It frames the day; Next up's computed offer is unchanged below it. -->
+  <section id="composed" class="composed" aria-labelledby="composed-heading" hidden>
+    <h2 id="composed-heading" class="section" tabindex="-1">Chosen for today</h2>
+    <ul id="composed-list" class="composed-list"></ul>
+    <p class="detail-hint">Chosen by you, by hand, from each thing&rsquo;s own
+      sheet. At midnight the choosing simply lapses &mdash; nothing is counted.</p>
   </section>
 
   <!-- Next up: one thing, chosen for you, with a short capped list behind it.
@@ -280,6 +313,13 @@
   <button id="gauge" class="gauge" type="button" aria-expanded="false"
           aria-controls="coverage"></button>
   <ul id="coverage" class="coverage" hidden></ul>
+
+  <!-- The alignment tree, ON REQUEST (1.6.0 — build-plan item 39, ADR-0013).
+       Never the landing view; an inspection mode, not a workspace. Rows carry
+       exactly one verb — open the sheet. No drag, no reorder, no add-here. -->
+  <button id="tree-open" class="gauge" type="button" aria-expanded="false"
+          aria-controls="tree">How it hangs together</button>
+  <ul id="tree" class="tree" hidden></ul>
 
   <p id="empty" class="empty" hidden>
     Nothing yet. Whatever you put here comes back to you — you do not have to
@@ -483,6 +523,21 @@
     <p id="detail-estimate-hint" class="detail-hint">
       A guess is fine and nothing checks up on it. It is kept so a later version
       can learn how long things really take.
+    </p>
+  </div>
+
+  <!-- Composed Today's verb (1.6.0, ADR-0051): visible only when the module is
+       on. The sheet is the one write-home for choosing — reachable from every
+       list, search, and sort — and the strip above Next up is only doors. -->
+  <div class="detail-group" id="detail-today-group" hidden>
+    <span class="detail-label" id="detail-today-label">Today</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-today-label">
+      <button id="detail-today-add" type="button">Put it in today</button>
+      <button id="detail-today-remove" type="button" class="ghost">Take it out of today</button>
+    </div>
+    <p id="detail-today-hint" class="detail-hint">
+      A hand fits five. At midnight the choosing lapses on its own &mdash;
+      nothing is counted, and an unfinished choice is not a failure.
     </p>
   </div>
 
@@ -961,6 +1016,25 @@
   <p class="about-p about-caveat">
     It is off unless you ask for it, it counts nothing, and skipping one is not
     a failure. Quietkeep cannot see your messages and never will.
+  </p>
+
+  <!-- Composed Today, opt-in (1.6.0, ADR-0051). Noah: "Can you make it
+       optional?" — off by default, the comms-sweep precedent. -->
+  <h3 class="about-section">Composing your day, by hand</h3>
+  <p class="about-p">
+    If you turn this on, anything you hold can be chosen for today from its own
+    sheet &mdash; up to five &mdash; and the chosen few sit quietly above Next
+    up. The app never picks for you, and Next up&rsquo;s own offer is unchanged.
+  </p>
+  <div class="about-actions">
+    <button id="today-start" type="button" class="ghost">Let me compose my day</button>
+    <button id="today-stop" type="button" class="ghost">Stop composing</button>
+  </div>
+  <p id="today-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    It is off unless you ask for it, it counts nothing, and an unfinished choice
+    is not a failure &mdash; at midnight the choosing simply lapses, with no
+    record of a miss.
   </p>
 
   <h3 class="about-section">Today, on paper</h3>

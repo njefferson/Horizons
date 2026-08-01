@@ -320,3 +320,13 @@ test('a spent card is not something you are holding', () => {
   assert.equal(s.nodes.get(card)!.trashed, false,
     'and it is not deleted either — it happened, and the log says so');
 });
+
+test('1.6.0: the drop flag — toReviewQuestion true only from the close question', () => {
+  // The vocabulary carried this boolean from Phase 0 and nothing ever set it
+  // true. The session-close question is the one path that honestly can.
+  const fromQuestion = dropResumeEvents(ctx, 'CARD', true)[0]!;
+  assert.equal((fromQuestion.payload as { toReviewQuestion: boolean }).toReviewQuestion, true);
+  const ordinary = dropResumeEvents(ctx, 'CARD')[0]!;
+  assert.equal((ordinary.payload as { toReviewQuestion: boolean }).toReviewQuestion, false,
+    'an ordinary drop stays an ordinary drop');
+});

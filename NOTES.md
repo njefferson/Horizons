@@ -433,6 +433,42 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (late night)** — **1.6.0 "Seeing and choosing"** — the roadmap's
+  last slotted release ([ADR-0051](docs/adr/0051-composed-today.md),
+  [ADR-0052](docs/adr/0052-session-close.md)); build-plan items 26, 36, 39,
+  and 40 struck through.
+  · **The modules fold**: `module.enabled`/`disabled` had existed since
+  Phase 0 with no emitter and no fold — `State.modules` is the fold, and
+  Composed Today is the first customer.
+  · **Composed Today, OPTIONAL** (Noah: *"Can you make it optional?"*): an
+  opt-in Extra off by default; two new nouns (`today.chosen`/`released`)
+  folding to one LWW slot; **the expiry is the projection** — `composedFor`
+  answers only for the current day, no reader takes a day argument, so
+  "chosen and not done" is structurally uncomputable. Cap 5, stated in words
+  at the button. The verb lives on the sheet; the strip above Next up is
+  doors only.
+  · **The tree** (src/tree-view.ts): roots + flattened rows, ONE
+  parent→children map + explicit stack (10k-deep test), per-branch cap 25
+  with true totals, behind the gauge-pattern control — never the landing
+  view, rows carry one verb.
+  · **Doors**: the Next-up behind list, the coverage rows, and the sheet's
+  children rows all open the fresh node's sheet; `mountWork`/`mountFocus`/
+  `mountAbout` grew the standard callbacks (the app.ts:471 lesson — call
+  sites changed in the same commit).
+  · **Review's four**: `quietAreas` (ADR-0013's dormant — areas HOLDING work
+  where nothing finished in 30 days; unknowable rest excluded) and
+  `unfedGoals` (unsupported goal; transitive, since goals are fed through
+  projects; named "unfed" — "unsupported" is a banned token in the
+  update-copy gate). The classes partition — a node is never listed twice —
+  and REVIEW_CAP stays 3.
+  · **The session close** (item 40) rides the comms chip's `surfacing` ramp
+  as its second rider: the win in words, the gauge in WORDS (B-02), never a
+  duration or a streak; it never survives a reload. It carries the day-end
+  question (item 26): a thread from an EARLIER sitting still unspent gets
+  one question, one door, one honest release —
+  `resume.card.expired{toReviewQuestion:true}` set true at last by the one
+  path that really is the question.
+
 - **2026-08-01 (night)** — **1.5.0 "Wholesale"** — bulk acts on named ranges
   ([ADR-0049](docs/adr/0049-wholesale-acts.md)), the trash view
   ([ADR-0050](docs/adr/0050-things-you-let-go.md)), range export as a reading

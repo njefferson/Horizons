@@ -152,6 +152,14 @@ export interface NodeState {
    *  It is what turns a downstream date into an upstream one: latest-start is
    *  the commitment minus this. Null when nobody has said. */
   leadDays: number | null;
+  /**
+   * The local day (`YYYY-MM-DD`) this was hand-chosen for, or null (1.6.0,
+   * ADR-0051). READ ONLY through `composedFor`, which answers only for the
+   * CURRENT day — a stale value from yesterday is data the fold keeps and no
+   * surface can ask about, which is the expiry-by-projection design: "chosen
+   * and not done" is structurally uncomputable (laws 3 and 5).
+   */
+  todayFor: string | null;
   /** Arbitrary fields set via node.field.set, each with its own LWW stamp. */
   fields: Record<string, { value: unknown; setBy: Ordering }>;
   /** Ordering stamp of the last event that touched each structural field. */
@@ -208,6 +216,14 @@ export interface State {
    * survive an import that replaced the very history it describes.
    */
   lastActivityAt: ISODateTime | null;
+  /**
+   * Optional modules currently ON (1.6.0, ADR-0009's long-intended shape —
+   * the nouns existed since Phase 0 with no fold). Enabled adds, disabled
+   * removes; the toggle is order-dependent like `dependency.released`, and
+   * the same discipline covers it: fold sorts, and the gate refuses a
+   * stamp-disordered batch. First customer: `today` (Composed Today).
+   */
+  modules: Set<string>;
 }
 
 /**
@@ -233,6 +249,7 @@ export const emptyState = (): State => ({
   lastReportAt: null,
   lastReportMark: null,
   lastActivityAt: null,
+  modules: new Set(),
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -295,6 +312,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       lastReplan: null,
       feeds: [],
       leadDays: null,
+      todayFor: null,
       fields: {}, stamps: {},
     };
     s.nodes.set(id, n);
@@ -345,6 +363,7 @@ export function cloneShell(base: State): State {
     lastReportAt: base.lastReportAt,
     lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
     lastActivityAt: base.lastActivityAt,
+    modules: new Set(base.modules),
   };
 }
 
@@ -734,6 +753,33 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['menu'], o)) { n.onMenu = null; n.stamps['menu'] = o; }
         if (wins(n.stamps['kind'], o)) { n.kind = e.payload.toKind; n.stamps['kind'] = o; }
+        break;
+      }
+
+      // Optional modules (1.6.0). A set toggle: order-dependent like
+      // dependency.released, covered by the same discipline — fold sorts, and
+      // the gate refuses a stamp-disordered batch.
+      case 'module.enabled': {
+        s.modules.add(e.payload.module);
+        break;
+      }
+      case 'module.disabled': {
+        s.modules.delete(e.payload.module);
+        break;
+      }
+
+      // Composed Today (1.6.0, ADR-0051). One LWW slot per node: chosen sets
+      // the day, released clears it, later stamp wins across devices. Reading
+      // happens ONLY through `composedFor`, which answers for the current day
+      // — that is the expiry, and there is no other reader.
+      case 'today.chosen': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['today'], o)) { n.todayFor = e.payload.day; n.stamps['today'] = o; }
+        break;
+      }
+      case 'today.released': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['today'], o)) { n.todayFor = null; n.stamps['today'] = o; }
         break;
       }
 

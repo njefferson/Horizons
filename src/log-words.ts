@@ -222,6 +222,10 @@ export function eventWords(
     case 'amnesty.offered': return 'An amnesty was offered.';
     case 'amnesty.accepted': return 'You accepted the amnesty.';
 
+    // --- composed today (1.6.0) ----------------------------------------------
+    case 'today.chosen': return 'You chose it for today.';
+    case 'today.released': return 'You took it out of today.';
+
     // --- wholesale acts (1.5.0) ----------------------------------------------
     case 'range.acted': {
       const verb = str(p['verb']);
