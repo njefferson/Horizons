@@ -433,6 +433,15 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (after 1.9.0)** — **`main` fast-forwarded to `f237a1f` on
+  Noah's "Promote"**, carrying 1.8.0 (request slots, the Not Now ledger,
+  the bother flow aligned to its own vocabulary) and 1.9.0 (stakeholders
+  that are read, the decision log, the "Decided" report section, and the
+  unreachable "Started" section deleted with a totality gate in its
+  place). Spine runs 177–178 were watched green on those exact heads
+  before the fast-forward; Deploy run 175 green on `main` at the same sha
+  (V-10).
+
 - **2026-08-01 (Noah: "Continue")** — **1.9.0 "What a meeting needs"** —
   build-plan item 31's remainder
   ([ADR-0057](docs/adr/0057-stakeholders-and-the-decision-log.md)). Three
