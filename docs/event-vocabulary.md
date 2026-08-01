@@ -115,6 +115,17 @@ inspect and either complete or refuse. See [ADR-0011](adr/0011-no-silent-nodes-g
 - **`node.merged`**
   - Payload: `into`
   - Silent risk: **yes — gated** — merge target must exist and live, or children go silent
+  - The UI emitter (1.7.0, ADR-0053) is a BATCH: carried facts first (demand
+    clocks the target lacks, the note, people links), the source's live
+    children re-homed to the target, then the merge — so folding a duplicate
+    never swallows a date, a note, or a child.
+- **`node.unmerged`** (1.7.0, ADR-0053)
+  - Payload: none
+  - Silent risk: **yes** — splitting back out strips the chain coverage the
+    target conferred; the gate cures with a same-day clock, like `untrashed`.
+  - Carried facts and re-homed children STAY where the merge put them — the
+    split restores the node's own standing, not the world before it; the
+    words say so.
 
 `node.trashed` is reversible and is *not* an archive: it records "I decided this
 is not a thing", which is a decision. Law 3 forbids a bucket for things that

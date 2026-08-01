@@ -22,7 +22,7 @@ import { compareOrdering, type NodeState, type State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { isContainer } from './tree.ts';
 import { isValidIso } from './time.ts';
-import { searchHeld } from './search.ts';
+import { normalize, searchHeld } from './search.ts';
 
 /** The kinds a sorting card may legally act on — runway work, nothing else. */
 const SORTABLE_KINDS: ReadonlySet<string> = new Set(['action', 'waiting-for', 'upkeep']);
@@ -123,6 +123,28 @@ export const menuItems = (state: State, category: string): NodeState[] =>
     .filter(n => n.onMenu === category && !n.lastDone)
     .sort(oldestFirst);
 
+/**
+ * "Sharing a name with something else" (1.7.0, ADR-0053) — the twins range.
+ * EXACT normalized-title equality, deliberately: fuzzy matching would put
+ * things in front of a person that merely rhyme, and a false "this is the
+ * same" costs more than a missed one. Seven years of inbox plus fresh
+ * captures of the same worries is the recorded trigger; the conveyor shows
+ * them side by side and the sheet's fold verb does the rest.
+ */
+export function sharingAName(state: State): NodeState[] {
+  const groups = new Map<string, NodeState[]>();
+  for (const n of heldNodes(state).filter(sortable)) {
+    const key = normalize(n.title || '');
+    if (!key) continue;
+    let arr = groups.get(key);
+    if (!arr) groups.set(key, arr = []);
+    arr.push(n);
+  }
+  const out: NodeState[] = [];
+  for (const arr of groups.values()) if (arr.length > 1) out.push(...arr);
+  return out.sort(oldestFirst);
+}
+
 /** One choice in the picker: a sentence, a count, and the items behind them.
  *  The picker renders the first two and NEVER the third (law 8). */
 export interface RangeChoice {
@@ -167,6 +189,16 @@ export function rangeChoices(getState: () => State, nowIso: () => string): Range
       words: 'Parked, and now back',
       count: back.length,
       items: () => parkedAndBack(getState(), nowIso()),
+      family: 'runway',
+    });
+  }
+  const twins = sharingAName(state);
+  if (twins.length > 0) {
+    out.push({
+      key: 'twins',
+      words: 'Sharing a name with something else',
+      count: twins.length,
+      items: () => sharingAName(getState()),
       family: 'runway',
     });
   }

@@ -80,6 +80,12 @@ export type NodeUnparented   = Ev<'node.unparented',   { priorParent: NodeId }>;
 export type NodeTrashed      = Ev<'node.trashed',      { reason?: string }>;
 export type NodeUntrashed    = Ev<'node.untrashed',    Record<string, never>>;
 export type NodeMerged       = Ev<'node.merged',       { into: NodeId }>;
+/** Split a merged node back out (1.7.0, ADR-0053) — the `untrashed` of the
+ *  merge family, because a way back that only exists while a sheet stays open
+ *  is a promise the trash view already taught us not to make. Silent-risk:
+ *  un-merging strips the chain coverage the target conferred, so the gate
+ *  cures with a clock in the same transaction. */
+export type NodeUnmerged     = Ev<'node.unmerged',     Record<string, never>>;
 
 export interface Provenance { for: 'self' | 'other'; name?: string }
 
@@ -225,7 +231,7 @@ export type RangeActed       = Ev<'range.acted',        { scope: string; verb: s
 
 export type AppEvent =
   | NodeCreated | NodeKindChanged | NodeFieldSet | NodeRenamed | NodeParented | NodeUnparented
-  | NodeTrashed | NodeUntrashed | NodeMerged
+  | NodeTrashed | NodeUntrashed | NodeMerged | NodeUnmerged
   | ClockSet | ClockCleared | UpkeepIntervalSet | DoneMarked | DoneUnmarked
   | AnchorDefined | AnchorFired | ReplanRaised | ReplanResolved | ParkSet
   | CaptureRecorded | HeatSet | ClarifyRouted | ClarifyReopened | DoNowTimed
@@ -251,7 +257,7 @@ export type EventKind = AppEvent['kind'];
 /** The closed list, at runtime. An unlisted kind is rejected at the boundary. */
 export const EVENT_KINDS = [
   'node.created','node.kind.changed','node.field.set','node.renamed','node.parented','node.unparented',
-  'node.trashed','node.untrashed','node.merged',
+  'node.trashed','node.untrashed','node.merged','node.unmerged',
   'clock.set','clock.cleared','upkeep.interval.set','done.marked','done.unmarked',
   'anchor.defined','anchor.fired','replan.raised','replan.resolved','park.set',
   'capture.recorded','heat.set','clarify.routed','clarify.reopened','do-now.timed',
@@ -297,6 +303,9 @@ export const SILENT_RISK_KINDS = [
   // re-parenting can move a node under an unclocked parent. All three were
   // absent from this list and the gate never looked (audit, severe).
   'node.trashed', 'node.merged', 'node.parented',
+  // Splitting a merged node back out strips the chain coverage its target
+  // conferred (1.7.0) — cured like untrashed, with a clock of its own.
+  'node.unmerged',
 ] as const satisfies readonly EventKind[];
 
 const SILENT_RISK_SET: ReadonlySet<string> = new Set(SILENT_RISK_KINDS);

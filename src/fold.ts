@@ -674,6 +674,13 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         if (wins(n.stamps['mergedInto'], o)) { n.mergedInto = e.payload.into; n.stamps['mergedInto'] = o; }
         break;
       }
+      // The split-back-out (1.7.0, ADR-0053): same LWW slot, so merge and
+      // un-merge converge across devices on the later decision.
+      case 'node.unmerged': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['mergedInto'], o)) { n.mergedInto = null; n.stamps['mergedInto'] = o; }
+        break;
+      }
 
       // Clocks carry a TOMBSTONE: set and cleared share one stamped key per
       // clock kind, so a clear is a fact with an ordering, not a hole. Without

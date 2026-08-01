@@ -31,6 +31,7 @@ import { doneEvents } from './work.ts';
 import { heldGroups, heldStatus, liveChildCounts, placeWords } from '../held.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
 import { composedFor, todayIsOn } from '../composed.ts';
+import { LENS_KEY, lensChoices, lensWords, underLensIds } from '../lens.ts';
 import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.ts';
 import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
 import { menuGroups, menuCount, menuWords, saveForWords, MENU_WORDS } from '../menu.ts';
@@ -63,6 +64,12 @@ const revealed = new Set<string>();
  *  needing to know how the app rerenders. */
 let rerenderAll: (() => void) | null = null;
 
+/** The lens root's id, or null for everything (1.7.0, ADR-0054). A DEVICE
+ *  VIEW PREFERENCE, cached at module level like the badge's — renders stay
+ *  synchronous, the kv write happens on change, and a value that cannot be
+ *  read is simply "everything", never a reason to fail to start. */
+let lensRoot: string | null = null;
+
 function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: (id: string) => void,
                 onFocus?: (n: NodeState) => void): void {
   const list = $('#cards');
@@ -73,12 +80,47 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   // is in or what it holds without each one re-scanning every node.
   const childCounts = liveChildCounts(st);
 
+  // The lens (1.7.0, ADR-0054): a filter over the ROWS of this list and
+  // nothing else. `groups` itself stays global — the gauge's "ready" number
+  // and the icon badge read it below, and lensing those would put two scopes
+  // in one sentence. If the chosen root stopped being a live container, the
+  // lens quietly stands down rather than filtering by a ghost.
+  const lensSel = document.querySelector<HTMLSelectElement>('#lens');
+  const lensRowEl = document.querySelector<HTMLElement>('#lens-row');
+  const lensNote = document.querySelector<HTMLElement>('#lens-note');
+  const lensRoots = lensChoices(st);
+  if (lensSel && lensRowEl) {
+    lensRowEl.hidden = lensRoots.length === 0 && !lensRoot;
+    const keep = lensRoot ?? '';
+    lensSel.replaceChildren(...[
+      Object.assign(document.createElement('option'), { value: '', textContent: 'everything' }),
+      ...lensRoots.map(r => Object.assign(document.createElement('option'), {
+        value: r.id, textContent: r.title || '(untitled)',
+      })),
+    ]);
+    if (keep === '' || lensRoots.some(r => r.id === keep)) lensSel.value = keep;
+  }
+  const lensRootNode = lensRoot ? st.nodes.get(lensRoot) : undefined;
+  const lensLive = Boolean(lensRootNode && !lensRootNode.trashed && !lensRootNode.mergedInto
+    && lensRoots.some(r => r.id === lensRoot));
+  const lensIds = lensLive ? underLensIds(st, lensRoot!) : null;
+  if (lensNote) {
+    lensNote.hidden = !lensLive;
+    if (lensLive) lensNote.textContent = lensWords(lensRootNode?.title ?? '');
+  }
+
   // A real heading and a real list per group. The first version made the heading
   // an <li> with role="presentation", which strips the listitem role and leaves a
   // <ul> containing a non-listitem — axe flagged it as a serious `list` violation,
   // and it is one: the grouping would have been invisible to a screen reader.
   const rows: HTMLElement[] = [];
   for (const group of groups) {
+    // The lens filters BEFORE the cap slices, or the cap would lie about how
+    // many it held back. A group emptied by the lens is simply absent, like
+    // any empty group.
+    const lensed = lensIds ? group.items.filter(n => lensIds.has(n.id)) : group.items;
+    if (lensed.length === 0) continue;
+
     const head = document.createElement('h3');
     head.className = 'group-head';
     // A heading, not a badge and not a count of things undone (law 5).
@@ -103,7 +145,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
     // held back is stated rather than hidden. `revealed` is per-heading and lives
     // outside this function, so pressing "show the rest" survives the re-render it
     // triggers.
-    const shown = revealed.has(group.key) ? group.items : group.items.slice(0, LIST_CAP);
+    const shown = revealed.has(group.key) ? lensed : lensed.slice(0, LIST_CAP);
     for (const node of shown) {
       const li = document.createElement('li');
       li.className = 'card';
@@ -200,7 +242,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       ul.append(li);
     }
 
-    const heldBack = group.items.length - shown.length;
+    const heldBack = lensed.length - shown.length;
     if (heldBack > 0) {
       const li = document.createElement('li');
       li.className = 'card card-more';
@@ -671,6 +713,21 @@ export async function main(edition?: Edition): Promise<void> {
   // Read BEFORE the first render that paints the icon, so a device with the badge
   // switched off never flashes a number on the way to obeying the preference.
   await loadBadgePreference(session.store);
+
+  // The lens preference (1.7.0) — read once at boot, the badge's pattern. A
+  // preference that cannot be read means "everything", which is the safe view.
+  try {
+    lensRoot = (await session.store.getKv<string>(LENS_KEY)) || null;
+  } catch {
+    lensRoot = null;
+  }
+  document.querySelector<HTMLSelectElement>('#lens')?.addEventListener('change', (e) => {
+    const v = (e.target as HTMLSelectElement).value;
+    lensRoot = v || null;
+    // Act now, persist behind — the badge's rule.
+    refreshAll();
+    void session.store.setKv(LENS_KEY, lensRoot ?? '').catch(() => { /* view pref only */ });
+  });
 
   // Opens itself on a first run — a new user has no way to know that storage
   // needs asking for — and never uninvited after that. Contained: a failure

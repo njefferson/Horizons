@@ -321,6 +321,16 @@
           aria-controls="tree">How it hangs together</button>
   <ul id="tree" class="tree" hidden></ul>
 
+  <!-- The lens (1.7.0, ADR-0054 — Q-10's shape). A filter over what you are
+       LOOKING at, never a partition of what is held: the gauge, replan,
+       re-entry, Next up, and search are structurally unlensed. The line below
+       states law 1 every time the lens is on. -->
+  <div id="lens-row" class="lens-row" hidden>
+    <label class="detail-inline" for="lens">Looking at</label>
+    <select id="lens" aria-describedby="lens-note"></select>
+  </div>
+  <p id="lens-note" class="detail-hint" hidden></p>
+
   <p id="empty" class="empty" hidden>
     Nothing yet. Whatever you put here comes back to you — you do not have to
     remember to look.
@@ -615,6 +625,40 @@
       whatever is under here still comes back to you on its own.
     </p>
     <ul id="detail-children" class="detail-feeds"></ul>
+  </div>
+
+  <!-- Folding a duplicate (1.7.0, ADR-0053). The batch carries what the
+       survivor lacks — dates, the note, people, children — so a fold never
+       swallows anything. The way back is on the SURVIVOR's sheet below, and
+       on this sheet the moment after: the trash view's lesson, a promise
+       that outlives the sitting. -->
+  <div class="detail-group" id="detail-merge-group">
+    <label class="detail-label" for="detail-merge">The same thing twice?</label>
+    <div class="detail-row">
+      <input id="detail-merge-filter" type="text" autocomplete="off"
+             spellcheck="false" placeholder="narrow the list&hellip;"
+             aria-label="Narrow the list of things to fold into">
+      <select id="detail-merge" aria-describedby="detail-merge-hint"></select>
+      <button id="detail-merge-set" type="button">Fold into it</button>
+    </div>
+    <p id="detail-merge-hint" class="detail-hint">
+      The other one stays; this one folds into it. Its dates, note, people,
+      and anything under it go along &mdash; nothing is swallowed, and you can
+      split it back out.
+    </p>
+  </div>
+  <div class="detail-group" id="detail-merged-group" hidden>
+    <span class="detail-label">Folded into this</span>
+    <ul id="detail-merged-list" class="detail-feeds"></ul>
+  </div>
+  <div class="detail-group" id="detail-unmerge-group" hidden>
+    <div class="detail-row">
+      <button id="detail-unmerge" type="button" class="ghost">Split it back out</button>
+    </div>
+    <p class="detail-hint">
+      It becomes its own thing again, with a clock of its own. What was
+      carried across stays carried &mdash; the record does not un-happen.
+    </p>
   </div>
 
   <!-- Who this is with. Clarify's "Waiting for" route is one tap and never asks

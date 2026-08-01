@@ -36,6 +36,7 @@ import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts'
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
 import { eventWords, isCure } from '../log-words.ts';
 import { choosable, composedFull, todayIsOn } from '../composed.ts';
+import { foldedInto, legalMergeTargets, mergeEvents, unmergeEvents } from './merge-intents.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
  *  closed set; these are what a person reads. */
@@ -69,6 +70,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const startInput = q<HTMLInputElement>('#detail-start');
   const estimateInput = q<HTMLInputElement>('#detail-estimate');
   const noteInput = q<HTMLTextAreaElement>('#detail-note');
+  const mergeFilter = q<HTMLInputElement>('#detail-merge-filter');
+  const mergeSel = q<HTMLSelectElement>('#detail-merge');
+  const mergedList = q<HTMLElement>('#detail-merged-list');
   const personInput = q<HTMLInputElement>('#detail-person');
   const relationSel = q<HTMLSelectElement>('#detail-relation');
   const peopleData = q<HTMLDataListElement>('#detail-people');
@@ -147,6 +151,36 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     }
   }
 
+  /** The fold-into picker (1.7.0): the parent picker's manners — narrowed as
+   *  you type, lineage named, the empty option honest about what is possible.
+   *  Only legal targets are offered (never itself, never its own descendant,
+   *  people only into people) — the recorded never-offer-then-refuse rule. */
+  function paintMergeTargets(n: NodeState): void {
+    if (!mergeSel) return;
+    const st = session.state();
+    const query = normalize(mergeFilter?.value ?? '');
+    const legal = legalMergeTargets(st, n);
+    const shown = query ? legal.filter(t => normalize(t.title || '').includes(query)) : legal;
+    const lineage = (t: NodeState): string => {
+      const p = t.parent ? st.nodes.get(t.parent) : undefined;
+      const alive = p && !p.trashed && !p.mergedInto;
+      return alive ? `${t.title || '(untitled)'} — in ${p.title || '(untitled)'}` : (t.title || '(untitled)');
+    };
+    const keep = mergeSel.value;
+    mergeSel.replaceChildren(...[
+      Object.assign(document.createElement('option'), {
+        value: '',
+        textContent: legal.length === 0 ? 'nothing else to fold into'
+          : shown.length === 0 ? 'nothing matches that' : 'pick the one that stays',
+      }),
+      ...shown.map(t => Object.assign(document.createElement('option'), {
+        value: t.id, textContent: lineage(t),
+      })),
+    ]);
+    if (shown.some(t => t.id === keep)) mergeSel.value = keep;
+    mergeSel.disabled = legal.length === 0;
+  }
+
   /** Say it where it can be seen AND where it can be heard. A failure reported
    *  only to a visually-hidden region is a failure a sighted user never learns
    *  about (F-08). */
@@ -179,6 +213,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const p = pressureOf(n, new Date(now()).toISOString(), session.zone);
     const bits: string[] = [];
     if (n.trashed) bits.push('let go');
+    if (n.mergedInto) {
+      const survivor = session.state().nodes.get(n.mergedInto);
+      bits.push(`folded into ${survivor?.title ? `“${survivor.title}”` : 'another thing'}`);
+    }
     if (n.onMenu) bits.push('on the Menu');
     if (n.lastDone) bits.push('done');
     if (n.kind === 'upkeep' && n.intervalDays) bits.push(`repeats every ${n.intervalDays} days`);
@@ -361,6 +399,33 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // items and people — anything you hold can carry words. Only a thing let
     // go loses the editor; "Keep it after all" is the door back.
     grp('#detail-note-group', !n.trashed);
+    // The fold verb (1.7.0): only for a thing that is its own thing. A merged
+    // node shows the way BACK instead, and the survivor lists what it holds.
+    grp('#detail-merge-group', !n.trashed && !n.mergedInto);
+    grp('#detail-unmerge-group', Boolean(n.mergedInto));
+    if (!n.trashed && !n.mergedInto) paintMergeTargets(n);
+    {
+      const folded = foldedInto(session.state(), n.id);
+      grp('#detail-merged-group', folded.length > 0);
+      if (mergedList) {
+        mergedList.replaceChildren(...folded.map(f => {
+          const li = document.createElement('li');
+          li.className = 'detail-feed';
+          const label = document.createElement('span');
+          label.textContent = f.title || '(untitled)';
+          const split = document.createElement('button');
+          split.type = 'button';
+          split.className = 'ghost';
+          split.textContent = 'Split it back out';
+          split.setAttribute('aria-label', `Split ${f.title || '(untitled)'} back out`);
+          split.addEventListener('click', () => {
+            void run(ctx => unmergeEvents(ctx, f.id), 'Split back out — its own thing again.');
+          });
+          li.append(label, split);
+          return li;
+        }));
+      }
+    }
     // Composed Today's verb (1.6.0): only when the module is on, only for
     // choosable things. At the cap the button says so and disables — a
     // control that would fail after the tap is a control that lies.
@@ -477,6 +542,32 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (!Number.isInteger(v) || v < 1) { say('Whole minutes, at least 1.'); return; }
     void run(ctx => estimateEvents(ctx, current!.id, v), 'Noted — nothing checks up on it.');
   });
+  btn('#detail-merge-set')?.addEventListener('click', () => {
+    if (!mergeSel || !current) return;
+    const targetId = mergeSel.value;
+    if (!targetId) { say('Pick the one that stays first.'); return; }
+    // Fresh on BOTH sides — the sheet can sit open while the world moves.
+    const st = session.state();
+    const source = st.nodes.get(current.id);
+    const target = st.nodes.get(targetId);
+    if (!source || source.trashed || source.mergedInto
+      || !target || target.trashed || target.mergedInto) {
+      say('One of them changed while this was open — pick again.');
+      paintMergeTargets(current);
+      return;
+    }
+    const title = target.title || '(untitled)';
+    void run(ctx => mergeEvents(ctx, session.state(), source, target),
+      `Folded into “${title}”. Splitting it back out is right below.`);
+  });
+  btn('#detail-unmerge')?.addEventListener('click', () => {
+    void run(ctx => unmergeEvents(ctx, current!.id),
+      'Split back out — its own thing again, with a clock of its own.');
+  });
+  mergeFilter?.addEventListener('input', () => {
+    if (current && !current.trashed && !current.mergedInto) paintMergeTargets(current);
+  });
+
   btn('#detail-today-add')?.addEventListener('click', () => {
     void run(ctx => chooseTodayEvents(ctx, current!.id), 'Chosen for today.');
   });

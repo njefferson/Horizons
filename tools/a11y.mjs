@@ -216,7 +216,26 @@ const REGISTRY = {
     '#detail-person', '#detail-relation', '#detail-person-set',
     // 1.4.0: the note editor and the history disclosure's summary line — the
     // textarea is the sheet's only multi-line input, no placeholder by design.
-    '#detail-note', '#detail-note-set', '#detail-history summary'],
+    '#detail-note', '#detail-note-set', '#detail-history summary',
+    // 1.7.0: the fold verb's filter and button are always on a live sheet; the
+    // SELECT is not here — with nothing else held it renders disabled, so it
+    // is audited in 'detail sheet, folding', where legal targets exist.
+    '#detail-merge-filter', { sel: '#detail-merge-filter', pseudo: '::placeholder' },
+    '#detail-merge-set'],
+  // The fold, with somewhere to fold into (1.7.0, ADR-0053): the select is
+  // live only when another legal target exists, so it gets its own state
+  // rather than a selector the base sheet can only match disabled.
+  'detail sheet, folding': ['#detail-merge-filter', '#detail-merge',
+    '#detail-merge-set', '#detail-merge-hint'],
+  // The way back, the moment after a fold: the ghost button and the promise
+  // beside it are the whole surface a folded thing has left.
+  'detail sheet, folded away': ['#detail-unmerge', '#detail-unmerge-group .detail-hint'],
+  // The survivor's side: what folded into it, each with its own way back.
+  'detail sheet, survivor': ['#detail-merged-group .detail-label',
+    '#detail-merged-list .detail-feed', '#detail-merged-list button'],
+  // The lens (1.7.0, ADR-0054): the row above the held list, and the law-1
+  // line that renders ONLY while a lens is active — audited in that state.
+  'lens row': ['.lens-row .detail-inline', '#lens', '#lens-note'],
   // Per-node history, open (1.4.0). The cure lines are the quietest text in
   // the whole app's story — --ink-soft, indented — and exactly the lines that
   // explain the app's own writes, so they must clear the gate, not hide.
@@ -1153,6 +1172,19 @@ try {
     await page.click('#tree-open');
     await page.waitForSelector('#tree', { state: 'hidden' });
 
+    // The lens (1.7.0, ADR-0054): containers exist by now, so the row is
+    // offered. Audited ACTIVE — the law-1 line renders only while a lens is
+    // chosen — then reset to everything so later states see the whole list.
+    await page.waitForSelector('#lens-row:not([hidden])');
+    await page.selectOption('#lens', { index: 1 });
+    await page.waitForSelector('#lens-note:not([hidden])');
+    await auditContrast(page, 'lens row', theme);
+    await auditAxe(page, 'lens row', theme);
+    await auditTargets(page, 'lens row', theme);
+    await auditFocusRings(page, 'lens row', theme, ['#lens']);
+    await page.selectOption('#lens', { index: 0 });
+    await page.waitForSelector('#lens-note', { state: 'hidden' });
+
     // Composed Today (1.6.0, ADR-0051): audit the opt-in Extra OFF (its resting
     // state), turn it on, choose one staged thing from its sheet, audit the
     // strip, then turn it off again so every later state is unchanged.
@@ -1165,7 +1197,20 @@ try {
     await page.waitForFunction(() => /^On\./.test(
       document.querySelector('#today-note')?.textContent ?? ''));
     await page.click('#about-close');
-    await page.fill('#search-input', 'sortable thing');
+    // Fill-and-verify. On this exact beat — the first search after the module
+    // toggle's refresh — a plain fill has been observed (here and in smoke) to
+    // resolve without the value landing, rarely and only on loaded runners.
+    // Verifying the value keeps the check honest: a lost fill retries, and a
+    // genuinely broken search still fails, now with the observed value.
+    for (let tries = 0; ; tries++) {
+      await page.fill('#search-input', 'sortable thing');
+      const landed = await page.waitForFunction(
+        () => document.querySelector('#search-input')?.value === 'sortable thing',
+        null, { timeout: 2000 },
+      ).then(() => true).catch(() => false);
+      if (landed) break;
+      if (tries >= 2) { fail(`${theme}: the search fill would not land after ${tries + 1} tries`); break; }
+    }
     await page.waitForSelector('#search-results .search-open');
     await page.click('#search-results .search-open');
     await page.waitForSelector('#detail[open]');
@@ -1199,6 +1244,49 @@ try {
     await page.waitForSelector('#detail-untrash:not([hidden])');
     await page.click('#detail-close');
     await page.fill('#search-input', '');
+
+    // Folding a duplicate (1.7.0, ADR-0053): two captures of the same errand,
+    // so the filter isolates the twin and every state below is deterministic.
+    // Fold one in, audit the way back, then the survivor's list, then split it
+    // back out so later states see the store holding what it held.
+    await page.fill('#capture', 'the same errand twice');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+    await page.fill('#capture', 'The same errand TWICE');
+    await page.click('#capture-form button[type=submit]');
+    await page.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+    await page.fill('#search-input', 'same errand');
+    await page.waitForSelector('#search-results .search-open');
+    await page.locator('#search-results .search-open', { hasText: /the same errand twice/ }).click();
+    await page.waitForSelector('#detail[open]');
+    await page.fill('#search-input', '');
+    await page.fill('#detail-merge-filter', 'same errand');
+    await page.waitForFunction(() => document.querySelectorAll('#detail-merge option').length === 2);
+    await auditContrast(page, 'detail sheet, folding', theme);
+    await auditAxe(page, 'detail sheet, folding', theme);
+    await auditTargets(page, 'detail sheet, folding', theme);
+    await auditFocusRings(page, 'detail sheet, folding', theme, ['#detail-merge', '#detail-merge-set']);
+    await page.selectOption('#detail-merge', { index: 1 });
+    await page.click('#detail-merge-set');
+    await page.waitForSelector('#detail-unmerge-group:not([hidden])');
+    await auditContrast(page, 'detail sheet, folded away', theme);
+    await auditAxe(page, 'detail sheet, folded away', theme);
+    await auditTargets(page, 'detail sheet, folded away', theme);
+    await auditFocusRings(page, 'detail sheet, folded away', theme, ['#detail-unmerge']);
+    await page.click('#detail-close');
+    await page.fill('#search-input', 'same errand');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');   // the merged one is off search
+    await page.waitForSelector('#detail[open]');
+    await page.fill('#search-input', '');
+    await page.waitForSelector('#detail-merged-group:not([hidden])');
+    await auditContrast(page, 'detail sheet, survivor', theme);
+    await auditAxe(page, 'detail sheet, survivor', theme);
+    await auditTargets(page, 'detail sheet, survivor', theme);
+    await auditFocusRings(page, 'detail sheet, survivor', theme, ['#detail-merged-list button']);
+    await page.locator('#detail-merged-list button').first().click();
+    await page.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
+    await page.click('#detail-close');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.

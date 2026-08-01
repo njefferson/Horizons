@@ -3160,7 +3160,18 @@ try {
 
   // Choose two things from their own sheets, via search — the verb's one home.
   const chooseBySearch = async (words, title) => {
-    await tpage.fill('#search-input', words);
+    // Fill-and-verify: on this exact beat — the first search after the module
+    // toggle's refresh — a plain fill has been observed (here and in a11y) to
+    // resolve without the value landing, rarely and only on loaded runners.
+    for (let tries = 0; ; tries++) {
+      await tpage.fill('#search-input', words);
+      const landed = await tpage.waitForFunction(
+        (w) => document.querySelector('#search-input')?.value === w, words,
+        { timeout: 2000 },
+      ).then(() => true).catch(() => false);
+      if (landed) break;
+      if (tries >= 2) break;   // let the selector wait below state the failure
+    }
     await tpage.waitForSelector('#search-results .search-open');
     await tpage.locator('#search-results .search-open', { hasText: title }).first().click();
     await tpage.waitForSelector('#detail[open]');
@@ -3200,6 +3211,130 @@ try {
   is(await tpage.locator('#composed').isVisible(), false, 'optional means gone when off');
   const todayLog = await sortCount();
   is(todayLog > 0, true, `and the log kept the record (${todayLog} events)`);
+
+  console.log('\nDuplicates and the lens (1.7.0)');
+  // TWINS: two captures of the same worry, differing only in case, plus one
+  // that merely rhymes. The fixture already holds duplicates of its own, so
+  // every count below is a DELTA against what the picker said before.
+  const twinsCount = async () => {
+    await tpage.click('#sort-open');
+    await tpage.waitForSelector('#sort[open]');
+    const rows = await tpage.locator('#sort-choices .sort-choice').allTextContents();
+    await tpage.click('#sort-close');
+    const row = rows.find(r => /Sharing a name with something else/.test(r));
+    return row ? Number((row.match(/(\d+) thing/) ?? [])[1] ?? 1) : 0;
+  };
+  const twinsBefore = await twinsCount();
+  for (const t of ['Polish the samovar', 'polish the SAMOVAR', 'Polish the banister']) {
+    await tpage.fill('#capture', t);
+    await tpage.click('#capture-form button[type=submit]');
+    await tpage.waitForFunction(() => (document.querySelector('#capture')?.value ?? 'x') === '');
+  }
+  is(await twinsCount(), twinsBefore + 2,
+    `the twins range grew by exactly the pair — the banister merely rhymes (${twinsBefore} -> ${twinsBefore + 2})`);
+  await tpage.click('#sort-open');
+  await tpage.waitForSelector('#sort[open]');
+  await tpage.locator('#sort-choices .sort-choice', { hasText: 'Sharing a name' }).click();
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  is(/thing/.test(await tpage.locator('#sort-entry').textContent() || ''), true,
+    'the range states its true total once, at entry');
+  await tpage.click('#sort-close');
+
+  // The sheet carries the fold verb; the older twin folds into the newer.
+  await tpage.fill('#search-input', 'samovar');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /Polish the samovar/ }).click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#search-input', '');
+  is(await tpage.locator('#detail-merge-group').isVisible(), true,
+    'a thing that is its own thing offers the fold');
+  await tpage.fill('#detail-merge-filter', 'samovar');
+  await tpage.waitForFunction(() => [...document.querySelectorAll('#detail-merge option')]
+    .some(o => /SAMOVAR/.test(o.textContent ?? '')));
+  const mergeOptions = await tpage.locator('#detail-merge option').allTextContents();
+  is(mergeOptions.some(o => /banister/.test(o)), false,
+    'the filter narrowed the targets to what was typed');
+  await tpage.selectOption('#detail-merge', { label: 'polish the SAMOVAR' });
+  const mergeLogBefore = await sortCount();
+  await tpage.click('#detail-merge-set');
+  await tpage.waitForFunction(() => /Folded into/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  is(await tpage.locator('#detail-unmerge-group').isVisible(), true,
+    'and the way back is right below, the moment it folds');
+  is(await tpage.locator('#detail-merge-group').isHidden(), true,
+    'a folded thing does not fold again');
+  await tpage.click('#detail-close');
+
+  // The range recomputes live: the pair folded away, the count falls back.
+  is(await twinsCount(), twinsBefore,
+    'after the fold the pair is no longer a pair — the range recomputed live');
+
+  // The folded twin is off every surface; the survivor lists what it holds,
+  // and the split is one tap from there.
+  await tpage.fill('#search-input', 'samovar');
+  await tpage.waitForSelector('#search-results .search-open');
+  const samovarHits = await tpage.locator('#search-results .search-open').count();
+  is(samovarHits, 1, 'the folded twin is off every surface — search shows one samovar');
+  await tpage.locator('#search-results .search-open', { hasText: /SAMOVAR/ }).click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.waitForSelector('#detail-merged-group:not([hidden])');
+  is(/Polish the samovar/.test(await tpage.locator('#detail-merged-list').textContent() || ''), true,
+    'the survivor names what folded into it');
+  await tpage.locator('#detail-merged-list button', { hasText: 'Split it back out' }).click();
+  await tpage.waitForFunction(() => /Split back out/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.waitForSelector('#detail-merged-group[hidden]', { state: 'attached' });
+  await tpage.click('#detail-close');
+  await tpage.fill('#search-input', '');
+
+  // The log tells the story: the fold, the split, and the split's cure — a
+  // split-out node is silent-risk and the gate clocked it in the same batch.
+  const mergeLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const merged = rows.filter(e => e.kind === 'node.merged');
+    const unmerged = rows.filter(e => e.kind === 'node.unmerged');
+    return {
+      merged: merged.length,
+      unmerged: unmerged.length,
+      cured: unmerged.some(u => rows.some(e =>
+        e.kind === 'clock.set' && e.node === u.node && String(e.id).includes('~cure~'))),
+    };
+  });
+  is(mergeLog.merged >= 1, true, 'node.merged is in the record');
+  is(mergeLog.unmerged >= 1, true, 'node.unmerged is in the record');
+  is(mergeLog.cured, true, 'and the split-out node got its cure — never silent');
+  is(await sortCount() > mergeLogBefore, true, 'the fold and split wrote real events');
+
+  // THE LENS: a filter over what you are LOOKING at, never what is held.
+  await tpage.waitForSelector('#lens-row:not([hidden])');
+  const preLensCards = await tpage.locator('#cards .card').count();
+  const preLensGauge = await tpage.locator('#gauge').textContent() || '';
+  const preLensNext = await tpage.locator('#nextup').textContent() || '';
+  await tpage.selectOption('#lens', { label: 'Sorted pile' });
+  await tpage.waitForSelector('#lens-note:not([hidden])');
+  const lensNoteWords = await tpage.locator('#lens-note').textContent() || '';
+  is(/still held/.test(lensNoteWords) && /never what Quietkeep holds/.test(lensNoteWords), true,
+    `law 1 is said out loud where the filtering happens ("${lensNoteWords}")`);
+  is(/\d/.test(lensNoteWords), false, 'and the line carries no number (law 8)');
+  const lensCards = await tpage.locator('#cards .card').count();
+  is(lensCards < preLensCards, true,
+    `the list narrowed to the lens (${preLensCards} -> ${lensCards})`);
+  is(await tpage.locator('#gauge').textContent(), preLensGauge,
+    'the gauge counts the WHOLE of what is held — a lens never touches it');
+  is(await tpage.locator('#nextup').textContent(), preLensNext,
+    'Next up is one thing across a whole life — never lensed');
+  await tpage.selectOption('#lens', { label: 'everything' });
+  await tpage.waitForSelector('#lens-note[hidden]', { state: 'attached' });
+  await tpage.waitForFunction((n) =>
+    document.querySelectorAll('#cards .card').length === n, preLensCards);
+  is(true, true, 'back to everything — nothing was lost to the looking');
 
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();

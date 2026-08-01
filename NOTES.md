@@ -433,6 +433,40 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (after the promote)** — **1.7.0 "Duplicate handling and the
+  lens"** — Noah's direct instruction in the promote message; the watch-list's
+  first trigger fired and Q-10's recorded shape built
+  ([ADR-0053](docs/adr/0053-folding-a-duplicate.md),
+  [ADR-0054](docs/adr/0054-the-lens.md)).
+  · **Folding a duplicate**: `node.merged` finally has its UI — and its law: a
+  fold is a CARRY BATCH, never a bare event, because a bare `node.merged` is a
+  data-loss verb. The batch carries every demand clock the survivor lacks
+  (stamped `merge:carried`), the note (copy or join with a blank line — the
+  merge decides for neither), people links, and children re-homed, then the
+  fold itself. The survivor's own values always stand. Property-tested: date,
+  note, person, child, each asserted survived.
+  · **`node.unmerged`** — the release's one new noun, Silent-risk yes: a
+  split-out node stands alone again and the gate cures it in the same batch.
+  Unmerge restores standing, not the world; both directions share one LWW slot
+  so shards converge. The survivor's sheet lists what folded into it, each row
+  carrying its own "Split it back out" — the trash view's lesson applied.
+  · **Legality computed, never refused after offer**: not itself, not its own
+  descendant, people only into people; the picker offers `legalMergeTargets`
+  and nothing else, filtered as you type.
+  · **The twins range** "Sharing a name with something else": EXACT normalized
+  equality, never fuzzy — a false "this is the same" costs more than a missed
+  one.
+  · **The lens** (src/lens.ts): one live top-level container filters the held
+  list's ROWS, before the cap slices; the law-1 line renders every time it is
+  on, with no count. The never-filter fence: gauge, Next up, replan, re-entry,
+  search take no lens argument — the type system is the fence, the tests
+  restate it. The choice is kv (`lens.root`), a device view preference, never
+  an event; a dead root stands the lens down rather than filtering by a ghost.
+  · The a11y gate's first run on the new surfaces found two real defects
+  (fixed same commit, B-25): the merge filter's UA-default placeholder at
+  4.08:1, and the lens select's `min-width:auto` pushing the page sideways
+  257px at 320px/200%.
+
 - **2026-08-01 (after 1.6.0)** — **`main` fast-forwarded to `c47e21e` on
   Noah's "Promote"**, carrying 1.4.0 (notes, the readable record, per-node
   history), 1.5.0 (wholesale acts, "Things you let go", range copies), and

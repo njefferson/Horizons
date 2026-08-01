@@ -338,6 +338,28 @@ button.ghost {
 }
 .tree-empty { color: var(--ink-soft); font-size: 0.9375rem; }
 
+/* The lens (1.7.0): one small row, quiet, above the list it filters. */
+.lens-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.lens-row select {
+  /* A flex item's min-width is auto, so a long container title made the
+     select refuse to shrink and pushed the page sideways at 320px/200%
+     (B-04). Zero it: the select clips its chosen option's text instead. */
+  min-width: 0;
+  flex: 0 1 auto;
+  min-height: var(--target);
+  padding: 0.3rem 0.5rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+
 /* Composed Today (1.6.0): the chosen few, quiet doors above Next up. */
 .composed {
   margin: 1.25rem 0 1.5rem;
@@ -459,6 +481,7 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 /* The 1.3.0 inputs: same registered pair as every other placeholder — the UA
    default gray measured 4.08:1 on the sheet and failed the gate. */
 #detail-parent-filter::placeholder,
+#detail-merge-filter::placeholder,
 #sort-query::placeholder { color: var(--ink-soft); opacity: 1; }
 .search-summary { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.9375rem; }
 .search-results {

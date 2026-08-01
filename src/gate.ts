@@ -593,6 +593,9 @@ export function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): Ap
     case 'node.parented':
     case 'node.unparented':
     case 'node.untrashed':
+    // Splitting back out of a merge (1.7.0): the node stands on its own again
+    // and needs its own clock, exactly like untrashed.
+    case 'node.unmerged':
     case 'clock.cleared':
     case 'done.marked':
     case 'dependency.released':

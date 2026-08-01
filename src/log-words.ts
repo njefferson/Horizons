@@ -100,7 +100,8 @@ export function eventWords(
     case 'node.unparented': return 'Taken back out on its own.';
     case 'node.trashed': return 'Let go.';
     case 'node.untrashed': return 'Kept after all.';
-    case 'node.merged': return `Merged into ${name(p['into'])}.`;
+    case 'node.merged': return `Folded into ${name(p['into'])} — the same thing, kept once.`;
+    case 'node.unmerged': return 'Split back out — its own thing again.';
 
     // --- temporal ------------------------------------------------------------
     case 'clock.set': {

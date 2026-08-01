@@ -598,9 +598,27 @@ rendered gate in this same commit.**
   bearing). Driven by actually ending a session, then lowered so later
   states see the ordinary page.
 
----
+### B-25 · Duplicates and the lens (1.7.0)
 
-## Part 2 — Findings register
+**No new tokens; two new surface families on the existing bindings, each in
+the rendered gate in this same commit.**
+
+- **The fold verb** (`detail sheet, folding` / `folded away` / `survivor`
+  states): the filter input's placeholder joins the registered
+  `--ink-soft` pair — the UA default measured 4.08:1 light / 3.78:1 dark on
+  the sheet and failed the gate, the same finding the 1.3.0 inputs had. The
+  SELECT is audited only in the `folding` state, where legal targets exist:
+  with nothing else held it renders disabled, and a disabled control is not
+  the state a person meets the verb in. The survivor's "Split it back out"
+  rows are real ghost buttons at full target size, measured per state.
+- **The lens** (`lens row` state, audited ACTIVE): the row's label and the
+  law-1 line are `--ink-soft` on `--bg` (6.48:1 light); the select is
+  ordinary `--ink`. The line renders only while a lens is chosen, so the
+  state stages one, measures, and resets. The select carries
+  `aria-describedby="lens-note"` so what the lens is NOT doing is announced
+  with it. Finding on first run: a flex item's `min-width: auto` let a long
+  container title push the page sideways 257px at 320px/200% (B-04) —
+  `min-width: 0` on the select, fixed in the same commit.
 
 Rows are appended as found.
 

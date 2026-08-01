@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.7.0 — CAPABILITY
+
+*2026-08-01*
+
+- **The same thing twice? Fold it into one.** When two entries are really one worry &mdash; seven years of inbox will do that &mdash; open either one and fold it into the other. Its dates, note, people, and anything under it go along; nothing is swallowed, and the one that stays keeps its own words wherever both spoke. The sheet of the one that stays lists what folded into it, and &ldquo;Split it back out&rdquo; undoes the fold any time &mdash; a promise that outlives the sitting, not just the undo bar.
+- **&ldquo;Sharing a name with something else&rdquo;** joins the sorting batches: everything whose name exactly matches another thing you hold, oldest first, so twins meet each other on the conveyor. Only exact matches &mdash; the app never guesses that two things that merely sound alike are the same.
+- **A lens for looking at one part of your life.** When you have places like Home or Work, a small &ldquo;Looking at&rdquo; chooser sits above your held list: pick one and the list shows only what lives under it. Everything else is still held, still clocked, and still comes back &mdash; the lens changes what you see, never what Quietkeep holds, and it says so right there every time it is on. Next up, the gauge, search, and dates that come back are never narrowed: those speak for the whole of what you hold, always.
+
 ## 1.6.0 — CAPABILITY
 
 *2026-08-01*
