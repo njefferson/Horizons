@@ -433,6 +433,16 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01** — **`main` fast-forwarded to `19f4d1e` on Noah's "Promote and
+  continue"**, carrying everything from 1.2.0 through 1.3.1: undo, search, the
+  do-now and Next-up fixes, the "in project" place labels, the 1.2.3 trust
+  patch, sort mode with named ranges and the defer verb, the admit() rework,
+  and the fifteen audit fixes. Spine run 163 was watched green on that exact
+  commit before the fast-forward; Deploy run 160 went green on `main` at the
+  same sha (V-10). Production now carries the release the 30-day dogfood gate
+  honestly starts on. Next per the approved roadmap: 1.4.0 "What a thing
+  carries, and what the app did."
+
 - **2026-07-31 (night)** — **1.3.1: the adversarial audit of 1.3.0, all fifteen
   findings fixed.** The release shipped green through every gate, so the audit
   was pointed at what the gates do NOT ask — and it found two CRITICAL mainline
