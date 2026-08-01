@@ -524,6 +524,31 @@ rings, and judges the lowest-contrast text on the surface — the route hint
 `public/app.css` for both themes and fails on any pair below its floor, so B-08's
 same-commit rule is enforced rather than promised.
 
+### B-22 · The note, the log viewer, and per-node history (1.4.0)
+
+**No new tokens, no new pairs — three new surfaces on the existing bindings,
+each added to the rendered gate in this same commit.**
+
+- **The note textarea** (`#detail-note`): `--ink` on `--bg` with a `--line`
+  border, the same skin as every input on the sheet, sized to B-04 and resizable
+  vertically only — a horizontal drag could push the sheet past the 320px
+  overflow gate. **No placeholder, by design**: the hint paragraph carries the
+  guidance, so there is no low-contrast ghost text to measure or to mistake for
+  content. Registry: the `detail sheet` state gains `#detail-note`,
+  `#detail-note-set`, and `#detail-history summary`.
+- **The record itself** (`log view` state): day headings and lines in `--ink`,
+  the stated total in the storage-note style. Lines wrap
+  (`overflow-wrap: anywhere`) — the (i) dialog's 320px scrollWidth check holds
+  for this list, and the driver collapses the view again afterwards so the
+  return-visit overflow measurement stays honest.
+- **The cure lines** (`.log-cure`, in `log view` and
+  `detail sheet, history open`): `--ink-soft`, indented — the quietest text in
+  the app's story and exactly the lines that explain the app's own writes, so
+  they are registered and measured rather than waved through as secondary. The
+  driver stages the history on a captured-then-routed item, whose gate cure
+  guarantees the selector something real to match (a selector matching nothing
+  visible FAILS, per the B-08 registry rule).
+
 ---
 
 ## Part 2 — Findings register

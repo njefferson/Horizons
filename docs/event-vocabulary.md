@@ -73,6 +73,10 @@ flexible; the types are fixed.
 - `inbox_state` — `unclarified` (aggressive same-day clock; carries source tags,
   and a `boss`-tagged run goes one level hotter) or a heat value
 - `estimate` — logged from v1, *learned from* in v2
+- `note` — free text kept with an item (1.4.0, ADR-0047). Title-class user
+  content: plaintext in exports exactly as titles are; renders on the detail
+  sheet only; an empty value is the honest "removed". Written by the sheet and
+  by the importer; read by `noteOf` in fold.ts — the one reader.
 
 ---
 

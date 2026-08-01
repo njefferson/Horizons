@@ -23,7 +23,7 @@ import {
   parseOmniFocusCsv, parseTaskPaper, taskPaperEvents, isPastDay, type ImportContext,
 } from '../src/taskpaper.ts';
 import { admit, gateOptionsFor, heldNodes, silentNodes } from '../src/gate.ts';
-import { fold } from '../src/fold.ts';
+import { fold, noteOf } from '../src/fold.ts';
 import { localDayKey } from '../src/time.ts';
 import { calendarCount } from '../src/ics.ts';
 import { replanAll } from '../src/replan.ts';
@@ -369,10 +369,10 @@ test('the summary and the store agree about which dates came across', () => {
   assert.equal(s.staleDates, 2);
 });
 
-test('REGRESSION 1.2.3: notes in the file are COUNTED and the loss is stated', () => {
-  // Notes are not carried yet — and the summary used to report 0 about a file
-  // full of them, which cost a 1,445-row import every note body with no
-  // mention. Counting is the floor of honesty until carrying ships.
+test('1.4.0: CSV notes are CARRIED — the field event lands on the right row, and the summary says so', () => {
+  // History of this exact spot: the first importer read the Notes cell and
+  // threw it away with the summary reporting zero (audit); 1.2.3 counted and
+  // stated the loss; 1.4.0 carries them. The count is now of notes that ATTACH.
   const csv = [
     'Task ID,Type,Name,Status,Project,Notes',
     '1,Action,call the dentist,,,remember to ask about the crown',
@@ -383,13 +383,53 @@ test('REGRESSION 1.2.3: notes in the file are COUNTED and the loss is stated', (
   const s = importSummary(lines, unreadable);
   assert.equal(s.notes, 2, 'both note-bearing rows counted, the empty one not');
   const words = importWords(s);
-  assert.match(words, /2 notes were in the file/);
-  assert.match(words, /not carried across yet/, 'the loss is said in plain words');
+  assert.match(words, /2 notes come across with their items/);
+  assert.doesNotMatch(words, /not carried/, 'the loss sentence is gone because the loss is');
+
+  const events = taskPaperEvents(ctxFor(), lines);
+  const noteEvents = events.filter(e => e.kind === 'node.field.set');
+  assert.equal(noteEvents.length, 2, 'one field event per note-bearing row');
+  const created = new Map(events.filter(e => e.kind === 'node.created')
+    .map(e => [(e.payload as { title: string }).title, e.node]));
+  const noteOn = (title: string): unknown =>
+    (noteEvents.find(e => e.node === created.get(title))?.payload as { value?: unknown } | undefined)?.value;
+  assert.equal(noteOn('call the dentist'), 'remember to ask about the crown');
+  assert.equal(noteOn('Boy Scouts'), 'pack meeting is first Tuesdays');
+  assert.equal(noteOn('plain thing'), undefined, 'no event for the empty cell');
 });
 
-test('TaskPaper note lines count toward the same stated loss', () => {
-  const { lines, unreadable } = parseTaskPaper('- A thing\n  a note under it\n');
+test('1.4.0: TaskPaper note lines attach to the item ABOVE them, consecutive lines as ONE note', () => {
+  // The association is positional — the only one the format has. Two events on
+  // one field would be LWW overwriting itself, so consecutive lines join.
+  const text = '- A thing\n  first line of its note\n  second line of it\n- Another thing\n';
+  const { lines, unreadable } = parseTaskPaper(text);
   const s = importSummary(lines, unreadable);
-  assert.equal(s.notes, 1);
-  assert.match(importWords(s), /One note was in the file/);
+  assert.equal(s.notes, 2, 'two note lines, both attached');
+  assert.match(importWords(s), /2 notes come across/);
+  const events = taskPaperEvents(ctxFor(), lines);
+  const notes = events.filter(e => e.kind === 'node.field.set');
+  assert.equal(notes.length, 1, 'consecutive lines are ONE note, one event');
+  const a = events.find(e => e.kind === 'node.created'
+    && (e.payload as { title: string }).title === 'A thing')!;
+  assert.equal(notes[0]!.node, a.node, 'and it landed on the item above');
+  assert.equal((notes[0]!.payload as { value: string }).value,
+    'first line of its note\nsecond line of it');
+});
+
+test('1.4.0: a note line before any item has nothing to belong to — dropped, and NOT counted as carried', () => {
+  const { lines, unreadable } = parseTaskPaper('an orphan header note\n- A thing\n  a real note\n');
+  const s = importSummary(lines, unreadable);
+  assert.equal(s.notes, 1, 'only the attached note counts — counting the orphan would be the old lie inverted');
+  const events = taskPaperEvents(ctxFor(), lines);
+  assert.equal(events.filter(e => e.kind === 'node.field.set').length, 1);
+});
+
+test('1.4.0: an imported note folds to where the sheet reads it', () => {
+  const csv = [
+    'Task ID,Type,Name,Status,Project,Notes',
+    '1,Action,call the dentist,,,ask about the crown',
+  ].join('\n');
+  const { state } = build(csv);
+  const n = [...state.nodes.values()].find(x => x.title === 'call the dentist')!;
+  assert.equal(noteOf(n), 'ask about the crown', 'noteOf — the one reader — sees it');
 });

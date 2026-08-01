@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.4.0 — CAPABILITY
+
+*2026-08-01*
+
+- **Notes on things.** Anything you hold can now carry words &mdash; details, links, half-thoughts &mdash; edited on its own sheet and shown only there, so lists stay one calm line each. Clearing the box removes the note, and that is recorded honestly too.
+- **Imports bring their notes along.** A file from another planner now arrives with every note attached to its item, and the summary says how many came &mdash; the loss this app once inflicted silently, then admitted, is now simply over.
+- **&ldquo;What happened to this&rdquo; &mdash; every item can explain itself.** Open anything and unfold its history: when it arrived, where you sent it, what date it was given, and every time the app stepped in &mdash; each of the app&rsquo;s own moves saying why (&ldquo;so it would not go silent&rdquo;). The permanent answer to &ldquo;where did it go?&rdquo;.
+- **You can read the record itself.** Behind the &#9432; panel: the append-only record everything is worked out from, every line in plain words, newest day first, with its true size stated. Reading changes nothing, and no line ever shows a note&rsquo;s or journal&rsquo;s contents &mdash; it says one was written, not what it said.
+- Also: an item&rsquo;s sheet now quietly says how it was sorted (&ldquo;sorted as reference&rdquo;), and typing a year below 1000 anywhere no longer lands you in the wrong millennium.
+
 ## 1.3.1 — ITERATION
 
 *2026-07-31*

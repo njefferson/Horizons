@@ -15,13 +15,14 @@
 // whom a surprising control is expensive.
 
 import type { Session } from './session.ts';
-import type { NodeState } from '../fold.ts';
+import { noteOf, type NodeState } from '../fold.ts';
 import { localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
 import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
+  cleanNote, noteEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
 import { doneEvents } from './work.ts';
@@ -33,6 +34,7 @@ import { setSaveForEvents } from './detail-intents.ts';
 import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting } from '../people.ts';
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
+import { eventWords, isCure } from '../log-words.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
  *  closed set; these are what a person reads. */
@@ -65,6 +67,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const parentCreate = q<HTMLButtonElement>('#detail-parent-create');
   const startInput = q<HTMLInputElement>('#detail-start');
   const estimateInput = q<HTMLInputElement>('#detail-estimate');
+  const noteInput = q<HTMLTextAreaElement>('#detail-note');
   const personInput = q<HTMLInputElement>('#detail-person');
   const relationSel = q<HTMLSelectElement>('#detail-relation');
   const peopleData = q<HTMLDataListElement>('#detail-people');
@@ -178,6 +181,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (n.onMenu) bits.push('on the Menu');
     if (n.lastDone) bits.push('done');
     if (n.kind === 'upkeep' && n.intervalDays) bits.push(`repeats every ${n.intervalDays} days`);
+    // The quiet fact line (1.4.0): where a sorted thing went, in the sorting's
+    // own words — the sheet is where "it feels lost" gets its answer.
+    if (n.route && n.route !== 'trash') bits.push(`sorted as ${String(n.route).replace(/-/g, ' ')}`);
     const words = pressureWords(p);
     if (words) bits.push(words);
     const clock = n.clocks.due ?? n.clocks.review ?? n.clocks.start;
@@ -193,6 +199,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (document.activeElement !== NAME || NAME.value.trim() === '') NAME.value = n.title;
     DATE.value = n.clocks.due ? localDayKey(n.clocks.due.at, session.zone) : '';
     if (startInput) startInput.value = n.clocks.start ? localDayKey(n.clocks.start.at, session.zone) : '';
+    // The note rides the same no-clobber rule as the rename box: `render` runs
+    // after every commit here, and prose is the costliest thing to eat.
+    if (noteInput && document.activeElement !== noteInput) noteInput.value = noteOf(n) ?? '';
     if (n.intervalDays && n.intervalDays > 0) EVERY.value = String(n.intervalDays);
     if (n.comfortWindowDays && n.comfortWindowDays > 0) SLACK.value = String(n.comfortWindowDays);
 
@@ -339,6 +348,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // can never be backfilled (audit).
     grp('#detail-estimate-group', !n.onMenu && !n.trashed
       && !['person', 'aspiration', 'pebble'].includes(n.kind));
+    // A note is NOT a demand, so unlike the temporal groups it stays for Menu
+    // items and people — anything you hold can carry words. Only a thing let
+    // go loses the editor; "Keep it after all" is the door back.
+    grp('#detail-note-group', !n.trashed);
     show('#detail-date-clear', Boolean(n.clocks.due));
     show('#detail-start-clear', Boolean(n.clocks.start));
     show('#detail-repeat-stop', repeats);
@@ -369,6 +382,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
 
     show('#detail-unparent', Boolean(n.parent));
     show('#detail-make-project', !isContainer(n) && !n.trashed);
+    // History stays live while its disclosure is open — a commit from this
+    // sheet should show its own line the moment it lands.
+    if (historyEl?.open) buildHistory(n.id);
     // The track role and the answer-owed date belong to containers only: a role
     // on a single action would be a label with nothing under it to govern.
     // `!n.onMenu`: a Menu-resident container must not offer the answer-owed
@@ -428,6 +444,16 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     const v = Number(estimateInput.value);
     if (!Number.isInteger(v) || v < 1) { say('Whole minutes, at least 1.'); return; }
     void run(ctx => estimateEvents(ctx, current!.id, v), 'Noted — nothing checks up on it.');
+  });
+  btn('#detail-note-set')?.addEventListener('click', () => {
+    if (!noteInput || !current) return;
+    const clean = cleanNote(noteInput.value);
+    // No event for no change — the log must not carry claims about changes
+    // that did not happen (the same rule makeRepeatEvents follows).
+    const had = noteOf(session.state().nodes.get(current.id) ?? current) ?? '';
+    if (clean === had) { say(clean ? 'Already kept.' : 'Nothing to keep yet.'); return; }
+    void run(ctx => noteEvents(ctx, current!.id, noteInput.value),
+      clean ? 'Kept with it.' : 'Note removed.');
   });
   btn('#detail-repeat-set')?.addEventListener('click', () => {
     const i = positiveInt(EVERY), c = positiveInt(SLACK);
@@ -552,8 +578,43 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
 
   btn('#detail-close')?.addEventListener('click', () => DLG.close());
 
+  // --- what happened to this (1.4.0) ----------------------------------------
+  // The log filtered to this one node, in the shared plain words, cures
+  // indented under their cause. Built on first open of the disclosure and
+  // rebuilt after each commit while it stays open — never before: reading the
+  // whole log for a closed <details> would be the coverage-list bug again.
+  const historyEl = q<HTMLDetailsElement>('#detail-history');
+  const historyLines = q<HTMLElement>('#detail-history-lines');
+  const buildHistory = (id: string): void => {
+    if (!historyLines) return;
+    void session.store.all().then(all => {
+      // The sheet may have moved on while the read was in flight.
+      if (!current || current.id !== id) return;
+      const st = session.state();
+      const titleOf = (x: string): string | null => st.nodes.get(x)?.title || null;
+      historyLines.replaceChildren(...all.filter(e => e.node === id).map(e => {
+        const li = document.createElement('li');
+        li.className = isCure(e) ? 'log-line log-cure' : 'log-line';
+        const day = new Date(e.at).toLocaleDateString(undefined, {
+          weekday: 'short', day: 'numeric', month: 'short', timeZone: session.zone,
+        });
+        li.textContent = `${eventWords(e, session.zone, titleOf)} — ${day}.`;
+        return li;
+      }));
+    });
+  };
+  historyEl?.addEventListener('toggle', () => {
+    if (historyEl.open && current) buildHistory(current.id);
+  });
+
   return {
     open(node: NodeState): void {
+      // A different item starts with its history folded away — leaving the
+      // last item's lines under a fresh title would be the sheet lying.
+      if (historyEl && current?.id !== node.id) {
+        historyEl.open = false;
+        historyLines?.replaceChildren();
+      }
       render(node);
       LIVE.textContent = '';
       if (!DLG.open) DLG.showModal();

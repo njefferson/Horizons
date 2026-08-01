@@ -2842,6 +2842,94 @@ try {
     `tapping the triage card opens the sheet on THAT item ("${triageShows}") — rename and dates mid-triage`);
   await tpage.click('#detail-close');
 
+  console.log('\nWhat a thing carries, and what the app did (1.4.0)');
+  // Import the exact CSV shape that once lost every note, and read the note
+  // back off the item's own sheet.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.setInputFiles('#other-file', {
+    name: 'noted.csv', mimeType: 'text/csv',
+    buffer: Buffer.from('Task ID,Type,Name,Status,Project,Notes\n1,Action,Noted thing,,,ask about the crown\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 5000 });
+  is(/One note comes across with its item/.test(await tpage.locator('#other-note').textContent() || ''), true,
+    'the summary states the carry, before anything is written');
+  const notedNav = tpage.waitForEvent('framenavigated');
+  await tpage.click('#other-go');
+  await notedNav;
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // Reach it through sort mode's query door and open the sheet.
+  await tpage.click('#sort-open');
+  await tpage.waitForSelector('#sort[open]');
+  await tpage.fill('#sort-query', 'Noted thing');
+  await tpage.click('#sort-query-go');
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  await tpage.click('#sort-card');
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-note').inputValue(), 'ask about the crown',
+    'the imported note is on the sheet — the loss the audit found is over');
+
+  // Edit it, reload the whole app, and it is still there (fold + snapshot).
+  await tpage.fill('#detail-note', 'ask about the crown\nand the bill');
+  await tpage.click('#detail-note-set');
+  await tpage.waitForTimeout(200);
+
+  // Per-node history: the record of this one thing, cure indented under cause.
+  await tpage.click('#detail-history summary');
+  await tpage.waitForFunction(() =>
+    (document.querySelectorAll('#detail-history-lines .log-line').length) > 0);
+  const historyText = await tpage.locator('#detail-history-lines').textContent() || '';
+  is(/Created — an action/.test(historyText), true, 'its creation is a line in words');
+  is(/A note was kept with it/.test(historyText), true, 'and so is the note — the words, not the content');
+  is(historyText.includes('ask about the crown'), false, 'the note BODY stays off the history');
+  is(/so it would not go silent/.test(historyText), true, 'the app explains its own cure');
+  is(await tpage.locator('#detail-history-lines .log-cure').count() >= 1, true,
+    'and the cure is marked as the app’s, indented under its cause');
+  await tpage.click('#detail-close');
+  await tpage.click('#sort-close');
+
+  await tpage.reload();
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.click('#sort-open');
+  await tpage.waitForSelector('#sort[open]');
+  await tpage.fill('#sort-query', 'Noted thing');
+  await tpage.click('#sort-query-go');
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  await tpage.click('#sort-card');
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-note').inputValue(), 'ask about the crown\nand the bill',
+    'the edited note survives a full reload, newlines intact');
+  await tpage.click('#detail-close');
+  await tpage.click('#sort-close');
+
+  // The record itself: day-grouped, plain words, true totals, honest reveal.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#log-open');
+  await tpage.waitForSelector('#log-view:not([hidden])');
+  const logTotalWords = await tpage.locator('#log-total').textContent() || '';
+  const logTotalN = Number(logTotalWords.match(/^(\d+) events/)?.[1] ?? '0');
+  is(logTotalN > 0, true, `the record states its true size (${logTotalN})`);
+  is(await tpage.locator('.log-day-title').count() >= 1, true, 'days are headed');
+  is(await tpage.locator('#log-days .log-line').count() > 0, true, 'lines render in words');
+  const moreVisible = await tpage.locator('#log-more:not([hidden])').count();
+  if (moreVisible > 0) {
+    const beforeLines = await tpage.locator('#log-days .log-line').count();
+    const promised = (await tpage.locator('#log-more').textContent() || '').match(/(\d+) of (\d+)/);
+    is(Number(promised?.[2]), logTotalN, 'the reveal button and the total agree');
+    await tpage.click('#log-more');
+    await tpage.waitForTimeout(150);
+    const afterLines = await tpage.locator('#log-days .log-line').count();
+    is(afterLines - beforeLines, Math.min(50, logTotalN - beforeLines),
+      `the reveal produced exactly what it promised (${beforeLines} -> ${afterLines})`);
+  }
+  // Reading changed nothing: the log is the same size it said it was.
+  const logDbCount = await sortCount();
+  is(logDbCount, logTotalN, 'the stated total IS the store count — read-only, no drift');
+  await tpage.click('#about-close');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {

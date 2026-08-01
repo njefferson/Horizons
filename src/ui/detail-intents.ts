@@ -90,6 +90,22 @@ export function cleanTitle(raw: string): string {
   return stripped.length > TITLE_MAX ? stripped.slice(0, TITLE_MAX).trim() : stripped;
 }
 
+// The note cleaner lives in src/note.ts — the importer writes notes too, and
+// two cleaners is how the same file imports differently from how it types.
+// Re-exported so the sheet imports its intents from one place.
+import { cleanNote } from '../note.ts';
+export { cleanNote, NOTE_MAX } from '../note.ts';
+
+/**
+ * "Keep this with it." Rides `node.field.set{field:'note'}` — the noun has been
+ * in the vocabulary since Phase 0 with per-field LWW already folding; this is
+ * the first surface to write it for a person (1.4.0). An EMPTY value is legal
+ * and is the honest "remove the note": the log records that it was taken off,
+ * rather than pretending it was never there.
+ */
+export const noteEvents = (ctx: StampContext, node: string, text: string): AppEvent[] =>
+  [base(ctx, 'node.field.set', node, { field: 'note', value: cleanNote(text) })];
+
 /** "This is due Thursday." A real, hard date — the immovable kind that Next-up
  *  ranks above everything computed. */
 export const setDueEvents = (ctx: StampContext, node: string, dayKey: string): AppEvent[] =>

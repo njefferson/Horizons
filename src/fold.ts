@@ -210,6 +210,18 @@ export interface State {
   lastActivityAt: ISODateTime | null;
 }
 
+/**
+ * The note a node carries, or null — the first real READER of `n.fields`
+ * (1.4.0). One definition, so the sheet, the importer tests, and any later
+ * surface agree on what "has a note" means: a non-empty string under the
+ * `note` field. An empty string is a REMOVED note (the honest clear) and
+ * reads as none.
+ */
+export const noteOf = (n: NodeState): string | null => {
+  const f = n.fields['note'];
+  return f && typeof f.value === 'string' && f.value !== '' ? f.value : null;
+};
+
 export const emptyState = (): State => ({
   nodes: new Map(),
   vaults: new Map(),

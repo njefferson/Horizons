@@ -1113,10 +1113,42 @@ dialog, dialog * { overflow-wrap: anywhere; }
 }
 .detail-inline { color: var(--ink-soft); font-size: 0.9375rem; }
 .detail-hint { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.875rem; }
+/* The note (1.4.0): same skin as the inputs, prose-shaped. Vertical resize
+   only — a horizontal drag could push the sheet past 320px (B-16's gate). */
+#detail-note {
+  display: block;
+  width: 100%;
+  min-height: calc(var(--target) * 1.6);
+  margin: 0 0 0.5rem;
+  padding: 0.4rem 0.6rem;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  resize: vertical;
+}
 
 /* The snapshot caveat: quieter than the offer above it, but never hidden — a
    calendar that silently goes stale would be the app implying it is live. */
 .about-caveat { color: var(--ink-soft); font-size: 0.9375rem; }
+
+/* The record itself (1.4.0). Lines WRAP — the (i) dialog's 320px overflow gate
+   holds for this list too, so nothing here may scroll sideways. Cures indent
+   under their cause and speak in the app's voice, slightly quieter. */
+.log-days { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+.log-day { margin: 0 0 1rem; }
+.log-day-title { margin: 0 0 0.35rem; font-size: 1rem; }
+.log-lines { list-style: none; margin: 0; padding: 0; }
+.log-line {
+  margin: 0 0 0.3rem;
+  overflow-wrap: anywhere;
+  font-size: 0.9375rem;
+}
+.log-cure {
+  margin-left: 1.25rem;
+  color: var(--ink-soft);
+}
 
 /* --- dependencies: what holds up what ------------------------------------- */
 .detail-feeds { list-style: none; margin: 0.5rem 0 0; padding: 0; }

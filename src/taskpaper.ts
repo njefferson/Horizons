@@ -32,12 +32,13 @@
 //   mood. Recording it as a fake clock would invent a demand nobody made.
 // - `@estimate`, `@context`, `@tags` other than the above are dropped for now, and
 //   the importer SAYS SO rather than quietly discarding them.
-// - **notes are NOT yet carried** — TaskPaper note lines are parsed and then
-//   dropped by the event mapper, and the CSV Notes column is not read at all.
-//   An earlier version of this header claimed notes were kept, which was false
-//   (audit): Noah's 1,445-row import lost every note body with the summary
-//   reporting zero. Until the note field ships (roadmapped, 1.4.0), the
-//   summary states the loss in plain words rather than a silent 0.
+// - **notes are carried** (1.4.0) — TaskPaper note lines attach to the item
+//   above them (consecutive lines join as one note; a leading note with no item
+//   to belong to is dropped and not counted), and the CSV Notes column lands in
+//   full. Both ride `node.field.set{field:'note'}` right after the row's
+//   creation. History: the first importer dropped every note silently (audit —
+//   a 1,445-row import lost every body with the summary reporting zero); 1.2.3
+//   stated the loss; this carries them.
 //
 // ## Dates
 //
@@ -49,6 +50,7 @@
 // PURE. No store, no clock of its own, no DOM.
 
 import type { AppEvent } from './events.ts';
+import { cleanNote } from './note.ts';
 import { endOfLocalDay, isValidIso, localDayKey, localParts, utcMs } from './time.ts';
 
 export interface ImportContext {
@@ -78,10 +80,9 @@ export interface TaskLine {
    *  they belong to — so a name is resolved by lookup, and a project named by a
    *  child but never listed itself is created rather than dropped. */
   parentName?: string;
-  /** CSV only: this row carried a Notes value. Counted so the summary can state
-   *  the loss — notes are not yet carried, and a silent zero about data in the
-   *  file is the lie the drops-are-named rule forbids. */
-  hasNote?: boolean;
+  /** CSV only: the row's Notes value, kept in full (1.4.0). TaskPaper notes
+   *  arrive as their own `kind: 'note'` lines instead, text in `title`. */
+  note?: string;
 }
 
 export interface ImportSummary {
@@ -251,8 +252,29 @@ export function taskPaperEvents(
     return id;
   };
 
+  /** The most recent item CREATED (or re-met), so a TaskPaper note line —
+   *  which belongs to the item above it by position, the only association the
+   *  format has — knows what it is a note ON. Consecutive note lines are ONE
+   *  note joined with newlines, emitted as a single `node.field.set`: two
+   *  events would be per-field LWW overwriting itself, keeping only the last
+   *  line. A note line before any item has nothing to belong to and is
+   *  dropped; the summary counts only what actually attaches. */
+  let lastItemId: string | null = null;
+  let noteBuf: string[] = [];
+  const flushNote = (): void => {
+    if (lastItemId !== null && noteBuf.length > 0) {
+      const value = cleanNote(noteBuf.join('\n'));
+      if (value !== '') stamp('node.field.set', lastItemId, { field: 'note', value });
+    }
+    noteBuf = [];
+  };
+
   for (const line of parsed) {
-    if (line.kind === 'note') continue;
+    if (line.kind === 'note') {
+      if (lastItemId !== null) noteBuf.push(line.title);
+      continue;
+    }
+    flushNote();
 
     // Named parent wins over indentation: a CSV row states its project outright,
     // and guessing from a synthesised depth would be inventing a fact.
@@ -278,6 +300,14 @@ export function taskPaperEvents(
         provenance: { for: 'self' },
         ...(parent === undefined ? {} : { parent }),
       });
+    }
+    lastItemId = id;
+
+    // A CSV row carries its note ON the line; TaskPaper notes arrive as the
+    // following note-lines and land through flushNote instead.
+    if (line.note !== undefined) {
+      const value = cleanNote(line.note);
+      if (value !== '') stamp('node.field.set', id, { field: 'note', value });
     }
 
     if (line.kind === 'project') {
@@ -310,6 +340,7 @@ export function taskPaperEvents(
     }
     if (line.done) stamp('done.marked', id, { at: ctx.at });
   }
+  flushNote();
   return out;
 }
 
@@ -418,8 +449,10 @@ export function parseOmniFocusCsv(text: string): { lines: TaskLine[]; unreadable
       // Only for non-projects, and only when named — a project claiming itself as
       // its own parent would be a cycle the write boundary would rightly refuse.
       ...(isProject || projectName === '' || projectName === title ? {} : { parentName: projectName }),
-      // Counted, not carried (yet). The summary owes the reader this number.
-      ...(pick(row, at, 'Notes', 'Note') !== '' ? { hasNote: true } : {}),
+      // Carried in full (1.4.0) — an earlier version read this cell and threw
+      // it away, losing every note in a 1,445-row export with the summary
+      // implying nothing was there (audit).
+      ...(pick(row, at, 'Notes', 'Note') !== '' ? { note: pick(row, at, 'Notes', 'Note') } : {}),
     });
   }
   return { lines, unreadable };
@@ -459,9 +492,13 @@ export function importSummary(
   return {
     projects: parsed.filter(l => l.kind === 'project').length,
     actions: parsed.filter(l => l.kind === 'action').length,
-    // Note LINES (TaskPaper) plus note-BEARING rows (CSV): everything in the
-    // file that is a note and does not come across. One number, stated.
-    notes: parsed.filter(l => l.kind === 'note' || l.hasNote).length,
+    // Notes that actually ATTACH (1.4.0): note-bearing CSV rows, plus TaskPaper
+    // note lines that follow an item — a note line before any item has nothing
+    // to belong to and is dropped, so counting it as carried would be the old
+    // lie with the sign flipped. Mirrors the mapper's own attachment rule.
+    notes: parsed.filter((l, i) =>
+      l.note !== undefined ||
+      (l.kind === 'note' && parsed.slice(0, i).some(p => p.kind !== 'note'))).length,
     done: parsed.filter(l => l.done).length,
     // Only dates that actually came across, so this number and the store agree.
     withDates: parsed.filter(live).length,
@@ -489,10 +526,10 @@ export function importWords(s: ImportSummary): string {
   if (s.done > 0) parts.push(`${s.done} already finished`);
   let out = `${parts.join(', ')}.`;
   if (s.notes > 0) {
-    // The loss, stated in full. A silent zero about note bodies that were in
-    // the file cost a 1,445-row import every note it had, with the summary
-    // implying nothing was there (audit).
-    out += ` ${s.notes === 1 ? 'One note was' : `${s.notes} notes were`} in the file — notes are not carried across yet, so ${s.notes === 1 ? 'it does' : 'they do'} not come with ${s.notes === 1 ? 'its item' : 'their items'}.`;
+    // Inverted at 1.4.0: notes come across now. The 1.2.3 version of this
+    // sentence stated the loss; before that, a silent zero cost a 1,445-row
+    // import every note it had (audit). The count is of notes that ATTACH.
+    out += ` ${s.notes === 1 ? 'One note comes' : `${s.notes} notes come`} across with ${s.notes === 1 ? 'its item' : 'their items'}, readable on each item's own sheet.`;
   }
   if (s.staleDates > 0) {
     // Said in full, because it is the single most surprising thing about importing

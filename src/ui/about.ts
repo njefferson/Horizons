@@ -32,6 +32,8 @@ import { KEY_KV } from '../sync-keys.ts';
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 import { deliverCopy } from './export-copy.ts';
+import { eventWords, isCure } from '../log-words.ts';
+import { localDayKey } from '../time.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 import { mountSecurity } from './security.ts';
 
@@ -651,6 +653,93 @@ export async function mountAbout(session: Session): Promise<void> {
         importBackup.disabled = false;
       }
     });
+  }
+
+  // --- the record itself (1.4.0, ADR-0048) ----------------------------------
+  //
+  // Read-only, behind its control, BUILT ON REVEAL — the coverage list's
+  // lesson: hidden DOM is still built DOM, and this list is the whole log.
+  // One `store.all()` per open (the same cost the purge count pays), rendered
+  // 50 lines at a time with the true total stated; the log is a RECORD, so
+  // counts are legal here (law 5 governs scores about work, not receipts).
+  // Days come newest first; within a day events read in the order they
+  // happened, so a cure sits under its cause.
+  const logOpen = document.querySelector<HTMLButtonElement>('#log-open');
+  const logView = document.querySelector<HTMLElement>('#log-view');
+  const logDays = document.querySelector<HTMLElement>('#log-days');
+  const logTotal = document.querySelector<HTMLElement>('#log-total');
+  const logMore = document.querySelector<HTMLButtonElement>('#log-more');
+  if (logOpen && logView && logDays && logTotal && logMore) {
+    const PAGE = 50;
+    /** Newest-day-first, within-day chronological — the render order. */
+    let ordered: AppEvent[] = [];
+    let shown = 0;
+    let lastDayEl: { day: string; list: HTMLElement } | null = null;
+
+    const renderMore = (): void => {
+      const st = session.state();
+      const titleOf = (id: string): string | null => st.nodes.get(id)?.title || null;
+      const page = ordered.slice(shown, shown + PAGE);
+      for (const e of page) {
+        const day = localDayKey(e.at, session.zone);
+        if (!lastDayEl || lastDayEl.day !== day) {
+          const li = document.createElement('li');
+          li.className = 'log-day';
+          const h = document.createElement('h4');
+          h.className = 'log-day-title';
+          h.textContent = new Date(e.at).toLocaleDateString(undefined, {
+            weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+            timeZone: session.zone,
+          });
+          const list = document.createElement('ol');
+          list.className = 'log-lines';
+          li.append(h, list);
+          logDays.append(li);
+          lastDayEl = { day, list };
+        }
+        const row = document.createElement('li');
+        row.className = isCure(e) ? 'log-line log-cure' : 'log-line';
+        const subject = e.node ? titleOf(e.node) : null;
+        row.textContent = subject
+          ? `“${subject}” — ${eventWords(e, session.zone, titleOf)}`
+          : eventWords(e, session.zone, titleOf);
+        lastDayEl.list.append(row);
+      }
+      shown += page.length;
+      const left = ordered.length - shown;
+      logMore.hidden = left <= 0;
+      if (left > 0) {
+        logMore.textContent = `Show 50 more — ${shown} of ${ordered.length} shown`;
+      }
+    };
+
+    logOpen.addEventListener('click', () => {
+      const opening = logView.hidden;
+      logView.hidden = !opening;
+      logOpen.setAttribute('aria-expanded', String(opening));
+      if (!opening) return;
+      void (async () => {
+        // Fresh on every open, so the record read is the record now.
+        const all = await session.store.all();
+        const byDay = new Map<string, AppEvent[]>();
+        for (const e of all) {
+          const day = localDayKey(e.at, session.zone);
+          const bucket = byDay.get(day);
+          if (bucket) bucket.push(e); else byDay.set(day, [e]);
+        }
+        // `all` is ascending, so insertion order of days is oldest→newest;
+        // reverse the DAYS and keep each day's own order.
+        ordered = [...byDay.values()].reverse().flat();
+        shown = 0;
+        lastDayEl = null;
+        logDays.replaceChildren();
+        logTotal.textContent = ordered.length === 1
+          ? 'One event — everything above is worked out from it.'
+          : `${ordered.length} events — everything above is worked out from these.`;
+        renderMore();
+      })();
+    });
+    logMore.addEventListener('click', renderMore);
   }
 
   // (The two ways out and the focus return are wired at the TOP of this function,

@@ -191,7 +191,18 @@ const REGISTRY = {
     // this sit" and it is stated as ordinary `--ink`, not a quieter token —
     // structural facts are not asides.
     '#detail-parent', '#detail-parent-set', '#detail-make-project',
-    '#detail-person', '#detail-relation', '#detail-person-set'],
+    '#detail-person', '#detail-relation', '#detail-person-set',
+    // 1.4.0: the note editor and the history disclosure's summary line — the
+    // textarea is the sheet's only multi-line input, no placeholder by design.
+    '#detail-note', '#detail-note-set', '#detail-history summary'],
+  // Per-node history, open (1.4.0). The cure lines are the quietest text in
+  // the whole app's story — --ink-soft, indented — and exactly the lines that
+  // explain the app's own writes, so they must clear the gate, not hide.
+  'detail sheet, history open': ['#detail-history summary',
+    '#detail-history-lines .log-line', '#detail-history-lines .log-cure'],
+  // The record itself, open behind (i) (1.4.0, ADR-0048). Day headings, the
+  // stated total, and the plain-words lines.
+  'log view': ['#log-open', '#log-total', '.log-day-title', '#log-days .log-line'],
   // The same sheet once something IS inside something. `#detail-place` renders
   // ONLY here, so it lives in its own registry entry rather than in the base
   // sheet — where it matched nothing and the gate said so, which is the check
@@ -419,9 +430,14 @@ async function auditTargets(page, stateName, theme) {
  *  modality, so what we measure is what a keyboard user is actually shown. */
 async function auditFocusRings(page, stateName, theme, selectors) {
   const remaining = new Set(selectors);
-  // Start from a clean slate, then walk forward with Tab.
+  // Start from a clean slate, then walk forward with Tab. The budget is a
+  // reachability proxy, sized to the DENSEST surface: the detail sheet's
+  // suspense control sat at stop ~40 once 1.4.0's note editor landed ahead of
+  // it, and the walk declaring it unreachable at 40 was the budget lying, not
+  // the sheet failing. 60 covers today's worst case with headroom; a control
+  // genuinely beyond that is a real finding.
   await page.evaluate(() => (document.activeElement)?.blur?.());
-  for (let i = 0; i < 40 && remaining.size > 0; i++) {
+  for (let i = 0; i < 60 && remaining.size > 0; i++) {
     await page.keyboard.press('Tab');
     const hit = await page.evaluate((sels) => {
       const el = document.activeElement;
@@ -621,6 +637,19 @@ try {
     await auditAxe(page, 'detail sheet', theme);
     await auditTargets(page, 'detail sheet', theme);
     await auditFocusRings(page, 'detail sheet', theme, ['#detail-date-set', '#detail-close', '#detail-feeds']);
+
+    // 1.4.0: the per-node history, open. The item on this sheet was captured,
+    // so its record holds a cure — the quiet indented line is guaranteed
+    // present, and the registry's .log-cure selector has something real to
+    // measure (a selector matching nothing visible FAILS, by design).
+    await page.click('#detail-history summary');
+    await page.waitForFunction(() =>
+      document.querySelectorAll('#detail-history-lines .log-line').length > 0);
+    await auditContrast(page, 'detail sheet, history open', theme);
+    await auditAxe(page, 'detail sheet, history open', theme);
+    await auditTargets(page, 'detail sheet, history open', theme);
+    await page.click('#detail-history summary');
+
     // B-04's hardest case, for the densest surface in the app.
     await page.setViewportSize({ width: 320, height: 568 });
     await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
@@ -1063,6 +1092,21 @@ try {
     await auditAxe(page, 'dialog, return visit', theme);
     await auditTargets(page, 'dialog, return visit', theme);
     await auditFocusRings(page, 'dialog, return visit', theme, ['#about-close', '#export', '#calendar', '#sample', '#purge-pick-clear', '#badge-toggle']);
+
+    // The record itself, open (1.4.0, ADR-0048). The store holds a real
+    // history by this point in the walk, so days, lines, and the total all
+    // have something to render. Collapsed again after, so the 320px dialog
+    // overflow check below measures the panel as a return visit sees it.
+    await page.click('#log-open');
+    await page.waitForSelector('#log-view:not([hidden])');
+    await page.waitForFunction(() =>
+      document.querySelectorAll('#log-days .log-line').length > 0);
+    await auditContrast(page, 'log view', theme);
+    await auditAxe(page, 'log view', theme);
+    await auditTargets(page, 'log view', theme);
+    await auditFocusRings(page, 'log view', theme, ['#log-open']);
+    await page.click('#log-open');
+    await page.waitForSelector('#log-view', { state: 'hidden' });
 
     // Today on paper, in the same panel.
     await auditContrast(page, 'today on paper', theme);

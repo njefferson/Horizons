@@ -435,6 +435,22 @@
     </p>
   </div>
 
+  <!-- The note (1.4.0) — what a thing carries beyond its one line. Shown and
+       edited HERE only; cards stay one line. Title-class content: plaintext in
+       exports exactly as titles are (ADR-0047), and nothing else reads it. -->
+  <div class="detail-group" id="detail-note-group">
+    <label class="detail-label" for="detail-note">Anything to keep with it?</label>
+    <textarea id="detail-note" rows="3" autocomplete="off" spellcheck="true"
+              aria-describedby="detail-note-hint"></textarea>
+    <div class="detail-row">
+      <button id="detail-note-set" type="button">Keep the note</button>
+    </div>
+    <p id="detail-note-hint" class="detail-hint">
+      Details, links, half-thoughts &mdash; it stays with the item and shows
+      only here. Clearing the box and keeping it removes the note.
+    </p>
+  </div>
+
   <div class="detail-group" id="detail-repeat-group">
     <span class="detail-label" id="detail-repeat-label">Make it repeat</span>
     <div class="detail-row" role="group" aria-labelledby="detail-repeat-label">
@@ -560,6 +576,17 @@
       says how you are doing &mdash; it holds the two numbers so you don&rsquo;t
       have to.
     </p>
+  </div>
+
+  <!-- Per-node history (1.4.0): the log filtered to this one thing, in plain
+       words, the app's own cures indented under their cause. The permanent
+       answer to "it feels lost" — nothing this app does to an item is ever
+       unexplained. Built on first open, not before. -->
+  <div class="detail-group">
+    <details id="detail-history" class="disclosure">
+      <summary>What happened to this</summary>
+      <ol id="detail-history-lines" class="log-lines"></ol>
+    </details>
   </div>
 
   <div class="detail-group">
@@ -826,6 +853,27 @@
     <strong>Replace everything</strong> throws away what is here and uses the copy
     instead &mdash; that is the one for a device you are setting up again.
   </p>
+
+  <!-- The record itself (1.4.0, ADR-0048). Read-only, behind this control,
+       never a landing surface. Built on reveal, not before — the coverage
+       list's lesson (hidden DOM is still built DOM). -->
+  <h3 class="about-section">The record itself</h3>
+  <p class="about-p">
+    Everything Quietkeep shows you is worked out fresh from one append-only
+    record of what happened. You can read that record &mdash; every line, in
+    plain words, newest day first. Looking changes nothing.
+  </p>
+  <div class="about-actions">
+    <button id="log-open" type="button" class="ghost" aria-expanded="false"
+            aria-controls="log-view">Read the record</button>
+  </div>
+  <div id="log-view" hidden>
+    <p id="log-total" class="storage-note"></p>
+    <ol id="log-days" class="log-days"></ol>
+    <div class="about-actions">
+      <button id="log-more" type="button" class="ghost" hidden></button>
+    </div>
+  </div>
 
   <h2 class="about-group">Extras</h2>
   <h3 class="about-section">One pass through your messages</h3>

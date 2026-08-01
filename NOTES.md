@@ -433,6 +433,36 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (later)** — **1.4.0 "What a thing carries, and what the app
+  did"** — the trust spine from the approved roadmap
+  ([ADR-0047](docs/adr/0047-the-note-field.md),
+  [ADR-0048](docs/adr/0048-the-log-viewer.md)).
+  · **Notes on items**: a textarea on the sheet riding
+  `node.field.set{field:'note'}` — the noun existed since Phase 0 with
+  per-field LWW folding and NOTHING ever read `n.fields`; `noteOf` is the
+  first real reader. `cleanNote` (src/note.ts) is shared with the importer:
+  keeps `\n`/`\t`, strips format/control, caps 10k. Privacy class fixed in
+  ADR-0047: title-class, plaintext in exports as titles are; the encryption
+  binding governs the journal, a different domain.
+  · **The importer carries notes**: the CSV Notes cell lands in full;
+  TaskPaper note lines attach to the item above them (consecutive lines join
+  as ONE `node.field.set` — two would be LWW overwriting itself); a leading
+  orphan note attaches to nothing and is not counted as carried. The summary
+  sentence inverted: "N notes come across with their items."
+  · **`eventWords`** (src/log-words.ts): one plain-words line per event,
+  total over all 84 kinds (totality test), "you" for deliberate acts, "the
+  app" for cures — which say why ("so it would not go silent") — and an
+  honest raw-name fallback for kinds newer than the build. Content never
+  rides along: a note/journal line says one was written, never what.
+  · **The log viewer** behind (i): read-only, newest day first, 50 per
+  reveal with the true total, built on reveal (the coverage-list lesson).
+  **Per-node history** on the sheet: "What happened to this", cures indented
+  under their cause — the permanent answer to "it feels lost", and the
+  surface whose absence let the OPR defect live unnoticed.
+  · Quiet sheet line: "sorted as ⟨route⟩". a11y: `log view` and
+  `detail sheet, history open` registry states + driver staging (the history
+  audited on a captured item so the cure line is guaranteed present); B-22.
+
 - **2026-08-01** — **`main` fast-forwarded to `19f4d1e` on Noah's "Promote and
   continue"**, carrying everything from 1.2.0 through 1.3.1: undo, search, the
   do-now and Next-up fixes, the "in project" place labels, the 1.2.3 trust
