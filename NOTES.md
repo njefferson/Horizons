@@ -433,6 +433,16 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (after 1.7.2)** — **`main` fast-forwarded to `e99aa80` on
+  Noah's "Promote"**, carrying 1.7.0 (folding duplicates, the twins range,
+  the lens), 1.7.1 (the panel says what it means; only lines that mean
+  something), and 1.7.2 (the panel folds, edition-truthful words, the
+  thesis opens and is styled, toggle labels state the next press). Spine
+  runs 172–174 were watched green on those exact heads before the
+  fast-forward; Deploy run 171 green on `main` at the same sha (V-10).
+  Both editions of everything he photographed this morning are now in
+  production.
+
 - **2026-08-01 (his second round of screenshots)** — **1.7.2** — Noah kept
   reading the panel and found five more, including two that had never been
   true anywhere.
