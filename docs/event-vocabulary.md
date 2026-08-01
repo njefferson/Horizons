@@ -413,6 +413,21 @@ The re-entry greeting is **bounded by schema**: `reentry.greeted.shown` has room
 for exactly Next-up, at most three triage items, and the gauge. There is no
 shape it could take that shows the backlog (law 8).
 
+### J · Wholesale acts (1.5.0)
+
+- **`range.acted`**
+  - Payload: `scope, verb, count` — `scope` is the LITERAL sentence the user
+    saw and agreed to (the consent-sentence rule: a key cannot reproduce what
+    was agreed to once the copy changes); `verb` the machine name
+    (`put-under | to-menu | park | let-go | bring-back | undo`); `count` the
+    number of items in THIS chunk. `node` is null.
+  - Silent risk: no — the ordinary events that follow it in the same chunk
+    carry their own risk and their own cures.
+  - Written FIRST in each chunk of a bulk act, so the log explains the pile of
+    ordinary events after it. Deliberately unfolded: the state change is
+    carried entirely by those events, and folding the receipt would count the
+    act twice. The log viewer and per-node history read it from the log.
+
 ---
 
 ## 4 · What the fold produces

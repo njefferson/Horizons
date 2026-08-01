@@ -42,6 +42,13 @@ const CLOCK_WORDS: Record<string, string> = {
   suspense: 'an answer-owed date', park: 'a parked-until date',
 };
 
+/** The bulk verbs' past-tense words — shared with the receipt copy. */
+const BULK_VERB_WORDS: Record<string, string> = {
+  'put-under': 'filed', 'to-menu': 'sent to the Menu', 'park': 'parked',
+  'let-go': 'let go of', 'bring-back': 'brought back as real work',
+  'undo': 'took back',
+};
+
 export function eventWords(
   e: AppEvent,
   zone: string,
@@ -214,6 +221,16 @@ export function eventWords(
     case 'reentry.greeted': return 'You came back, and the app said hello.';
     case 'amnesty.offered': return 'An amnesty was offered.';
     case 'amnesty.accepted': return 'You accepted the amnesty.';
+
+    // --- wholesale acts (1.5.0) ----------------------------------------------
+    case 'range.acted': {
+      const verb = str(p['verb']);
+      const c = num(p['count']);
+      const scope = str(p['scope']);
+      const did = BULK_VERB_WORDS[verb] ?? (verb || 'acted on');
+      const what = c === 1 ? 'one thing' : `${c ?? 'several'} things`;
+      return `You ${did} ${what} at once${scope ? ` — “${scope}”` : ''}.`;
+    }
 
     default:
       // An unmapped kind states its raw name rather than guessing — a future

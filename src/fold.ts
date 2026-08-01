@@ -800,14 +800,18 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         //
         // DELIBERATELY UNFOLDED, recorded so the omission reads as a decision
         // rather than an oversight: `do-now.timed` (emitted by the triage
-        // timer since 0.10.1) and `estimate.recorded` (emitted by the detail
+        // timer since 0.10.1), `estimate.recorded` (emitted by the detail
         // sheet since 1.3.0 — logged from v1 per NOTES.md because the data
-        // cannot be backfilled; the learning that reads it is v2). No surface
-        // reads a folded form of either, and this repo has already shipped the
-        // lesson that a field no surface reads is the log lying rather than
-        // merely silent (ADR-0031). The per-node history surface (roadmapped,
-        // 1.4.0) reads the LOG, not state, so both show there without a fold.
-        // Fold them only when a projection actually consumes them.
+        // cannot be backfilled; the learning that reads it is v2), and
+        // `range.acted` (1.5.0 — the bulk-act receipt; the state change is
+        // carried entirely by the ordinary events that follow it in the same
+        // chunk, and folding the receipt would be counting the act twice). No
+        // surface reads a folded form of any of these, and this repo has
+        // already shipped the lesson that a field no surface reads is the log
+        // lying rather than merely silent (ADR-0031). The log viewer and
+        // per-node history (1.4.0) read the LOG, not state, so all three show
+        // there without a fold. Fold them only when a projection actually
+        // consumes them.
         break;
     }
   }

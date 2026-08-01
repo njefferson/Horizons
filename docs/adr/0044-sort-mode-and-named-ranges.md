@@ -1,7 +1,11 @@
 # ADR-0044 · Sort mode: the second triage, over a range the user names
 
 **Status:** Accepted · **Date:** 2026-07-31 · **Amended:** 2026-07-31 (1.3.1 —
-the fresh check and the lap rule)
+the fresh check and the lap rule) · **Amended:** 2026-08-01 (1.5.0 — range
+FAMILIES: `runway` ranges carry the six routes and the runway bulk verbs;
+`menu` ranges exist now, carry promote semantics only, and never show the
+per-card conveyor — the six routes are illegal on wishes. The bulk-verbs
+paragraph under "What was deliberately not built" is superseded by ADR-0049.)
 
 ## Decision
 

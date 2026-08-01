@@ -111,6 +111,18 @@ export const matchingQuery = (state: State, query: string): NodeState[] =>
     .filter(sortable)
     .sort(oldestFirst);
 
+/**
+ * "On the Menu — [category]" (1.5.0). A SECOND predicate family, deliberately
+ * not `sortable`: a Menu item is a wish, the six routes are illegal on it
+ * (Menu-plus-clock is the state the gate's belt refuses), so these ranges
+ * carry BULK verbs only — bring back as real work, let go — and never the
+ * per-card conveyor. ADR-0044's amendment records the family split.
+ */
+export const menuItems = (state: State, category: string): NodeState[] =>
+  heldNodes(state)
+    .filter(n => n.onMenu === category && !n.lastDone)
+    .sort(oldestFirst);
+
 /** One choice in the picker: a sentence, a count, and the items behind them.
  *  The picker renders the first two and NEVER the third (law 8). */
 export interface RangeChoice {
@@ -118,6 +130,9 @@ export interface RangeChoice {
   words: string;
   count: number;
   items: () => NodeState[];
+  /** Which verbs may face these items: `runway` ranges take the six routes and
+   *  the runway bulk verbs; `menu` ranges take promote semantics only. */
+  family: 'runway' | 'menu';
 }
 
 /**
@@ -142,6 +157,7 @@ export function rangeChoices(getState: () => State, nowIso: () => string): Range
       words: 'Loose things brought in from another planner',
       count: loose.length,
       items: () => looseFromImport(getState()),
+      family: 'runway',
     });
   }
   const back = parkedAndBack(state, nowIso());
@@ -151,6 +167,7 @@ export function rangeChoices(getState: () => State, nowIso: () => string): Range
       words: 'Parked, and now back',
       count: back.length,
       items: () => parkedAndBack(getState(), nowIso()),
+      family: 'runway',
     });
   }
   for (const c of heldNodes(state).filter(isContainer)
@@ -162,6 +179,21 @@ export function rangeChoices(getState: () => State, nowIso: () => string): Range
       words: `Everything under ${c.title || '(untitled)'}`,
       count: under.length,
       items: () => underContainer(getState(), c.id),
+      family: 'runway',
+    });
+  }
+  // Menu ranges last: wishes after work, one per category that holds anything.
+  const cats = new Map<string, number>();
+  for (const n of heldNodes(state)) {
+    if (n.onMenu && !n.lastDone) cats.set(n.onMenu, (cats.get(n.onMenu) ?? 0) + 1);
+  }
+  for (const [cat, count] of [...cats.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
+    out.push({
+      key: `menu:${cat}`,
+      words: `On the Menu — ${cat}`,
+      count,
+      items: () => menuItems(getState(), cat),
+      family: 'menu',
     });
   }
   return out;

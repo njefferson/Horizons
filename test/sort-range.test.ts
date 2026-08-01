@@ -75,16 +75,17 @@ function menagerie(): State {
 
 // --- hygiene -----------------------------------------------------------------
 
-test('HYGIENE: no range can hold a person, bother, container, Menu item, or finished thing', () => {
+test('HYGIENE: no RUNWAY range can hold a person, bother, container, Menu item, or finished thing', () => {
   const s = menagerie();
-  const everyRange = [
+  const runway = [
     ...looseFromImport(s),
     ...underContainer(s, 'PROJ'),
     ...parkedAndBack(s, NOW),
     ...matchingQuery(s, 'a'),           // matches almost every title above
-    ...rangeChoices(() => s, () => NOW).flatMap(c => c.items()),
+    ...rangeChoices(() => s, () => NOW)
+      .filter(c => c.family === 'runway').flatMap(c => c.items()),
   ];
-  for (const n of everyRange) {
+  for (const n of runway) {
     assert.ok(sortable(n), `${n.id} entered a range without being sortable`);
     assert.ok(!['person', 'bother', 'project', 'aspiration', 'pebble'].includes(n.kind),
       `${n.id} (${n.kind}) must never see a route button`);
@@ -95,6 +96,24 @@ test('HYGIENE: no range can hold a person, bother, container, Menu item, or fini
   // The proof has teeth only if the menagerie actually contains the dangers:
   assert.ok(s.nodes.get('PER') && s.nodes.get('BOTH') && s.nodes.get('ASP')?.onMenu
     && s.nodes.get('ONMENU')?.onMenu && s.nodes.get('DONE')?.lastDone, 'fixture intact');
+});
+
+test('HYGIENE: a MENU range holds only live Menu items of its own category — and only menu ranges hold them (1.5.0)', () => {
+  const s = menagerie();
+  const choices = rangeChoices(() => s, () => NOW);
+  const menu = choices.filter(c => c.family === 'menu');
+  assert.ok(menu.length >= 2, 'the menagerie holds two categories (read, try)');
+  for (const c of menu) {
+    const cat = c.key.replace(/^menu:/, '');
+    for (const n of c.items()) {
+      assert.equal(n.onMenu, cat, `${n.id} is not on the Menu as ${cat}`);
+      assert.ok(!n.trashed && !n.mergedInto && !n.lastDone,
+        `${n.id} is gone or finished and must not be offered`);
+    }
+  }
+  // The family split is total: every choice declares one, and no runway
+  // choice leaks a Menu item (the belt above already proves the converse).
+  for (const c of choices) assert.ok(c.family === 'runway' || c.family === 'menu');
 });
 
 test('the loose-import range holds exactly the unfiled, unrouted, never-captured rows', () => {

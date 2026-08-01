@@ -17,7 +17,7 @@ import {
   DEMAND_FREE_KINDS, isKnownKind, isSilentRisk,
   type AppEvent, type EventKind, type NodeId, type NodeKind, type VaultId,
 } from './events.ts';
-import { applyEvent, cloneShell, compareEvents, fold, type NodeState, type State } from './fold.ts';
+import { applyEvent, cloneShell, compareEvents, compareOrdering, fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
 import { wouldCycle } from './dependencies.ts';
 import { wouldParentCycle } from './tree.ts';
@@ -106,6 +106,21 @@ export const silentNodes = (state: State): NodeState[] =>
  *  invariant, and a proof that contradicts itself proves nothing). */
 export const heldNodes = (state: State): NodeState[] =>
   [...state.nodes.values()].filter(n => !n.trashed && !n.mergedInto);
+
+/** Things let go — trashed, not merged away — newest decision first. The trash
+ *  view (1.5.0, ADR-0050) reads this; nothing else may treat these as work.
+ *  Beside `heldNodes` so the complement is visibly the complement. */
+export const trashedNodes = (state: State): NodeState[] =>
+  [...state.nodes.values()]
+    .filter(n => n.trashed && !n.mergedInto)
+    .sort((a, b) => {
+      const sa = a.stamps['trashed'], sb = b.stamps['trashed'];
+      if (sa && sb) {
+        const c = compareOrdering(sa, sb);
+        if (c !== 0) return -c;                       // newest first
+      }
+      return a.id < b.id ? 1 : -1;
+    });
 
 /** The coverage gauge (law 2). Reads 0 when the gate is doing its job. */
 export const coverageGauge = (state: State): { silent: number; total: number } => ({

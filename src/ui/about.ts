@@ -14,14 +14,15 @@
 
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
-import { exportAll, exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
+import { exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
 import { statusReport, renderReport, periodWords, reportedBefore, type ReportFormat } from '../delta.ts';
 import { commsNode } from '../comms.ts';
 import { printText } from './print.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
 import { highWaterMark } from '../snapshot.ts';
-import { heldNodes } from '../gate.ts';
+import { heldNodes, trashedNodes } from '../gate.ts';
+import type { NodeState } from '../fold.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
@@ -70,7 +71,12 @@ const el = <K extends keyof HTMLElementTagNameMap>(
   return n;
 };
 
-export async function mountAbout(session: Session): Promise<void> {
+export async function mountAbout(
+  session: Session,
+  /** Opens the detail sheet — the trash view's rows lead there and nowhere
+   *  else, because "Keep it after all" is the only verb the trash offers. */
+  openDetail?: (n: NodeState) => void,
+): Promise<void> {
   const dialog = document.querySelector<HTMLDialogElement>('#about');
   const open = document.querySelector<HTMLButtonElement>('#open-about');
   const intro = document.querySelector<HTMLElement>('#about-intro');
@@ -740,6 +746,49 @@ export async function mountAbout(session: Session): Promise<void> {
       })();
     });
     logMore.addEventListener('click', renderMore);
+  }
+
+  // --- things you let go (1.5.0, ADR-0050) ----------------------------------
+  //
+  // The fix for a standing honesty defect: the trash button has promised "You
+  // can still keep it after all" since Phase 3.5, and the button was reachable
+  // only while that sheet stayed open — once it closed, the node was off every
+  // surface and out of search, and the promise was false. This list is the way
+  // back. Capped at 25 with the true count stated; rows carry exactly ONE
+  // verb — open the sheet — so the trash never reads as a to-do list.
+  const trashOpen = document.querySelector<HTMLButtonElement>('#trash-open');
+  const trashView = document.querySelector<HTMLElement>('#trash-view');
+  const trashList = document.querySelector<HTMLElement>('#trash-list');
+  const trashTotal = document.querySelector<HTMLElement>('#trash-total');
+  if (trashOpen && trashView && trashList && trashTotal) {
+    const TRASH_CAP = 25;
+    const paintTrash = (): void => {
+      const rows = trashedNodes(session.state());
+      trashTotal.textContent = rows.length === 0
+        ? 'Nothing here — you have not let anything go.'
+        : rows.length === 1 ? 'One thing.'
+          : rows.length <= TRASH_CAP ? `${rows.length} things, newest first.`
+            : `${rows.length} things — the ${TRASH_CAP} most recent are shown.`;
+      trashList.replaceChildren(...rows.slice(0, TRASH_CAP).map(n => {
+        const li = document.createElement('li');
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'trash-row';
+        b.textContent = n.title || '(untitled)';
+        b.addEventListener('click', () => {
+          const fresh = session.state().nodes.get(n.id);
+          if (fresh) openDetail?.(fresh);
+        });
+        li.append(b);
+        return li;
+      }));
+    };
+    trashOpen.addEventListener('click', () => {
+      const opening = trashView.hidden;
+      trashView.hidden = !opening;
+      trashOpen.setAttribute('aria-expanded', String(opening));
+      if (opening) paintTrash();
+    });
   }
 
   // (The two ways out and the focus return are wired at the TOP of this function,

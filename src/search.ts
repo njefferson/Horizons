@@ -44,8 +44,10 @@ export interface SearchResult {
  * "Held" is `heldNodes` — not trashed, not merged away — which is the SAME set
  * the coverage gauge counts, so search and the gauge can never disagree about
  * what exists. A thing you decided was not a thing is gone by decision, not
- * lost, so the trash is deliberately not searched; undo is the way back from a
- * mistaken trashing, not search.
+ * lost, so the trash is deliberately not searched; the ways back from a
+ * mistaken trashing are the undo bar in the moment and "Things you let go"
+ * behind the (i) after it (1.5.0, ADR-0050) — never search, which must only
+ * ever answer about what you are holding.
  */
 export function searchHeld(state: State, query: string, cap = SEARCH_CAP): SearchResult {
   const q = normalize(query);

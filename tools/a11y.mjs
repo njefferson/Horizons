@@ -147,7 +147,19 @@ const REGISTRY = {
     '#sort-query', { sel: '#sort-query', pseudo: '::placeholder' }, '#sort-query-go', '#sort-close'],
   'sort card': ['#sort-entry', '#sort-card', '#sort-where',
     '#sort-actions .route', '#sort-actions .route-label', '#sort-actions .route-hint',
-    '#sort-back', '#sort-close'],
+    '#sort-back', '#sort-close', '#sort-act-all'],
+  // Wholesale (1.5.0, ADR-0049): the verbs, the preview sentence, the place
+  // filter's placeholder, and the run controls.
+  'sort bulk verbs': ['#sort-bulk-title', '#sort-bulk-verbs .route',
+    '#sort-bulk-verbs .route-label', '#sort-bulk-verbs .route-hint',
+    '#sort-bulk-preview', '#sort-bulk-go', '#sort-bulk-cancel', '#sort-bulk-export'],
+  // The destructive confirm, revealed by choosing Let-them-go — the
+  // purge-confirm rule: a control that only exists after a click is still a
+  // control somebody reads.
+  'sort bulk confirm': ['#sort-bulk-confirm .detail-inline', '#sort-bulk-word',
+    '#sort-bulk-preview', '#sort-bulk-go'],
+  // Things you let go (1.5.0, ADR-0050): the count and the one-verb rows.
+  'trash view': ['#trash-open', '#trash-total', '.trash-row'],
   // The picker's create-in-place offer, which only exists once unknown words
   // have been typed — a control someone meets mid-filing is still a control.
   'detail sheet, creating a place': ['#detail-parent-filter', '#detail-parent-create'],
@@ -1061,6 +1073,32 @@ try {
     await auditAxe(page, 'sort card', theme);
     await auditTargets(page, 'sort card', theme);
     await auditFocusRings(page, 'sort card', theme, ['#sort-card', '#sort-actions .route']);
+
+    // Wholesale (1.5.0): open the block, audit the verbs, then reveal the
+    // destructive confirm the way purge's is revealed — a control that only
+    // exists after a click is still a control. In-page clicks throughout, for
+    // the same repaint-race reason as triage.
+    await page.click('#sort-act-all');
+    await page.waitForSelector('#sort-bulk:not([hidden])');
+    await page.waitForSelector('#sort-bulk-verbs .route');
+    await auditContrast(page, 'sort bulk verbs', theme);
+    await auditAxe(page, 'sort bulk verbs', theme);
+    await auditTargets(page, 'sort bulk verbs', theme);
+    await auditFocusRings(page, 'sort bulk verbs', theme, ['#sort-bulk-verbs .route', '#sort-bulk-export']);
+    await page.waitForFunction(() => {
+      const b = [...document.querySelectorAll('#sort-bulk-verbs .route')]
+        .find(x => (x.textContent || '').includes('Let them go'));
+      if (b) { b.click(); return true; }
+      return false;
+    }, null, { timeout: 10000, polling: 200 });
+    await page.waitForSelector('#sort-bulk-confirm:not([hidden])');
+    await auditContrast(page, 'sort bulk confirm', theme);
+    await auditAxe(page, 'sort bulk confirm', theme);
+    await auditTargets(page, 'sort bulk confirm', theme);
+    await auditFocusRings(page, 'sort bulk confirm', theme, ['#sort-bulk-word']);
+    await page.click('#sort-bulk-cancel');
+    await page.waitForSelector('#sort-bulk', { state: 'hidden' });
+
     // A route removes the control it was on; focus must land somewhere REAL
     // (WCAG 2.4.3) — the entry line mid-range, the back button on completion —
     // never fall to <body>, in the mode built for a thousand consecutive
@@ -1081,6 +1119,19 @@ try {
       fail(`${theme}: after a sort route, focus landed on "${where}" instead of the entry line or back control`);
     }
     await page.click('#sort-close');
+
+    // Stage a trashed thing for the trash view (1.5.0): capture, find it,
+    // let it go through its own sheet — the app's real path, no seeding.
+    await page.fill('#capture', 'a thing let go');
+    await page.click('#capture-form button[type=submit]');
+    await page.fill('#search-input', 'thing let go');
+    await page.waitForSelector('#search-results .search-open');
+    await page.click('#search-results .search-open');
+    await page.waitForSelector('#detail[open]');
+    await page.click('#detail-trash');
+    await page.waitForSelector('#detail-untrash:not([hidden])');
+    await page.click('#detail-close');
+    await page.fill('#search-input', '');
 
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.
@@ -1107,6 +1158,18 @@ try {
     await auditFocusRings(page, 'log view', theme, ['#log-open']);
     await page.click('#log-open');
     await page.waitForSelector('#log-view', { state: 'hidden' });
+
+    // Things you let go, open (1.5.0, ADR-0050) — staged just above, so the
+    // one-verb row has something real to be. Collapsed after, like the record.
+    await page.click('#trash-open');
+    await page.waitForSelector('#trash-view:not([hidden])');
+    await page.waitForSelector('.trash-row');
+    await auditContrast(page, 'trash view', theme);
+    await auditAxe(page, 'trash view', theme);
+    await auditTargets(page, 'trash view', theme);
+    await auditFocusRings(page, 'trash view', theme, ['.trash-row']);
+    await page.click('#trash-open');
+    await page.waitForSelector('#trash-view', { state: 'hidden' });
 
     // Today on paper, in the same panel.
     await auditContrast(page, 'today on paper', theme);

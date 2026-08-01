@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.5.0 — CAPABILITY
+
+*2026-08-01*
+
+- **Act on a whole batch at once.** Inside &ldquo;Sort things out&rdquo;, any batch now takes wholesale acts: file them all under a place, send them all to the Menu, park them all until a day, or let them all go. You see the exact sentence of what will happen &mdash; counted from the real changes, including anything that cannot take the act and why &mdash; before anything is written, and one tap takes the whole act back.
+- **Nothing is ever swallowed on the way.** Sending dated things to the Menu sheds their dates visibly, letting things go saves a copy of everything first &mdash; before anything is touched, checked by machine &mdash; and the record explains every wholesale act in one line: what you did, to how many, in the very words you agreed to.
+- **Fixed: &ldquo;You can still keep it after all&rdquo; is now always true.** Letting something go used to be final the moment its sheet closed &mdash; the button that promised a way back was unreachable. &ldquo;Things you let go&rdquo;, behind the &#9432; panel, now lists everything you let go, newest first; open one and keep it after all. It is recovery, not an archive: nothing there nags, decays, or counts.
+- **Wishes get their own wholesale door.** Batches like &ldquo;On the Menu &mdash; read&rdquo; appear in the picker now, offering exactly what a wish can take: bring them all back as real work, or let them go. No dates, no filing &mdash; a wish holds no demands.
+- Also: &ldquo;Export a copy of these&rdquo; on any batch &mdash; a reading copy of those things and their history, honestly named as not-a-backup (the whole-store export remains the real one).
+
 ## 1.4.0 — CAPABILITY
 
 *2026-08-01*

@@ -643,7 +643,9 @@ export async function main(edition?: Edition): Promise<void> {
   // needs asking for — and never uninvited after that. Contained: a failure
   // here must not take capture down with it, or block readiness.
   try {
-    await mountAbout(session);
+    // The trash view's rows open the detail sheet — the same door every other
+    // list uses, and the one where "Keep it after all" lives.
+    await mountAbout(session, n => detail.open(n));
   } catch {
     // The (i) failing is a lost nicety; capture still works.
   }

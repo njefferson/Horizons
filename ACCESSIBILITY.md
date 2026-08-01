@@ -549,6 +549,28 @@ each added to the rendered gate in this same commit.**
   guarantees the selector something real to match (a selector matching nothing
   visible FAILS, per the B-08 registry rule).
 
+### B-23 · Wholesale acts and the trash view (1.5.0)
+
+**No new tokens; three new surfaces on the existing bindings, each in the
+rendered gate in this same commit.**
+
+- **The wholesale block** (`sort bulk verbs` state): verb buttons reuse the
+  route-button skin; the preview sentence is `detail-hint` class but carries
+  the act's terms — measured, not waved through. The place filter has a
+  placeholder, so it inherits the placeholder rule. A selected verb is marked
+  with `aria-pressed` AND a 2px `--ink` outline — never colour alone (B-01).
+- **The destructive confirm** (`sort bulk confirm` state): revealed by
+  choosing Let-them-go and audited OPEN, per the purge rule — a control that
+  only exists after a click is still a control somebody reads. The typed-word
+  box is the surface standing between a person and six-hundred decisions.
+- **Things you let go** (`trash view` state): rows are real buttons at full
+  target size on `--surface` with a `--line` border; the count line rides the
+  storage-note style. The driver stages a genuinely trashed item through the
+  app's own path (capture → sheet → let go), so the row the gate measures is
+  a real one.
+- The status line and receipt are `role="status"` live regions; the a11y
+  driver's tab-walk covers the new controls within the raised 60-stop budget.
+
 ---
 
 ## Part 2 — Findings register

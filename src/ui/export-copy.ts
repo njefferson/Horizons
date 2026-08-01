@@ -50,3 +50,40 @@ export async function deliverCopy(session: Session, scope = 'all', ext = 'json')
     payload: { at, scope, encrypted: false },
   } as AppEvent]);
 }
+
+/**
+ * A READING COPY of one range: these things and their history, verbatim
+ * (1.5.0). Deliberately NOT an `ExportFile` and not importable — a range's
+ * events in isolation cannot carry the coverage law 1 requires (the clocks
+ * and parents that cover them live outside the range), so a seedable partial
+ * file is not expressible; `inspectExport` refuses this format with honest
+ * words, and law 9 stays untouchable by construction. Same deliver-then-record
+ * ordering as every copy.
+ */
+export async function deliverRangeCopy(
+  session: Session, ids: ReadonlySet<string>, scope: string,
+): Promise<void> {
+  const at = new Date().toISOString();
+  const all = await session.store.all();
+  const mine = all.filter(e => e.node !== null && ids.has(e.node));
+  const file = {
+    format: 'planner-range-copy', version: 1, at, scope,
+    note: 'A reading copy of these things and their history. Not a backup and not importable — these events alone do not carry the coverage the store requires; "Export a copy" in the (i) panel is the whole-store way out.',
+    logJsonl: mine.map(e => JSON.stringify(e)).join('\n'),
+  };
+  const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = exportFilename('range-copy', at, false, 'json', session.zone);
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
+
+  await session.commit((ctx) => [{
+    id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+    kind: 'export.written', node: null,
+    payload: { at, scope, encrypted: false },
+  } as AppEvent]);
+}

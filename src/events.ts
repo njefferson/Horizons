@@ -204,6 +204,17 @@ export type ReentryGreeted   = Ev<'reentry.greeted',    { absenceDays: number; s
 export type AmnestyOffered   = Ev<'amnesty.offered',    { scope: string }>;
 export type AmnestyAccepted  = Ev<'amnesty.accepted',   { scope: string }>;
 
+// --- J · wholesale acts (1.5.0) ----------------------------------------------
+/** The receipt written FIRST in each chunk of a bulk act, so the log explains
+ *  the pile of ordinary events that follows it — without this, a wholesale
+ *  filing reads as 1,222 unexplained `node.parented` rows. `scope` is the
+ *  LITERAL sentence the user saw and agreed to (the `consent.granted`
+ *  `whatLeaves` precedent: a bare key cannot reproduce what was agreed to once
+ *  the copy changes); `verb` is the machine name; `count` is THIS chunk's
+ *  items. Not silent-risk — the constituent events carry their own risk and
+ *  their own cures. `node` is null: the receipt is about the act, not a node. */
+export type RangeActed       = Ev<'range.acted',        { scope: string; verb: string; count: number }>;
+
 export type AppEvent =
   | NodeCreated | NodeKindChanged | NodeFieldSet | NodeRenamed | NodeParented | NodeUnparented
   | NodeTrashed | NodeUntrashed | NodeMerged
@@ -224,7 +235,8 @@ export type AppEvent =
   | TerminologySkinApplied | TemplateLoaded | ShardCompacted
   | PersonCreated | PersonLinked | JournalEntryWritten | JournalTagAttached
   | MenuItemAdded | MenuItemRemoved | MenuItemPromoted | SaveForUpdated
-  | LapseMigrationRan | ReentryGreeted | AmnestyOffered | AmnestyAccepted;
+  | LapseMigrationRan | ReentryGreeted | AmnestyOffered | AmnestyAccepted
+  | RangeActed;
 
 export type EventKind = AppEvent['kind'];
 
@@ -250,6 +262,7 @@ export const EVENT_KINDS = [
   'person.created','person.linked','journal.entry.written','journal.tag.attached',
   'menu.item.added','menu.item.removed','menu.item.promoted','save-for.updated',
   'lapse.migration.ran','reentry.greeted','amnesty.offered','amnesty.accepted',
+  'range.acted',
 ] as const;
 
 const KIND_SET: ReadonlySet<string> = new Set(EVENT_KINDS);

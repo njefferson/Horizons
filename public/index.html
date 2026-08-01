@@ -315,7 +315,58 @@
     <div id="sort-actions" class="triage-actions"></div>
     <div id="sort-undo" class="triage-undo"></div>
     <div class="detail-row">
+      <button id="sort-act-all" type="button" class="ghost"
+              aria-expanded="false" aria-controls="sort-bulk">Act on all of these&hellip;</button>
       <button id="sort-back" type="button" class="ghost">Pick a different batch</button>
+    </div>
+
+    <!-- Wholesale acts (1.5.0, ADR-0049). The preview IS the dry run — its
+         sentence is counted from the real events — and the batch is exactly
+         what the single acts write, chunked, with a receipt first in every
+         chunk. Only "Let them go" takes a typed word; a copy is saved first. -->
+    <div id="sort-bulk" hidden>
+      <p class="detail-label" id="sort-bulk-title">All of them, at once</p>
+      <div id="sort-bulk-verbs" class="triage-actions" role="group"
+           aria-labelledby="sort-bulk-title"></div>
+      <div id="sort-bulk-under" class="detail-row" hidden>
+        <label class="visually-hidden" for="sort-bulk-parent-filter">Narrow the places</label>
+        <input id="sort-bulk-parent-filter" type="text" autocomplete="off"
+               spellcheck="false" placeholder="narrow the places&hellip;">
+        <label class="visually-hidden" for="sort-bulk-parent">The place</label>
+        <select id="sort-bulk-parent"></select>
+      </div>
+      <div id="sort-bulk-menucat" class="detail-row" hidden>
+        <label class="detail-inline" for="sort-bulk-category">as</label>
+        <select id="sort-bulk-category">
+          <option value="read">read</option>
+          <option value="try">try</option>
+          <option value="go">go</option>
+          <option value="make">make</option>
+          <option value="research">research</option>
+          <option value="save-for">save for</option>
+        </select>
+      </div>
+      <div id="sort-bulk-day" class="detail-row" hidden>
+        <label class="detail-inline" for="sort-bulk-date">until</label>
+        <input id="sort-bulk-date" type="date">
+      </div>
+      <p id="sort-bulk-preview" class="detail-hint"></p>
+      <div id="sort-bulk-confirm" class="detail-row" hidden>
+        <label class="detail-inline" for="sort-bulk-word">Type &ldquo;let go&rdquo; to confirm</label>
+        <input id="sort-bulk-word" type="text" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="detail-row">
+        <button id="sort-bulk-go" type="button" disabled>Do it</button>
+        <button id="sort-bulk-cancel" type="button" class="ghost">Never mind</button>
+        <button id="sort-bulk-export" type="button" class="ghost">Export a copy of these</button>
+      </div>
+      <p id="sort-bulk-status" class="storage-note" role="status" aria-live="polite"></p>
+      <div id="sort-bulk-receipt" hidden>
+        <p id="sort-bulk-outcome" class="about-p"></p>
+        <div class="detail-row">
+          <button id="sort-bulk-undo" type="button" class="ghost">Undo</button>
+        </div>
+      </div>
     </div>
   </div>
   <p id="sort-live" role="status" aria-live="polite" class="visually-hidden"></p>
@@ -873,6 +924,25 @@
     <div class="about-actions">
       <button id="log-more" type="button" class="ghost" hidden></button>
     </div>
+  </div>
+
+  <!-- Things you let go (1.5.0, ADR-0050). The trash holds DECISIONS, not
+       lapses — recovery, not an archive. Rows carry exactly one verb: open
+       the sheet, where "Keep it after all" has lived since Phase 3.5 and is
+       reachable at last. Never a to-do list; built on reveal. -->
+  <h3 class="about-section">Things you let go</h3>
+  <p class="about-p">
+    Letting go is a decision, and decisions can be revisited. Everything you
+    let go is here, newest first &mdash; open one and &ldquo;Keep it after
+    all&rdquo; brings it back with a clock of its own.
+  </p>
+  <div class="about-actions">
+    <button id="trash-open" type="button" class="ghost" aria-expanded="false"
+            aria-controls="trash-view">Things you let go</button>
+  </div>
+  <div id="trash-view" hidden>
+    <p id="trash-total" class="storage-note"></p>
+    <ul id="trash-list" class="trash-list"></ul>
   </div>
 
   <h2 class="about-group">Extras</h2>

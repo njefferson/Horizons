@@ -1150,6 +1150,29 @@ dialog, dialog * { overflow-wrap: anywhere; }
   color: var(--ink-soft);
 }
 
+/* Things you let go (1.5.0). Rows are real buttons opening the sheet — one
+   verb only — skinned like list rows, never like a to-do card. */
+.trash-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
+.trash-list li { margin: 0 0 0.4rem; }
+.trash-row {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.4rem 0.6rem;
+  text-align: left;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  overflow-wrap: anywhere;
+}
+
+/* The wholesale block (1.5.0): rides the sort dialog's existing skins; the
+   block itself just needs breathing room and a rule above it. */
+#sort-bulk { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+#sort-bulk-verbs .route[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 2px; }
+
 /* --- dependencies: what holds up what ------------------------------------- */
 .detail-feeds { list-style: none; margin: 0.5rem 0 0; padding: 0; }
 .detail-feed {

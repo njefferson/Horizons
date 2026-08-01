@@ -2936,6 +2936,178 @@ try {
   is(logDbCount, logTotalN, 'the stated total IS the store count — read-only, no drift');
   await tpage.click('#about-close');
 
+  console.log('\nWholesale — bulk acts on a named range (1.5.0)');
+  // Six loose rows, one carrying a real future due date — the batch shape, at
+  // fixture scale, with the date that must be SHED on a Menu landing.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.setInputFiles('#other-file', {
+    name: 'bulk.taskpaper', mimeType: 'text/plain',
+    buffer: Buffer.from('- Bulk me one\n- Bulk me two @due(2026-12-01)\n- Bulk me three\n- Bulk me four\n- Bulk me five\n- Bulk me six\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 5000 });
+  const bulkNav = tpage.waitForEvent('framenavigated');
+  await tpage.click('#other-go');
+  await bulkNav;
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // Enter the range and open the wholesale block.
+  await tpage.click('#sort-open');
+  await tpage.waitForSelector('#sort[open]');
+  await tpage.fill('#sort-query', 'Bulk me');
+  await tpage.click('#sort-query-go');
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  await tpage.click('#sort-act-all');
+  await tpage.waitForSelector('#sort-bulk:not([hidden])');
+
+  // FILE THEM: preview counted from the real plan, then the receipt, then undo.
+  await tpage.locator('#sort-bulk-verbs .route', { hasText: 'Put them under' }).click();
+  await tpage.fill('#sort-bulk-parent-filter', 'Sorted pile');
+  await tpage.waitForFunction(() =>
+    document.querySelectorAll('#sort-bulk-parent option').length === 2);
+  await tpage.selectOption('#sort-bulk-parent', { index: 1 });
+  await tpage.waitForFunction(() => /Put 6 things under “Sorted pile”/.test(
+    document.querySelector('#sort-bulk-preview')?.textContent ?? ''));
+  is(await tpage.locator('#sort-bulk-go').isEnabled(), true, 'the preview is ready and says so');
+  await tpage.click('#sort-bulk-go');
+  await tpage.waitForFunction(() => /Filed 6 things\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+  const bulkLog1 = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const created = rows.filter(e => e.kind === 'node.created' && /^Bulk me/.test(e.payload?.title ?? ''));
+    const ids = created.map(e => e.node);
+    const acted = rows.filter(e => e.kind === 'range.acted');
+    return {
+      actedCount: acted.length,
+      lastActed: acted[acted.length - 1]?.payload ?? null,
+      filed: rows.filter(e => e.kind === 'node.parented' && ids.includes(e.node)).length,
+    };
+  });
+  is(bulkLog1.actedCount >= 1, true, 'the receipt noun is in the log');
+  is(bulkLog1.lastActed?.verb, 'put-under', 'and it names the verb');
+  is(bulkLog1.lastActed?.count, 6, 'and the true count');
+  is(bulkLog1.filed, 6, 'six real filings — the receipt precedes exactly what it explains');
+
+  await tpage.click('#sort-bulk-undo');
+  await tpage.waitForFunction(() => /Taken back — 6 things restored\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+  is(await tpage.locator('#sort-bulk-undo').isHidden(), true, 'the undo is one-shot');
+
+  // TO THE MENU: the due date is shed on the way (the 1.3.1 belt, wholesale).
+  await tpage.locator('#sort-bulk-verbs .route', { hasText: 'To the Menu' }).click();
+  await tpage.selectOption('#sort-bulk-category', 'research');
+  await tpage.waitForFunction(() => /Send 6 things to the Menu — research/.test(
+    document.querySelector('#sort-bulk-preview')?.textContent ?? ''));
+  await tpage.click('#sort-bulk-go');
+  await tpage.waitForFunction(() => /Sent 6 things to the Menu\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+  const shed = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const two = rows.find(e => e.kind === 'node.created' && e.payload?.title === 'Bulk me two');
+    return rows.some(e => e.kind === 'clock.cleared' && e.node === two?.node
+      && e.payload?.clockKind === 'due');
+  });
+  is(shed, true, 'the due date came off as it landed — a wish holds no demands, wholesale too');
+
+  // The MENU RANGE: wishes take promote semantics only — no card, no routes.
+  await tpage.click('#sort-back');
+  await tpage.waitForSelector('#sort-picker:not([hidden])');
+  await tpage.locator('#sort-choices .sort-choice', { hasText: 'On the Menu — research' }).click();
+  await tpage.waitForSelector('#sort-bulk:not([hidden])');
+  is(await tpage.locator('#sort-card').isHidden(), true, 'a Menu range shows no conveyor card');
+  const menuVerbs = await tpage.locator('#sort-bulk-verbs .route .route-label').allTextContents();
+  is(menuVerbs.join('|'), 'Bring them back as real work|Let them go',
+    `promote semantics only (${JSON.stringify(menuVerbs)})`);
+  await tpage.locator('#sort-bulk-verbs .route', { hasText: 'Bring them back' }).click();
+  await tpage.waitForFunction(() => /Bring 6 things back from the Menu/.test(
+    document.querySelector('#sort-bulk-preview')?.textContent ?? ''));
+  await tpage.click('#sort-bulk-go');
+  await tpage.waitForFunction(() => /Brought 6 things back as real work\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+
+  // LET THEM GO: the typed word, the copy FIRST, and the way back at last.
+  await tpage.click('#sort-back');
+  await tpage.waitForSelector('#sort-picker:not([hidden])');
+  await tpage.fill('#sort-query', 'Bulk me');
+  await tpage.click('#sort-query-go');
+  await tpage.waitForSelector('#sort-card-region:not([hidden])');
+  await tpage.click('#sort-act-all');
+  await tpage.waitForSelector('#sort-bulk:not([hidden])');
+  await tpage.locator('#sort-bulk-verbs .route', { hasText: 'Let them go' }).click();
+  await tpage.waitForFunction(() => /Let 6 things go\./.test(
+    document.querySelector('#sort-bulk-preview')?.textContent ?? ''));
+  is(await tpage.locator('#sort-bulk-go').isEnabled(), false, 'the destructive verb waits for its word');
+  await tpage.fill('#sort-bulk-word', 'let it go');
+  await tpage.waitForTimeout(100);
+  is(await tpage.locator('#sort-bulk-go').isEnabled(), false, 'a near-miss does not unlock it');
+  await tpage.fill('#sort-bulk-word', 'Let Go ');
+  await tpage.waitForFunction(() =>
+    !document.querySelector('#sort-bulk-go')?.disabled);
+  await tpage.click('#sort-bulk-go');
+  await tpage.waitForFunction(() => /Let 6 things go\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+  const letGo = await tpage.evaluate(async () => {
+    const db = await new Promise((res, rej) => {
+      const r = indexedDB.open('quietkeep');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+    const rows = await new Promise((res, rej) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error);
+    });
+    const stamp = (e) => [e.at, e.device, e.seq];
+    const cmp = (a, b) => a[0] !== b[0] ? (a[0] < b[0] ? -1 : 1) : a[1] !== b[1] ? (a[1] < b[1] ? -1 : 1) : a[2] - b[2];
+    const exp = rows.filter(e => e.kind === 'export.written' && e.payload?.scope === 'before-letting-go')
+      .map(stamp).sort(cmp)[0] ?? null;
+    const firstTrash = rows.filter(e => e.kind === 'node.trashed' && e.payload?.reason === 'range:let-go')
+      .map(stamp).sort(cmp)[0] ?? null;
+    return { exp: exp !== null, trash: firstTrash !== null,
+      ordered: exp !== null && firstTrash !== null && cmp(exp, firstTrash) < 0 };
+  });
+  is(letGo.exp, true, 'the copy was recorded');
+  is(letGo.trash, true, 'the letting-go landed');
+  is(letGo.ordered, true, 'and the copy PRECEDES the first trashed event — machine-checked at last');
+  await tpage.click('#sort-close');
+
+  // THINGS YOU LET GO: the promise "keep it after all" is finally true.
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about[open]');
+  await tpage.click('#trash-open');
+  await tpage.waitForSelector('#trash-view:not([hidden])');
+  is(/6 things|things/.test(await tpage.locator('#trash-total').textContent() || ''), true,
+    'the trash states its true count');
+  await tpage.locator('#trash-list .trash-row', { hasText: 'Bulk me one' }).click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-untrash').isVisible(), true,
+    '"Keep it after all" is reachable after the sheet once closed — the standing defect is over');
+  await tpage.click('#detail-untrash');
+  await tpage.waitForFunction(() => {
+    const b = document.querySelector('#detail-untrash');
+    return b ? b.hidden : false;
+  });
+  await tpage.click('#detail-close');
+  await tpage.click('#trash-open');   // collapse
+  await tpage.click('#trash-open');   // re-open repaints
+  await tpage.waitForFunction(() => !/Bulk me one/.test(
+    document.querySelector('#trash-list')?.textContent ?? ''));
+  is(true, true, 'kept after all — and the trash view no longer lists it');
+  await tpage.click('#about-close');
+
   console.log('\nClearing things out — and the guard that has to actually guard');
   const purgeRows = () => tpage.locator('#cards .card').count();
   const logCount = () => tpage.evaluate(async () => {

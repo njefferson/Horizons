@@ -433,6 +433,42 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (night)** — **1.5.0 "Wholesale"** — bulk acts on named ranges
+  ([ADR-0049](docs/adr/0049-wholesale-acts.md)), the trash view
+  ([ADR-0050](docs/adr/0050-things-you-let-go.md)), range export as a reading
+  copy. Two of Noah's decisions govern it: the soak-gate is removed (*"I know
+  how a planner should work unless you don't think the data has been
+  tested?"* — and it IS tested: the oracle, 737 unit tests, two audits), and
+  notes recovery is his option (b), on his timing (*"I will reimport all of
+  Omnifocus when I want it"*) — no repair tool, ever.
+  · **One new noun**, the roadmap's only one: `range.acted{scope, verb,
+  count}`, written first in each chunk, `scope` the literal sentence agreed
+  to (the consent-sentence rule). Deliberately unfolded.
+  · **The machinery**: `planBulk`/`runBulk`/`undoBulk` (src/ui/bulk-intents)
+  — byte-parity with the single intents (property-tested), the app's first
+  chunked commits (~500 events each on the session's serialising queue), a
+  per-chunk fresh check that skips-and-counts what moved on, and undo from
+  facts captured at act time (the exact prior parent, the prior category).
+  · **Two conflicts ruled on in ADR-0049**: receipts (counts of the APP's
+  work) are legal during and after a bulk act, scores about the person never
+  — law 5 stands unweakened; and Let-them-go auto-exports BEFORE the first
+  trashed event (the migration precedent), with the ordering machine-checked
+  by smoke — the repo's first export-before-destruction assertion.
+  · **Range families**: `menu` ranges join the picker (promote semantics
+  only, no conveyor — the six routes are illegal on wishes; ADR-0044
+  amended). Hygiene tests split per family.
+  · **The trash view is a FIX**: "You can still keep it after all" had been
+  true for ten seconds — `#detail-untrash` was reachable only while the
+  sheet stayed open, then no path back existed at all. "Things you let go"
+  (25 + true count, one verb per row: open the sheet) is the path;
+  `trashedNodes` beside `heldNodes`; search stays trash-free with its
+  comment amended in the same commit.
+  · **Range export is a rendering** (`planner-range-copy`): a range's events
+  alone cannot fold legally under law 1, so a seedable partial file is not
+  expressible — the reading copy is refused for import by construction and
+  law 9 is untouchable. The scout also found `exportAll` imported dead in
+  about.ts since the deliverCopy extraction — swept.
+
 - **2026-08-01 (later)** — **1.4.0 "What a thing carries, and what the app
   did"** — the trust spine from the approved roadmap
   ([ADR-0047](docs/adr/0047-the-note-field.md),
