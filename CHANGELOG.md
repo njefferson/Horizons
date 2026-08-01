@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.9.2 — ITERATION
+
+*2026-08-01*
+
+- **Fixed: folding a duplicate quietly took things with it.** When you folded one thing into another, what had been *decided* about the folded one — and the record that you had *declined* it — stopped appearing anywhere: not on the surviving thing’s sheet, not in the Not Now ledger, not in your status report. **Nothing was ever deleted.** Those records were kept the whole time and simply had nowhere to show. Both are visible again: the thing that stays now shows what was decided about either of them, and something you declined and later folded keeps its place in the ledger, saying where it lives now.
+- **A fold also used to go quiet on you.** If you declined something and it was parked until later, folding it into work you *were* carrying handed that work the silence without the reason — it just stopped appearing, with nothing to explain why. It does not do that any more. An ordinary “come back to this on Thursday” still comes across, as it should.
+- **And a fold now brings across what the folded thing fed.** “Start this by Tuesday, because the launch waits on it” used to disappear when you folded a duplicate — in both directions. It comes across now, along with the thing’s rhythm, who is running it, what is put by for it, who it is with, and its place in today if it had one. Where something cannot come across — because it would have meant two things each waiting for the other — it says so instead of dropping it.
+- **Folding is only offered where it can land.** Something carrying a date is no longer offered a wish or a someday item as the thing that stays; that used to fail *after* you had chosen. Two wishes still fold together, which is the commonest pair there is.
+- **And the way back is reachable however deep it goes.** If you folded A into B and later folded B into C, A’s “split it back out” had nowhere to be reached from. It is on the sheet now.
+- **Fixed: “Clear what I am holding” would not run at all if you had folded a duplicate.** Not slowly, not partly — it refused, every time, for anyone who had folded two things together and left them folded. It has been like that since folding arrived, and nothing in this app’s own checks had ever tried the two together. It works now, and the thing you folded away is let go with the rest of it.
+- Under the surface: the checks that guard all of this were rebuilt so this cannot happen again. Every piece of information a thing holds must now say, in writing, what a fold does with it — and the app will not build until it does. Two of this app’s own tests had quietly stopped covering what their names promised, and both were widened; one of them found the clearing bug above within minutes of being widened.
+
 ## 1.9.1 — ITERATION
 
 *2026-08-01*

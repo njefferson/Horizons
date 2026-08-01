@@ -35,8 +35,9 @@ import { people as peopleNodes, withWhom, openDays, waitingWords, isOpenWaiting 
 import { dependencyView, dependencyWords, wouldCycle } from '../dependencies.ts';
 import { legalParents, childrenOf, placeWords, isContainer } from '../tree.ts';
 import { eventWords, isCure } from '../log-words.ts';
-import { choosable, composedFull, todayIsOn } from '../composed.ts';
-import { foldedInto, legalMergeTargets, mergeEvents, unmergeEvents } from './merge-intents.ts';
+import { choosable, chosenToday, composedFull, todayIsOn } from '../composed.ts';
+import { canHold, legalMergeTargets, mergePlan, unmergeEvents } from './merge-intents.ts';
+import { decisionsFor, foldedIntoDeep } from '../merged.ts';
 import { carryEvents, declineEvents, parkToSlotEvents } from './request-intents.ts';
 import { nextSlotOccurrence, slotDayWords, slotOf } from '../requests.ts';
 import { stakeholdersOf } from '../people.ts';
@@ -217,8 +218,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
         return li;
       }));
     }
-    const rows = [...n.decisions].sort((a, b) =>
-      (a.at < b.at ? 1 : a.at > b.at ? -1 : a.id < b.id ? -1 : 1));
+    // Through the fold (1.9.2): what was decided about this AND about
+    // everything folded into it. Until then a fold silently took the source's
+    // decision log off every surface. `decisionsFor` owns the total order.
+    const rows = decisionsFor(st, n);
     if (decisionCount) {
       decisionCount.textContent = rows.length === 0 ? ''
         : rows.length === 1 ? 'One decision, kept.'
@@ -236,7 +239,12 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
         const day = new Intl.DateTimeFormat('en-GB', {
           timeZone: session.zone, day: 'numeric', month: 'short',
         }).format(new Date(d.at));
-        when.textContent = d.meeting ? `${day} · ${d.meeting}` : day;
+        // Attributed when it was decided about something folded in — the
+        // sheet already lists what folded in, so an unattributed row would
+        // invite reconciling two lists that do not line up.
+        const from = d.from ? st.nodes.get(d.from)?.title || '(untitled)' : null;
+        when.textContent = [day, d.meeting, from ? `from ${from}` : null]
+          .filter(Boolean).join(' · ');
         li.append(text, when);
         return li;
       }));
@@ -288,13 +296,17 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
 
   /** Commit, then re-read the node from fresh state — never from the stale copy
    *  the sheet was opened with, which would render yesterday's answer. */
-  const run = async (make: Parameters<Session['commit']>[0], announce: string): Promise<void> => {
+  // `announce` may be a thunk so a handler can say what the batch actually did
+  // — the merge names an edge that could not come across (1.9.2).
+  const run = async (
+    make: Parameters<Session['commit']>[0], announce: string | (() => string),
+  ): Promise<void> => {
     if (!current || busy) return;
     busy = true;
     const id = current.id;
     try {
       await session.commit(make);
-      LIVE.textContent = announce;
+      LIVE.textContent = typeof announce === 'function' ? announce() : announce;
     } catch (err) {
       say(`Couldn’t do that — ${(err as Error).message}`);
     } finally {
@@ -514,7 +526,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       const stakes = stakeholdersOf(session.state(), n);
       const container = isContainer(n) && !n.trashed && !n.onMenu;
       grp('#detail-stakeholder-group', container || stakes.length > 0);
-      grp('#detail-decision-group', container || n.decisions.length > 0);
+      // Visibility asks the SAME reader as the content (1.9.2). `n.decisions`
+      // alone would hide the group on a survivor whose only decisions came
+      // from something folded into it — the list full and the group closed.
+      grp('#detail-decision-group', container || decisionsFor(session.state(), n).length > 0);
       // The editor goes when a thing is let go; the record stays readable.
       show('#detail-decision-set', !n.trashed);
       if (decisionInput) decisionInput.hidden = n.trashed;
@@ -535,7 +550,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     grp('#detail-unmerge-group', Boolean(n.mergedInto));
     if (!n.trashed && !n.mergedInto) paintMergeTargets(n);
     {
-      const folded = foldedInto(session.state(), n.id);
+      // TRANSITIVE (1.9.2): in a chain A -> B -> C, one hop left A's "split it
+      // back out" reachable from no surface at all. ADR-0053 says the way back
+      // must outlive the sitting — for every node in the chain, not just the last.
+      const folded = foldedIntoDeep(session.state(), n.id);
       grp('#detail-merged-group', folded.length > 0);
       if (mergedList) {
         mergedList.replaceChildren(...folded.map(f => {
@@ -565,7 +583,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       grp('#detail-today-group', on);
       if (on) {
         const iso = new Date(now()).toISOString();
-        const chosenNow = n.todayFor !== null && n.todayFor === localDayKey(iso, session.zone);
+        const chosenNow = chosenToday(stNow, n.id, iso, session.zone);
         show('#detail-today-add', !chosenNow);
         show('#detail-today-remove', chosenNow);
         const add = btn('#detail-today-add');
@@ -686,9 +704,27 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       paintMergeTargets(current);
       return;
     }
+    // The SECOND lock (1.9.2). Legality was computed when the list was built,
+    // but the sheet can sit open while the world moves — the target may have
+    // gone onto the Menu since. Ask the gate's own predicate again rather than
+    // hand it a batch it must refuse.
+    if (!canHold(target, source)) {
+      say('That one is on the list of wishes now — a wish holds no demands.');
+      paintMergeTargets(current);
+      return;
+    }
     const title = target.title || '(untitled)';
-    void run(ctx => mergeEvents(ctx, session.state(), source, target),
-      `Folded into “${title}”. Splitting it back out is right below.`);
+    // Built once so the words can name what could not come across. A skip
+    // nobody is told about is the silent swallow this release exists to end.
+    let skippedFeeds = 0;
+    void run(ctx => {
+      const plan = mergePlan(ctx, session.state(), source, target);
+      skippedFeeds = plan.skipped.feeds.length;
+      return plan.events;
+    }, () => skippedFeeds === 0
+      ? `Folded into “${title}”. Splitting it back out is right below.`
+      : `Folded into “${title}”. One thing it fed could not come across — `
+        + 'that would have made two things each wait for the other.');
   });
   btn('#detail-unmerge')?.addEventListener('click', () => {
     void run(ctx => unmergeEvents(ctx, current!.id),

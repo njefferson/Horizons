@@ -3,17 +3,35 @@
 // Named by the finding so a future reader can trace it.
 
 import { test } from 'node:test';
+import { readdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 
-import { admit, GateRejection, isSilent, silentNodes, coverageGauge } from '../src/gate.ts';
+import { admit, GateRejection, heldNodes, isSilent, silentNodes, coverageGauge } from '../src/gate.ts';
 import { endOfDayKey } from '../src/ui/detail-intents.ts';
 import { localDayKey } from '../src/time.ts';
 import { fold, emptyState, compareEvents, type State } from '../src/fold.ts';
-import { serialiseState } from '../src/snapshot.ts';
+import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
 import { writeSnapshot, loadState, restoreFromLogAlone } from '../src/snapshot.ts';
 import { importSeedingFresh, exportAll } from '../src/portability.ts';
-import type { AppEvent } from '../src/events.ts';
+import { clearEvents } from '../src/purge.ts';
+import { SILENT_RISK_KINDS, isKnownKind, type AppEvent } from '../src/events.ts';
+import { GENERATED_KINDS, lcg, randomEvent, seedState } from './random-events.ts';
+import { MERGE_DISPOSITION, canHold, legalMergeTargets, mergeEvents, mergePlan, unmergeEvents } from '../src/ui/merge-intents.ts';
+import { statusReport } from '../src/delta.ts';
+import { dependencyView } from '../src/dependencies.ts';
+import { decisionsFor } from '../src/merged.ts';
+import { notNowLedger } from '../src/requests.ts';
+import { declineEvents } from '../src/ui/request-intents.ts';
+
+/** A stamp context for the merge intent — ids are ULID-shaped so the
+ *  newest-fold-first ordering in merged.ts behaves as it does in the app. */
+let cn = 0;
+const ctx = () => ({
+  id: () => `01K0000000000000000000${String(cn++).padStart(2, '0')}`,
+  vault: 'personal', at: '2026-07-28T12:00:00.000Z', device: 'd0', seq: () => n++,
+  zone: 'America/Denver',
+});
 
 let n = 0;
 const ev = (kind: string, node: string | null, payload: unknown, over: Partial<AppEvent> = {}): AppEvent => ({
@@ -236,4 +254,391 @@ test('export-roundtrip: a faithful export re-imports cleanly and re-folds identi
     JSON.parse(JSON.stringify(serialiseState(fold(await store.all())))),
     'round-tripped state is identical',
   );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 1.9.2 — the audit of 1.4.0–1.9.1. See docs/adr/0058-what-a-fold-takes-with-it.md
+// ─────────────────────────────────────────────────────────────────────────────
+
+test('merge-carry: every NodeState field is named in the fold\'s disposition', () => {
+  // THE DURABLE HALF. 1.7.0 wrote the carry as a hand-written list; 1.8.0 added
+  // notNow, 1.9.0 added decisions, and feeds was never in it — none of them
+  // visited merge-intents.ts, and each omission silently destroyed something on
+  // the next fold. `Record<keyof NodeState, Disposition>` makes that a compile
+  // error, and this re-checks at runtime because an OPTIONAL field would slip
+  // past the type alone.
+  const genesis = fold([ev('node.created', 'X', { nodeKind: 'action', title: 'x' }, { seq: 0 })]).nodes.get('X')!;
+  const fields = Object.keys(genesis).sort();
+  const named = Object.keys(MERGE_DISPOSITION).sort();
+  assert.deepEqual(named, fields,
+    'every NodeState field must be named as carried, read-through, or deliberately not carried');
+
+  // And every entry must actually say something. A disposition with an empty
+  // reason is the hand-written list again, wearing the gate's clothes.
+  for (const [k, d] of Object.entries(MERGE_DISPOSITION)) {
+    const words = d.carry === 'no' ? d.because : d.carry === 'read' ? d.via : `${d.via} ${d.when}`;
+    assert.ok(words.trim().length > 20, `${k}: the disposition must state a reason, not a shrug`);
+  }
+});
+
+test('three-place: a mutable field is copied on clone, copied on deserialise, and defaulted for an old snapshot', () => {
+  // The rule the repo already records ("copy-on-clone, copy-on-store-from-
+  // payload AND default-on-deserialise") stated GENERICALLY, so it needs no
+  // field list and cannot go stale. Note this proves SHALLOW non-aliasing: a
+  // nested object inside a copied container (a Clock inside `clocks`,
+  // `fields[k].value`) is still shared, deliberately — every write replaces
+  // those wholesale rather than mutating them.
+  const zone = 'America/Denver';
+  let s = write(emptyState(), [ev('node.created', 'A', { nodeKind: 'action', title: 'a' }, { seq: 0 })]);
+  s = write(s, [
+    ev('clock.set', 'A', { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' }, { seq: 1 }),
+    ev('person.created', 'PER', { name: 'Ada' }, { seq: 2 }),
+  ]);
+  s = write(s, [ev('person.linked', 'A', { node: 'A', person: 'PER', relation: 'stakeholder' }, { seq: 3 })]);
+  s = write(s, [ev('decision.logged', 'A', { text: 'go ahead', at: '2026-07-28T12:00:00.000Z' }, { seq: 4 })]);
+  s = write(s, [ev('request.declined', 'A', { person: 'PER', what: 'a', reason: 'detail' }, { seq: 5 })]);
+  s = write(s, [ev('node.field.set', 'A', { field: 'note', value: 'n' }, { seq: 6 })]);
+  s = write(s, [ev('request.slot.set', null, { recurrence: 'weekly:thu' }, { seq: 7 })]);
+
+  const objectKeys = (o: Record<string, unknown>): string[] =>
+    Object.keys(o).filter(k => o[k] !== null && typeof o[k] === 'object');
+
+  // (1) Clone-on-write: folding a touching event must not share any container
+  // with the base. Catches the 1.8.0 `notNow` alias.
+  const base = s.nodes.get('A')!;
+  const after = fold([ev('heat.set', 'A', { heat: 'hot' }, { seq: 8 })], s).nodes.get('A')!;
+  for (const k of objectKeys(base as unknown as Record<string, unknown>)) {
+    assert.notEqual((after as unknown as Record<string, unknown>)[k], (base as unknown as Record<string, unknown>)[k],
+      `${k} is aliased into the base state on clone`);
+  }
+
+  // (2) Deserialise must not alias the record it read.
+  const raw = JSON.parse(JSON.stringify(serialiseState(s)));
+  const back = deserialiseState(raw);
+  const rawNode = raw.nodes.find((x: { id: string }) => x.id === 'A');
+  for (const k of objectKeys(rawNode)) {
+    assert.notEqual((back.nodes.get('A') as unknown as Record<string, unknown>)[k], rawNode[k],
+      `${k} is aliased to the snapshot record on deserialise`);
+  }
+  assert.notEqual(back.requestSlot, raw.requestSlot, 'State-level requestSlot is aliased on deserialise');
+
+  // (3) Default-on-deserialise: a snapshot written before a field existed. Key
+  // PRESENCE and non-undefined, NOT equality with genesis — `captured ?? true`
+  // is a deliberate legacy-correct default that differs from genesis on purpose.
+  const genesisKeys = Object.keys(
+    fold([ev('node.created', 'G', { nodeKind: 'action', title: 'g' }, { seq: 0 })]).nodes.get('G')!,
+  ).sort();
+  const stripped = JSON.parse(JSON.stringify(serialiseState(s)));
+  stripped.nodes = [{ id: 'A', vault: 'personal' }];
+  const old = deserialiseState(stripped).nodes.get('A')!;
+  assert.deepEqual(Object.keys(old).sort(), genesisKeys, 'an old snapshot yields the full field set');
+  for (const [k, v] of Object.entries(old)) {
+    assert.notEqual(v, undefined, `${k} deserialises to undefined where the type promises a value`);
+  }
+  void zone;
+});
+
+test('merge-record: a fold does not swallow the source\'s decisions or its standing decline', () => {
+  // F-A. 1.7.0's merge carries the date, the note, the people and the children
+  // — a list written when those four WERE everything. 1.8.0 added the standing
+  // decline and 1.9.0 the decision log, and neither release visited the merge.
+  // Both readers exclude merged nodes, so folding a duplicate made both vanish
+  // from every surface while the log still held them.
+  let s = write(emptyState(), [
+    ev('node.created', 'DUP', { nodeKind: 'action', title: 'call the dentist' }, { seq: 0 }),
+    ev('node.created', 'KEEP', { nodeKind: 'action', title: 'call the dentist' }, { seq: 1 }),
+    ev('person.created', 'ADA', { name: 'Ada' }, { seq: 2 }),
+  ]);
+  s = write(s, [ev('decision.logged', 'DUP', { text: 'go with the crown', at: '2026-07-28T12:00:00.000Z' }, { seq: 3 })]);
+  s = write(s, declineEvents(ctx(), s, s.nodes.get('DUP')!));
+
+  assert.equal(decisionsFor(s, s.nodes.get('DUP')!).length, 1, 'precondition: the decision is on the duplicate');
+  assert.equal(notNowLedger(s).length, 1, 'precondition: the decline is in the ledger');
+
+  s = write(s, mergeEvents(ctx(), s, s.nodes.get('DUP')!, s.nodes.get('KEEP')!));
+
+  // The decision: read THROUGH the fold, attributed to where it was logged.
+  const kept = decisionsFor(s, s.nodes.get('KEEP')!);
+  assert.equal(kept.length, 1, 'the survivor surfaces what was decided about the thing folded into it');
+  assert.equal(kept[0]!.text, 'go with the crown');
+  assert.equal(kept[0]!.from, 'DUP', 'and says which folded-in thing it was decided about');
+
+  // The decline: still in the ledger, now saying where it lives.
+  const rows = notNowLedger(s);
+  assert.equal(rows.length, 1, 'the decline did not vanish when the thing folded away');
+  assert.equal(rows[0]!.node.id, 'DUP', 'the row is still the declined thing — its way back is on its own sheet');
+  assert.equal(rows[0]!.host?.id, 'KEEP', 'and it names where that thing lives now');
+
+  // And the survivor is NOT itself declined. Folding a declined duplicate into
+  // live work must never mark the live work declined — that is the swallow
+  // pointing the other way, and it would be the fold deciding the survivor's
+  // standing (which ADR-0053 forbids in the same breath as overwriting a date).
+  assert.equal(s.nodes.get('KEEP')!.notNow, null, 'the survivor is not declined by the fold');
+});
+
+test('merge-record: the decline\'s park is not carried onto the survivor', () => {
+  // F-A'. `park` is in CARRY_CLOCKS, so a declined-and-parked duplicate used to
+  // park the survivor with reason 'merge:carried' — the decline's MECHANISM
+  // arriving without its RECORD, so live work went quiet with nothing on any
+  // surface explaining why. A decline's park is the decline, not a date.
+  let s = write(emptyState(), [
+    ev('node.created', 'DUP', { nodeKind: 'action', title: 'a' }, { seq: 0 }),
+    ev('node.created', 'KEEP', { nodeKind: 'action', title: 'a' }, { seq: 1 }),
+  ]);
+  s = write(s, declineEvents(ctx(), s, s.nodes.get('DUP')!));
+  assert.ok(s.nodes.get('DUP')!.clocks.park, 'precondition: the gate parked the decline');
+
+  s = write(s, mergeEvents(ctx(), s, s.nodes.get('DUP')!, s.nodes.get('KEEP')!));
+  assert.equal(s.nodes.get('KEEP')!.clocks.park, undefined, 'the decline\'s park stayed with the decline');
+
+  // But an ORDINARY park — a real "come back to this on Thursday" — still carries.
+  let t = write(emptyState(), [
+    ev('node.created', 'D2', { nodeKind: 'action', title: 'b' }, { seq: 0 }),
+    ev('node.created', 'K2', { nodeKind: 'action', title: 'b' }, { seq: 1 }),
+  ]);
+  t = write(t, [ev('park.set', 'D2', { returnAt: '2026-08-09T12:00:00.000Z', reason: 'shelved' }, { seq: 2 })]);
+  t = write(t, mergeEvents(ctx(), t, t.nodes.get('D2')!, t.nodes.get('K2')!));
+  assert.equal(t.nodes.get('K2')!.clocks.park?.at, '2026-08-09T12:00:00.000Z', 'an ordinary park still comes across');
+});
+
+test('merge-record: the report does not re-decide what a fold moved', () => {
+  // The reason decisions are read through the fold rather than COPIED onto the
+  // survivor. Copies carry fresh event ids, and `decided` is a set difference
+  // on ids — so a copying merge would re-report every decision the source
+  // carried, in the one artefact that leaves the device, dated to a period in
+  // which nothing was decided. Pinned in both directions.
+  const TZ = 'America/Denver';
+  const NOW = '2026-07-30T12:00:00.000Z';
+  let s = write(emptyState(), [
+    ev('node.created', 'S', { nodeKind: 'action', title: 'ship it' }, { seq: 0 }),
+    ev('node.created', 'T', { nodeKind: 'action', title: 'ship it' }, { seq: 1 }),
+  ]);
+  s = write(s, [ev('decision.logged', 'S', { text: 'ship on Friday', at: '2026-07-28T12:00:00.000Z' }, { seq: 2 })]);
+
+  // Period one: the decision is new, and is reported once.
+  const mark = s;
+  assert.equal(statusReport(emptyState(), s, null, NOW, TZ).decided.length, 1, 'reported once when it was decided');
+
+  // Period two: nothing decided, but the duplicate is folded away.
+  s = write(s, mergeEvents(ctx(), s, s.nodes.get('S')!, s.nodes.get('T')!));
+  const after = statusReport(mark, s, null, NOW, TZ);
+  assert.deepEqual(after.decided, [], 'a fold decides nothing, so the report says nothing was decided');
+
+  // And splitting it back out does not re-decide it either.
+  s = write(s, unmergeEvents(ctx(), 'S'));
+  assert.deepEqual(statusReport(mark, s, null, NOW, TZ).decided, [], 'nor does splitting it back out');
+
+  // Meanwhile the decision is still reachable — through the fold while folded,
+  // and on its own node once split. It was never lost, only unreadable.
+  const folded = write(mark, mergeEvents(ctx(), mark, mark.nodes.get('S')!, mark.nodes.get('T')!));
+  assert.equal(decisionsFor(folded, folded.nodes.get('T')!).length, 1, 'still readable on the survivor');
+});
+
+test('merge-offer: a target that cannot hold what the source carries is never offered', () => {
+  // F-B. legalMergeTargets filtered held / not-beneath / person-vs-non-person
+  // and stopped there, so a source carrying a demand clock could be folded into
+  // a demand-free kind and be refused by the law-6 branch — AFTER the user had
+  // already picked the target. "Legality is computed, never refused after the
+  // offer." (The Menu half of `canHold` is belt-and-braces: the direction rule
+  // below already keeps dated WORK away from Menu targets, so canHold catches
+  // the remaining case — a legacy Menu item that still carries a demand clock.)
+  let s = write(emptyState(), [
+    ev('node.created', 'SRC', { nodeKind: 'action', title: 'read the report' }, { seq: 0 }),
+    ev('node.created', 'ASP', { nodeKind: 'aspiration', title: 'read the report' }, { seq: 1 }),
+    ev('node.created', 'OK', { nodeKind: 'action', title: 'read the report' }, { seq: 2 }),
+  ]);
+
+  // With no demand clock, a demand-free kind is a perfectly good home.
+  assert.ok(legalMergeTargets(s, s.nodes.get('SRC')!).map(t => t.id).includes('ASP'),
+    'a source with no date may fold into a demand-free kind');
+
+  // With one, it is not offered — and the gate confirms why.
+  s = write(s, [ev('clock.set', 'SRC', { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' }, { seq: 3 })]);
+  const dated = legalMergeTargets(s, s.nodes.get('SRC')!).map(t => t.id);
+  assert.ok(!dated.includes('ASP'), 'a demand-free kind cannot hold a date, so it is not offered');
+  assert.ok(dated.includes('OK'), 'ordinary work still is');
+  assert.throws(
+    () => admit(mergeEvents(ctx(), s, s.nodes.get('SRC')!, s.nodes.get('ASP')!), s),
+    GateRejection, 'the gate would have refused it — which is exactly why it must not be offered',
+  );
+  assert.equal(canHold(s.nodes.get('ASP')!, s.nodes.get('SRC')!), false, 'and canHold says so directly');
+  assert.equal(canHold(s.nodes.get('OK')!, s.nodes.get('SRC')!), true);
+});
+
+test('merge-offer: work never folds into a wish; a wish folds into a wish', () => {
+  // The direction rule. Folding real work into a wish is a DEMOTION, and the
+  // app already has a verb for that (route to Menu) which sheds the date
+  // visibly. But two copies of "read this book" are the commonest duplicate
+  // there is, so wish-into-wish must keep working — which a blunt
+  // exclude-all-Menu-targets rule would have broken.
+  let s = write(emptyState(), [
+    ev('node.created', 'WORK', { nodeKind: 'action', title: 'a book' }, { seq: 0 }),
+    ev('node.created', 'W1', { nodeKind: 'action', title: 'a book' }, { seq: 1 }),
+    ev('node.created', 'W2', { nodeKind: 'action', title: 'a book' }, { seq: 2 }),
+  ]);
+  s = write(s, [
+    ev('menu.item.added', 'W1', { category: 'read' }, { seq: 3 }),
+    ev('menu.item.added', 'W2', { category: 'read' }, { seq: 4 }),
+  ]);
+  assert.ok(legalMergeTargets(s, s.nodes.get('W1')!).map(t => t.id).includes('W2'),
+    'a wish folds into a wish');
+  assert.ok(legalMergeTargets(s, s.nodes.get('W1')!).map(t => t.id).includes('WORK'),
+    'and a wish may fold into work — that is a promotion, not a loss');
+  assert.ok(!legalMergeTargets(s, s.nodes.get('WORK')!).map(t => t.id).includes('W1'),
+    'but work never folds into a wish');
+});
+
+test('one-reader: n.todayFor is read in exactly one place', () => {
+  // F-C. src/composed.ts's header states that `composedFor` is THE ONE reader
+  // of `todayFor` — and that claim is the entire mechanism of expiry-by-
+  // projection (ADR-0051): because no API takes a day argument, "chosen
+  // yesterday and not done" is structurally uncomputable. detail.ts had grown
+  // its own `n.todayFor === localDayKey(...)`, which happened to agree — but a
+  // claim that protects a design has to be true, not nearly true.
+  const roots = ['src', 'test/../src'];
+  void roots;
+  const allowed = new Set(['src/fold.ts', 'src/composed.ts', 'src/snapshot.ts', 'src/ui/merge-intents.ts']);
+  const offenders: string[] = [];
+  const walk = (dir: string): void => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      const p = `${dir}/${e.name}`;
+      if (e.isDirectory()) { walk(p); continue; }
+      if (!e.name.endsWith('.ts')) continue;
+      const src = readFileSync(p, 'utf8');
+      // Strip block and line comments — a mention in prose is not a read.
+      const code = src.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+      if (/\btodayFor\b/.test(code) && !allowed.has(p)) offenders.push(p);
+    }
+  };
+  walk('src');
+  assert.deepEqual(offenders, [],
+    'todayFor is read only through composedFor; a surface that re-derives "chosen" derives it a second time');
+});
+
+test('merge-carry: a fold carries what the source fed, and what fed the source', () => {
+  // F-G. `feeds` and `leadDays` were never in the 1.7.0 carry list, and the
+  // dependency arithmetic broke in BOTH directions. Forward: the survivor did
+  // not feed what the source fed. Reverse: `dependencyView` drops a downstream
+  // with `mergedInto`, so an upstream's latestStartInDays fell from a real
+  // number to null — "start it today" became silence. That is the assembled-
+  // context half of law 3, the part ADR-0012 exists for, vanishing wordlessly.
+  const TZ = 'America/Denver';
+  const NOW = '2026-08-01T12:00:00.000Z';
+  let s = write(emptyState(), [
+    ev('node.created', 'DUP', { nodeKind: 'action', title: 'draft the deck' }, { seq: 0 }),
+    ev('node.created', 'KEEP', { nodeKind: 'action', title: 'draft the deck' }, { seq: 1 }),
+    ev('node.created', 'LAUNCH', { nodeKind: 'action', title: 'the launch' }, { seq: 2 }),
+    ev('node.created', 'UP', { nodeKind: 'action', title: 'gather the numbers' }, { seq: 3 }),
+  ]);
+  s = write(s, [
+    ev('clock.set', 'LAUNCH', { clockKind: 'suspense', at: '2026-08-11T12:00:00.000Z', source: 't' }, { seq: 4 }),
+    // The duplicate carries its own commitment too — that is what the upstream's
+    // arithmetic is computed against, and it is carried to the survivor.
+    ev('clock.set', 'DUP', { clockKind: 'due', at: '2026-08-11T12:00:00.000Z', source: 't' }, { seq: 7 }),
+  ]);
+  s = write(s, [ev('dependency.declared', 'DUP', { feeds: 'LAUNCH', leadEstimateDays: 4 }, { seq: 5 })]);
+  s = write(s, [ev('dependency.declared', 'UP', { feeds: 'DUP', leadEstimateDays: 2 }, { seq: 6 })]);
+
+  const before = dependencyView(s, s.nodes.get('UP')!, NOW, TZ);
+  assert.equal(before.latestStartInDays, 8, 'precondition: the upstream knows when it must start');
+
+  s = write(s, mergeEvents(ctx(), s, s.nodes.get('DUP')!, s.nodes.get('KEEP')!));
+
+  // Forward: the survivor feeds what the duplicate fed, with its lead time.
+  const fwd = dependencyView(s, s.nodes.get('KEEP')!, NOW, TZ);
+  assert.equal(fwd.soonest?.node.id, 'LAUNCH', 'the survivor feeds what the duplicate fed');
+  assert.equal(fwd.leadDays, 4, 'and how long it takes came with it');
+  assert.equal(fwd.latestStartInDays, 6);
+
+  // Reverse: the upstream still knows, because it now points at the survivor.
+  const rev = dependencyView(s, s.nodes.get('UP')!, NOW, TZ);
+  assert.equal(rev.latestStartInDays, 8, 'the upstream did not go silent about a real commitment');
+  assert.ok(rev.feeds.some(f => f.node.id === 'KEEP'), 'it points at the thing that stayed');
+});
+
+test('merge-carry: an edge that would make two things wait for each other is skipped and stated', () => {
+  // The gate refuses a cycle, so the carry must never BUILD one — it skips and
+  // SAYS so. A skip nobody is told about is the silent swallow again, wearing a
+  // different hat. Note the check runs against the accumulating batch, not
+  // prior state: two edges can be individually acyclic and jointly cyclic.
+  let s = write(emptyState(), [
+    ev('node.created', 'DUP', { nodeKind: 'action', title: 'a' }, { seq: 0 }),
+    ev('node.created', 'KEEP', { nodeKind: 'action', title: 'a' }, { seq: 1 }),
+    ev('node.created', 'MID', { nodeKind: 'action', title: 'b' }, { seq: 2 }),
+  ]);
+  // MID feeds KEEP, and the duplicate feeds MID: DUP -> MID -> KEEP, acyclic.
+  // Carrying DUP's edge onto KEEP would mean KEEP -> MID -> KEEP.
+  s = write(s, [ev('dependency.declared', 'MID', { feeds: 'KEEP', leadEstimateDays: 1 }, { seq: 3 })]);
+  s = write(s, [ev('dependency.declared', 'DUP', { feeds: 'MID', leadEstimateDays: 1 }, { seq: 4 })]);
+
+  const plan = mergePlan(ctx(), s, s.nodes.get('DUP')!, s.nodes.get('KEEP')!);
+  assert.doesNotThrow(() => admit(plan.events, s), 'the plan is never a batch the gate must refuse');
+  const after = write(s, plan.events);
+  assert.equal(silentNodes(after).length, 0, 'and law 1 held throughout');
+  assert.ok(!after.nodes.get('KEEP')!.feeds.includes('MID'), 'the looping edge was not written');
+  assert.deepEqual(plan.skipped.feeds, ['MID'], 'and it is reported, not dropped in silence');
+});
+
+test('oracle-nouns: the equivalence generator emits every kind the gate has an opinion about', () => {
+  // F-F. The 150-seed equivalence property is the strongest test this repo has,
+  // and its generator emitted only 1.3.x-era kinds — so `node.unmerged`, the
+  // ONE branch the gate has gained since the oracle was frozen, was never once
+  // exercised. The gate's best test had a blind spot exactly where the gate
+  // last changed, and nothing could see it because what the generator produced
+  // was written down nowhere.
+  //
+  // This is the durable half: the generator can now never fall behind the
+  // gate's own list of kinds it must reason about.
+  const generated = new Set(GENERATED_KINDS);
+  const missing = SILENT_RISK_KINDS.filter(k => !generated.has(k));
+  assert.deepEqual(missing, [],
+    'every silent-risk kind must be reachable by the property, or the property is silent about it');
+
+  // And the list must not rot in the other direction either.
+  for (const k of GENERATED_KINDS) {
+    assert.ok(isKnownKind(k), `${k} is generated but is not a known event kind`);
+  }
+
+  // Belt: actually RUN the generator and confirm the new nouns come out. A
+  // declared list that the code does not produce is the defect one level up.
+  const rnd = lcg(7);
+  const seen = new Set<string>();
+  const prior = seedState();
+  let f = 0;
+  for (let i = 0; i < 4000; i++) seen.add(randomEvent(rnd, prior, () => `F${f++}`).kind);
+  for (const k of ['node.unmerged', 'request.declined', 'park.set', 'menu.item.promoted']) {
+    assert.ok(seen.has(k), `${k} is declared but the generator never produced it`);
+  }
+});
+
+test('clear-fold: clearing what you hold is possible after you have folded a duplicate', () => {
+  // F-I, found by the 1.9.2 smoke walk and NOT by any unit test — the walk had
+  // always split its one fold back out, so no folded pair ever survived to the
+  // purge step. `clearEvents` trashed only HELD nodes, and a folded-away source
+  // is not held; trashing the survivor then made it silent (isSilent rides the
+  // merge chain, and a chain ending in the trash is silent), so the whole-batch
+  // belt refused the write. "Clear what I am holding" was therefore impossible
+  // for anyone who had ever folded a duplicate and left it folded — shipped in
+  // 1.7.0 and never noticed. The file's own comment said this "cannot violate
+  // law 1", which was true before folds existed and quietly stopped being true.
+  const ctx = {
+    at: '2026-07-28T12:00:00.000Z', device: 'd0', vault: 'personal',
+    seq: () => n++, id: () => `c${n++}`,
+  };
+  let s = write(emptyState(), [
+    ev('node.created', 'A', { nodeKind: 'action', title: 'a' }, { seq: 0 }),
+    ev('node.created', 'B', { nodeKind: 'action', title: 'a' }, { seq: 1 }),
+  ]);
+  s = write(s, [ev('node.merged', 'A', { into: 'B' }, { seq: 2 })]);
+  assert.equal(silentNodes(s).length, 0, 'precondition: the fold is covered');
+
+  const batch = clearEvents(ctx, s);
+  assert.doesNotThrow(() => admit(batch, s), 'clearing is not refused because a duplicate was folded');
+  const after = write(s, batch);
+  assert.equal(heldNodes(after).length, 0, 'the surfaces emptied');
+  assert.equal(silentNodes(after).length, 0, 'and nothing was left silent');
+  assert.ok(after.nodes.get('A')!.trashed, 'the folded-away source was let go with the rest of it');
+  // Still an append: the record survives, which is the whole difference between
+  // clearing and starting again.
+  assert.ok(after.nodes.get('A')!.mergedInto === 'B', 'and the fold itself is still in the record');
 });

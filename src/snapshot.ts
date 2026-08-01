@@ -60,7 +60,23 @@ export function deserialiseState(raw: unknown): State {
     // never overrides a real `false`.
     nodes: new Map(r.nodes.map(n => [n.id, {
       ...n,
-      sourceTags: n.sourceTags ?? [],
+      // The Phase-0 structural fields, defaulted for completeness (1.9.2).
+      // Every real snapshot carries them, so `??` never overrides anything —
+      // but the generic three-place test asks the honest question ("does a
+      // record missing a key deserialise to the type it promises?") and the
+      // answer has to be yes for EVERY field or the invariant is a slogan.
+      kind: n.kind ?? 'action',
+      title: n.title ?? '',
+      parent: n.parent ?? null,
+      trashed: n.trashed ?? false,
+      onMenu: n.onMenu ?? null,
+      lastDone: n.lastDone ?? null,
+      comfortWindowDays: n.comfortWindowDays ?? null,
+      intervalDays: n.intervalDays ?? null,
+      // COPIED, not just defaulted: `?? []` alone hands the snapshot record's
+      // own array to running state (found by the 1.9.2 generic three-place
+      // test, which is the whole argument for writing it without a field list).
+      sourceTags: [...(n.sourceTags ?? [])],
       heat: n.heat ?? null,
       route: n.route ?? null,
       captured: n.captured ?? true,
@@ -86,9 +102,16 @@ export function deserialiseState(raw: unknown): State {
       // shared array between a snapshot and running state is how a fold rewrote
       // history in place once already (audit).
       feeds: [...(n.feeds ?? [])],
+      // Both were missing their backfill until the 1.9.2 audit. Neither
+      // misbehaved — Number.isFinite(undefined) is false and !undefined is
+      // true — but the type promised null and delivered undefined.
+      leadDays: n.leadDays ?? null,
+      mergedInto: n.mergedInto ?? null,
       todayFor: n.todayFor ?? null,
-      // A pre-1.8.0 snapshot stored no declines — none were standing.
-      notNow: n.notNow ?? null,
+      // A pre-1.8.0 snapshot stored no declines — none were standing. COPIED,
+      // not aliased: a shared object between a snapshot and running state is
+      // how a fold rewrote history in place once already (audit).
+      notNow: n.notNow ? { ...n.notNow } : null,
       // MUTABLE, and the third place the rule bites: a pre-1.9.0 snapshot
       // stored no decisions — none had been logged.
       decisions: [...(n.decisions ?? [])],
@@ -111,9 +134,10 @@ export function deserialiseState(raw: unknown): State {
     // A pre-1.6.0 snapshot stored no modules — none were on, which is exactly
     // what an empty set says.
     modules: new Set(r.modules ?? []),
-    // A pre-1.8.0 snapshot stored no slot — none was set.
-    requestSlot: r.requestSlot ?? null,
-    requestSlotStamp: r.requestSlotStamp ?? null,
+    // A pre-1.8.0 snapshot stored no slot — none was set. Copied on the way
+    // in, like `lastReportMark` above.
+    requestSlot: r.requestSlot ? { ...r.requestSlot } : null,
+    requestSlotStamp: r.requestSlotStamp ? { ...r.requestSlotStamp } : null,
   };
 }
 

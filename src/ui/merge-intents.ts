@@ -18,8 +18,11 @@
 //
 // These build events; they never touch the store.
 
-import type { AppEvent, ClockKind, NodeId } from '../events.ts';
-import { noteOf, type NodeState, type State } from '../fold.ts';
+import { DEMAND_FREE_KINDS, type AppEvent, type ClockKind, type NodeId } from '../events.ts';
+import { fold, noteOf, type NodeState, type State } from '../fold.ts';
+import { wouldCycle } from '../dependencies.ts';
+import { choosable } from '../composed.ts';
+import { localDayKey } from '../time.ts';
 import { heldNodes } from '../gate.ts';
 import type { StampContext } from './session.ts';
 
@@ -30,7 +33,118 @@ const base = (ctx: StampContext, kind: string, node: string | null, payload: unk
 
 /** The demand kinds a merge carries when the survivor lacks them — losing a
  *  hard date to a dedup is the exact class the 1.3.1 belt exists for. */
-const CARRY_CLOCKS: readonly ClockKind[] = ['due', 'start', 'suspense', 'park'];
+export const CARRY_CLOCKS: readonly ClockKind[] = ['due', 'start', 'suspense', 'park'];
+
+/**
+ * WHAT A FOLD TAKES WITH IT — every field of `NodeState`, named (1.9.2,
+ * ADR-0058).
+ *
+ * This map exists because the alternative failed, repeatedly and predictably.
+ * 1.7.0 wrote the carry as a hand-written list; 1.8.0 added `notNow`, 1.9.0
+ * added `decisions`, and `feeds` was never in it — none of those releases
+ * visited this file, and each omission silently destroyed something on the
+ * next fold. The list could not be kept correct by remembering, so it is kept
+ * correct by the type system: `Record<keyof NodeState, …>` will not compile
+ * until a new field is named here, and the pinned test re-checks the key set
+ * at runtime in case a field is ever declared optional.
+ *
+ * A reasoned `'no'` is a perfectly good answer. The gate's value is that it
+ * forces the SENTENCE to be written, not that it forces the carry.
+ */
+export type Disposition =
+  /** Written across, through the ordinary noun for that fact. */
+  | { carry: 'state'; via: string; when: string }
+  /** Not written; `src/merged.ts` follows the fold at read time. */
+  | { carry: 'read'; via: string }
+  /** Deliberately left behind, and why. */
+  | { carry: 'no'; because: string };
+
+export const MERGE_DISPOSITION: Record<keyof NodeState, Disposition> = {
+  // ── Identity and structure. A fold never changes what the survivor IS.
+  id: { carry: 'no', because: 'identity: the survivor is the thing that stays' },
+  vault: { carry: 'no', because: 'identity: a fold does not move anything between vaults' },
+  kind: { carry: 'no', because: 'a fold must never change what the survivor is; the source kind survives in the folded-in row' },
+  title: { carry: 'no', because: 'the survivor keeps its own name; the source title survives in the folded-in row and in notNow.what' },
+  parent: { carry: 'no', because: 'the survivor keeps its own place; the SOURCE\'s children are re-homed instead' },
+  trashed: { carry: 'no', because: 'a fold is not a trashing; legalMergeTargets offers held nodes only' },
+  mergedInto: { carry: 'no', because: 'this IS the fold; set on the source by node.merged' },
+  stamps: { carry: 'no', because: 'LWW bookkeeping, per field, per node — never transferable' },
+
+  // ── Carried as state: what the thing currently is, or currently demands.
+  clocks: {
+    carry: 'state', via: 'clock.set / suspense.set / park.set (source: merge:carried)',
+    when: 'the four demand kinds only, when the survivor lacks them and can hold them (canHold) — NOT `review`, which is the gate\'s own coverage bookkeeping, and NOT the park of a standing decline, which is the decline\'s mechanism rather than a date about the work',
+  },
+  fields: {
+    carry: 'state', via: 'node.field.set',
+    when: 'per CARRY_FIELDS below — `note` joins when both speak; anything unnamed is NOT carried, so a future field is safe by default',
+  },
+  people: { carry: 'state', via: 'person.linked', when: 'each link the survivor lacks; additive by design' },
+  opr: {
+    carry: 'state', via: 'opr.assigned',
+    when: 'when the survivor has none. REQUIRED, not optional: the opr person LINK is already carried, so leaving n.opr null reproduces the render-contradicts-record shape ADR-0057 was written to kill',
+  },
+  feeds: {
+    carry: 'state', via: 'dependency.declared',
+    when: 'each downstream the survivor does not already feed, skipped and STATED when it would make two things each wait for the other',
+  },
+  leadDays: {
+    carry: 'state', via: 'dependency.declared{leadEstimateDays}',
+    when: 'with the first carried edge, when the survivor has none. Not carried alone: it means "how long this takes AS A DEPENDENCY", and with nothing downstream there is no dependency for it to qualify',
+  },
+  intervalDays: { carry: 'state', via: 'upkeep.interval.set', when: 'with comfortWindowDays, when the survivor has neither — a rhythm is a demand-shaped fact and losing it is the class law 3 exists for' },
+  comfortWindowDays: { carry: 'state', via: 'upkeep.interval.set', when: 'with intervalDays; same reason' },
+  saveTarget: { carry: 'state', via: 'save-for.updated', when: 'with saveSaved, when the survivor has neither — a number a person typed is not the app\'s to drop' },
+  saveSaved: { carry: 'state', via: 'save-for.updated', when: 'with saveTarget; same reason' },
+  role: { carry: 'state', via: 'project.role.set', when: 'when the survivor\'s is null and it is a container — a silence must not overwrite a statement' },
+  waitingOn: { carry: 'state', via: 'waiting.opened', when: 'with the rest of the waiting quartet, when the survivor has no open waiting' },
+  waitingFor: { carry: 'state', via: 'waiting.opened', when: 'with waitingOn' },
+  waitingSince: { carry: 'state', via: 'waiting.opened', when: 'with waitingOn — the original since, so the age of the wait is not reset by a fold' },
+  waitingOutcome: { carry: 'no', because: 'how a PAST wait ended is a record of that wait, not a standing fact; a carried open waiting starts with no outcome' },
+  todayFor: {
+    carry: 'state', via: 'today.chosen',
+    when: 'ONLY when it is the current local day and the survivor is choosable and not already chosen. A stale value is precisely what ADR-0051 makes uncomputable, so it is never carried; the net count is unchanged, so the cap cannot be exceeded',
+  },
+
+  // ── Carried by reading: what HAPPENED. See src/merged.ts for why.
+  decisions: { carry: 'read', via: 'merged.ts decisionsFor — read through the fold; copying would re-report them and could not be undone' },
+  notNow: { carry: 'read', via: 'requests.ts notNowLedger via merged.ts survivorOf — the row says where it lives now; marking the SURVIVOR declined would be the fold deciding the survivor\'s standing' },
+
+  // ── Deliberately left behind.
+  onMenu: { carry: 'no', because: 'placement is its own verb; a fold must not promote or demote anything' },
+  lastDone: { carry: 'no', because: 'a completion is an event about one particular thing, and a fold is not a completion' },
+  heat: { carry: 'no', because: 'the source\'s passage through the inbox, not a fact about the work' },
+  route: { carry: 'no', because: 'writing the source\'s route onto a clarified survivor would put it back in a queue it has already left' },
+  captured: { carry: 'no', because: 'a latch about how the SOURCE arrived; carrying it would put the survivor in triage' },
+  sourceTags: { carry: 'no', because: 'capture-time provenance of the source' },
+  resumeSpent: { carry: 'no', because: 'a fact about one sitting' },
+  resumeFor: { carry: 'no', because: 'a resume card holds one thread; legalMergeTargets refuses cards as targets' },
+  resumeCue: { carry: 'no', because: 'the five-word cue belongs to the moment it was written in' },
+  interruptedFocus: { carry: 'no', because: 'a fact about one focus session' },
+  interruptedAt: { carry: 'no', because: 'a fact about one focus session' },
+  ownership: { carry: 'no', because: 'a bother\'s answer to "whose is this"; the flow is not re-entered' },
+  botherRouted: { carry: 'no', because: 'a LATCH whose whole purpose is not being asked the same question twice' },
+  lastReplan: { carry: 'no', because: 'a decision about one passed date on one thing' },
+};
+
+/** Which `fields` entries a fold carries. Unnamed means not carried — so a
+ *  field added later is safe by default rather than silently transferred. */
+export const CARRY_FIELDS: Record<string, string> = {
+  note: 'copied when the survivor has none, joined when both speak',
+};
+
+/**
+ * Can this target hold what the source brings across?
+ *
+ * The gate's own two refusals, stated ONCE in a form both the picker and the
+ * carry can ask: a Menu item is demand-free by placement (the Menu belt), and
+ * `aspiration`/`pebble` are demand-free by kind (law 6). Asked by
+ * `legalMergeTargets` so the pair is never offered, and asked AGAIN at commit
+ * time, because a sheet can sit open while the world moves.
+ */
+export const canHold = (target: NodeState, source: NodeState): boolean =>
+  !CARRY_CLOCKS.some(k => source.clocks[k])
+  || (target.onMenu === null && !(DEMAND_FREE_KINDS as readonly string[]).includes(target.kind));
 
 /**
  * Where may this node be folded INTO? Held, not itself, not its own
@@ -58,6 +172,17 @@ export function legalMergeTargets(state: State, n: NodeState): NodeState[] {
   return heldNodes(state)
     .filter(t => !beneath.has(t.id))
     .filter(t => (n.kind === 'person' ? t.kind === 'person' : t.kind !== 'person'))
+    // Never offer what the gate must refuse (ADR-0038). Until 1.9.2 this
+    // stopped at the three filters above, so a source carrying a date could be
+    // folded into a Menu item or a demand-free kind and be rejected AFTER the
+    // user had picked — by the Menu belt and the law-6 branch respectively.
+    .filter(t => canHold(t, n))
+    // A wish may fold into a wish, and a wish into work. Work never folds into
+    // a wish: that is a DEMOTION, and the app already has a verb for it (route
+    // to the Menu) which sheds the date where you can see it happen.
+    .filter(t => t.onMenu === null || n.onMenu !== null)
+    // A resume card is a way back into a thread, not a thing that survives.
+    .filter(t => t.kind !== 'resume-card')
     .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 }
 
@@ -67,15 +192,28 @@ export function legalMergeTargets(state: State, n: NodeState): NodeState[] {
  * land while the source is still an ordinary node, and the Menu-belt sees
  * only the final state either way.
  */
-export function mergeEvents(
+export interface MergePlan {
+  events: AppEvent[];
+  /** What could not come across, so the confirmation can SAY so. */
+  skipped: { feeds: NodeId[] };
+}
+
+export function mergePlan(
   ctx: StampContext, state: State, source: NodeState, target: NodeState,
-): AppEvent[] {
+): MergePlan {
   const out: AppEvent[] = [];
 
   // Demand clocks the survivor lacks — each through its own canonical noun.
   for (const k of CARRY_CLOCKS) {
     const c = source.clocks[k];
     if (!c || target.clocks[k]) continue;
+    // A STANDING DECLINE's park is not a date about the work — it IS the
+    // decline, put there by the decline intent's deliberate park. Carrying it
+    // handed the survivor the decline's mechanism without its record: live
+    // work went quiet with nothing on any surface saying why (1.9.2). The
+    // decline itself is preserved by the ledger reading through the fold.
+    // An ordinary park — a real "come back to this on Thursday" — still comes.
+    if (k === 'park' && source.notNow !== null) continue;
     if (k === 'park') {
       out.push(base(ctx, 'park.set', target.id, { returnAt: c.at, reason: 'merge:carried' }));
     } else if (k === 'suspense') {
@@ -112,18 +250,121 @@ export function mergeEvents(
     }));
   }
 
+  // ── The rest of what the survivor currently IS, per MERGE_DISPOSITION.
+  // Each fills a silence and never overwrites an answer the survivor already
+  // gave — the 1.7.0 rule, now applied to every field rather than to four.
+
+  // Who is running it. The opr person LINK is already carried above, so
+  // leaving `n.opr` null would render one thing and record another — the exact
+  // shape ADR-0057 was written to kill.
+  if (source.opr && !target.opr) {
+    out.push(base(ctx, 'opr.assigned', target.id, { person: source.opr }));
+  }
+
+  // The rhythm. A demand-shaped fact: losing it to a dedup is the class law 3
+  // exists for. Both numbers travel together or neither does.
+  if (source.intervalDays !== null && source.comfortWindowDays !== null
+    && target.intervalDays === null && target.comfortWindowDays === null) {
+    out.push(base(ctx, 'upkeep.interval.set', target.id, {
+      intervalDays: source.intervalDays, comfortWindowDays: source.comfortWindowDays,
+    }));
+  }
+
+  // What it costs and what is put by — numbers a person typed by hand.
+  if (source.saveTarget !== null && source.saveSaved !== null
+    && target.saveTarget === null && target.saveSaved === null) {
+    out.push(base(ctx, 'save-for.updated', target.id, {
+      target: source.saveTarget, saved: source.saveSaved,
+    }));
+  }
+
+  // Track vs execute. A silence must not overwrite a statement.
+  if (source.role && !target.role && (target.kind === 'project' || target.kind === 'area' || target.kind === 'goal')) {
+    out.push(base(ctx, 'project.role.set', target.id, { role: source.role }));
+  }
+
+  // Who it is with. Carries the ORIGINAL `since`, so the age of a wait is not
+  // reset by a fold. Known and stated edge: if the survivor is not a
+  // `waiting-for`, `isOpenWaiting` will not count it — a fold must never
+  // change the survivor's kind, so this is a downgrade, not a loss, and the
+  // confirmation says so.
+  if (source.waitingOn && !source.waitingOutcome && !target.waitingOn) {
+    out.push(base(ctx, 'waiting.opened', target.id, {
+      person: source.waitingOn,
+      forWhat: source.waitingFor ?? '',
+      since: source.waitingSince ?? ctx.at,
+    }));
+  }
+
+  // Its place in TODAY, and only when that place is today. A stale value is
+  // precisely what ADR-0051 makes uncomputable, so it is never carried; the net
+  // count is unchanged, so the cap cannot be exceeded.
+  const todayKey = localDayKey(ctx.at, ctx.zone);
+  if (source.todayFor === todayKey && target.todayFor !== todayKey && choosable(target)) {
+    out.push(base(ctx, 'today.chosen', target.id, { day: todayKey }));
+  }
+
+  // ── What it FEEDS, and what feeds it (1.9.2). Both directions were lost:
+  // the survivor did not feed what the source fed, and an upstream's
+  // latest-start fell from a real number to silence because `dependencyView`
+  // drops a merged downstream. That is the assembled-context half of law 3.
+  //
+  // Cycles are checked against the ACCUMULATING batch, not prior state: two
+  // edges can be individually acyclic and jointly cyclic. A merge batch is
+  // tiny, so re-folding locally is cheap and removes the whole class of
+  // "produces a batch the gate must refuse".
+  let sim = fold(out, state);
+  const skippedFeeds: NodeId[] = [];
+  const declare = (on: NodeId, feedsId: NodeId, lead: number | null): void => {
+    const payload: Record<string, unknown> = { feeds: feedsId };
+    if (lead !== null) payload['leadEstimateDays'] = lead;
+    const e = base(ctx, 'dependency.declared', on, payload);
+    out.push(e);
+    sim = fold([e], sim);
+  };
+
+  // Forward. `leadDays` rides the first carried edge only, and only when the
+  // survivor has none — it means "how long this takes AS A DEPENDENCY", so
+  // with nothing downstream there is no dependency for it to qualify.
+  let leadToCarry = target.leadDays === null ? source.leadDays : null;
+  for (const f of source.feeds) {
+    if (f === target.id || sim.nodes.get(target.id)?.feeds.includes(f)) continue;
+    const down = state.nodes.get(f);
+    if (!down || down.trashed || down.mergedInto) continue;
+    if (wouldCycle(sim, target.id, f)) { skippedFeeds.push(f); continue; }
+    declare(target.id, f, leadToCarry);
+    leadToCarry = null;
+  }
+
+  // Reverse. Never `dependency.released` on the old edge: releasing it would
+  // make an unmerge permanently lose the split-out node's upstream. A dangling
+  // edge is invisible (dependencyView drops merged downstreams) and revives
+  // correctly on a split, which is strictly the better failure.
+  for (const up of state.nodes.values()) {
+    if (up.trashed || up.mergedInto || up.id === target.id) continue;
+    if (!up.feeds.includes(source.id) || up.feeds.includes(target.id)) continue;
+    if (wouldCycle(sim, up.id, target.id)) { skippedFeeds.push(source.id); continue; }
+    declare(up.id, target.id, null);
+  }
+
   out.push(base(ctx, 'node.merged', source.id, { into: target.id }));
-  return out;
+  return { events: out, skipped: { feeds: skippedFeeds } };
 }
+
+/**
+ * The whole fold as one gated batch. `mergePlan` is the full answer — what to
+ * write AND what could not come across — because a skip that is not said out
+ * loud is the silent swallow this release exists to end.
+ */
+export const mergeEvents = (
+  ctx: StampContext, state: State, source: NodeState, target: NodeState,
+): AppEvent[] => mergePlan(ctx, state, source, target).events;
 
 /** Split back out. One event; the gate re-covers it in the same transaction. */
 export const unmergeEvents = (ctx: StampContext, node: string): AppEvent[] =>
   [base(ctx, 'node.unmerged', node, {})];
 
-/** Everything folded into this node — the survivor's sheet lists them, each
- *  with the way back, so the promise outlives the sitting (the trash-view
- *  lesson). Newest fold first. */
-export const foldedInto = (state: State, id: NodeId): NodeState[] =>
-  [...state.nodes.values()]
-    .filter(n => n.mergedInto === id && !n.trashed)
-    .sort((a, b) => (a.id < b.id ? 1 : -1));
+// `foldedInto` moved to `src/merged.ts` in 1.9.2: `delta.ts` needs it, and
+// core may not import `src/ui/`. Re-exported here so the existing callers and
+// tests keep their import site.
+export { foldedInto, foldedIntoDeep } from '../merged.ts';

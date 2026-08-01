@@ -909,19 +909,22 @@ export async function mountAbout(
         : rows.length === 1 ? 'One decision, kept.'
           : rows.length <= LEDGER_CAP ? `${rows.length} decisions, newest first.`
             : `${rows.length} decisions — the ${LEDGER_CAP} most recent are shown.`;
-      notnowList.replaceChildren(...rows.slice(0, LEDGER_CAP).map(n => {
+      notnowList.replaceChildren(...rows.slice(0, LEDGER_CAP).map(row => {
         const li = document.createElement('li');
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'trash-row';
         const title = document.createElement('span');
-        title.textContent = n.notNow?.what || n.title || '(untitled)';
+        title.textContent = row.node.notNow?.what || row.node.title || '(untitled)';
         const fact = document.createElement('span');
         fact.className = 'trash-when';
-        fact.textContent = ledgerRowWords(n, titleOf, session.zone);
+        fact.textContent = ledgerRowWords(row, titleOf, session.zone);
         b.append(title, fact);
+        // The DECLINED node's own sheet, even when it has since been folded
+        // into something else — that sheet is where "Split back out" lives,
+        // and the fact line has already said where it lives now.
         b.addEventListener('click', () => {
-          const fresh = session.state().nodes.get(n.id);
+          const fresh = session.state().nodes.get(row.node.id);
           if (fresh) openDetail?.(fresh);
         });
         li.append(b);

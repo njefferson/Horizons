@@ -14,6 +14,7 @@
 // PURE. `now` and `zone` are arguments, like every projection here.
 
 import type { NodeState, State } from './fold.ts';
+import { survivorOf } from './merged.ts';
 import { compareOrdering } from './fold.ts';
 import { endOfLocalDay, localParts, utcMs } from './time.ts';
 
@@ -66,22 +67,44 @@ export function nextSlotOccurrence(day: SlotDay, nowIso: string, zone: string): 
 export const slotDayWords = (day: SlotDay): string => DAY_WORDS[day];
 
 /**
- * The Not Now ledger: live nodes with a standing decline, newest decline
- * first. A capped RECORD of decisions, never an archive — every entry is
- * under a park clock (the gate saw to it), so everything here comes back.
+ * One ledger row: the declined thing, and where it lives now if it has since
+ * been folded into something else (1.9.2). `host` is null for the ordinary
+ * case — the thing is still itself.
  */
-export function notNowLedger(state: State): NodeState[] {
-  const out: NodeState[] = [];
+export interface LedgerRow {
+  node: NodeState;
+  host: NodeState | null;
+}
+
+/**
+ * The Not Now ledger: nodes with a standing decline, newest decline first. A
+ * capped RECORD of decisions, never an archive — every entry is under a park
+ * clock (the gate saw to it), so everything here comes back.
+ *
+ * A declined thing that has since been FOLDED into something else keeps its
+ * row (1.9.2, ADR-0058). Until then the row simply vanished, because this
+ * filtered `!n.mergedInto` — and the ledger's whole job is being the thing to
+ * point at when the same request comes back. "You folded it into Y, which you
+ * are carrying" is a better answer than silence, not a worse one. The row
+ * still opens the DECLINED node's own sheet, where "Split back out" lives.
+ */
+export function notNowLedger(state: State): LedgerRow[] {
+  const out: LedgerRow[] = [];
   for (const n of state.nodes.values()) {
-    if (n.notNow !== null && !n.trashed && !n.mergedInto) out.push(n);
+    if (n.notNow === null || n.trashed) continue;
+    if (!n.mergedInto) { out.push({ node: n, host: null }); continue; }
+    // Folded away: keep it only while the chain still ends somewhere alive.
+    // A chain into the trash or into nothing is not a place it "lives now".
+    const host = survivorOf(state, n);
+    if (host) out.push({ node: n, host });
   }
   return out.sort((a, b) => {
-    const sa = a.stamps['notNow'], sb = b.stamps['notNow'];
+    const sa = a.node.stamps['notNow'], sb = b.node.stamps['notNow'];
     if (sa && sb) {
       const c = compareOrdering(sb, sa);          // newest first
       if (c !== 0) return c;
     }
-    return a.id < b.id ? -1 : 1;
+    return a.node.id < b.node.id ? -1 : 1;
   });
 }
 
@@ -91,13 +114,17 @@ export function notNowLedger(state: State): NodeState[] {
  * you, and neither is this app's to keep).
  */
 export function ledgerRowWords(
-  n: NodeState, titleOf: (id: string) => string | null, zone: string,
+  row: LedgerRow, titleOf: (id: string) => string | null, zone: string,
 ): string {
-  const entry = n.notNow;
+  const entry = row.node.notNow;
   if (!entry) return '';
   const day = new Intl.DateTimeFormat('en-GB', {
     timeZone: zone, day: 'numeric', month: 'short',
   }).format(new Date(entry.at));
   const who = entry.person ? titleOf(entry.person) : null;
-  return who ? `${who} asked · declined ${day}` : `declined ${day}`;
+  const said = who ? `${who} asked · declined ${day}` : `declined ${day}`;
+  // Where it lives now, when it has been folded into something else. Still a
+  // name and a date and a place — never a count, never a verdict.
+  const where = row.host ? ` · now part of ${row.host.title || '(untitled)'}` : '';
+  return `${said}${where}`;
 }

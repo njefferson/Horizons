@@ -14,78 +14,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import { admit, gateOptionsFor } from '../src/gate.ts';
+import { admit } from '../src/gate.ts';
+import { OPTS, AT, ev, lcg, nextSeq, randomEvent, resetSeq, seedState } from './random-events.ts';
 import { admitReference } from './admit-reference.ts';
 import { applyEvent, cloneShell, fold, emptyState, type State } from '../src/fold.ts';
 import type { AppEvent, NodeId } from '../src/events.ts';
 
-const OPTS = gateOptionsFor('America/Denver');
-const AT = '2026-07-28T14:00:00.000Z';
-
-let seq = 1000;
-const ev = (kind: string, node: string | null, payload: unknown): AppEvent =>
-  ({ id: `g${seq}`, vault: 'personal', at: AT, device: 'd0', seq: seq++, kind, node, payload } as AppEvent);
-
-/** A deterministic, replayable PRNG. */
-const lcg = (seed: number) => () => (seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648;
-
-/** A prior state with the shapes that matter: clocked containers, children
- *  covered only via ancestry, captures, Menu items, a merged pair, a person,
- *  and a pre-trashed node. Built through the ORACLE so it is gate-legal. */
-function seedState(): State {
-  const events: AppEvent[] = [];
-  for (let i = 0; i < 6; i++) {
-    events.push(ev('node.created', `P${i}`, { nodeKind: 'project', title: `proj ${i}` }));
-    events.push(ev('clock.set', `P${i}`, { clockKind: 'review', at: '2026-08-05T12:00:00.000Z', source: 't' }));
-    for (let c = 0; c < 3; c++) {
-      events.push(ev('node.created', `P${i}C${c}`, { nodeKind: 'action', title: `child ${i}.${c}`, parent: `P${i}` }));
-    }
-  }
-  for (let i = 0; i < 5; i++) {
-    events.push(ev('capture.recorded', `X${i}`, { text: `capture ${i}`, source: 'quick', sourceTags: [] }));
-  }
-  events.push(ev('node.created', 'M0', { nodeKind: 'action', title: 'menu thing' }));
-  events.push(ev('menu.item.added', 'M0', { category: 'read' }));
-  events.push(ev('person.created', 'PER', { name: 'Ada' }));
-  events.push(ev('node.created', 'MRG', { nodeKind: 'action', title: 'merged away' }));
-  events.push(ev('clock.set', 'MRG', { clockKind: 'review', at: '2026-08-05T12:00:00.000Z', source: 't' }));
-  events.push(ev('node.merged', 'MRG', { into: 'P0' }));
-  events.push(ev('node.created', 'TR', { nodeKind: 'action', title: 'already gone' }));
-  events.push(ev('node.trashed', 'TR', { reason: 't' }));
-  return fold(admitReference(events, emptyState(), OPTS));
-}
-
-const IDS = (s: State): string[] => [...s.nodes.keys()];
-
-/** One random event aimed at the state — including illegal shapes on purpose,
- *  because rejection parity is half the contract. */
-function randomEvent(rnd: () => number, s: State, fresh: () => string): AppEvent {
-  const ids = IDS(s);
-  const pick = (): string => ids[Math.floor(rnd() * ids.length)]!;
-  const roll = rnd();
-  if (roll < 0.10) return ev('node.created', fresh(), { nodeKind: rnd() < 0.5 ? 'action' : 'project', title: 't' });
-  if (roll < 0.18) return ev('node.created', fresh(), { nodeKind: 'action', title: 't', parent: pick() });
-  if (roll < 0.26) return ev('capture.recorded', fresh(), { text: 't', source: 'quick', sourceTags: [] });
-  if (roll < 0.36) return ev('node.trashed', pick(), { reason: 't' });
-  if (roll < 0.44) return ev('node.parented', pick(), { parent: rnd() < 0.85 ? pick() : 'MISSING' });
-  if (roll < 0.50) return ev('node.unparented', pick(), { priorParent: pick() });
-  if (roll < 0.56) return ev('clock.cleared', pick(), { clockKind: 'review' });
-  if (roll < 0.62) return ev('clock.set', pick(), { clockKind: 'due', at: '2026-08-09T12:00:00.000Z', source: 't' });
-  if (roll < 0.68) return ev('done.marked', pick(), { at: AT });
-  if (roll < 0.74) return ev('menu.item.added', pick(), { category: 'read' });
-  if (roll < 0.79) return ev('menu.item.removed', pick(), { from: 'read' });
-  if (roll < 0.85) return ev('node.merged', pick(), { into: rnd() < 0.85 ? pick() : 'MISSING' });
-  if (roll < 0.89) return ev('node.kind.changed', pick(), { from: 'action', to: rnd() < 0.5 ? 'aspiration' : 'waiting-for' });
-  if (roll < 0.92) return ev('node.untrashed', pick(), {});
-  if (roll < 0.94) return ev('clarify.routed', pick(), { route: 'next-action' });
-  // Ghost-minting shapes (1.3.1): ensureNode creates on first touch whatever
-  // the kind, so each of these can mint an UNCOVERED node the silent check has
-  // to find — via a non-silent-risk kind, via a silent-risk kind whose own cure
-  // adopts it, and via a payload reference rather than the event's node.
-  if (roll < 0.96) return ev('heat.set', fresh(), { heat: rnd() < 0.5 ? 'hot' : 'cold' });
-  if (roll < 0.98) return ev('clarify.routed', fresh(), { route: rnd() < 0.5 ? 'next-action' : 'someday' });
-  return ev('person.linked', pick(), { node: fresh(), person: 'PER', relation: 'helper' });
-}
+// The generator lives in test/random-events.ts since 1.9.2, so a coverage test
+// can enumerate what it produces (F-F: it had never emitted `node.unmerged`,
+// the one branch the gate has gained since this oracle was frozen).
 
 /**
  * The one KNOWN, DELIBERATE divergence from the old control flow: the old admit
@@ -120,7 +57,7 @@ test('PROPERTY: reworked admit answers event-for-event what the old admit answer
     const fresh = (): string => `F${seed}-${freshN++}`;
     const len = 1 + Math.floor(rnd() * 20);
     // Both sides must see IDENTICAL events — the generator runs once.
-    seq = 5000 + seed * 100;
+    resetSeq(5000 + seed * 100);
     const batch: AppEvent[] = [];
     for (let i = 0; i < len; i++) batch.push(randomEvent(rnd, prior, fresh));
 
@@ -171,10 +108,10 @@ test('multi-casualty trash: cures emit in the old order', () => {
   // Trashing a clocked parent orphans its three unclocked children — three
   // casualties from one event, the dirty-set's ordinary hard case. The oracle
   // defines the answer; the rework must match it exactly, order included.
-  seq = 9000;
+  resetSeq(9000);
   const batch = [ev('node.trashed', 'P1', { reason: 't' })];
   const a = admitReference(batch, prior, OPTS);
-  seq = 9000;
+  resetSeq(9000);
   const batch2 = [ev('node.trashed', 'P1', { reason: 't' })];
   const b = admit(batch2, prior, OPTS);
   assert.deepEqual(b, a);
@@ -187,11 +124,11 @@ test('merge-borne silence: both reject, same belt, and the rework emits no junk 
   // (isSilent rides the merge chain before it looks at clocks). The old flow
   // sprayed an ineffective cure and then hit the whole-batch belt; the rework
   // skips the junk and lands on the SAME belt with the SAME words.
-  seq = 9100;
+  resetSeq(9100);
   const batch = [ev('node.trashed', 'P0', { reason: 't' })];
   let oldMsg = ''; let newMsg = '';
   try { admitReference(batch, prior, OPTS); } catch (e) { oldMsg = (e as Error).message; }
-  seq = 9100;
+  resetSeq(9100);
   const batch2 = [ev('node.trashed', 'P0', { reason: 't' })];
   try { admit(batch2, prior, OPTS); } catch (e) { newMsg = (e as Error).message; }
   assert.match(oldMsg, /MRG/, 'the oracle rejects at the belt');
@@ -203,7 +140,7 @@ test('merge-borne transient silence: saved later in the batch, accepted with ZER
   // Trash P0 (silencing MRG through the chain), then untrash it — the batch
   // introduces no lasting silence, so it is legal. The old flow accepted it
   // WITH a junk clock on the merged node; the rework accepts it clean.
-  seq = 9200;
+  resetSeq(9200);
   const mk = () => [
     ev('node.trashed', 'P0', { reason: 't' }),
     ev('node.untrashed', 'P0', {}),
@@ -224,12 +161,12 @@ test('ghost parity: a stray-id heat.set riding with a capture is CURED, not reje
   // rejected the whole batch — the user's own capture riding in it included
   // (audit). The born set restores the oracle's answer exactly, cure and all.
   const prior = seedState();
-  seq = 9300;
+  resetSeq(9300);
   const a = admitReference([
     ev('heat.set', 'T1-GHOST', { heat: 'hot' }),
     ev('capture.recorded', 'T1-CAP', { text: 'mine', source: 'quick', sourceTags: [] }),
   ], prior, OPTS);
-  seq = 9300;
+  resetSeq(9300);
   const b = admit([
     ev('heat.set', 'T1-GHOST', { heat: 'hot' }),
     ev('capture.recorded', 'T1-CAP', { text: 'mine', source: 'quick', sourceTags: [] }),
@@ -245,7 +182,7 @@ test('ghost parity: a stray-id heat.set riding with a capture is CURED, not reje
 test('a rejected batch leaves the prior state untouched — copy-on-write holds', () => {
   const prior = seedState();
   const snapshot = JSON.stringify([...prior.nodes.entries()]);
-  seq = 9500;
+  resetSeq(9500);
   const batch = [
     ev('node.trashed', 'P1', { reason: 't' }),
     ev('node.parented', 'P2C0', { parent: 'MISSING' }),   // rejected mid-batch

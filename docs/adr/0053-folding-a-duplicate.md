@@ -1,6 +1,16 @@
 # ADR-0053 · Folding a duplicate: the carry batch, the way back, the twins range
 
-**Status:** Accepted · **Date:** 2026-08-01
+**Status:** Accepted, amended by [ADR-0058](0058-what-a-fold-takes-with-it.md)
+· **Date:** 2026-08-01
+
+> **Amended 2026-08-01 (1.9.2).** The carry batch below is right and stays. The
+> HAND-WRITTEN LIST of what it carries was not: `notNow` (1.8.0), `decisions`
+> (1.9.0), `feeds` and `leadDays` were each added to `NodeState` without anyone
+> visiting the merge, and each omission silently took something off every
+> surface on the next fold. This record's own overturn clause called for exactly
+> that evidence, and ADR-0058 is the smarter carry it asked for: a governing
+> rule (state is carried by writing, records by reading) and a totality gate
+> over every `NodeState` field, so the list cannot fall behind again.
 
 ## Decision
 

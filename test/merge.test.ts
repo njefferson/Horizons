@@ -31,7 +31,16 @@ const imported = (prior: State, id: string, title: string, parent?: string): Sta
     nodeKind: 'action', title, provenance: { for: 'self' }, ...(parent ? { parent } : {}),
   })]);
 
-test('a fold carries the date, the note, the people, and the children — nothing swallowed', () => {
+// The name of this test used to be "…— nothing swallowed", and it asserted
+// exactly the four things the 1.7.0 carry list carried, because in 1.7.0 those
+// four WERE everything. It therefore shared its blind spot precisely with the
+// code it guarded: `notNow`, `decisions`, `feeds` and `leadDays` all arrived
+// later and none of them made this test go red. A test that NAMES its coverage
+// can only ever guard what somebody remembered to name. The promise now lives
+// in `merge-carry: every NodeState field is named in the fold's disposition`
+// (test/audit-regressions.test.ts), which cannot go stale — so this one keeps
+// its assertions and gives up the claim (1.9.2, F-H).
+test('a fold carries the date, the note, the people, and the children', () => {
   let s = emptyState();
   s = imported(s, 'DUP', 'call the dentist');
   s = imported(s, 'KEEP', 'call the dentist');

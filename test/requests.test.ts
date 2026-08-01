@@ -125,12 +125,12 @@ test('the ledger: standing declines only, newest first, and its words never coun
   s = write(s, declineEvents({ ...ctx(), at: '2026-07-29T19:00:00.000Z' }, s, s.nodes.get('B')!));
   s = write(s, declineEvents({ ...ctx(), at: '2026-07-29T19:30:00.000Z' }, s, s.nodes.get('C')!));
   s = write(s, carryEvents({ ...ctx(), at: '2026-07-29T20:00:00.000Z' }, 'B'));
-  const rows = notNowLedger(s).map(n => n.id);
+  const rows = notNowLedger(s).map(r => r.node.id);
   assert.deepEqual(rows, ['C', 'A'], 'standing declines only, newest decline first');
   // Law 5: a row is a name and a date, never a count and never a verdict.
   const titleOf = (id: string): string | null => s.nodes.get(id)?.title ?? null;
-  for (const n of notNowLedger(s)) {
-    const words = ledgerRowWords(n, titleOf, TZ);
+  for (const row of notNowLedger(s)) {
+    const words = ledgerRowWords(row, titleOf, TZ);
     assert.match(words, /declined \d+ \w+/, 'a date in words');
     assert.doesNotMatch(words, /\d+\s*(times|of|\/)|%|remaining/, 'never a tally');
   }

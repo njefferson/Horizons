@@ -433,6 +433,70 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (Noah: "Continue")** — **1.9.2 "What a fold takes with it"** —
+  the adversarial audit of 1.4.0–1.9.1, nine releases and the longest this repo
+  has gone without one. The findings share one cause worth stating before any
+  of them: **1.7.0 wrote the merge as a hand-written list of what a fold
+  carries, and every release after it added a `NodeState` field without
+  visiting that list.** Nothing was ever deleted — the log is append-only and
+  every field survived in state; only the projections excluded merged nodes, so
+  the records had nowhere to show.
+  · **F-A — a fold destroyed the source's decision log and its standing
+  decline.** `decisions` (1.9.0) and `notNow` (1.8.0) were not in the carry
+  list, and both readers exclude merged nodes. Fixed by READING through the
+  fold (`src/merged.ts`) rather than copying: copies carry fresh event ids, so
+  merge → unmerge → merge would leave duplicate decision rows that no verb in
+  this app can remove, and `delta.decided` — a set difference on ids — would
+  re-report them in the one artefact that leaves the device.
+  · **F-A′ — and the decline's park WAS carried**, so folding a
+  declined-and-parked duplicate into live work made that work go quiet under
+  `merge:carried` with nothing explaining why. A decline's park is the decline,
+  not a date about the work.
+  · **F-G — the dependency arithmetic broke in both directions.** `feeds` and
+  `leadDays` were never carried, and `dependencyView` drops a downstream with
+  `mergedInto`, so an upstream's latest-start fell from a real number to null.
+  "Start it today" became silence — the assembled-context half of law 3.
+  · **F-B — targets were offered that the gate must refuse**, and the Menu was
+  only one case: `aspiration` and `pebble` are demand-free by kind, refused by
+  a different belt. Now one `canHold` predicate, asked by the picker and again
+  at commit, plus a direction rule (a wish folds into a wish; work never folds
+  into a wish).
+  · **F-I — "Clear what I am holding" would not run AT ALL for anyone who had
+  folded a duplicate.** `clearEvents` trashed only HELD nodes; a folded-away
+  source is not held, so trashing the survivor silenced it and the belt refused
+  the whole batch. Shipped in 1.7.0, never noticed, and **found by the new
+  smoke walk within minutes of writing it** — the old walk always split its one
+  fold back out, so no folded pair ever survived to the purge step. The
+  function's comment said this "cannot violate law 1", which was true when it
+  was written and stopped being true two releases later.
+  · **F-C — a second reader of `todayFor`**, contradicting `composed.ts`'s
+  "ONE reader" claim, which is the entire mechanism of expiry-by-projection.
+  Pinned by a source scan.
+  · **F-F — the 150-seed equivalence oracle had a blind spot exactly where the
+  gate last changed.** Its generator emitted only 1.3.x-era kinds, so
+  `node.unmerged` — the one branch the gate has gained since the oracle was
+  frozen — had never once been generated. The coverage pin then found **eight
+  more** silent-risk kinds it had never produced. Widened; the property still
+  finds no divergence, which is worth recording as a result rather than as an
+  absence.
+  · **F-D/F-E — hygiene, and stated as hygiene.** Missing clone and backfill
+  lines against the three-place rule. None misbehaved: nothing mutates a
+  `notNow` in place, `Number.isFinite(undefined)` is false, `!undefined` is
+  true. Writing the invariant GENERICALLY (for every object-valued key, assert
+  identities differ) rather than as a field list found two more the audit had
+  not spotted, including one in `sourceTags`.
+  · **The durable half — `MERGE_DISPOSITION`.** Every `NodeState` field must be
+  named as carried (with its noun), read-through (with its reader), or
+  deliberately not carried (with the reason, in words). Totality is a compile
+  error plus a runtime key-set check. A reasoned "no" is a fine answer; forcing
+  the sentence is the mechanism. **F-H:** the test that guarded the merge was
+  called *"…— nothing swallowed"* and asserted exactly the four things the
+  1.7.0 list carried, so it shared the code's blind spot permanently. It keeps
+  its assertions and gives up the claim.
+  · ADR-0058, amending ADR-0053 under that record's own overturn clause
+  ("only by evidence that it carried wrongly … the answer would be a smarter
+  carry"). The cross-app lesson is in the hub's `LESSONS.md`.
+
 - **2026-08-01 (Noah: "Promote. Continue")** — **1.9.1 "The gates it
   claimed"** — the "say true things" patch turned on the repo itself. A sweep
   of everything the docs claim to check found three claims with nothing behind

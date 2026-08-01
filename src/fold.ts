@@ -380,6 +380,11 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       people: [...n.people],
       // And the decision log, for the same reason a third time (1.9.0).
       decisions: [...n.decisions],
+      // And the standing decline, a fourth (1.8.0, found by the 1.9.2 audit —
+      // it was aliased from the day it shipped). `clocks` values and the
+      // Ordering tuples in `stamps` stay SHARED on purpose: every write
+      // replaces those wholesale rather than mutating them in place.
+      notNow: n.notNow ? { ...n.notNow } : null,
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -409,8 +414,11 @@ export function cloneShell(base: State): State {
     lastReportMark: base.lastReportMark ? { ...base.lastReportMark } : null,
     lastActivityAt: base.lastActivityAt,
     modules: new Set(base.modules),
-    requestSlot: base.requestSlot,
-    requestSlotStamp: base.requestSlotStamp,
+    // Both copied, like `lastReportMark` above (1.9.2). A stamp is replaced
+    // wholesale on every write, so this is hygiene rather than a live bug —
+    // but the rule is the rule, and the exception was never argued for.
+    requestSlot: base.requestSlot ? { ...base.requestSlot } : null,
+    requestSlotStamp: base.requestSlotStamp ? { ...base.requestSlotStamp } : null,
   };
 }
 

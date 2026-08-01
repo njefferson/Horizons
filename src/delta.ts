@@ -13,6 +13,7 @@
 // PURE, and it takes both states as arguments.
 
 import type { NodeState, State } from './fold.ts';
+import { decisionsFor } from './merged.ts';
 import { heldNodes } from './gate.ts';
 import { isOpenWaiting, withWhom, openDays } from './people.ts';
 import { calendarDaysBetween, isValidIso, localDayKey } from './time.ts';
@@ -118,11 +119,21 @@ export function deltaBetween(
   // What was decided in the period (1.9.0). A decision the reader has already
   // been told about must not reappear, so this is a set difference on event
   // ids — the same "delta, not roster" rule every section above obeys.
+  //
+  // `seen` is built across the WHOLE of `before`, including trashed and merged
+  // nodes, not per node (1.9.2). A decision's identity is its event id; which
+  // node it hangs off is routing, not identity. Per-node, folding S into T
+  // mid-period re-reported every one of S's old decisions under T — reported
+  // as decided in a period when nothing was decided, in the one artefact that
+  // leaves the device. Correct independently of merges, and REQUIRED once the
+  // reader below follows folds.
+  const seen = new Set<string>();
+  for (const b of before.nodes.values()) for (const d of b.decisions) seen.add(d.id);
   const decided: DeltaReport['decided'] = [];
   for (const n of heldNodes(after)) {
-    if (n.decisions.length === 0) continue;
-    const seen = new Set((before.nodes.get(n.id)?.decisions ?? []).map(d => d.id));
-    for (const d of n.decisions) {
+    // Through the fold: a decision logged on something since folded into `n`
+    // is a decision about `n` now — it used to vanish from the report entirely.
+    for (const d of decisionsFor(after, n)) {
       if (!seen.has(d.id)) decided.push({ node: n, text: d.text, at: d.at });
     }
   }

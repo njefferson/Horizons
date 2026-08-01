@@ -60,6 +60,17 @@ export function composedFor(state: State, nowIso: string, zone: string): NodeSta
     });
 }
 
+/**
+ * Is this in today's chosen set?
+ *
+ * Exists so the ONE-reader claim above stays literally true (1.9.2). A
+ * `n.todayFor === localDayKey(...)` in a surface is a SECOND derivation of
+ * "chosen", not a use of the first — it agreed with this one, which is exactly
+ * how a claim rots without anyone noticing.
+ */
+export const chosenToday = (state: State, id: string, nowIso: string, zone: string): boolean =>
+  composedFor(state, nowIso, zone).some(n => n.id === id);
+
 /** Is today full? Asked before offering the choose verb — at the cap the
  *  button states it in words and disables, never fails after a tap. */
 export const composedFull = (state: State, nowIso: string, zone: string): boolean =>

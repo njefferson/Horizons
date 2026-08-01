@@ -3399,6 +3399,80 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(mergeLog.cured, true, 'and the split-out node got its cure — never silent');
   is(await sortCount() > mergeLogBefore, true, 'the fold and split wrote real events');
 
+  // ── 1.9.2: what a fold TAKES WITH IT. Until this release, folding a duplicate
+  // silently took the source's decision log and its standing decline off every
+  // surface — two features that shipped AFTER the merge and never visited it.
+  // Two projects rather than two captures, because the decision log is offered
+  // on containers (and on anything that already carries one).
+  console.log('\nWhat a fold takes with it (1.9.2)');
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.setInputFiles('#other-file', {
+    name: 'twins.taskpaper',
+    mimeType: 'text/plain',
+    buffer: Buffer.from('Rewire the shed light:\n\t- pull the cable\nrewire the SHED light:\n\t- fit the fitting\n'),
+  });
+  await tpage.waitForFunction(() => /Found/.test(
+    document.querySelector('#other-note')?.textContent ?? ''), null, { timeout: 4000 });
+  await tpage.click('#other-go');
+  await tpage.waitForTimeout(900);
+  await tpage.waitForSelector('body[data-ready=true]');
+
+  // Log a decision on one of them, and decline it.
+  await fillSearch('Rewire the shed');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /^Rewire the shed light/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.waitForSelector('#detail-decision-group:not([hidden])');
+  await tpage.fill('#detail-decision', 'use the armoured cable');
+  await tpage.click('#detail-decision-set');
+  await tpage.waitForFunction(() => /armoured cable/.test(
+    document.querySelector('#detail-decision-list')?.textContent ?? ''));
+  await tpage.click('#detail-decline');
+  await tpage.waitForSelector('#detail-declined:not([hidden])');
+
+  // Fold it into its twin.
+  await tpage.fill('#detail-merge-filter', 'SHED');
+  await tpage.waitForFunction(() => [...document.querySelectorAll('#detail-merge option')]
+    .some(o => /SHED/.test(o.textContent ?? '')));
+  await tpage.selectOption('#detail-merge', { label: 'rewire the SHED light' });
+  await tpage.click('#detail-merge-set');
+  await tpage.waitForFunction(() => /Folded into/.test(
+    document.querySelector('#detail-live')?.textContent ?? ''));
+  await tpage.click('#detail-close');
+  await fillSearch('');
+
+  // The SURVIVOR carries the decision, and says which folded-in thing it was
+  // decided about. Before 1.9.2 this list was empty and the record unreachable.
+  await fillSearch('SHED');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /SHED/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  const survivorDecisions = await tpage.locator('#detail-decision-list').textContent() || '';
+  is(/armoured cable/.test(survivorDecisions), true,
+    'the survivor surfaces what was decided about the thing folded into it');
+  is(/from Rewire the shed light/.test(survivorDecisions), true,
+    'and says which folded-in thing it was decided about');
+  // The survivor is NOT itself declined — a fold must never decline live work.
+  is(await tpage.locator('#detail-declined').isHidden(), true,
+    'and folding a declined duplicate in did not mark the survivor declined');
+  await tpage.click('#detail-close');
+  await fillSearch('');
+
+  // The ledger keeps the row and says where it lives now.
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.click('#notnow-open');
+  await tpage.waitForSelector('#notnow-view:not([hidden])');
+  const foldedLedger = await tpage.locator('#notnow-list').textContent() || '';
+  is(/Rewire the shed light/.test(foldedLedger), true,
+    'a declined thing that was later folded keeps its place in the ledger');
+  is(/now part of/.test(foldedLedger), true, 'and the row says where it lives now');
+  is(/%|\d+\s*(times|of|\/)\s*\d*|remaining/.test(await tpage.locator('#notnow-view').textContent() || ''),
+    false, 'still a name and a date and a place — never a count');
+  await tpage.click('#notnow-open');
+  await tpage.click('#about-close');
+
   // THE LENS: a filter over what you are LOOKING at, never what is held.
   await tpage.waitForSelector('#lens-row:not([hidden])');
   const preLensCards = await tpage.locator('#cards .card').count();

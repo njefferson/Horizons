@@ -19,6 +19,10 @@ import {
 } from './events.ts';
 import { applyEvent, cloneShell, compareEvents, compareOrdering, fold, type NodeState, type State } from './fold.ts';
 import { endOfLocalDay, isValidIso } from './time.ts';
+// Follows a merge chain to its living end. Lived here as a private
+// `mergeTarget` until 1.9.2, when the ledger needed the same walk — one
+// concept, one home. `merged.ts` imports `fold.ts` only, so there is no cycle.
+import { survivorOf } from './merged.ts';
 import { wouldCycle } from './dependencies.ts';
 import { wouldParentCycle } from './tree.ts';
 
@@ -40,19 +44,6 @@ export class GateRejection extends Error {
 const isDemandFree = (k: NodeKind): boolean =>
   (DEMAND_FREE_KINDS as readonly NodeKind[]).includes(k);
 
-/** Follow a merge chain to its living end. Null when the chain leaves the
- *  known world (missing target), ends in the trash, or loops. */
-function mergeTarget(node: NodeState, state: State): NodeState | null {
-  const seen = new Set<NodeId>([node.id]);
-  let cur: NodeState | undefined = node;
-  while (cur?.mergedInto) {
-    if (seen.has(cur.mergedInto)) return null;             // cycle
-    seen.add(cur.mergedInto);
-    cur = state.nodes.get(cur.mergedInto);
-  }
-  return cur && !cur.trashed ? cur : null;
-}
-
 /** Law 1's four-way test. A node satisfying none of these is SILENT. */
 export function isSilent(node: NodeState, state: State): boolean {
   if (node.trashed) return false;        // an explicit end is a decision, not a silence
@@ -61,7 +52,7 @@ export function isSilent(node: NodeState, state: State): boolean {
     // target actually lives. The audit merged a node into an id that did not
     // exist and the old unconditional exemption called it covered; law 1 was
     // being defined away, not enforced.
-    const target = mergeTarget(node, state);
+    const target = survivorOf(state, node);
     return target ? isSilent(target, state) : true;
   }
   if (Object.keys(node.clocks).length > 0) return false;   // (b) under a clock

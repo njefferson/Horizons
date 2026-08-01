@@ -101,10 +101,21 @@ export function purgeCount(state: State, events: readonly AppEvent[]): PurgeCoun
 /**
  * The events for `clear`.
  *
- * One `node.trashed` per held thing, and nothing else. A trashed node is not
- * silent (an explicit end is a decision, not a silence), so this cannot violate
- * law 1 — and because it is only ever an append, the history survives and the
- * whole operation is inspectable afterwards.
+ * One `node.trashed` per thing not already let go. A trashed node is not silent
+ * (an explicit end is a decision, not a silence), and because this is only ever
+ * an append, the history survives and the whole operation is inspectable
+ * afterwards.
+ *
+ * **Not `heldNodes`** — that was the bug (1.9.2, F-I). A node folded into
+ * another is not HELD, but it is not finished with either: `isSilent` rides the
+ * merge chain, so trashing the survivor while leaving the folded-away source
+ * alone made that source silent, and the whole-batch belt refused the write.
+ * "Clear what I am holding" was therefore impossible for anyone who had folded
+ * a duplicate and left it folded. This comment used to end "so this cannot
+ * violate law 1", which was true when it was written, in 1.5.0, and stopped
+ * being true in 1.7.0 when folding a duplicate shipped — nobody edited the
+ * claim because nobody had reason to look at it. Clearing means clearing:
+ * everything that has not already been let go is let go, folded or not.
  *
  * `start-again` produces NO events by design: there is nowhere to put them, since
  * the store they would describe is the one being replaced. The fresh store records
@@ -114,10 +125,13 @@ export function clearEvents(
   ctx: { at: string; device: string; vault: string; seq: () => number; id: () => string },
   state: State,
 ): AppEvent[] {
-  return heldNodes(state).map(n => ({
-    id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
-    kind: 'node.trashed', node: n.id, payload: { reason: 'cleared' },
-  } as unknown as AppEvent));
+  return [...state.nodes.values()]
+    .filter(n => !n.trashed)
+    .sort((a, b) => (a.id < b.id ? -1 : 1))       // a total order, like every batch here
+    .map(n => ({
+      id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+      kind: 'node.trashed', node: n.id, payload: { reason: 'cleared' },
+    } as unknown as AppEvent));
 }
 
 /** What `start again` needs of a store: forget the pairing, then replace the log. */
