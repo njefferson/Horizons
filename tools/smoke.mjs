@@ -59,7 +59,17 @@ try {
 
   // Wait for the APP, not for `load`. The module is still awaiting IndexedDB
   // when `load` fires, so asserting at that moment tests the gap, not the app.
-  const ready = () => page.waitForSelector('body[data-ready=true]');
+  
+// The folding groups (1.7.2, ADR-0055): the panel opens with every group
+// closed. The walk's business lives inside them, so each open expands all —
+// the default-closed contract itself is pinned once, at the tour handoff.
+const expandGroups = async (pg) => {
+  await pg.waitForSelector('#about[open]');
+  await pg.evaluate(() =>
+    document.querySelectorAll('#about .about-group-toggle[aria-expanded="false"]')
+      .forEach(b => b.click()));
+};
+const ready = () => page.waitForSelector('body[data-ready=true]');
 
   const bootStart = Date.now();
   await page.goto(url, { waitUntil: 'load' });
@@ -80,6 +90,11 @@ try {
   await page.click('#tour-next');
   is(await page.locator('#tour').isVisible(), false, 'finishing closes the walkthrough');
   is(await page.locator('#about').isVisible(), true, 'and opens the panel for the storage step');
+  is(await page.locator('#group-data').isVisible(), true,
+    'the handoff unfolds Your data — "keeping your data safe" is kept, not folded');
+  is(await page.locator('#group-extras').isHidden(), true,
+    'and every other group starts closed (ADR-0055)');
+  await expandGroups(page);
   is((await page.locator('#version').textContent())?.trim(), CURRENT.triplet,
     'version is the bare triplet — releases do not have names');
   is(await page.locator('.note-triplet').first().textContent(), CURRENT.triplet,
@@ -104,6 +119,15 @@ try {
   is(await page.title(), 'Quietkeep', 'title');
   is(await page.locator('#empty').isVisible(), true, 'empty state shown on a fresh store');
   is(await page.evaluate(() => document.activeElement?.id), 'capture', 'capture has focus on arrival');
+  // Planning for Humans is a real page the panel links to (1.7.2): the SW
+  // used to answer ANY slow navigation with the app shell — tapping the link
+  // landed back on the main screen — and cached every navigation's body under
+  // the shell's own key, so one visit could replace the app with an essay.
+  await page.goto(`${url.replace(/\/$/, '')}/why.html`, { waitUntil: 'load' });
+  is(/Planning for Humans/i.test(await page.locator('body').textContent() || ''), true,
+    'the thesis page is really there and renders');
+  await page.goto(url, { waitUntil: 'load' });
+  await ready();
 
   console.log('\nCapture');
   await page.fill('#capture', 'Ring the dentist');
@@ -189,6 +213,7 @@ try {
 
   console.log('\nExport — the way out');
   await page.click('#open-about');
+  await expandGroups(page);
   is(await page.locator('#about').isVisible(), true, 'the (i) opens on request');
   const [download] = await Promise.all([
     page.waitForEvent('download'),
@@ -358,6 +383,7 @@ try {
 
   console.log('\nTriage — every route left its terminal event in the log');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   const [tdl] = await Promise.all([tpage.waitForEvent('download'), tpage.click('#export')]);
   const tlog = JSON.parse(readFileSync(await tdl.path(), 'utf8')).logJsonl
     .split('\n').filter(Boolean).map((l) => JSON.parse(l));
@@ -941,6 +967,7 @@ try {
   const calPromised = await tpage.evaluate(() =>
     document.querySelector('#calendar-note')?.textContent ?? '');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#calendar');
   const [preIcal] = await Promise.all([
     tpage.waitForEvent('download'),
@@ -1080,6 +1107,7 @@ try {
     });
   });
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#calendar');
   const calNote = await tpage.locator('#calendar-note').textContent();
   // The NUMBER, not a regex that matched the zero-state too: `/…|nothing to send/`
@@ -1158,6 +1186,7 @@ try {
   // actually lands and survives a reload.
   console.log('\nBringing a copy back — the way in, which the way out needed');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#import-file');
   is(await tpage.locator('#import-actions').isVisible(), false,
     'nothing destructive is reachable before a file has been read');
@@ -1254,6 +1283,7 @@ try {
   is(heldAfterExtra, heldBefore + 1, 'the store now differs from the file');
 
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#import-file');
   await tpage.setInputFiles('#import-file', backupPath);
   await tpage.waitForTimeout(250);
@@ -1545,6 +1575,7 @@ try {
   // date for it to be right.
   console.log('\nThe report \u2014 what has changed since you last told anyone');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#report-markdown');
   const [reportFile] = await Promise.all([
     tpage.waitForEvent('download'),
@@ -1576,6 +1607,7 @@ try {
   await tpage.click('#capture-form button[type=submit]');
   await tpage.waitForTimeout(300);
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   const [second] = await Promise.all([
     tpage.waitForEvent('download'),
     tpage.click('#report-markdown'),
@@ -1823,6 +1855,7 @@ try {
     'nobody asked for a sweep, so there is none');
 
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#comms-start');
   is(await tpage.locator('#comms-stop').isHidden(), true,
     'and nothing to stop, because nothing is running');
@@ -1954,6 +1987,7 @@ try {
   await tpage.reload({ waitUntil: 'load' });
   await tpage.waitForSelector('body[data-ready=true]');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about-body');
 
   is(await tpage.evaluate(() => {
@@ -1997,6 +2031,7 @@ try {
 
   // The other way out, at the bottom, still works too.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about-body');
   await tpage.click('#about-close');
   await tpage.waitForTimeout(200);
@@ -2006,6 +2041,7 @@ try {
   // The panel is no longer thousands of pixels tall, which is why the way out
   // was ever far from a thumb.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about-body');
   const panelH = await tpage.evaluate(() => document.querySelector('#about-body').scrollHeight);
   is(panelH < 9000, true, `the panel is readable rather than a scroll of history (${panelH}px)`);
@@ -2057,6 +2093,7 @@ try {
     };
   });
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#today-print');
   await tpage.click('#today-print');
   await tpage.waitForTimeout(200);
@@ -2422,6 +2459,7 @@ try {
     await other.waitForTimeout(150);
   }
   await other.click('#open-about');
+  await expandGroups(other);
   const [otherExport] = await Promise.all([
     other.waitForEvent('download'),
     other.click('#export'),
@@ -2435,6 +2473,7 @@ try {
   const beforeUnion = await tpage.locator('#cards .card').count();
   const mineBefore = await tpage.locator('#cards .card-title').allTextContents();
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.setInputFiles('#import-file', otherFile);
   await tpage.waitForTimeout(350);
   is(await tpage.locator('#import-union').isVisible(), true,
@@ -2457,6 +2496,7 @@ try {
   // Doing it again is the ordinary case: you are not sure whether you already
   // did. It must cost nothing and must not throw on the unique-id index.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.setInputFiles('#import-file', otherFile);
   await tpage.waitForTimeout(350);
   await tpage.click('#import-union');
@@ -2481,6 +2521,7 @@ try {
   // only the real store can say which happened.
   const beforeSample = await tpage.locator('#cards .card').count();
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#sample');
   await tpage.waitForFunction(() => /sample things/.test(
@@ -2534,6 +2575,7 @@ try {
 
   console.log('\nThe number on the icon is optional');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   is(await tpage.locator('#badge-toggle').getAttribute('aria-pressed'), 'true', 'on by default');
   is(/Stop showing/.test(await tpage.locator('#badge-toggle').textContent() || ''), true,
@@ -2563,6 +2605,7 @@ try {
   // appear HERE too, and on every device, pointing at a host nobody confirmed.
   // The unit tests prove the derivation; this proves the built app obeys it.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   const sib_hidden = await tpage.evaluate(() => {
     const p = document.querySelector('#sibling');
@@ -2584,6 +2627,7 @@ try {
   console.log('\nWork from another planner — TaskPaper and CSV');
   const beforeImport = await tpage.locator('#cards .card').count();
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   // A real file, through the real picker: this is the path somebody actually uses,
   // and a parser test cannot tell you the button is wired.
@@ -2646,6 +2690,7 @@ try {
   // the held list had no cap at all, which nobody noticed while the fixtures held
   // eight things. Asserted through the REAL import path at a size past the cap.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   const cap_many = ['Big import:'];
   for (let i = 0; i < 60; i++) cap_many.push(`\t- Imported thing ${i}`);
@@ -2684,6 +2729,7 @@ try {
   is(cap_rowsAfter - cap_rowsBefore, cap_promised,
     `showing them produced exactly the number it promised (${cap_rowsBefore} -> ${cap_rowsAfter}, promised ${cap_promised})`);
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#about-close');
 
@@ -2693,6 +2739,7 @@ try {
   // node.created. This is Noah's 1,222, at fixture scale.
   const gaugeBeforeLoose = await tpage.locator('#triage-gauge').textContent().catch(() => '') || '';
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.setInputFiles('#other-file', {
     name: 'loose.taskpaper', mimeType: 'text/plain',
@@ -2877,6 +2924,7 @@ try {
   // Import the exact CSV shape that once lost every note, and read the note
   // back off the item's own sheet.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.setInputFiles('#other-file', {
     name: 'noted.csv', mimeType: 'text/csv',
@@ -2937,6 +2985,7 @@ try {
 
   // The record itself: day-grouped, plain words, true totals, honest reveal.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#log-open');
   // The container unhides synchronously; the CONTENT lands after the async
@@ -2971,6 +3020,7 @@ try {
   // Six loose rows, one carrying a real future due date — the batch shape, at
   // fixture scale, with the date that must be SHED on a Menu landing.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.setInputFiles('#other-file', {
     name: 'bulk.taskpaper', mimeType: 'text/plain',
@@ -3117,6 +3167,7 @@ try {
 
   // THINGS YOU LET GO: the promise "keep it after all" is finally true.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#trash-open');
   await tpage.waitForSelector('#trash-view:not([hidden])');
@@ -3171,6 +3222,7 @@ try {
   // COMPOSED TODAY, optional and off by default: nothing anywhere until asked.
   is(await tpage.locator('#composed').isVisible(), false, 'off by default — nothing renders');
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#today-start');
   await tpage.waitForFunction(() => /^On\./.test(
@@ -3211,6 +3263,7 @@ try {
 
   // Turning the module OFF removes every surface of it; the record stays.
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   await tpage.click('#today-stop');
   await tpage.waitForFunction(() => /^Off\./.test(
@@ -3361,6 +3414,7 @@ try {
   const beforeRows = await purgeRows();
   const beforeLog = await logCount();
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   is(/\d+ thing/.test(await tpage.locator('#purge-summary').textContent() || ''), true,
     'it says how many things are on the surfaces');
@@ -3444,6 +3498,7 @@ try {
       : new RegExp(`\\b${iconNumber} ready now\\b`).test(badgeGauge), true,
     `the gauge states the icon's own number ("${badgeGauge}" vs icon ${JSON.stringify(iconNumber ?? 'clear')})`);
   await tpage.click('#open-about');
+  await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
   is(/number on the app icon/i.test(await tpage.locator('#badge-explainer').textContent() || ''), true,
     'and the panel says what the number on the icon means');

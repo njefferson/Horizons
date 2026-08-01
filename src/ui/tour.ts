@@ -15,6 +15,7 @@
 // with the capture box one tap away.
 
 import type { Session } from './session.ts';
+import { editionName, isSyncEdition } from './edition.ts';
 
 /** Written when the walkthrough is finished OR skipped: seeing it once is the
  *  contract, and skipping IS seeing it. Its own key, separate from the ⓘ intro. */
@@ -29,9 +30,12 @@ interface Step {
   body: string[];
 }
 
-const STEPS: readonly Step[] = [
+/** Computed per show, not at import: the last step's privacy sentence must
+ *  state THIS edition's truth, and the edition is only known once `main()`
+ *  has run (Noah caught the default's words inside Quietkeep Sync, 1.7.2). */
+const stepsNow = (): readonly Step[] => [
   {
-    heading: 'Welcome to Quietkeep',
+    heading: `Welcome to ${editionName()}`,
     body: [
       'Put anything down and Quietkeep holds it, then brings it back on its own.',
       'You never have to keep it in your head, or remember to look. That is the whole idea — everything else is just how it does it.',
@@ -54,7 +58,9 @@ const STEPS: readonly Step[] = [
   {
     heading: 'It is yours, and it is all here',
     body: [
-      'Everything stays on your device — no account, no sign-in, no server holding your writing.',
+      isSyncEdition()
+        ? 'Everything stays on your devices — no account, no sign-in. What they trade to stay in step is sealed with a key only they hold.'
+        : 'Everything stays on your device — no account, no sign-in, no server holding your writing.',
       'The ⓘ at the top has how to install it, how to keep your data safe, and this walkthrough again whenever you want it. Get started opens that panel, so keeping your data safe is the first thing you do.',
     ],
   },
@@ -79,6 +85,7 @@ export function showTour(session: Session, onFinish?: () => void): void {
   const skip = document.querySelector<HTMLButtonElement>('#tour-skip');
   if (!dialog || !progress || !heading || !bodyEl || !dots || !back || !next || !skip) return;
 
+  const STEPS = stepsNow();
   let i = 0;
 
   const render = (): void => {
@@ -146,7 +153,11 @@ export async function mountTour(session: Session): Promise<void> {
 }
 
 /** Open the ⓘ panel by its real control, so the storage step and its wiring run
- *  exactly as they do for any other open. */
+ *  exactly as they do for any other open — and unfold Your data, because the
+ *  handoff's whole promise is "keeping your data safe is the first thing you
+ *  do", and a promise behind a fold is not kept (ADR-0055). */
 function openAbout(): void {
   document.querySelector<HTMLButtonElement>('#open-about')?.click();
+  const data = document.querySelector<HTMLButtonElement>('#group-data-open[aria-expanded="false"]');
+  data?.click();
 }

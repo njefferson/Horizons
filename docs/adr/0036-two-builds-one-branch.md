@@ -96,3 +96,22 @@ shared accessibility statement.
 The two builds needing to differ in product terms rather than in one module. At
 that point they are two products, two branches are honest, and this record is
 superseded rather than stretched.
+
+## Amendment — 2026-08-01 (1.7.2): the words follow the edition, on Noah's word
+
+The wording gap this record listed for Noah resolved itself the honest way: he
+opened Quietkeep Sync and caught the default's copy lying to him — "there is no
+server" and "the default app you are in never contacts anything at all", both
+false in that build. On his instruction ("these two lie… these need to match
+the version"):
+
+- `src/ui/edition.ts` carries the word-level edition fact, set once by the
+  entry point's own shape (the sync entry passes its mount; the default passes
+  nothing). The artefact-level guarantee is untouched — the default bundle
+  still does not contain the sync module, and `tools/editions.mjs` still reads
+  the built file to prove it.
+- The panel header and the walkthrough name the edition ("Quietkeep Sync"),
+  and every `[data-edition]` paragraph shows its own build's truth: the markup
+  ships the default's words visible, and the sync build flips them at start.
+- The build-time patches (page title, manifest name, cache name) stay as they
+  were — this amendment adds the runtime words, it replaces nothing.

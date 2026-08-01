@@ -19,6 +19,11 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const SRC = join(ROOT, 'docs', 'planning-for-humans.md');
 const OUT = join(ROOT, 'public', 'why.html');
+// The page's styles live in a FILE, not a <style> block: the site's CSP is
+// style-src 'self', which refuses inline styles — the first deployed thesis
+// rendered unstyled and nobody saw it until the smoke walk navigated there
+// (1.7.2). Generated together, checked together.
+const CSS_OUT = join(ROOT, 'public', 'why.css');
 
 const esc = (s) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -104,21 +109,7 @@ function convert(md) {
   return out.join('\n');
 }
 
-function page(bodyHtml) {
-  return `<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Why it works this way — Quietkeep</title>
-<meta name="description" content="The reasoning behind Quietkeep — how memory, attention and motivation actually work, and how that shaped every choice — with each source named and tagged by how well established it is.">
-<meta name="theme-color" content="#141A26" media="(prefers-color-scheme: dark)">
-<meta name="theme-color" content="#F4F1E9" media="(prefers-color-scheme: light)">
-<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">
-<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
-<link rel="icon" type="image/svg+xml" href="/brand/icon.svg">
-<style>
-  :root{
+const CSS = `  :root{
     color-scheme: light dark;
     --bg:#F4F1E9; --surface:#FFFFFF; --ink:#1B2333; --ink-soft:#4C5670;
     --line:#8E8A7F; --accent:#33425F; --warm:#7A4E00;
@@ -159,7 +150,22 @@ function page(bodyHtml) {
   }
   blockquote p:last-child{ margin-bottom:0; }
   footer{ margin-top:3rem; padding-top:1.5rem; border-top:1px solid var(--line); color:var(--ink-soft); font-size:0.9375rem; }
-</style>
+`;
+
+function page(bodyHtml) {
+  return `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why it works this way — Quietkeep</title>
+<meta name="description" content="The reasoning behind Quietkeep — how memory, attention and motivation actually work, and how that shaped every choice — with each source named and tagged by how well established it is.">
+<meta name="theme-color" content="#141A26" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#F4F1E9" media="(prefers-color-scheme: light)">
+<link rel="icon" type="image/png" sizes="32x32" href="/brand/favicon-32.png">
+<link rel="apple-touch-icon" href="/brand/apple-touch-icon.png">
+<link rel="icon" type="image/svg+xml" href="/brand/icon.svg">
+<link rel="stylesheet" href="/why.css">
 </head>
 <body>
 <main>
@@ -181,12 +187,15 @@ const html = page(convert(readFileSync(SRC, 'utf8')));
 if (process.argv.includes('--check')) {
   let current = '';
   try { current = readFileSync(OUT, 'utf8'); } catch { /* missing => differs */ }
-  if (current !== html) {
-    console.error('public/why.html is out of date — run `npm run thesis`.');
+  let currentCss = '';
+  try { currentCss = readFileSync(CSS_OUT, 'utf8'); } catch { /* missing => differs */ }
+  if (current !== html || currentCss !== CSS) {
+    console.error('public/why.html or why.css is out of date — run `npm run thesis`.');
     process.exit(1);
   }
-  console.log('why.html matches docs/planning-for-humans.md.');
+  console.log('why.html and why.css match docs/planning-for-humans.md.');
 } else {
   writeFileSync(OUT, html);
-  console.log(`wrote ${OUT}`);
+  writeFileSync(CSS_OUT, CSS);
+  console.log(`wrote ${OUT} and why.css`);
 }

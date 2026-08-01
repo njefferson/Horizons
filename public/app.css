@@ -1069,6 +1069,30 @@ dialog, dialog * { overflow-wrap: anywhere; }
   text-transform: uppercase;
   color: var(--ink-soft);
 }
+/* The folding groups (1.7.2, ADR-0055): the header IS the control now. The
+   button inherits the header's face; the caret carries open/closed so the
+   name never changes under the reader. Full-width and target-height — the
+   whole line is the tap. */
+.about-group-toggle {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  padding: 0.3rem 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.about-group-toggle::before {
+  content: "\25B8\00A0";              /* ▸ closed */
+}
+.about-group-toggle[aria-expanded="true"]::before {
+  content: "\25BE\00A0";              /* ▾ open */
+}
 /* The one place the panel uses a real list: the how-to and install steps read
    as steps, not prose. */
 .about-list { margin: 0 0 0.6rem; padding-left: 1.15rem; color: var(--ink-soft); }

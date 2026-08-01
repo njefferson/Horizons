@@ -831,11 +831,18 @@
        ten tool sections (Noah). What it is, how you use it, and how to keep it
        come first now; the tools are grouped below. -->
   <h3 class="about-section">What Quietkeep is</h3>
-  <p class="about-p">
+  <p class="about-p" data-edition="default">
     Quietkeep holds everything you put down and brings it back on its own &mdash;
     so you do not have to hold it in your head, or remember to look. It is a
     planner that lives entirely on your device: no account, no sign-in, and no
     server holding your writing, because there is no server.
+  </p>
+  <p class="about-p" data-edition="sync" hidden>
+    Quietkeep holds everything you put down and brings it back on its own &mdash;
+    so you do not have to hold it in your head, or remember to look. It is a
+    planner that lives on your devices: no account, no sign-in, and nothing
+    readable ever leaves them &mdash; what your devices trade is sealed with a
+    key only they hold.
   </p>
 
   <h3 class="about-section">How to use it</h3>
@@ -897,7 +904,15 @@
     reaches you.
   </p>
 
-  <h2 class="about-group">Help</h2>
+  <!-- The folding groups (1.7.2, ADR-0055). The panel carries everything, and
+       everything at once was too much to stand in front of (Noah, on device):
+       accent rules separated small things while nothing separated the big ones.
+       Each group folds behind its own header now — closed by default, opened
+       state remembered per device (a view preference, never an event). The
+       opening (what Quietkeep is, how to use it) stays above the fold, and the
+       Close control stays outside every group so the way out never folds. -->
+  <h2 class="about-group"><button id="group-help-open" type="button" class="about-group-toggle" aria-expanded="false" aria-controls="group-help">Help</button></h2>
+  <div id="group-help" hidden>
   <p class="about-p">Short answers to the things people ask. Tap one to open it.</p>
   <details class="disclosure help-q">
     <summary>How do I get something out of my head?</summary>
@@ -934,9 +949,17 @@
   </details>
   <details class="disclosure help-q">
     <summary>Is my writing private? Where does it live?</summary>
-    <p class="about-p">Everything stays on this device. No account, no sign-in, and
-      no server holding your writing, because there is no server. Nothing about you
-      is collected.</p>
+    <!-- Two truths, one per edition — the runtime shows the one that is true
+         of THIS build. The default's answer shown in Quietkeep Sync was a lie
+         ("there is no server") and Noah caught it on device (1.7.2). -->
+    <p class="about-p" data-edition="default">Everything stays on this device. No
+      account, no sign-in, and no server holding your writing, because there is no
+      server. Nothing about you is collected.</p>
+    <p class="about-p" data-edition="sync" hidden>Everything stays on this device
+      &mdash; no account, no sign-in. When your devices trade changes, the copy
+      that travels is sealed here first, with a key only your devices hold; the
+      relay it passes through cannot read a word of it. Nothing about you is
+      collected.</p>
   </details>
   <details class="disclosure help-q">
     <summary>How do I back it up, or move to a new device?</summary>
@@ -946,9 +969,14 @@
   </details>
   <details class="disclosure help-q">
     <summary>Can I keep two devices in step?</summary>
-    <p class="about-p">There is a separate edition, Quietkeep Sync, that does exactly
-      that &mdash; sealed on your device before anything leaves, with a key only your
-      devices hold. The default app you are in never contacts anything at all.</p>
+    <p class="about-p" data-edition="default">There is a separate edition, Quietkeep
+      Sync, that does exactly that &mdash; sealed on your device before anything
+      leaves, with a key only your devices hold. The default app you are in never
+      contacts anything at all.</p>
+    <p class="about-p" data-edition="sync" hidden>Yes &mdash; this is Quietkeep Sync,
+      the edition that does exactly that: sealed on this device before anything
+      leaves, with a key only your devices hold. Pairing lives under
+      &ldquo;Keeping two devices in step&rdquo; in Your data.</p>
   </details>
   <details class="disclosure help-q">
     <summary>Why does it work this way?</summary>
@@ -961,7 +989,10 @@
       <a href="/why.html">Planning for Humans</a>, here in the app.</p>
   </details>
 
-  <h2 class="about-group">Your data</h2>
+  </div>
+
+  <h2 class="about-group"><button id="group-data-open" type="button" class="about-group-toggle" aria-expanded="false" aria-controls="group-data">Your data</button></h2>
+  <div id="group-data" hidden>
   <h3 class="about-section">Storage on this device</h3>
   <dl id="storage-body"></dl>
   <p id="storage-note" class="storage-note"></p>
@@ -1044,7 +1075,10 @@
     <ul id="trash-list" class="trash-list"></ul>
   </div>
 
-  <h2 class="about-group">Extras</h2>
+  </div>
+
+  <h2 class="about-group"><button id="group-extras-open" type="button" class="about-group-toggle" aria-expanded="false" aria-controls="group-extras">Extras</button></h2>
+  <div id="group-extras" hidden>
   <h3 class="about-section">One pass through your messages</h3>
   <p class="about-p">
     Messages arrive all day and attention does not divide. If you turn this on,
@@ -1218,7 +1252,10 @@
   </div>
   <p id="purge-note" class="storage-note" role="status" aria-live="polite"></p>
 
-  <h2 class="about-group">About</h2>
+  </div>
+
+  <h2 class="about-group"><button id="group-about-open" type="button" class="about-group-toggle" aria-expanded="false" aria-controls="group-about">About</button></h2>
+  <div id="group-about" hidden>
   <h3 class="about-section">What&rsquo;s new</h3>
   <div id="patch-notes"></div>
 
@@ -1238,6 +1275,8 @@
     <a href="https://noahjefferson.pages.dev/accessibility">Accessibility statement</a> ·
     <a href="https://github.com/njefferson/Quietkeep">Source and licence</a>
   </p>
+
+  </div>
 
   <div class="about-actions">
     <button id="about-close" type="button" class="ghost">Close</button>

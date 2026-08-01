@@ -129,6 +129,9 @@ const REGISTRY = {
   // walkthrough) is the same one a returning person sees.
   'first-run dialog': DIALOG_COMMON,
   'dialog, return visit': DIALOG_COMMON,
+  // The folding groups (1.7.2, ADR-0055): the header is the control, audited
+  // in the collapsed state a new user actually meets.
+  'panel groups': ['.about-group-toggle'],
   'empty store': [
     '.wordmark', '#capture', { sel: '#capture', pseudo: '::placeholder' },
     '#capture-form button[type=submit]',
@@ -553,6 +556,14 @@ try {
     // landing when a commit-triggered refresh is in flight — rarely, and only
     // on loaded runners. Verifying keeps the check honest: a lost fill
     // retries; a genuinely broken search still fails, with the observed value.
+    // The folding groups (1.7.2, ADR-0055): audits reach into every group, so
+    // each open expands all. The collapsed default is audited in State 1.
+    const expandGroups = async () => {
+      await page.waitForSelector('#about[open]');
+      await page.evaluate(() =>
+        document.querySelectorAll('#about .about-group-toggle[aria-expanded="false"]')
+          .forEach(b => b.click()));
+    };
     const fillSearch = async (text) => {
       for (let tries = 0; ; tries++) {
         // The mechanism, finally caught: filling while a modal dialog is open
@@ -597,7 +608,14 @@ try {
     await page.click('#tour-next');
 
     // State 1: the (i) panel as a new user reaches it (via the walkthrough).
+    // The handoff unfolds Your data; the other groups arrive CLOSED — so this
+    // is where the group toggles are audited in the state people meet them.
     await page.waitForSelector('#storage-body dt');
+    await auditContrast(page, 'panel groups', theme);
+    await auditAxe(page, 'panel groups', theme);
+    await auditTargets(page, 'panel groups', theme);
+    await auditFocusRings(page, 'panel groups', theme, ['.about-group-toggle']);
+    await expandGroups();
     // The clearing confirmation is revealed by choosing a mode, so it is opened
     // here: a control that only exists after a click is still a control somebody
     // reads, and leaving it out of the audit would exempt the typed-word box —
@@ -879,6 +897,7 @@ try {
     // the smoke walk does it, then reached the only way it can be reached — by
     // coming out of a focus session.
     await page.click('#open-about');
+    await expandGroups();
     await page.waitForSelector('#comms-start:not([hidden])');
     await auditContrast(page, 'comms opt-in', theme);
     await auditTargets(page, 'comms opt-in', theme);
@@ -1215,6 +1234,7 @@ try {
     // state), turn it on, choose one staged thing from its sheet, audit the
     // strip, then turn it off again so every later state is unchanged.
     await page.click('#open-about');
+    await expandGroups();
     await page.waitForSelector('#today-start:not([hidden])');
     await auditContrast(page, 'today opt-in', theme);
     await auditTargets(page, 'today opt-in', theme);
@@ -1239,6 +1259,7 @@ try {
     await auditTargets(page, 'composed strip', theme);
     await auditFocusRings(page, 'composed strip', theme, ['.composed-open']);
     await page.click('#open-about');
+    await expandGroups();
     await page.waitForSelector('#about[open]');
     await page.click('#today-stop');
     await page.waitForFunction(() => /^Off\./.test(
@@ -1305,6 +1326,7 @@ try {
     // State 4: the dialog as every RETURN visit sees it — the state real users
     // live in, which the first gate structurally could not audit.
     await page.click('#open-about');
+    await expandGroups();
     await page.waitForSelector('#storage-body dt');
     await page.click('#purge-pick-clear');
     await page.waitForSelector('#purge-confirm:not([hidden])');

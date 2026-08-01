@@ -121,6 +121,40 @@ export async function mountAbout(
 
   if (!open || !intro || !body || !ask || !exp || !notes || !version || !noteOut) return;
 
+  // The folding groups (1.7.2, ADR-0055). Closed by default; which ones you
+  // opened is remembered per device — a view preference on the badge/lens
+  // pattern (kv, fire-and-forget, never an event). The toggle's label is the
+  // group's name, so the caret carries the state (CSS ::before on
+  // aria-expanded) rather than the label changing under the reader.
+  {
+    const GROUPS_KEY = 'about.groups';
+    const toggles = Array.from(document.querySelectorAll<HTMLButtonElement>('.about-group-toggle'));
+    const setOpen = (btn: HTMLButtonElement, isOpen: boolean): void => {
+      const id = btn.getAttribute('aria-controls');
+      const target = id ? document.getElementById(id) : null;
+      if (!target) return;
+      target.hidden = !isOpen;
+      btn.setAttribute('aria-expanded', String(isOpen));
+    };
+    const persist = (): void => {
+      const openNow = toggles.filter(b => b.getAttribute('aria-expanded') === 'true')
+        .map(b => b.getAttribute('aria-controls') ?? '');
+      void session.store.setKv(GROUPS_KEY, openNow).catch(() => { /* view pref only */ });
+    };
+    for (const btn of toggles) {
+      btn.addEventListener('click', () => {
+        setOpen(btn, btn.getAttribute('aria-expanded') !== 'true');
+        persist();
+      });
+    }
+    void session.store.getKv<string[]>(GROUPS_KEY).then((openIds) => {
+      if (!Array.isArray(openIds)) return;
+      for (const btn of toggles) {
+        if (openIds.includes(btn.getAttribute('aria-controls') ?? '')) setOpen(btn, true);
+      }
+    }).catch(() => { /* closed is the calm default */ });
+  }
+
   version.textContent = CURRENT.triplet;
 
   // --- patch notes ---------------------------------------------------------
@@ -749,6 +783,10 @@ export async function mountAbout(
       const opening = logView.hidden;
       logView.hidden = !opening;
       logOpen.setAttribute('aria-expanded', String(opening));
+      // The label says what the NEXT press does. aria-expanded alone told a
+      // screen reader the list would collapse, and told a sighted reader
+      // nothing (Noah, on device, 1.7.2).
+      logOpen.textContent = opening ? 'Close the record' : 'Read the record';
       if (!opening) return;
       void (async () => {
         // Fresh on every open, so the record read is the record now.
@@ -844,6 +882,8 @@ export async function mountAbout(
       const opening = trashView.hidden;
       trashView.hidden = !opening;
       trashOpen.setAttribute('aria-expanded', String(opening));
+      // Same rule as the record: the label says what the next press does.
+      trashOpen.textContent = opening ? 'Close the list' : 'Things you let go';
       if (opening) paintTrash();
     });
   }

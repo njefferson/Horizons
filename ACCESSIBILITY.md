@@ -620,6 +620,28 @@ the rendered gate in this same commit.**
   container title push the page sideways 257px at 320px/200% (B-04) —
   `min-width: 0` on the select, fixed in the same commit.
 
+### B-26 · The panel folds, and toggles say what they do (1.7.2)
+
+**No new tokens; the group headers became controls on the existing bindings.**
+
+- **The folding groups** (`panel groups` state, ADR-0055): each group header
+  is a full-width disclosure button inheriting the header's registered face
+  (`--ink-soft` on `--surface`, 6.48:1 light), min-height `--target`, with
+  the caret (`::before`, inherits color) carrying open/closed so the NAME
+  never changes under a screen-reader user mid-list. Audited in the collapsed
+  state a new user actually meets (State 1, via the walkthrough's handoff —
+  which unfolds Your data so the storage promise is visible, itself asserted
+  in smoke). `aria-expanded`/`aria-controls` on every toggle.
+- **Toggle labels state the next press** ("Read the record" ↔ "Close the
+  record"; "Things you let go" ↔ "Close the list"): `aria-expanded` alone
+  told assistive tech the truth and told a sighted reader nothing — the same
+  information now reaches both (WCAG 1.3.1 in spirit; Noah, on device).
+- **The thesis page got its styles back**: `why.html`'s inline `<style>` was
+  refused by the site's own `style-src 'self'` — the deployed page rendered
+  unstyled, unmeasured by every gate because no walk ever navigated there.
+  Styles moved to `/why.css` (same tokens), and the smoke walk now visits
+  the page.
+
 Rows are appended as found.
 
 ### F-01 · Storage details invalid as a definition list to assistive tech

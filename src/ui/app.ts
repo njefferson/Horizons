@@ -36,6 +36,7 @@ import { waitingOnAnyone, withWhom, waitingWords, peopleWords } from '../people.
 import { trackPortfolio, trackWords, portfolioWords } from '../portfolio.ts';
 import { menuGroups, menuCount, menuWords, saveForWords, MENU_WORDS } from '../menu.ts';
 import { calendarDaysBetween, isValidIso } from '../time.ts';
+import { markSyncEdition } from './edition.ts';
 
 const now = () => Date.now();
 
@@ -512,6 +513,21 @@ function friendly(iso: string, zone: string): string {
 export type Edition = (session: Session, repaint: () => void) => void | Promise<void>;
 
 export async function main(edition?: Edition): Promise<void> {
+  // Edition truth, before anything renders a word (ADR-0036, amended): the
+  // titles say WHICH Quietkeep this is, and every [data-edition] paragraph
+  // shows its own build's answer. The markup ships the default's words
+  // visible; the sync build flips them here.
+  if (edition) {
+    markSyncEdition();
+    const title = document.querySelector('#about-title');
+    if (title?.firstChild) title.firstChild.textContent = 'Quietkeep Sync ';
+    const mark = document.querySelector('.wordmark');
+    if (mark) mark.textContent = 'Quietkeep Sync';
+    document.querySelectorAll<HTMLElement>('[data-edition]').forEach((el) => {
+      el.hidden = el.dataset['edition'] !== 'sync';
+    });
+  }
+
   const session = await openSession(now);
   const input = $<HTMLInputElement>('#capture');
   const status = $('#status');

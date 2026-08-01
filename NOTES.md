@@ -433,6 +433,38 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-01 (his second round of screenshots)** — **1.7.2** — Noah kept
+  reading the panel and found five more, including two that had never been
+  true anywhere.
+  · **The panel folds** ([ADR-0055](docs/adr/0055-the-panel-folds.md)): his
+  words — nothing separates the major sections, the panel carries too much,
+  "I think the section should collapse as well now, or we need a separate
+  settings". The fold is the smaller of his two offers: Help / Your data /
+  Extras / About behind real disclosure headers, closed by default, open set
+  remembered per device (kv), the opening and the way out never folded, and
+  the walkthrough's handoff unfolds Your data so its promise stays kept.
+  · **Edition-truthful words** (ADR-0036 amended): he is on Quietkeep Sync
+  and caught the default's copy lying — "there is no server", "the default
+  app you are in never contacts anything at all". `src/ui/edition.ts` carries
+  the word-level fact from the entry point's shape; the panel header and the
+  walkthrough name the edition; `[data-edition]` paragraphs show their own
+  build's truth. The artefact-level guarantee (module absent from the default
+  bundle) is untouched.
+  · **"Planning for Humans" never opened** — two SW defects and a CSP one.
+  The navigation branch answered every slow navigation with the cached APP
+  shell (tapping the link landed on the main screen) and wrote every
+  navigation's body under `./index.html` — one good visit to the thesis
+  would have replaced the cached app with an essay. Fixed: per-page cache
+  keys, fallback to the page actually asked for. And the page itself carried
+  an inline `<style>` that `style-src 'self'` refuses — the deployed thesis
+  had rendered UNSTYLED since the day it shipped, unmeasured because no walk
+  ever navigated there. Styles moved to `/why.css`; smoke now visits the
+  page; both files in the SW shell.
+  · **Toggle labels state the next press**: "Read the record" ↔ "Close the
+  record", "Things you let go" ↔ "Close the list" — aria-expanded told a
+  screen reader and told a sighted reader nothing.
+  · B-26; changelog 1.7.2 (ITERATION) + SW cache together.
+
 - **2026-08-01 (his screenshots)** — **1.7.1** — five ⓘ-panel defects Noah
   photographed on device, all confirmed against source and fixed the same
   hour.

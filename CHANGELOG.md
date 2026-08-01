@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.7.2 — ITERATION
+
+*2026-08-01*
+
+- **The ⓘ panel folds.** Its four big areas — Help, Your data, Extras, About — sit behind their own headers now, closed until you open them, and the panel remembers which you keep open on this device. Everything is still there; you just no longer stand in front of all of it at once.
+- **Quietkeep Sync now says so.** If you are in the Sync edition, the top of the panel and the walkthrough say “Quietkeep Sync”, and every sentence about where your writing lives states that edition’s truth — sealed on your device before anything leaves, a key only your devices hold — instead of the standalone edition’s “there is no server”, which was a lie there.
+- **“Planning for Humans” actually opens now.** Tapping it used to land you back on the main screen: the offline machinery answered every slow page request with the app itself, and could even overwrite its stored copy of the app with the essay. Both fixed — and the page’s own styling now survives the app’s strict security rules, so it reads as intended.
+- **Buttons that open a list now say when they will close it.** “Read the record” becomes “Close the record” while the record is open, and the same for “Things you let go”.
+
 ## 1.7.1 — ITERATION
 
 *2026-08-01*

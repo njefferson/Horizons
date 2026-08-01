@@ -3,7 +3,7 @@
 // The cache name carries the version.capability.iteration triplet and is bumped
 // with it (Doctrine §7, CLAUDE.md). Changing the triplet is what retires the old
 // cache — that is the whole mechanism, so it is not optional.
-const CACHE = 'quietkeep-1.7.1';
+const CACHE = 'quietkeep-1.7.2';
 
 // The shell only. User data is NEVER cached here — it lives in IndexedDB, which
 // this file does not touch and must not.
@@ -14,6 +14,7 @@ const SHELL = [
   './app.js',
   './manifest.webmanifest',
   './why.html',
+  './why.css',
   './brand/icon-192.png',
   './brand/icon-512.png',
   './brand/apple-touch-icon.png',
@@ -60,9 +61,17 @@ self.addEventListener('fetch', (event) => {
   // next time.
   if (req.mode === 'navigate') {
     const NAV_DEADLINE_MS = 2000;
+    // Which shell page IS this navigation? './index.html' for the app itself,
+    // './why.html' for the thesis. Two defects lived here (Noah, on device,
+    // 1.7.2): the freshen wrote EVERY navigation's body under './index.html' —
+    // so one visit to the thesis would have replaced the cached app shell with
+    // an essay — and the fallback served the app shell for every navigation,
+    // so tapping "Planning for Humans" on a slow connection silently landed
+    // on the main screen instead of the cached page it asked for.
+    const pageKey = SHELL.includes(`.${url.pathname}`) ? `.${url.pathname}` : './index.html';
     event.respondWith((async () => {
       const freshen = fetch(req).then(async (fresh) => {
-        if (fresh.ok) (await caches.open(CACHE)).put('./index.html', fresh.clone());
+        if (fresh.ok) (await caches.open(CACHE)).put(pageKey, fresh.clone());
         return fresh;
       });
       // Keep freshening even after we answer from cache; swallow its failure.
@@ -75,7 +84,8 @@ self.addEventListener('fetch', (event) => {
       // the audit showed an installed app rendering the deploy's error page
       // while a complete cached shell sat unused.
       if (winner && winner.ok) return winner;
-      const cached = await (await caches.open(CACHE)).match('./index.html');
+      const cached = await (await caches.open(CACHE)).match(pageKey)
+        ?? await (await caches.open(CACHE)).match('./index.html');
       if (cached) return cached;
       // No cache to fall back on (first visit): the network is all there is,
       // however long it takes. If it errored above, hand that answer over.
