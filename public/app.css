@@ -774,6 +774,16 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
   color: var(--ink-soft);
 }
 
+/* The way back, under the empty box (1.14.0). Deliberately NOT a second dashed
+   box: two of them stacked would read as two problems, and this is a quiet
+   offer under the calm sentence, not a competing announcement. Same ink token
+   as `.empty` on the same background, so the pair is the one already measured;
+   it is registered separately in the a11y gate all the same. */
+.restore-note {
+  margin: 0.75rem 0 0;
+  color: var(--ink-soft);
+}
+
 .cards {
   list-style: none;
   margin: 0;

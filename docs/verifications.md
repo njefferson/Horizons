@@ -66,6 +66,11 @@ answers this by inspection. **Until that reads yes, this row is not VERIFIED.**
 Step 3 (two Home Screen icons for the same origin — one store or two?) is untested and
 lower value now that persistence is granted.
 
+**And a companion row, raised 2026-08-02: [V-20](#v-20--does-clearing-the-browsers-website-data-take-a-home-screen-apps-store--needs-noahs-hands).**
+Persistence covers eviction, never a person clearing their own website data — so
+this row's `yes` and that row's answer are about two different threats, and only
+one of them has been measured.
+
 ---
 
 ## V-00a · The original framing
@@ -701,6 +706,40 @@ working route look broken; the gate now respects the window the platform documen
 a revoke may not be listable when the revoke runs, and so may survive until the
 next empty or its TTL. That is acceptable for what revocation is *for*, and it is
 recorded here rather than papered over with a claim of instant, total erasure.
+
+---
+
+## V-20 · Does clearing the browser's website data take a Home Screen app's store? — **NEEDS NOAH'S HANDS**
+· raised 2026-08-02 by Noah: *"Right now, if I clear Safari cookies etc, do I lose everything?"*
+
+**What is already settled, from the spec rather than from a device.** Persistent
+storage means the browser will not clear the store **on its own** to make room.
+It has never covered a person clearing their own website data — that is the one
+case the mode is defined as being outside. So the answer is almost certainly yes,
+and the app's copy is worded from that definition, which needs no measurement.
+
+**What is NOT settled, and is why this row exists.** Whether iOS's
+Settings → Safari → *Clear History and Website Data* actually reaches a Home
+Screen web app's IndexedDB for the same origin. [V-00](#v-00--ipados-storage-behaviour--the-reference-platform)
+measured the persistence grant, ~38 GB of quota and a force-quit survival on
+Noah's iPad; it never went near this path, and this repo does not put a platform
+fact on screen it has not run.
+
+**The run, and it verifies the feature at the same time.** It is safe precisely
+because the walk *is* the restore walk:
+
+1. Export a copy from the ⓘ panel, and confirm the file is really in Files.
+2. Note what "Last copy" says.
+3. Clear Safari's history and website data.
+4. Open Quietkeep from the Home Screen. Record what it shows — is it empty? Does
+   the walkthrough run again? Is the "Bring a copy back" offer on screen?
+5. Take that offer and restore from the file. Confirm the store comes back whole.
+
+**Either outcome is worth having.** If the store survives, the persistence
+sentence in the panel is overstated and gets narrowed to what was measured. If it
+does not, the sentence is right, the Restore path has been proven on the day it
+would be needed, and ADR-0004's durability story has been walked end to end for
+the first time on real hardware.
 
 ---
 

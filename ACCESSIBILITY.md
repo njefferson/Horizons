@@ -928,3 +928,30 @@ measured; all three states are in the rendered gate in this same commit.
   `autocomplete` values — `new-password` when setting, `current-password` when
   opening — so a password manager can fill them and nobody is forced to type a
   long passphrase by hand on a touch keyboard.
+
+### B-33 · The copy, and the way back (1.14.0)
+
+**One new class, no new colour pair.** `.restore-note` carries `--ink-soft` on
+the page background — the pair `.empty` already uses and the gate already
+measures — and it is registered as its own selector all the same, because a pair
+that is measured through one selector is not measured for another. `#copy-note`
+reuses `.storage-note`. Both are in the rendered gate in this commit.
+
+- **The way back is audited on the only screen it appears on.** `#restore` shows
+  when the store is empty and nowhere else, so it joins the `empty store` state —
+  which is exactly the screen somebody reaches after clearing their browser.
+  Its focus ring is measured there too: this is a control people meet on their
+  worst day with the app, and a control you cannot see yourself land on is one
+  more thing going wrong.
+- **The copy note is registered where it renders, not where it is declared.**
+  It is hidden when there is nothing to say, which on a brand-new store is the
+  truth — so registering it in `DIALOG_COMMON` would have named a selector that
+  matches nothing visible, and this gate fails on that by design. It is bound to
+  `dialog, return visit`, where the walk has a real history and no export.
+- **`.restore-note` is deliberately not a second dashed box.** Two `.empty`
+  boxes stacked read as two problems. The offer sits quietly under the calm
+  sentence rather than competing with it.
+- **Silence is a state, and it is the covered one.** Nothing renders when the
+  copy is current — no "you are up to date" line, and so nothing for a screen
+  reader to announce either. What is announced is only ever a fact somebody can
+  act on.

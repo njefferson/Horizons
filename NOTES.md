@@ -441,6 +441,49 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Right now, if I clear Safari cookies etc, do I lose everything?")** —
+  **1.14.0 "The copy, and the way back"** — a question that turned out to be a
+  release, because answering it honestly meant checking, and the checking found
+  two decisions ADR-0004 took in the design phase and nobody built.
+  · **The answer is yes.** `events`, `snapshots` and `kv` are three tables in one
+  IndexedDB database, so clearing a browser's website data takes the lot.
+  Persistent storage does not cover it and never claimed to: persistent mode
+  means the browser will not clear the store *on its own* to make room.
+  · **`export.written` had been written since Phase 0 and read by nothing.**
+  Three call sites wrote it; nothing computed when the last copy left. ADR-0004's
+  own consequence — "if it is forgotten, the app should say so plainly rather
+  than let the user assume they are covered" — was simply not built, so the app
+  let people assume. The panel now carries a **Last copy** date and one sentence
+  when work has landed since.
+  · **Not every `export.written` is a copy**, and this is the part that would
+  have been a worse lie than the silence. One noun serves the whole export, the
+  range *reading* copy that `inspectExport` refuses, and the calendar `.ics`.
+  `WHOLE_COPY_SCOPES` lives beside the reader and `deliverCopy` refuses anything
+  outside it — the 1.9.2 lesson applied, so the set cannot fall behind the
+  writers.
+  · **"Stale" is measured on the log, never on the clock** — ADR-0004's own
+  definition, with its own warning attached ("must not fire on a device that is
+  simply used less often"). And **strictly after** the copy event: a file never
+  contains its own record, so at-or-after would leave the sentence on
+  permanently, one millisecond after every export.
+  · **The Restore-on-empty action existed only as a paragraph in ADR-0004.**
+  "One action, one tap, into the picker." What existed was a file input inside
+  the panel, inside a folding group, under a heading. It shows on an empty store
+  now — `nodes.size === 0`, not "nothing held", which is also true of somebody
+  who has finished everything.
+  · **The finding that made it urgent: `kv` goes with the events.** `tour.seen`
+  is a kv key, so after a clearing the walkthrough runs again and the app greets
+  a person who has just lost everything with "Welcome to Quietkeep."
+  · **The persistence sentence is worded definitionally, not as a platform
+  claim.** V-00 measured the grant, the quota and a force-quit; it never measured
+  the clearing path. That is **V-20**, filed, and the run is the restore walk —
+  export, clear, observe, restore — so it answers the platform question and
+  proves the new path on the same pass.
+  · **The ADR index had been stale since 0038** — twenty-four records missing,
+  and eleven of the filenames I first wrote for them were wrong until checked
+  against disk. Filled and every link verified to resolve.
+  · ADR-0062. Gates green, `staging`, Spine watched on the exact head.
+
 - **2026-08-02 (Noah: "Kind plus encryption sounds best" → "Go")** —
   **1.13.0 "The journal"** — the last v1.5 item, and the one that was blocked on
   a decision rather than on work.

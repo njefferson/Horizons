@@ -336,6 +336,29 @@
     remember to look.
   </p>
 
+  <!-- The way back (1.14.0, ADR-0062). ADR-0004 decided this in the design
+       phase and it was never built: "one prominent Restore action that opens
+       the file picker directly. Not a dialog explaining the situation, not a
+       settings page to hunt through."
+
+       Shown only when the STORE is empty — not merely when nothing is held,
+       which is also true of somebody who has finished everything. And the copy
+       has to serve two readers at once without accusing either: a new person,
+       for whom this is simply not their situation, and somebody whose browser
+       has just been cleared, who is looking at a blank screen wondering where
+       their life went. It names the second case as ordinary, and says the
+       recovery is whole. -->
+  <div id="restore" hidden>
+    <p class="restore-note">
+      Been here before? A new device — or a browser whose website data has been
+      cleared — starts empty like this. Whatever you exported is a file in your
+      Files app, and it comes back whole.
+    </p>
+    <div class="about-actions">
+      <button id="restore-go" type="button">Bring a copy back</button>
+    </div>
+  </div>
+
   <div id="cards" class="cards" tabindex="-1"></div>
 </main>
 
@@ -1061,6 +1084,13 @@
   <h3 class="about-section">Storage on this device</h3>
   <dl id="storage-body"></dl>
   <p id="storage-note" class="storage-note"></p>
+  <!-- Whether the exported copy still holds what is here (1.14.0, ADR-0062).
+       Its own paragraph rather than a second sentence bolted onto the storage
+       note: one is about what the browser promises, the other is about what you
+       have in Files, and they are different subjects with different answers.
+       HIDDEN when there is nothing to say — being covered is silence, not a
+       congratulation, and an empty <p> is a gap in the panel. -->
+  <p id="copy-note" class="storage-note" hidden></p>
   <div class="about-actions">
     <button id="storage-ask" type="button" hidden>Keep my data on this device</button>
     <!-- The way out (data-constitution): always present, never behind a

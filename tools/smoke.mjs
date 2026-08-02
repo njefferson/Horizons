@@ -102,6 +102,16 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await page.waitForSelector('#storage-body dt');
   const storageRows = await page.locator('#storage-body dt').allTextContents();
   is(storageRows.includes('Keeping your data'), true, 'the storage answer is reported');
+  // 1.14.0: `export.written` had been written since Phase 0 and read by nothing,
+  // so the panel could not answer "when did I last save a copy" — the question
+  // ADR-0004 makes the whole durability story turn on.
+  is(storageRows.includes('Last copy'), true, 'and so is when a copy last left');
+  is((await page.locator('#storage-body dd').nth(storageRows.indexOf('Last copy')).textContent())?.trim(),
+    'none yet', 'which on a brand-new store is none yet');
+  // And it is not TOLD OFF for it. A store with nothing in it has nothing
+  // unheld, so the sentence stays away; silence is the covered state.
+  is(await page.locator('#copy-note').isHidden(), true,
+    'an empty store is not warned that it has no copy — there is nothing to copy');
   await page.click('#about-close');
   is(await page.evaluate(() => document.activeElement?.id), 'capture',
     'closing the panel hands focus to capture');
@@ -119,6 +129,24 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await page.title(), 'Quietkeep', 'title');
   is(await page.locator('#empty').isVisible(), true, 'empty state shown on a fresh store');
   is(await page.evaluate(() => document.activeElement?.id), 'capture', 'capture has focus on arrival');
+
+  // The way back (1.14.0, ADR-0062). An empty store is what somebody sees after
+  // clearing their browser's website data — the whole IndexedDB goes, `kv` with
+  // it, so the walkthrough runs again and the app looks brand new to a person
+  // who has just lost everything. ADR-0004 decided the answer in the design
+  // phase — "one action, one tap, into the picker" — and it was never built.
+  is(await page.locator('#restore').isVisible(), true,
+    'an empty store offers the way back, not just an empty box');
+  is(/Files app/i.test(await page.locator('.restore-note').textContent() || ''), true,
+    'and says where the copy that survives a clearing actually is');
+  await page.click('#restore-go');
+  await page.waitForSelector('#about[open]');
+  is(await page.locator('#group-data').isVisible(), true,
+    'one tap unfolds Your data rather than leaving it to be hunted for');
+  is(await page.evaluate(() => document.activeElement?.id), 'import-file',
+    'and lands on the file picker itself — the tap is the picker, per ADR-0004');
+  await page.click('#about-close');
+  await page.waitForFunction(() => !document.querySelector('#about[open]'));
   // Planning for Humans is a real page the panel links to (1.7.2): the SW
   // used to answer ANY slow navigation with the app shell — tapping the link
   // landed back on the main screen — and cached every navigation's body under
@@ -145,6 +173,11 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await page.locator('.card-title').first().textContent(), 'Ring the dentist', 'card text');
   is(await page.inputValue('#capture'), '', 'input cleared after commit');
   is((await page.locator('#status').textContent())?.startsWith('Held'), true, 'confirm reports a write that already landed');
+  // And the way back stands down the moment there is anything here. It is an
+  // offer for a store that has never held a thing, not a standing suggestion
+  // that what you have might be wrong (1.14.0).
+  is(await page.locator('#restore').isHidden(), true,
+    'one capture and the restore offer is gone');
 
   console.log('\nThe promise');
   await page.reload({ waitUntil: 'load' });
@@ -1257,6 +1290,17 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('#import-actions').isVisible(), false,
     'nothing destructive is reachable before a file has been read');
 
+  // The copy's freshness, walked as a TRANSITION rather than as a fixed state
+  // (1.14.0, ADR-0062). An earlier section of this walk already took a real
+  // export, and a great deal of work has landed since — so the honest thing to
+  // pin here is the sentence appearing and then clearing, which is the whole
+  // mechanism. That a brand-new store says "none yet" is pinned at first run,
+  // where it is actually true.
+  await tpage.waitForSelector('#storage-body dt');
+  is((await tpage.locator('#copy-note').textContent())?.trim(),
+    'There are changes here that no copy holds.',
+    'work since the last copy is said plainly — the sentence ADR-0004 asked for and nothing had ever printed');
+
   // A real export of the CURRENT store, taken through the app's own button.
   const [backup] = await Promise.all([
     tpage.waitForEvent('download'),
@@ -1265,6 +1309,21 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const backupPath = await backup.path();
   const backupJson = JSON.parse(readFileSync(backupPath, 'utf8'));
   const heldBefore = await tpage.locator('#cards .card').count();
+
+  // And after it: a real day on the row, and the sentence GONE (1.14.0).
+  //
+  // The second half is the one that matters. The file is delivered before
+  // `export.written` is committed — so a failed export can never claim a copy
+  // exists — which means a file never contains its own record. Reading "anything
+  // at or after the copy" would leave the warning on one millisecond after every
+  // export, and a warning that is always on is one nobody reads.
+  await tpage.waitForSelector('#copy-note', { state: 'hidden' });
+  const rowsAfter = await tpage.locator('#storage-body dt').allTextContents();
+  const lastCopyWords = (await tpage.locator('#storage-body dd').nth(rowsAfter.indexOf('Last copy')).textContent())?.trim() || '';
+  is(/\d/.test(lastCopyWords) && !/ago|days?\b/i.test(lastCopyWords), true,
+    `the row states the day the copy was written, never how far behind you are ("${lastCopyWords}")`);
+  is(await tpage.locator('#copy-note').isHidden(), true,
+    'and having just exported is said by silence, not by a line congratulating you');
 
   // A file that is not an export at all must be refused with a sentence, and
   // must not reveal the destructive control.

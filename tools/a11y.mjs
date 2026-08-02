@@ -130,7 +130,12 @@ const REGISTRY = {
   // its intro no longer shows — the panel a new person reaches (by finishing the
   // walkthrough) is the same one a returning person sees.
   'first-run dialog': DIALOG_COMMON,
-  'dialog, return visit': DIALOG_COMMON,
+  // 1.14.0: the copy note is hidden when there is nothing to say, and at the
+  // first-run state there genuinely is not — an empty store with no copy is not
+  // told it is behind. By the return visit the walk has a real history and no
+  // export, so it renders, which is why it is registered here and not in
+  // DIALOG_COMMON where it would match nothing visible.
+  'dialog, return visit': [...DIALOG_COMMON, '#copy-note'],
   // The folding groups (1.7.2, ADR-0055): the header is the control, audited
   // in the collapsed state a new user actually meets.
   'panel groups': ['.about-group-toggle'],
@@ -144,6 +149,10 @@ const REGISTRY = {
     '#sort-open',
     'button.info', '.section', '.gauge', '.empty', '.foot', '.foot a', '.build',
     '#update-words', '#update-save', '#update-reload', '#update-dismiss',
+    // The way back (1.14.0, ADR-0062). This is the ONLY state it appears in —
+    // it shows on an empty store and nowhere else — so it is audited exactly
+    // where somebody meets it, on the screen they reach after a cleared browser.
+    '.restore-note', '#restore-go',
   ],
   // Sort mode (1.3.0): the picker — sentences and counts, never lists — and
   // the one-card conveyor. The count and the entry line are the quiet tokens;
@@ -668,7 +677,7 @@ try {
     await auditAxe(page, 'empty store', theme);
     await auditTargets(page, 'empty store', theme);
     await auditFocusRings(page, 'empty store', theme,
-      ['#capture', '#capture-form button[type=submit]', 'button.info', '.skip']);
+      ['#capture', '#capture-form button[type=submit]', 'button.info', '.skip', '#restore-go']);
 
     // State 3: with a card on the surface.
     await page.fill('#capture', 'a held thought');

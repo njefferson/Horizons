@@ -18,6 +18,7 @@
 // promptly hands them an empty file.
 
 import { exportAll, exportFilename } from '../portability.ts';
+import { WHOLE_COPY_SCOPES } from '../copies.ts';
 import type { AppEvent } from '../events.ts';
 import type { Session } from './session.ts';
 
@@ -32,6 +33,16 @@ const REVOKE_AFTER_MS = 120_000;
  * of them.
  */
 export async function deliverCopy(session: Session, scope = 'all', ext = 'json'): Promise<void> {
+  // The scope is not a label here, it is the CLAIM the panel later reads back as
+  // "Last copy" (1.14.0). `export.written` is one noun for three different acts —
+  // this one, the range reading copy, and the calendar `.ics` — and only this one
+  // produces something importable. So the whole-copy scopes live beside that
+  // reader in `src/copies.ts` and this refuses anything outside them: a future
+  // release adding a new whole-copy scope must name it there in the same commit,
+  // rather than writing a copy the panel silently cannot see.
+  if (!WHOLE_COPY_SCOPES.has(scope)) {
+    throw new Error(`"${scope}" is not a whole-copy scope — add it to WHOLE_COPY_SCOPES or use deliverRangeCopy`);
+  }
   const at = new Date().toISOString();
   const file = await exportAll(session.store, at, scope);
   const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });

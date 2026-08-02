@@ -41,6 +41,7 @@ import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from 
 import { mountSecurity } from './security.ts';
 import { ledgerRowWords, notNowLedger, slotDayWords, slotOf } from '../requests.ts';
 import { timerMinutesOf, timerWords } from '../timer.ts';
+import { copyDayWords, copyNote, lastCopy } from '../copies.ts';
 import { KDF_ITERATIONS, PASSPHRASE_WARNING, deriveKey, journalEntries, journalSeal, newSalt } from '../journal.ts';
 import { open as unseal, seal } from '../seal.ts';
 import { entryEvents, sealJournalEvents } from './journal-intents.ts';
@@ -97,6 +98,7 @@ export async function mountAbout(
   const ask = document.querySelector<HTMLButtonElement>('#storage-ask');
   const exp = document.querySelector<HTMLButtonElement>('#export');
   const noteOut = document.querySelector<HTMLElement>('#storage-note');
+  const copyOut = document.querySelector<HTMLElement>('#copy-note');
   const notes = document.querySelector<HTMLElement>('#patch-notes');
   const version = document.querySelector<HTMLElement>('#version');
   if (!dialog) return;
@@ -223,9 +225,20 @@ export async function mountAbout(
     const first = await session.store.getKv<string>(FIRST_GRANT);
     if (r.persisted && !first) await session.store.setKv(FIRST_GRANT, new Date().toISOString());
 
+    // One `store.all()`, the same cost the purge count and the log viewer
+    // already pay on this panel — and paid only when somebody opens it or has
+    // just exported. Read from the LOG, never from folded state: whether a copy
+    // exists is a fact about the record, not about any node (1.14.0).
+    const log = await session.store.all();
+    const copy = lastCopy(log);
+
     const rows: [string, string][] = [
       ['Keeping your data', r.persisted ? 'yes' : r.supported ? 'not yet' : 'cannot tell'],
       ['Asked for', first ? new Date(first).toLocaleString() : r.persisted ? 'just now' : '—'],
+      // The durability fact that is actually under your control, sitting beside
+      // the one that is not. `export.written` has been written since Phase 0 and
+      // read by nothing until now (ADR-0062).
+      ['Last copy', copyDayWords(copy, session.zone)],
       ['Room available', r.quotaMb == null ? 'unknown' : `${r.quotaMb.toLocaleString()} MB`],
       ['Used by Quietkeep', r.usageMb == null ? 'unknown' : `${r.usageMb} MB`],
       // `heldNodes`, NOT `nodes.size`. The gauge on the main screen says
@@ -243,11 +256,32 @@ export async function mountAbout(
     // The note lives OUTSIDE the <dl>: a definition list may only contain
     // dt/dd groups, and the gate's axe pass failed the note as a child of it —
     // the gate's first real catch, ten minutes after existing.
+    //
+    // And what the promise COVERS, not just that there is one (1.14.0).
+    //
+    // This used to say "the browser has agreed to keep your data" and stop,
+    // which is true and reads as a guarantee it never was. Persistent storage
+    // means the browser will not clear the store on its own to make room; it has
+    // never covered somebody clearing their browser's website data themselves,
+    // and that is the case where everything here goes at once.
+    //
+    // Worded from what the mode MEANS, deliberately — not as a claim about any
+    // particular iOS build. V-00 has measured the grant, the quota and a
+    // force-quit on Noah's iPad; it has not measured the clearing path (V-20),
+    // and this repo does not put platform facts on screen that it has not run.
     noteOut.textContent = r.persisted
-      ? 'The browser has agreed to keep your data. Worth checking here again in a few days — if this ever says otherwise, export a copy.'
+      ? 'The browser has agreed not to clear your data to make room for something else. That is the whole of what it covers: if you clear this browser’s website data yourself, Quietkeep goes with it, and the copy in your Files is what survives. Worth checking back here every so often — if this ever says otherwise, export a copy.'
       : r.supported
-        ? 'Your writing is saved on this device, but the browser has not promised to keep it and may clear it if the device runs short of space.'
-        : 'This browser will not say whether it keeps your data. Export a copy from time to time.';
+        ? 'Your writing is saved on this device, but the browser has not promised to keep it and may clear it if the device runs short of space. The copy in your Files is the one that survives either way.'
+        : 'This browser will not say whether it keeps your data. The copy in your Files is the one that survives either way — export one from time to time.';
+
+    // Silence is the covered state. Nothing to say means nothing said, rather
+    // than a line congratulating somebody for having exported.
+    if (copyOut) {
+      const words = copyNote(log, copy);
+      copyOut.textContent = words;
+      copyOut.hidden = words === '';
+    }
   };
 
   ask.addEventListener('click', async () => {
@@ -1396,6 +1430,30 @@ export async function mountAbout(
   }
 
   open.addEventListener('click', () => show(false));
+
+  // The way back, from the empty screen (1.14.0, ADR-0062).
+  //
+  // ADR-0004 asked for "one action, one tap, into the picker". This is that tap,
+  // and it deliberately does NOT put a second file input on the main page. The
+  // note beside `#import-file` is load-bearing: on iPadOS the hidden-input trick
+  // loses the Files app entry point, so there is exactly one real input in this
+  // app and this control delivers you to it — panel open, group unfolded, focus
+  // on the input itself. A second one would be a second chance to reintroduce
+  // the trap that comment exists to record.
+  //
+  // The unfold goes through the group's own toggle rather than reaching into the
+  // element, so the choice is remembered the same way every other unfold is.
+  document.querySelector<HTMLButtonElement>('#restore-go')?.addEventListener('click', () => {
+    show(false);
+    const toggle = document.querySelector<HTMLButtonElement>('#group-data-open');
+    if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+    const input = document.querySelector<HTMLInputElement>('#import-file');
+    // Scroll first, then focus: `#about-body` is the sole scroll container and
+    // the import section sits well down it, so focusing alone would leave the
+    // label — which says what to choose — above the fold.
+    input?.scrollIntoView({ block: 'center' });
+    input?.focus();
+  });
 
   // --- first run -----------------------------------------------------------
   // SEEN is written when the introduction is DISMISSED, not when it is shown:

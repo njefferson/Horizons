@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.14.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**The panel now tells you when a copy of your data last left this device.** It is a date, beside the line about whether the browser is keeping your data — and when something has happened since, it says so in one sentence. Quietkeep has always recorded every copy you took; nothing ever read that record back to you.',
+      '**And an empty Quietkeep now offers you the way back.** A new device, or a browser whose website data has been cleared, opens to an empty screen — which is exactly the moment you need the copy in your Files, and exactly the moment nothing was pointing at it. One button takes you straight to the file picker.',
+      '**The panel is straighter about what “keeping your data” covers.** It means the browser will not clear it on its own to make room. It has never meant your data survives you clearing the browser’s website data yourself — that takes Quietkeep with it, and the file you exported is what comes through.',
+      'The walkthrough says the same thing on the way in, so it is something you know on day one rather than on the day it matters.',
+      'None of this nags. There is no automatic backup, no reminder, no badge, and no count of how far behind you are — when the copy is current it says nothing at all.',
+    ],
+  },
+  {
     triplet: '1.13.0',
     kind: 'CAPABILITY',
     date: '2026-08-02',

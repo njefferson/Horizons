@@ -389,6 +389,15 @@ feature can be late; the data cannot be backfilled.
 - **`export.written`**
   - Payload: `at, scope, encrypted: bool`
   - Silent risk: no
+  - **Read since 1.14.0** by `src/copies.ts` — the ⓘ panel's "Last copy" row and
+    the sentence about work no copy holds ([ADR-0062](adr/0062-the-copy-and-the-way-back.md)).
+    It had been written since Phase 0 and read by nothing.
+  - **`scope` decides whether it is a copy at all**, and this is load-bearing.
+    The same noun records a whole importable export (`all`, `before-letting-go`),
+    a range *reading* copy that `inspectExport` refuses, and the calendar `.ics`.
+    Only the first family counts as your data being saved; the whole-copy scopes
+    are `WHOLE_COPY_SCOPES` in `src/copies.ts` and `deliverCopy` refuses any
+    scope outside them, so the set cannot fall behind the writers.
 - **`shard.folded`**
   - Payload: `fromDevice, taken, skipped, at`
   - Silent risk: no — another device's copy was folded in ([ADR-0035](adr/0035-multi-device-shard-union.md))

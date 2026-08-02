@@ -62,6 +62,13 @@ const stepsNow = (): readonly Step[] => [
         ? 'Everything stays on your devices — no account, no sign-in. What they trade to stay in step is sealed with a key only they hold.'
         : 'Everything stays on your device — no account, no sign-in, no server holding your writing.',
       'The ⓘ at the top has how to install it, how to keep your data safe, and this walkthrough again whenever you want it. Get started opens that panel, so keeping your data safe is the first thing you do.',
+      // Added in 1.14.0. NOT written for the returning reader specifically —
+      // the empty screen behind this dialog now offers them the way back, and a
+      // sentence here about data they may never have had would land oddly on
+      // somebody genuinely new. What it does say is true for both: the exported
+      // file is the copy that outlives the browser, and that is worth knowing on
+      // day one rather than on the day it matters.
+      'That panel also writes you a copy of everything, as a file you keep. It is the one copy that survives a new device or a cleared browser, and bringing it back is one button in the same place.',
     ],
   },
 ];

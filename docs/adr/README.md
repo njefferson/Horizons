@@ -141,6 +141,81 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0037](0037-sync-design.md)**
   - Decision: Quietkeep Sync — a relay that cannot read, gated against accident
   - Status: Accepted (design)
+- **[0038](0038-containment-and-exceptions-review.md)**
+  - Decision: Containment is a control, and Review is exceptions only
+  - Status: Accepted
+- **[0039](0039-focus-and-the-way-back.md)**
+  - Decision: The resume card is written at the interruption, not at the exit
+  - Status: Accepted
+- **[0040](0040-the-person-lens.md)**
+  - Decision: The person lens shows what nobody has named
+  - Status: Accepted
+- **[0041](0041-carrying-and-the-report.md)**
+  - Decision: Carrying is not doing, and the report is a fold
+  - Status: Accepted
+- **[0042](0042-the-comms-sweep.md)**
+  - Decision: The comms sweep appears on the way out, and nowhere else
+  - Status: Accepted
+- **[0043](0043-re-entry-is-the-primary-path.md)**
+  - Decision: Re-entry is bounded by shape, not by restraint
+  - Status: Accepted
+- **[0044](0044-sort-mode-and-named-ranges.md)**
+  - Decision: Sort mode — the second triage, over a range the user names
+  - Status: Accepted
+- **[0045](0045-the-start-verb.md)**
+  - Decision: "Not before" — the defer verb rides the start clock
+  - Status: Accepted
+- **[0046](0046-admit-accumulator.md)**
+  - Decision: The gate keeps one running accumulator
+  - Status: Accepted
+- **[0047](0047-the-note-field.md)**
+  - Decision: The note — title-class content, not journal-class
+  - Status: Accepted
+- **[0048](0048-the-log-viewer.md)**
+  - Decision: The record is readable — the log viewer and per-node history
+  - Status: Accepted
+- **[0049](0049-wholesale-acts.md)**
+  - Decision: Wholesale acts — the preview is the dry run, the receipt explains the pile
+  - Status: Accepted
+- **[0050](0050-things-you-let-go.md)**
+  - Decision: Things you let go — recovery, not an archive
+  - Status: Accepted
+- **[0051](0051-composed-today.md)**
+  - Decision: Composed Today — optional, hand-chosen, expiring by projection
+  - Status: Accepted
+- **[0052](0052-session-close.md)**
+  - Decision: The session close — peak-end, never a report card
+  - Status: Accepted
+- **[0053](0053-folding-a-duplicate.md)**
+  - Decision: Folding a duplicate — the carry batch, the way back, the twins range
+  - Status: Accepted, **amended by [0058](0058-what-a-fold-takes-with-it.md)**
+- **[0054](0054-the-lens.md)**
+  - Decision: The lens — what you look at, never what is held
+  - Status: Accepted
+- **[0055](0055-the-panel-folds.md)**
+  - Decision: The panel folds — four groups, closed until asked
+  - Status: Accepted
+- **[0056](0056-request-slots-and-the-not-now-ledger.md)**
+  - Decision: Request slots and the Not Now ledger
+  - Status: Accepted
+- **[0057](0057-stakeholders-and-the-decision-log.md)**
+  - Decision: Stakeholders that are read, and the decision log
+  - Status: Accepted
+- **[0058](0058-what-a-fold-takes-with-it.md)**
+  - Decision: What a fold takes with it
+  - Status: Accepted
+- **[0059](0059-presence-not-progress.md)**
+  - Decision: The timer shows presence, not progress
+  - Status: Accepted
+- **[0060](0060-a-few-things-you-could-pick-up.md)**
+  - Decision: A few things you could pick up
+  - Status: Accepted
+- **[0061](0061-the-journal-is-a-kind-not-a-vault.md)**
+  - Decision: The journal is a kind, not a vault — **supersedes [0005](0005-vaults-and-journal-encryption.md)'s vault split**
+  - Status: Accepted
+- **[0062](0062-the-copy-and-the-way-back.md)**
+  - Decision: The copy has a date and the way back is one tap — [ADR-0004](0004-ios-path.md) executed
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

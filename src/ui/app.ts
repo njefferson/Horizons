@@ -265,6 +265,18 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   list.replaceChildren(...rows);
   $('#empty').hidden = groups.length > 0;
 
+  // The way back, on the one screen where somebody is looking for their things
+  // and cannot find them (1.14.0, ADR-0062).
+  //
+  // The condition is the WHOLE STORE, not `groups.length` above. Nothing held is
+  // also true of somebody who has completed everything or put it all on the
+  // Menu, and offering them a restore would be the app misreading a good day as
+  // a disaster. `nodes.size` counts the trashed and the merged too, which is
+  // right here: a store that has ever held anything is not a store somebody
+  // needs rescuing into.
+  const restore = document.querySelector<HTMLElement>('#restore');
+  if (restore) restore.hidden = st.nodes.size > 0;
+
   // The Menu (law 6). BEHIND A CONTROL — a wish list that greets you is a demand
   // list, and the Menu is the one surface in this app structurally incapable of
   // nagging. The button states the count and says plainly that none of it is
