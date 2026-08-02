@@ -438,6 +438,11 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote to main")** — **`main` fast-forwarded
+  `8cc85f9 → 155967b`**, carrying 1.12.0. Spine 188 watched green on the exact
+  head before the promote; Deploy 185 green on `main` at the same sha after it,
+  both editions out.
+
 - **2026-08-02 (Noah: "Promote and continue")** — **1.12.0 "A person has a page
   of their own"** — and the records made true in both directions.
   · **`personView` had no caller.** It was written, exported and unit-tested in
