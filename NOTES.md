@@ -441,6 +441,16 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote to main and continue")** — **`main`
+  fast-forwarded `155967b → 3a9776c`**, carrying **1.13.0** (the journal) and
+  **1.14.0** (the copy, and the way back). Spine 192 watched green on the exact
+  head before the promote — every step opened, including the headless walk and
+  the rendered accessibility pass — and Deploy 189 green on `main` at the same
+  sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare step, not the apex URL serving the file.
+
 - **2026-08-02 (Noah: "Right now, if I clear Safari cookies etc, do I lose everything?")** —
   **1.14.0 "The copy, and the way back"** — a question that turned out to be a
   release, because answering it honestly meant checking, and the checking found
