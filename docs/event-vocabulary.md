@@ -198,8 +198,14 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
     is an event, never a deletion; this competes for the same LWW field as
     `clarify.routed`, so undo is safe on a synced log.
 - **`do-now.timed`**
-  - Payload: `startedAt, endedAt, outcome: completed | abandoned`
+  - Payload: `startedAt, endedAt`. `node` is the item.
   - Silent risk: no
+  - A SPAN, no verdict (1.10.0, ADR-0059) — the `focus.started` / `focus.ended`
+    shape. `outcome: completed | abandoned` was written until 1.10.0 and is
+    still present on older events; nothing reads it. It was a record of the
+    times you did not finish your own work, which ADR-0042 and ADR-0056 forbid
+    in absolute terms. The chosen length is deliberately NOT in the payload, so
+    a shortfall cannot be computed by subtraction.
 - **`bother.received`**
   - Payload: `text`
   - Silent risk: **yes — gated**
@@ -307,6 +313,13 @@ is a valid, unremarkable value, never nagged about.
     (`detail` | `bother`), never free text.
   - Folds to `n.notNow {person, what, at}` under its own LWW key; cleared by
     `clock.cleared{park}` (carrying it after all) and `done.marked`.
+- **`timer.length.set`** (emitter 1.10.0, ADR-0059)
+  - Payload: `minutes` — a whole number from the closed offer (2, 5, 10, 20, 30). `node: null`.
+  - Silent risk: no
+  - Folds to `State.timerMinutes` (state-level LWW, the `requestSlot` shape). A
+    length outside the offer reads as the two-minute default — refused at read
+    time, never guessed, because a length nobody was offered is a commitment
+    nobody made.
 - **`request.slot.set`** (emitter 1.8.0, ADR-0056)
   - Payload: `recurrence` — `weekly:mon` … `weekly:sun`; `''` clears. `node: null`.
   - Silent risk: no

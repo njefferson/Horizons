@@ -182,8 +182,14 @@ structure D'Zurilla's evidence points at.
 → **A "next action" must be specific enough to start**, which is the
 implementation-intention finding applied. Vagueness is the actual blocker far more
 often than difficulty.
-→ **The two-minute timer on Do now** is a bounded commitment, not a rule about
-what deserves doing. Its value is that "two minutes" is a *cheap* decision.
+→ **The timer on Do now is a commitment you make, not a constraint you are
+held to** ([ADR-0059](adr/0059-presence-not-progress.md)). Its value is that the
+decision to start is *cheap* — two minutes remains the default for exactly that
+reason — and the length is yours to choose. It shows only that it is **running**:
+no countdown, because a shrinking deadline on an already-aversive task adds
+aversion at the moment of approach (§2), and no filling shape either, because
+anything rendered part-way through a chosen span is a fraction, and a fraction
+is a score. Stopping records nothing.
 → **The breakdown ladder generates all steps but reveals one**
 ([ADR-0015](adr/0015-ai-never-blocks.md)). Showing eight steps to someone stuck at
 activation is choice overload at the worst moment. The granularity dial exists

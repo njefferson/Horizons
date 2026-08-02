@@ -549,7 +549,7 @@ export async function main(edition?: Edition): Promise<void> {
   let search: { refresh(): void } = { refresh() {} };
   let sort: { refresh(): void } = { refresh() {} };
   let work: { refresh(): void } = { refresh() {} };
-  let triage: { refresh(): void } = { refresh() {} };
+  let triage: { refresh(): void; relabelTimer(): void } = { refresh() {}, relabelTimer() {} };
   let replan: { refresh(): void } = { refresh() {} };
   let focus: FocusUI = { refresh() {}, start() {} };
   let reentry: { refresh(): void } = { refresh() {} };
@@ -599,7 +599,13 @@ export async function main(edition?: Edition): Promise<void> {
   // as its onChange, since work refreshes itself afterwards.
   const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); search.refresh(); sort.refresh(); };
   rerenderAll = rerenderLists;
-  const refreshAll = (): void => { rerenderLists(); work.refresh(); };
+  // `relabelTimer`, not `refresh` (1.10.0): the do-now offer names the timer
+  // length it will start, and that length is set in the (i) panel, which can be
+  // open while an offer is on screen. A full triage refresh here would rebuild
+  // the clarify card on every commit anywhere in the app and change which card
+  // is showing mid-interaction — the smoke walk caught exactly that. One
+  // button's words is all this needs.
+  const refreshAll = (): void => { rerenderLists(); work.refresh(); triage.relabelTimer(); };
 
   try { rerender(); } catch { /* the shell still works; cards appear on next load */ }
 

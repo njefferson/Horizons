@@ -14,6 +14,7 @@
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
 import { demandClocksOf, heatEvents, routeEvents, undoRouteEvents } from './triage-intents.ts';
+import { timerMinutesOf, timerWords, timerWordsLower } from '../timer.ts';
 import { doneEvents } from './work.ts';
 import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
 
@@ -33,7 +34,12 @@ const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: 
   return n;
 };
 
-export interface TriageUI { refresh(): void }
+export interface TriageUI {
+  refresh(): void;
+  /** Re-word an on-screen do-now offer after the timer length changes (1.10.0).
+   *  Separate from `refresh` on purpose — see the note at its definition. */
+  relabelTimer(): void;
+}
 
 /** Mount the triage surface. `onChange` lets the shell re-render its own list
  *  (the held-items view) when triage moves an item. `openDetail` opens the
@@ -50,7 +56,7 @@ export function mountTriage(
   const gauge = document.querySelector<HTMLElement>('#triage-gauge');
   const live = document.querySelector<HTMLElement>('#triage-live');
   const donow = document.querySelector<HTMLElement>('#triage-donow');
-  if (!region || !card || !prompt || !actions || !gauge || !live || !donow) return { refresh() {} };
+  if (!region || !card || !prompt || !actions || !gauge || !live || !donow) return { refresh() {}, relabelTimer() {} };
   // Non-null bindings, so the nested refresh() closure keeps the narrowing the
   // guard above established.
   const REGION = region, CARD = card, PROMPT = prompt, ACTIONS = actions, GAUGE = gauge, LIVE = live, DONOW = donow;
@@ -64,7 +70,9 @@ export function mountTriage(
 
   // The one running do-now timer, if any. It lives in DONOW (a stable region
   // outside the card carousel) so refresh() advancing the card never touches it.
-  let active: { stop: (outcome: 'completed' | 'abandoned') => void } | null = null;
+  // The one running timer, if any. `stop` takes no verdict — closing a timer
+  // records its span and nothing about why it closed (1.10.0, ADR-0059).
+  let active: { stop: (andDone?: boolean) => void } | null = null;
 
   // Which node the card currently shows, so tapping it can open the right
   // sheet. The card is a real <button> since 1.3.0.
@@ -122,7 +130,7 @@ export function mountTriage(
    * minutes are a tool some people want and others do not.
    */
   const offerDoNow = (node: string): void => {
-    active?.stop('abandoned');
+    active?.stop();
     // NAME the item. The offer used to say "Now — finish it, or take two minutes"
     // with no hint of WHAT, so a fast router landed on a bar demanding an answer
     // about a thing it would not name (Noah, on device).
@@ -132,7 +140,8 @@ export function mountTriage(
     const done = el('button', 'donow-done', 'Done');
     done.type = 'button';
     done.addEventListener('click', () => { DONOW.replaceChildren(); markDone(node); });
-    const start = el('button', 'ghost', 'Start two minutes');
+    const start = el('button', 'ghost', `Start ${timerWordsLower(timerMinutesOf(session.state()))}`);
+    start.dataset.startTimer = 'yes';
     start.type = 'button';
     start.addEventListener('click', () => startDoNowTimer(node));
     // A WAY OUT that keeps it for today. The offer is an offering, not a gate —
@@ -150,48 +159,70 @@ export function mountTriage(
     DONOW.replaceChildren(bar);
   };
 
-  // The two-minute timer, started only when asked for. On finish or stop,
-  // exactly one do-now.timed carries the outcome. `ended` makes finish
-  // idempotent, so a completion racing a Stop click cannot commit twice.
+  /**
+   * The timer, started only when asked for — PRESENCE, NOT PROGRESS
+   * (1.10.0, ADR-0059).
+   *
+   * It shows that it is running and says what you chose, and it shows nothing
+   * about how far through you are. See `src/timer.ts` for why: any rendering of
+   * progress toward a chosen end is a fraction, and a fraction is a score.
+   *
+   * Stopping writes NOTHING about stopping. `src/requests.ts` and ADR-0056 say
+   * the do-now offer's "Not now" is "event-free, forever", and until 1.10.0 the
+   * timer beside it wrote `outcome: 'abandoned'` on every stop — the same flow
+   * keeping a record the same flow forbids.
+   */
   const startDoNowTimer = (node: string): void => {
-    // Starting a new timer while one runs records the old one as abandoned — its
-    // outcome is never silently dropped.
-    active?.stop('abandoned');
+    // Starting a new timer while one runs closes the old one. Its SPAN is
+    // recorded, because a span is a fact about what you did; nothing about why
+    // it ended is, because that would be a verdict.
+    active?.stop();
 
     const startedAt = new Date().toISOString();
-    // Two minutes, unless the page says otherwise. `data-seconds` on the timer's
-    // own region is a deliberate seam: the behaviour most worth gating is what
-    // happens when the clock reaches zero — it used to record "completed" there,
-    // unasked — and a gate cannot wait two real minutes to check it. Nothing in
-    // the app writes this attribute, so shipped behaviour is always 120.
-    const DURATION = Number(DONOW.dataset.seconds) || 120;
-    let left = DURATION;
+    const minutes = timerMinutesOf(session.state());
+    // `data-seconds` on the timer's own region stays a deliberate test seam —
+    // a gate cannot wait twenty real minutes to check what happens at the end.
+    // Nothing in the app writes it, so shipped behaviour is always the choice.
+    const DURATION = Number(DONOW.dataset.seconds) || minutes * 60;
     let ended = false;
-    let interval: number | undefined;
+    let timeout: number | undefined;
 
     const bar = el('div', 'donow');
-    const label = el('span', 'donow-label');
+    // The commitment, in words. Not a countdown, not a fill: a sentence, which
+    // is the one form that can hold something you may walk away from.
+    const label = el('span', 'donow-label', `${timerWords(minutes)}, running.`);
+    // The presence mark. It says "on" and nothing else — no fill, no fraction,
+    // no growth. CSS gives it a gentle pulse and a static fallback under
+    // prefers-reduced-motion; either way it never encodes an amount.
+    const mark = el('span', 'donow-running');
+    mark.setAttribute('aria-hidden', 'true');
     // Done is available THROUGHOUT, in one tap. Finishing in forty seconds is
     // the good case, and it should not require stopping a timer first.
     const doneBtn = el('button', 'donow-done', 'Done');
     doneBtn.type = 'button';
+    // "Stop" and not "Give up". Leaving is an ordinary move with no cost.
     const stopBtn = el('button', 'ghost', 'Stop');
     stopBtn.type = 'button';
-    bar.append(label, doneBtn, stopBtn);
+    bar.append(mark, label, doneBtn, stopBtn);
     DONOW.replaceChildren(bar);
 
-    /** Record the timer's outcome. `completed` means the person SAID they
-     *  finished — never merely that the clock ran out. */
-    const finish = (outcome: 'completed' | 'abandoned', andDone = false): void => {
+    /**
+     * Close the timer. ONE `do-now.timed` carries the span and nothing else —
+     * the `focus.started` / `focus.ended` shape, which records what you did
+     * without judging it. The chosen length is deliberately absent from the
+     * payload, so a shortfall cannot be reconstructed by subtraction (the
+     * arithmetic that got the report's "Started" section deleted in 1.9.0).
+     */
+    const finish = (andDone = false): void => {
       if (ended) return;
       ended = true;
-      if (interval !== undefined) clearInterval(interval);
+      if (timeout !== undefined) clearTimeout(timeout);
       if (active === handle) active = null;
       bar.remove();
       void session.commit(ctx => [{
         id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
         kind: 'do-now.timed', node,
-        payload: { startedAt, endedAt: new Date().toISOString(), outcome },
+        payload: { startedAt, endedAt: new Date().toISOString() },
       } as unknown as AppEvent]).catch(() => {});
       if (andDone) markDone(node);
     };
@@ -199,37 +230,29 @@ export function mountTriage(
     active = handle;
 
     /**
-     * Two minutes are up. **ASK.**
+     * The chosen time has passed. **The timer goes away.**
      *
-     * The old code recorded `outcome: 'completed'` the instant the clock hit
-     * zero — the app asserting the person had finished something it never asked
-     * about, in a log that is permanent, for an audience whose whole difficulty
-     * is with time. Elapsed is not finished. Neither answer here is a failure:
-     * "not yet" leaves it exactly where it was, clocked for today.
+     * It does not ask whether you finished. It used to record `completed` the
+     * instant the clock hit zero, which was the app asserting something it had
+     * never asked; then it asked, which made the chosen length the size of the
+     * job. It is neither: the length was the entry price, and reaching it is
+     * not an achievement to confirm or a deadline to answer for.
+     *
+     * The bar removes itself and one line goes to the live region. Silent
+     * removal would be an accessibility defect — a control vanishing with no
+     * announcement is a control that disappeared for a screen-reader user with
+     * no way to know it had. The item stays clocked for today either way.
      */
-    const ask = (): void => {
+    const done = (): void => {
       if (ended) return;
-      if (interval !== undefined) clearInterval(interval);
-      label.textContent = 'Two minutes are up. Did you finish it?';
-      doneBtn.textContent = 'Done';
-      stopBtn.textContent = 'Not yet';
-      // Focus the question, because the timer ending is the app speaking first
-      // and the person may have looked away.
-      LIVE.textContent = 'Two minutes are up. Did you finish it?';
-      doneBtn.focus();
+      LIVE.textContent = `That is ${timerWordsLower(minutes)}. It is still there when you want it.`;
+      finish();
+      restoreFocus();
     };
 
-    const tick = (): void => {
-      const m = Math.floor(left / 60);
-      const sec = String(left % 60).padStart(2, '0');
-      label.textContent = `Two minutes: ${m}:${sec} left`;
-      if (left <= 0) { ask(); return; }
-      left -= 1;
-    };
-    tick();
-    interval = setInterval(tick, 1000) as unknown as number;
-    doneBtn.addEventListener('click', () => finish('completed', true));
-    stopBtn.addEventListener('click', () => finish('abandoned'));
+    timeout = setTimeout(done, DURATION * 1000) as unknown as number;
+    doneBtn.addEventListener('click', () => finish(true));
+    stopBtn.addEventListener('click', () => { finish(); restoreFocus(); });
   };
 
   /** Drop the last-action undo. Any new triage action makes it stale — undo
@@ -343,6 +366,21 @@ export function mountTriage(
     }
   }
 
+  /**
+   * Re-label an offer that is already on screen (1.10.0).
+   *
+   * The timer length is set in the (i) panel, which can be open while an offer
+   * is showing — and a button that says "two minutes" and starts twenty is the
+   * class of lie 1.7.2 was spent correcting. This is DELIBERATELY not part of
+   * `refresh`: rebuilding the clarify card on every commit anywhere in the app
+   * changes which card is on screen mid-interaction, which the smoke walk
+   * caught immediately. Touching one button's words does not.
+   */
+  function relabelTimer(): void {
+    const startBtn = DONOW.querySelector<HTMLButtonElement>('[data-start-timer]');
+    if (startBtn) startBtn.textContent = `Start ${timerWordsLower(timerMinutesOf(session.state()))}`;
+  }
+
   refresh();
-  return { refresh };
+  return { refresh, relabelTimer };
 }

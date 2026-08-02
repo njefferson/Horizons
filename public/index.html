@@ -1224,6 +1224,32 @@
     does, quietly, when its day ends.
   </p>
 
+  <h3 class="about-section">How long a timer runs</h3>
+  <p class="about-p">
+    When you send something to <em>Do now</em> you can start a timer on it. This
+    is how long it runs. Choose it here, calmly &mdash; not in the moment you
+    are trying to start something.
+  </p>
+  <div class="about-actions">
+    <label class="detail-inline" for="timer-length">A timer runs for</label>
+    <select id="timer-length">
+      <option value="2">two minutes</option>
+      <option value="5">five minutes</option>
+      <option value="10">ten minutes</option>
+      <option value="20">twenty minutes</option>
+      <option value="30">thirty minutes</option>
+    </select>
+    <button id="timer-length-set" type="button" class="ghost">Set the length</button>
+  </div>
+  <p id="timer-length-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    The time is something you commit to, not something you are held to. While it
+    runs the app shows only that it <em>is</em> running &mdash; no countdown, no
+    bar filling up &mdash; because a shape that is part-way full is a way of
+    saying you stopped short. Leaving early records nothing at all, and when the
+    time is up the timer simply goes.
+  </p>
+
   <h3 class="about-section">Today, on paper</h3>
   <p class="about-p">
     One page: the thing to do next, what else is ready, what is with other people,

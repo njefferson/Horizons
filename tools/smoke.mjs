@@ -482,14 +482,38 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.waitForSelector('#triage-actions .route .route-hint');
   await tpage.locator('#triage-actions .route', { hasText: 'Do now' }).first().click();
   await tpage.waitForSelector('.donow-done');
-  // Two seconds instead of two minutes. `data-seconds` is a seam that exists so
-  // this check can happen at all; nothing in the app writes it, so shipped
-  // behaviour is always 120.
+
+  // THE LENGTH IS CHOSEN (1.10.0). Set it in Extras and the offer's button has
+  // to name what it will actually start — a button saying "two minutes" that
+  // runs twenty is the class of lie 1.7.2 was spent correcting.
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.selectOption('#timer-length', '5');
+  await tpage.click('#timer-length-set');
+  await tpage.waitForFunction(() => /Five minutes/.test(
+    document.querySelector('#timer-length-note')?.textContent ?? ''));
+  await tpage.click('#about-close');
+  await tpage.waitForFunction(() => [...document.querySelectorAll('.donow button')]
+    .some(b => /Start five minutes/.test(b.textContent ?? '')));
+  is(true, true, 'the offer names the length that was chosen, not a fixed two minutes');
+
+  // Two seconds instead of the chosen length. `data-seconds` is a seam that
+  // exists so this check can happen at all; nothing in the app writes it, so
+  // shipped behaviour is always the choice.
   await tpage.evaluate(() => { document.querySelector('#triage-donow').dataset.seconds = '2'; });
-  await tpage.locator('.donow button', { hasText: 'Start two minutes' }).click();   // not the "Leave it for now" ghost beside it
+  await tpage.locator('.donow button', { hasText: 'Start five minutes' }).click();
   await tpage.waitForTimeout(200);
-  is((await tpage.locator('.donow-label').textContent())?.includes('left'), true,
-    'asking for the timer starts it');
+
+  // PRESENCE, NOT PROGRESS. It says it is running and says what you chose, and
+  // renders no amount of any kind — no countdown, and no shape that could be
+  // part-way full. A fraction is a score, however it is drawn.
+  const runningLabel = await tpage.locator('.donow-label').textContent() || '';
+  is(/Five minutes, running/.test(runningLabel), true,
+    `the commitment is a sentence ("${runningLabel}")`);
+  is(/left|remaining|\d:\d\d|%/.test(runningLabel), false,
+    'and it carries no countdown and no fraction');
+  is(await tpage.locator('.donow-running').count(), 1, 'a presence mark, and one of it');
+
   const timedBefore = await tpage.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
@@ -497,47 +521,58 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
       tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'do-now.timed').length);
     });
   });
-  await tpage.waitForTimeout(2800);
-  // THE HONESTY FIX. Reaching zero used to commit `outcome: 'completed'` — the
-  // app asserting, in a permanent log, that someone had finished a thing it
-  // never asked them about. Elapsed is not finished.
-  const atZero = await tpage.locator('.donow-label').textContent();
-  is(/did you finish/i.test(atZero || ''), true,
-    `when the time is up it ASKS ("${atZero}")`);
-  const timedAtZero = await tpage.evaluate(async () => {
-    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
-    return await new Promise((res) => {
-      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
-      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'do-now.timed').length);
-    });
-  });
-  is(timedAtZero, timedBefore, 'and records NOTHING until it has been answered');
 
-  const doneBeforeAnswer = await tpage.evaluate(async () => {
-    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
-    return await new Promise((res) => {
-      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
-      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'done.marked').length);
-    });
-  });
-  await tpage.locator('.donow-done').click();
-  await tpage.waitForTimeout(500);
-  const answered = await tpage.evaluate(async () => {
+  await tpage.waitForTimeout(2800);
+  // AT THE END IT GOES AWAY. It does not ask whether you finished — the length
+  // was the entry price, not the size of the job — and it does not vanish in
+  // silence either, because a control disappearing with no announcement is one
+  // that disappeared for a screen-reader user with no way to know.
+  is(await tpage.locator('.donow').count(), 0, 'when the time is up the timer simply goes');
+  const endedLine = await tpage.locator('#triage-live').textContent() || '';
+  is(/That is five minutes/.test(endedLine), true, `and says so once ("${endedLine}")`);
+  is(/did you finish|\?/.test(endedLine), false, 'without asking anything');
+
+  const afterEnd = await tpage.evaluate(async () => {
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
       const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
       tx.onsuccess = () => res(tx.result);
     });
   });
-  is(answered.filter(e => e.kind === 'do-now.timed').length, timedBefore + 1,
-    'answering records exactly one outcome');
-  is(answered.filter(e => e.kind === 'do-now.timed').pop()?.payload?.outcome, 'completed',
-    'and "completed" now means the person SAID so');
-  // The whole point of the report: a two-minute job could be started and never
-  // finished, because nothing in this flow could mark it done.
-  is(answered.filter(e => e.kind === 'done.marked').length, doneBeforeAnswer + 1,
-    'saying you finished it actually finishes it');
-  is(await tpage.locator('.donow').count(), 0, 'and the offer clears itself away');
+  const timed = afterEnd.filter(e => e.kind === 'do-now.timed');
+  is(timed.length, timedBefore + 1, 'a timer that ran is recorded exactly once');
+  // NO VERDICT. `outcome: completed | abandoned` was written here until 1.10.0
+  // — a record of the times you did not finish your own work, which this app
+  // forbids itself in absolute terms (ADR-0042, ADR-0056). A span, and nothing
+  // else; the chosen length is absent too, so a shortfall cannot be subtracted.
+  const last = timed.pop();
+  is('outcome' in (last?.payload ?? {}), false, 'and it carries no verdict about how it ended');
+  is(Boolean(last?.payload?.startedAt && last?.payload?.endedAt), true, 'only the span it ran for');
+  is('minutes' in (last?.payload ?? {}), false,
+    'and not the length chosen, so falling short cannot be computed');
+
+  // The item is untouched: still clocked for today, waiting where it was.
+  is(afterEnd.filter(e => e.kind === 'done.marked' && e.node === last?.node).length, 0,
+    'reaching the time is not a completion, and the app never says it was');
+
+  // Stopping early is pinned in test/timer.test.ts (`NO VERDICT`), by reading
+  // the surface itself — a second timed item here would leave live work behind
+  // that later sections position off, which is the trap this file already
+  // records twice ("ITS OWN item"; "Leave the inbox as this section found it").
+
+  // Leave the fixture as this section found it: the item is completed here, the
+  // way it always was, just through the sheet rather than through a question
+  // the timer no longer asks.
+  await fillSearch('a timed two-minute job');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /a timed two-minute job/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.click('#detail-done');
+  await tpage.waitForTimeout(300);
+  await tpage.click('#detail-close');
+  await fillSearch('');
+  is(await tpage.locator('.donow').count(), 0, 'and no offer is left hanging about');
+
   console.log('\nTriage — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
 

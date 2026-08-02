@@ -433,6 +433,54 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Presence not progress, duration is chosen, and drop the
+  abandoned outcome")** — **1.10.0 "What a fold takes with it" → the timer
+  reframe** — three decisions of his, and one of them corrected me mid-design.
+  · **The recorded research and the shipped thing had drifted apart.** Thesis §4
+  has always said the timer's value is that "two minutes" is a **cheap
+  decision** — an activation aid. What shipped counted down and then asked
+  whether you had finished, which is a constraint. Noah's reframe ("I will just
+  get started" rather than "I will work within two minutes") was the thesis, not
+  a new idea.
+  · **His correction, which went further than mine.** He proposed a plant that
+  grows or a row of glyphs filling left to right, then caught it himself: that
+  would make abandoning appear to have a consequence. He is right, and the same
+  objection kills **the filling circle I had endorsed** — anything rendered
+  part-way through a chosen span is a fraction, and a fraction is a score. A
+  growth metaphor is worse still: a thing that can be stunted is the chain
+  pattern in warmer clothes. Recorded in ADR-0059 because two of the three
+  rejected shapes look like the fix.
+  · **So: presence, not progress.** A pulsing mark that says only "on", and the
+  commitment in a SENTENCE — "Twenty minutes, running." A sentence can hold
+  something you are allowed to walk away from; a shape either completes or
+  visibly does not.
+  · **The length is chosen** — `timer.length.set` folded to
+  `State.timerMinutes`, the `request.slot.set` shape, so it travels with the
+  log. Set in Extras and **not** at the point of starting: showing options to
+  someone stuck at activation is choice overload where it costs most (§4). Two
+  minutes stays the default.
+  · **The verdict is gone, and it should never have existed.** `do-now.timed`
+  wrote `outcome: 'completed' | 'abandoned'` on every stop. Nobody saw the word
+  — the log viewer says only that a timer ran — but it was permanent and it
+  went into every export, and `src/requests.ts` says in terms that "a record of
+  the times you did not do your own work is the ledger this app exists to NOT
+  keep — the do-now offer's 'Not now' writes nothing, **ever**". The button
+  that declined wrote nothing; the timer beside it wrote a verdict. Now a span
+  and nothing else, the `focus.started`/`focus.ended` shape — and the chosen
+  length is deliberately absent from the payload, so a shortfall cannot be
+  subtracted (the arithmetic that deleted the report's "Started" section).
+  · **Two defects the work found in itself.** A button that named one length
+  while starting another, when the length was changed in Extras with an offer
+  on screen — fixed with a targeted `relabelTimer`, after a full
+  `triage.refresh()` in `refreshAll` turned out to rebuild the clarify card on
+  every commit anywhere and change which card was showing mid-interaction. And
+  the smoke walk left live work behind that later sections position off — the
+  trap this file records twice already ("ITS OWN item"; "leave the inbox as this
+  section found it"), which I walked into anyway and which cost a worktree
+  bisect against the previous head to prove.
+  · Thesis §4 rewritten in the same commit — it called the timer "a bounded
+  commitment", which is no longer what it is. ADR-0059, ACCESSIBILITY B-29.
+
 - **2026-08-01 (Noah: "Continue")** — **1.9.2 "What a fold takes with it"** —
   the adversarial audit of 1.4.0–1.9.1, nine releases and the longest this repo
   has gone without one. The findings share one cause worth stating before any

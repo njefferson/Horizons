@@ -40,6 +40,8 @@ import { enableModuleEvents, disableModuleEvents } from './detail-intents.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 import { mountSecurity } from './security.ts';
 import { ledgerRowWords, notNowLedger, slotDayWords, slotOf } from '../requests.ts';
+import { timerMinutesOf, timerWords } from '../timer.ts';
+import { setTimerLengthEvents } from './request-intents.ts';
 import { setSlotEvents } from './request-intents.ts';
 
 const SEEN = 'about.seen';
@@ -961,6 +963,30 @@ export async function mountAbout(
         .then(() => { paintSlot(); try { onChange?.(); } catch { /* a surface */ } })
         .catch((err: unknown) => {
           slotNote.textContent = `Not set — ${(err as Error).message}`;
+        });
+    });
+  }
+
+  // How long a timer runs (1.10.0, ADR-0059). Set here, calmly, and never at
+  // the point of starting — showing options to someone stuck at activation is
+  // choice overload where it costs most (thesis §4). The start button then
+  // names the chosen length, so the common path stays one tap and no decision.
+  const timerLen = document.querySelector<HTMLSelectElement>('#timer-length');
+  const timerSet = document.querySelector<HTMLButtonElement>('#timer-length-set');
+  const timerNote = document.querySelector<HTMLElement>('#timer-length-note');
+  if (timerLen && timerSet && timerNote) {
+    const paintTimer = (): void => {
+      const mins = timerMinutesOf(session.state());
+      timerLen.value = String(mins);
+      timerNote.textContent = `${timerWords(mins)} when you start one.`;
+    };
+    paintTimer();
+    timerSet.addEventListener('click', () => {
+      const chosen = Number(timerLen.value);
+      void session.commit(ctx => setTimerLengthEvents(ctx, chosen))
+        .then(() => { paintTimer(); try { onChange?.(); } catch { /* a surface */ } })
+        .catch((err: unknown) => {
+          timerNote.textContent = `Not set — ${(err as Error).message}`;
         });
     });
   }

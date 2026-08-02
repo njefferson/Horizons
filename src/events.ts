@@ -109,7 +109,26 @@ export type ClarifyRouted    = Ev<'clarify.routed',     { route: ClarifyRoute }>
  *  `from` records the route being taken back. The undo of a one-tap triage
  *  decision — append-only, so it is an event, not a deletion. */
 export type ClarifyReopened  = Ev<'clarify.reopened',   { from: ClarifyRoute }>;
-export type DoNowTimed       = Ev<'do-now.timed',       { startedAt: ISODateTime; endedAt: ISODateTime; outcome: 'completed' | 'abandoned' }>;
+/**
+ * A timer ran on a do-now item: when it started and when it stopped, and
+ * NOTHING about whether you finished (1.10.0, ADR-0059).
+ *
+ * `outcome: 'completed' | 'abandoned'` was written here until 1.10.0. Nobody
+ * ever saw the word — the log viewer says only that a timer ran — but it was a
+ * record of the times you did not finish your own work, kept permanently and
+ * carried into every export. `src/requests.ts` and ADR-0056 forbid exactly
+ * that, in absolute terms: the do-now offer's "Not now" is "event-free,
+ * forever". The button that declined wrote nothing while the timer that you
+ * stopped wrote a verdict — same flow, same person, opposite policies.
+ *
+ * What remains is the `focus.started` / `focus.ended` shape: a span, no
+ * judgement. The chosen length is deliberately NOT in the payload, so a
+ * shortfall cannot be computed by subtraction — the arithmetic that got the
+ * report's "Started" section deleted in 1.9.0.
+ *
+ * Old events keep their `outcome`; the log is append-only. Nothing reads it.
+ */
+export type DoNowTimed       = Ev<'do-now.timed',       { startedAt: ISODateTime; endedAt: ISODateTime }>;
 export type BotherReceived   = Ev<'bother.received',    { text: string }>;
 export type BotherOwned      = Ev<'bother.owned',       { ownership: Ownership }>;
 export type BotherRouted     = Ev<'bother.routed',      { route: ClarifyRoute | 'park' }>;
@@ -149,6 +168,10 @@ export type RequestDeclined  = Ev<'request.declined',   { person: NodeId | null;
  *  note-field precedent: an empty value is an honest removal). An
  *  unrecognised string reads as no slot — refused, never guessed. */
 export type RequestSlotSet   = Ev<'request.slot.set',   { recurrence: string }>;
+/** How long a timer runs when you start one, in whole minutes (1.10.0). A
+ *  preference about how you work, so it travels with the log like the request
+ *  slot rather than sitting on one device. `node: null`. */
+export type TimerLengthSet   = Ev<'timer.length.set',   { minutes: number }>;
 export type CommsSweepScheduled=Ev<'comms.sweep.scheduled',{ at: ISODateTime }>;
 export type CommsSweepRan    = Ev<'comms.sweep.ran',    { at: ISODateTime }>;
 
@@ -251,7 +274,7 @@ export type AppEvent =
   | WaitingOpened | WaitingClosed | DependencyDeclared | DependencyReleased
   | SuspenseSet | ProjectRoleSet | OprAssigned | StakeholderAdded | StakeholderRemoved
   | DecisionLogged | DeltaRecorded | StatusReportExported
-  | RequestDeclined | RequestSlotSet | CommsSweepScheduled | CommsSweepRan
+  | RequestDeclined | RequestSlotSet | TimerLengthSet | CommsSweepScheduled | CommsSweepRan
   | PebbleRaised | PebbleSettled | CapacityDeclared | WipLimitSet | EstimateRecorded
   | VaultCreated | VaultLocked | VaultUnlocked | DeviceRegistered
   | ModuleEnabled | ModuleDisabled | ConsentGranted | ConsentRevoked
@@ -277,7 +300,7 @@ export const EVENT_KINDS = [
   'waiting.opened','waiting.closed','dependency.declared','dependency.released',
   'suspense.set','project.role.set','opr.assigned','stakeholder.added','stakeholder.removed',
   'decision.logged','delta.recorded','status.report.exported',
-  'request.declined','request.slot.set','comms.sweep.scheduled','comms.sweep.ran',
+  'request.declined','request.slot.set','timer.length.set','comms.sweep.scheduled','comms.sweep.ran',
   'pebble.raised','pebble.settled','capacity.declared','wip.limit.set','estimate.recorded',
   'vault.created','vault.locked','vault.unlocked','device.registered',
   'module.enabled','module.disabled','consent.granted','consent.revoked',

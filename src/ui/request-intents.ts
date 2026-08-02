@@ -12,6 +12,7 @@
 import type { AppEvent, NodeId } from '../events.ts';
 import type { NodeState, State } from '../fold.ts';
 import type { StampContext } from './session.ts';
+import { TIMER_CHOICES } from '../timer.ts';
 import { endOfLocalDay } from '../time.ts';
 import { nextSlotOccurrence, parseSlot, slotOf, type SlotDay } from '../requests.ts';
 
@@ -74,3 +75,13 @@ export function setSlotEvents(ctx: StampContext, day: SlotDay | null): AppEvent[
   if (day && !parseSlot(recurrence)) return [];
   return [base(ctx, 'request.slot.set', null, { recurrence })];
 }
+
+/**
+ * Choose how long a timer runs (1.10.0, ADR-0059). Refused, not guessed: a
+ * length outside the closed list would be a commitment nobody offered, so the
+ * intent declines to build an event rather than writing a number it invented.
+ */
+export const setTimerLengthEvents = (ctx: StampContext, minutes: number): AppEvent[] =>
+  TIMER_CHOICES.includes(minutes)
+    ? [base(ctx, 'timer.length.set', null, { minutes })]
+    : [];

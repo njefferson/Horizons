@@ -137,7 +137,10 @@ export function eventWords(
       return `Sorted as ${ROUTE_WORDS[r] ?? r ?? 'a route'}.`;
     }
     case 'clarify.reopened': return 'Taken back to be sorted again.';
-    case 'do-now.timed': return 'A two-minute timer ran on it.';
+    // Not "a two-minute timer" any more — the length is chosen (1.10.0). And
+    // never a word about how it ended: the event carries a span, not a verdict.
+    case 'do-now.timed': return 'A timer ran on it.';
+    case 'timer.length.set': return 'You chose how long a timer runs.';
     case 'bother.received': return 'A bother arrived.';
     case 'bother.owned': return 'The bother was taken on.';
     case 'bother.routed': return 'The bother was sorted onward.';

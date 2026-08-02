@@ -263,6 +263,15 @@ export interface State {
   requestSlot: { recurrence: string } | null;
   /** Ordering of the last event that moved `requestSlot`, so it folds LWW. */
   requestSlotStamp: Ordering | null;
+  /**
+   * How long a timer runs when you start one, in whole minutes, or null for
+   * "nobody has said" (1.10.0, ADR-0059). A number rather than a shape,
+   * because the commitment lives in a SENTENCE the surface says out loud —
+   * "twenty minutes, running" — and never in anything that can be drawn
+   * half-full. A partly-filled shape is a fraction however it is drawn.
+   */
+  timerMinutes: number | null;
+  timerMinutesStamp: Ordering | null;
 }
 
 /**
@@ -291,6 +300,8 @@ export const emptyState = (): State => ({
   modules: new Set(),
   requestSlot: null,
   requestSlotStamp: null,
+  timerMinutes: null,
+  timerMinutesStamp: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -419,6 +430,8 @@ export function cloneShell(base: State): State {
     // but the rule is the rule, and the exception was never argued for.
     requestSlot: base.requestSlot ? { ...base.requestSlot } : null,
     requestSlotStamp: base.requestSlotStamp ? { ...base.requestSlotStamp } : null,
+    timerMinutes: base.timerMinutes,
+    timerMinutesStamp: base.timerMinutesStamp ? { ...base.timerMinutesStamp } : null,
   };
 }
 
@@ -903,6 +916,18 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
       // The one request slot (1.8.0, ADR-0056): state-level LWW like focus.
       // '' is the honest clear; an unrecognised recurrence is REFUSED at read
       // time (parseSlot), never guessed at here — the fold keeps what was said.
+      // How long a timer runs (1.10.0). State-level LWW, the `requestSlot`
+      // shape. A non-finite or non-positive number is REFUSED, not guessed —
+      // a length nobody chose is worse than no length at all.
+      case 'timer.length.set': {
+        if (wins(s.timerMinutesStamp ?? undefined, o)) {
+          const m = e.payload.minutes;
+          s.timerMinutes = Number.isFinite(m) && m > 0 ? Math.floor(m) : null;
+          s.timerMinutesStamp = o;
+        }
+        break;
+      }
+
       case 'request.slot.set': {
         if (wins(s.requestSlotStamp ?? undefined, o)) {
           s.requestSlot = e.payload.recurrence === '' ? null : { recurrence: e.payload.recurrence };

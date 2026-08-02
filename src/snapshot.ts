@@ -30,6 +30,8 @@ export function serialiseState(s: State): unknown {
     modules: [...s.modules],
     requestSlot: s.requestSlot,
     requestSlotStamp: s.requestSlotStamp,
+    timerMinutes: s.timerMinutes,
+    timerMinutesStamp: s.timerMinutesStamp,
   });
 }
 
@@ -48,6 +50,8 @@ export function deserialiseState(raw: unknown): State {
     modules?: string[];
     requestSlot?: State['requestSlot'];
     requestSlotStamp?: State['requestSlotStamp'];
+    timerMinutes?: State['timerMinutes'];
+    timerMinutesStamp?: State['timerMinutesStamp'];
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -138,6 +142,9 @@ export function deserialiseState(raw: unknown): State {
     // in, like `lastReportMark` above.
     requestSlot: r.requestSlot ? { ...r.requestSlot } : null,
     requestSlotStamp: r.requestSlotStamp ? { ...r.requestSlotStamp } : null,
+    // A pre-1.10.0 snapshot stored no timer length — nobody had chosen one.
+    timerMinutes: r.timerMinutes ?? null,
+    timerMinutesStamp: r.timerMinutesStamp ? { ...r.timerMinutesStamp } : null,
   };
 }
 

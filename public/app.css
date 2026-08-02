@@ -244,6 +244,21 @@ button.ghost {
    timer, during it, and at the question — a two-minute job finished in forty
    seconds should never need the timer stopped first. */
 .donow-done { min-height: var(--target); }
+/* PRESENCE, NOT PROGRESS (1.10.0, ADR-0059). This mark says the timer is on
+   and nothing else — it has no size that grows, no arc that sweeps and no
+   state that is part-way, because anything with an amount is a fraction and a
+   fraction is a score (law 5). The pulse is the whole signal. */
+.donow-running {
+  width: 0.6rem; height: 0.6rem; border-radius: 50%;
+  background: var(--warm); flex: 0 0 auto;
+  animation: donow-breathe 2.4s ease-in-out infinite;
+}
+@keyframes donow-breathe { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) {
+  /* Still says "on" — a steady mark, never a still frame of something that
+     was meant to move. */
+  .donow-running { animation: none; opacity: 1; }
+}
 .donow button { min-height: var(--target); }
 
 /* --- the list ------------------------------------------------------------- */

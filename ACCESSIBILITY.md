@@ -825,3 +825,34 @@ Status: OPEN | FIXED in <version.capability.iteration>
 
 A row's `Detail` must carry the **measurement**, not an impression — "popup
 buttons measured 1.26:1", not "contrast looked low".
+
+### B-29 · A timer that shows presence, not progress (1.10.0)
+
+**No new colour tokens.** The presence mark uses `--warm`, already bound and
+already measured; the timer's words sit in `.donow-label` on the same binding
+they have always used, so the rendered gate covers both without a new pair.
+
+- **The presence mark** (`.donow-running`): a 0.6rem dot that pulses between
+  full and 0.35 opacity. It is `aria-hidden`, deliberately — it carries no
+  information a screen-reader user needs, because everything it signifies is
+  already in the label's own words ("Five minutes, running."). A decorative
+  mark that announces itself is noise.
+- **`prefers-reduced-motion: reduce` turns the pulse off and leaves the mark at
+  full opacity.** Not `display: none`: the reduced-motion user still gets the
+  same signal, held still. A still frame of something meant to move would be
+  ambiguous; a steady mark is not.
+- **Nothing here encodes an amount, and that is an accessibility property as
+  well as a product one.** A pulsing dot has no state a low-vision user has to
+  judge by size or by arc length, and no colour that has to be read as a
+  quantity. Pressure and decay never ride on hue (B-02); this now holds for
+  elapsed time too, because there is no quantity rendered at all.
+- **The end of a timer is announced, never silent.** The bar removes itself and
+  one line goes to `#triage-live` (`role="status"`, `aria-live="polite"`). A
+  control that vanishes with no announcement is a control that disappeared for
+  a screen-reader user with no way to know it had — which is why "it just goes
+  away" is implemented as *goes away and says so once*, not as silence.
+- **The length control** (`#timer-length`, `#timer-length-set`,
+  `#timer-length-note`) is the request-slot pattern exactly: a labelled
+  `<select>`, a ghost button at full target size, and a `role="status"` note
+  that states what is now set. Measured in the `dialog` states of the rendered
+  gate alongside `#slot-day`, which shares its bindings.

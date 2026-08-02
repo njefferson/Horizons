@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.10.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**The timer is something you commit to now, not something you are held to.** It used to count down — “two minutes: 1:47 left” — and then ask whether you had finished. That is a deadline, and a deadline on a thing you are already avoiding makes it harder to start, which is the opposite of what it was for. The point of two minutes was always that it is a *cheap* decision.',
+      '**So it shows only that it is running.** A quiet mark, and the time you chose said in words. No numbers counting down, and no circle or bar filling up either — a shape that is part-way full is a way of saying you stopped short, and that is a score about you. There is nothing to leave unfinished.',
+      '**You choose how long.** Two, five, ten, twenty or thirty minutes, set in the ⓘ panel under Extras — calmly, not in the moment you are trying to start something. Two minutes stays the default, because it is the one nobody has to think about. The button then names the time it will actually start.',
+      '**Stopping records nothing.** Quietkeep used to write down that a timer had been given up on. Nobody ever saw the word, but it was kept and it went into your exports — and a record of the times you did not finish your own work is exactly the thing this app is not supposed to keep. It now keeps only that a timer ran, the way it already does for focus sessions.',
+      '**And when the time is up, the timer just goes.** It does not ask you anything. The thing is still there, still waiting for today, whenever you want it.',
+    ],
+  },
+  {
     triplet: '1.9.2',
     kind: 'ITERATION',
     date: '2026-08-01',
