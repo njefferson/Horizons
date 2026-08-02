@@ -17,6 +17,9 @@ import type { AppEvent } from '../events.ts';
 import type { NodeState } from '../fold.ts';
 import { heldNodes } from '../gate.ts';
 import { workSurface, type NextUpItem } from '../nextup.ts';
+import { offerNow, offerWords } from '../offer.ts';
+import { MENU_WORDS } from '../menu.ts';
+import type { MenuCategory } from '../events.ts';
 import { undatedCount } from '../held.ts';
 import { pressureWords } from '../pressure.ts';
 import { calendarDaysBetween } from '../time.ts';
@@ -164,12 +167,15 @@ export function mountWork(
     // workSurface removes the chip items from Next-up, so a ready upkeep is not
     // rendered twice on one screen with two Done buttons writing to one node.
     const { up: all, chips: ups } = workSurface(state, iso, session.zone, 0);
+    // THE MENU SHAPE (1.11.0, ADR-0060). What is offered is a small set chosen
+    // to be UNALIKE — at most one item per reason, plus one thing off the Menu
+    // that owes nothing. `offerNow` owns that rule; this file only renders it.
+    const offer = offerNow(state, iso, session.zone, cycle);
     // Prefer something not yet declined this session; if everything has been,
     // start again from the top rather than showing nothing.
-    const fresh = [all.head, ...all.behind].filter(Boolean)
-      .filter(i => !declined.has((i as NextUpItem).node.id)) as NextUpItem[];
-    const head = fresh[0] ?? all.head;
-    const behind = (fresh.length > 1 ? fresh.slice(1) : all.behind)
+    const fresh = offer.work.filter(i => !declined.has(i.node.id));
+    const head = fresh[0] ?? offer.work[0] ?? all.head;
+    const behind = (fresh.length > 1 ? fresh.slice(1) : offer.work.slice(1))
       .filter(i => i.node.id !== head?.node.id);
     const up = { head, behind, total: all.total };
     current = up.head;
@@ -187,20 +193,40 @@ export function mountWork(
       const p = up.head.pressure;
       const extra = up.head.reason === 'pressure' ? pressureWords(p) : up.head.words;
       WHY.textContent = extra;
-      COUNT.textContent = up.total === 1
-        ? 'This is the only thing asking.'
-        : `${up.total} things are asking. This one first.`;
+      // NO NUMBER (1.11.0). "8 things are asking" is a count of pending work on
+      // the landing surface, which is the nearest thing this app has to the
+      // backlog headline law 8 names outright — and the coverage gauge already
+      // states the honest totals a few lines up this same page.
+      COUNT.textContent = offerWords(offer);
       // Doors, not words-in-a-paragraph (1.6.0): each row opens its sheet, on
-      // the FRESH node — a row built at refresh time can be clicked later.
-      BEHIND.replaceChildren(...up.behind.map(item => {
-        const li = el('li', 'behind-item');
+      // the FRESH node — a row built at refresh time can be clicked later. What
+      // sits here is now the REST OF THE OFFER rather than a queue tail: one
+      // more piece of work of a different kind, and one thing you wanted.
+      const rows = up.behind.map(item => ({
+        id: item.node.id,
+        title: item.node.title || '(untitled)',
+        why: item.reason === 'pressure' ? pressureWords(item.pressure) : item.words,
+        wish: false,
+      }));
+      // The wish rides last and says what it is. It owes nothing (law 6), so it
+      // never carries a reason, a date, or a word that could read as asking.
+      if (offer.wish && offer.wish.id !== head?.node.id) {
+        rows.push({
+          id: offer.wish.id,
+          title: offer.wish.title || '(untitled)',
+          why: `something you wanted · ${MENU_WORDS[offer.wish.onMenu as MenuCategory] ?? 'on the Menu'}`,
+          wish: true,
+        });
+      }
+      BEHIND.replaceChildren(...rows.map(row => {
+        const li = el('li', row.wish ? 'behind-item behind-wish' : 'behind-item');
         const b = el('button', 'behind-open');
         b.type = 'button';
-        b.append(el('span', 'behind-title', item.node.title || '(untitled)'));
-        b.append(el('span', 'behind-why', item.reason === 'pressure' ? pressureWords(item.pressure) : item.words));
+        b.append(el('span', 'behind-title', row.title));
+        b.append(el('span', 'behind-why', row.why));
         if (openDetail) b.addEventListener('click', () => {
-          const fresh = session.state().nodes.get(item.node.id);
-          if (fresh) openDetail(fresh);
+          const node = session.state().nodes.get(row.id);
+          if (node) openDetail(node);
         });
         li.append(b);
         return li;

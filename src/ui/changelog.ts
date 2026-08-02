@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.11.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**Next up offers a few things you could pick up, rather than a queue.** It used to show one thing, then five more beneath it, then “8 things are asking”. That last line was a count of everything waiting, sitting on the first screen you see — which is the one thing this app is not supposed to put in front of you.',
+      '**What is offered now is a small set chosen to be different from each other.** One thing with a real date and one thing that has been quiet for a month are easy to choose between, because you are picking what you feel like, not weighing two similar jobs. Two near-identical next actions are the hard case, and they can no longer appear together.',
+      '**The one it leads with has not changed.** A real date arriving today still comes first, and the app still answers “if you only do one thing”. Nothing about what outranks what has moved.',
+      '**And something you wanted comes along.** One thing off your Menu rides with the offer, saying plainly that it is something you wanted rather than something asking. It carries no date and no Done — picking it up is still a decision you make on its own page, never something that crept up on you.',
+      '**No number.** The offer no longer says how much is waiting. What you are holding is still stated honestly, in the line just above it that has always carried it — once, in the place that exists to say it.',
+    ],
+  },
+  {
     triplet: '1.10.0',
     kind: 'CAPABILITY',
     date: '2026-08-02',

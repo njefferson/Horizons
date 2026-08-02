@@ -856,3 +856,25 @@ they have always used, so the rendered gate covers both without a new pair.
   `<select>`, a ghost button at full target size, and a `role="status"` note
   that states what is now set. Measured in the `dialog` states of the rendered
   gate alongside `#slot-day`, which shares its bindings.
+
+### B-30 · The offer, and the wish inside it (1.11.0)
+
+**No new colour tokens.** The offer reuses `.behind-item` / `.behind-title` /
+`.behind-why`, already bound and already in the rendered gate; the wish adds a
+`--line` rule and an italic on top of those bindings, both of which the existing
+pairs already cover.
+
+- **The wish is never distinguished by hue** (B-02, and law 6 besides). It says
+  *"something you wanted"* in words — that is the message. The left rule and the
+  italic are redundant signals layered on the words, not carriers of meaning, so
+  nothing is lost to a reader who cannot see either.
+- **The wish row carries no `Done`.** That is a product ruling (acting on a Menu
+  item is a deliberate promotion) with an accessibility consequence worth
+  stating: the row has exactly one control and one purpose, so its accessible
+  name is the whole of what it does.
+- **The offer's line no longer states a number.** Screen-reader users heard
+  "8 things are asking" on every render of the main surface; the honest total is
+  now announced once, by the coverage gauge that exists to carry it, rather than
+  twice with the second framed as demand.
+- **Target sizes are unchanged** — the rows are the same `.behind-open` buttons
+  measured since 1.6.0, and the wish adds padding rather than removing any.

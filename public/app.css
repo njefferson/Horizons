@@ -259,6 +259,13 @@ button.ghost {
      was meant to move. */
   .donow-running { animation: none; opacity: 1; }
 }
+
+/* A wish in the offer sits a shade apart so it never reads as one more thing
+   asking (1.11.0, ADR-0060). The distinction is NOT carried by hue (B-02): the
+   row says "something you wanted" in words, and the rule and the italic are
+   redundant signals on top of that, not the message itself. */
+.behind-wish { border-left: 2px solid var(--line); padding-left: 0.5rem; }
+.behind-wish .behind-why { font-style: italic; }
 .donow button { min-height: var(--target); }
 
 /* --- the list ------------------------------------------------------------- */

@@ -179,6 +179,13 @@ without leaving — and drops the timer, which is a demand.
 action · Waiting For · Someday · Reference · Trash). One card removes the
 comparison. Six fixed routes remove the open field. The routes are the
 structure D'Zurilla's evidence points at.
+→ **Next up offers a small set chosen to be UNALIKE**
+([ADR-0060](adr/0060-a-few-things-you-could-pick-up.md)). The qualification in
+the finding above is load-bearing: the direction holds where options are
+*similar*. Two offers that differ in KIND — a real date, a thing quiet for a
+month — are chosen between by preference; twenty comparable next-actions are
+chosen between by weighing, which is the act that fails at activation. At most
+one per reason, capped at two, and the ranking beneath is unchanged.
 → **A "next action" must be specific enough to start**, which is the
 implementation-intention finding applied. Vagueness is the actual blocker far more
 often than difficulty.
@@ -346,7 +353,9 @@ of refusal.** Whatever the underlying account, a planner that makes declining
 today's suggestion feel like a failure will be abandoned. Nothing is logged as a
 rejection, because a rejection log would eventually be shown to someone.
 → **The Menu exists** so that interest has a legitimate home that owes nothing
-(law 6).
+(law 6) — and since 1.11.0 one thing from it rides in the offer on the main
+surface ([ADR-0060](adr/0060-a-few-things-you-could-pick-up.md)), carrying no
+date and no Done, so interest is *present* rather than merely permitted.
 → **The RSD tag drives the voice more than any feature**: no rebukes, no
 disappointed copy, no red walls, no implied judgement in an empty state. This
 costs nothing if the construct is wrong, and matters a great deal if it is right —

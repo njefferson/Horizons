@@ -601,8 +601,35 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(typeof offered === 'string' && offered.length > 0, true, `Next up offers one thing ("${offered}")`);
   is((await tpage.locator('#nextup-why').textContent())?.length > 0, true,
     'and says why, in words');
-  const countText = await tpage.locator('#nextup-count').textContent();
-  is(/asking/.test(countText || ''), true, `it states how many are asking ("${countText}")`);
+  // NO NUMBER ON THE OFFER (1.11.0). "8 things are asking" was a count of
+  // pending work on the landing surface — the nearest thing this app has to the
+  // backlog headline law 8 names outright. The coverage gauge a few lines up
+  // still states the honest totals; the offer says what it is instead.
+  const countText = await tpage.locator('#nextup-count').textContent() || '';
+  is(/pick up|Nothing is asking/.test(countText), true, `the offer says what it is ("${countText}")`);
+  is(/\d/.test(countText), false, 'and never how many are waiting');
+
+  // THE MENU SHAPE (1.11.0). What sits behind the head is the REST OF THE OFFER
+  // — one more piece of work of a different KIND, and one thing you wanted —
+  // rather than a queue tail. Choice overload holds "where options are similar"
+  // (thesis §4), so the set is made unalike by construction.
+  const offerWhys = await tpage.locator('#nextup-behind .behind-why').allTextContents();
+  const headWhy = await tpage.locator('#nextup-why').textContent() || '';
+  const workWhys = offerWhys.filter(w => !/something you wanted/.test(w));
+  is(workWhys.every(w => w !== headWhy), true,
+    `each thing offered differs in kind from the head ("${headWhy}" vs ${JSON.stringify(workWhys)})`);
+  is(workWhys.length <= 1, true, 'and no more than one piece of work rides behind the head');
+
+  // A wish rides along and NEVER reads as something asking (law 6: acting on a
+  // Menu item is a deliberate promotion, never an obligation that accrued).
+  // The six-routes section above already sent one item to Someday and one to
+  // Reference, so the Menu is not empty by the time this runs.
+  const wishRow = await tpage.locator('#nextup-behind .behind-wish').count();
+  if (wishRow > 0) {
+    const wishWhy = await tpage.locator('#nextup-behind .behind-wish .behind-why').first().textContent() || '';
+    is(/something you wanted/.test(wishWhy), true, `a wish says what it is ("${wishWhy}")`);
+    is(/asking|ready|waiting|due|date/i.test(wishWhy), false, 'and never a word that reads as a demand');
+  }
 
   console.log('\nWork mode — "not this" records nothing');
   const logLenBefore = await tpage.evaluate(async () => {
@@ -643,7 +670,11 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     });
   });
   const doneTitle = await tpage.locator('#nextup-title').textContent();
-  const totalBefore = Number((await tpage.locator('#nextup-count').textContent() || '').match(/(\d+) things/)?.[1] ?? '1');
+  // The gauge is where the honest total lives now, so the anti-theatre half of
+  // this check reads it there rather than off the offer. READY NOW, not held:
+  // a completed thing is still held (law 1 does not exempt finished work, and
+  // the gate re-clocks it), so "held" is exactly the number that must not move.
+  const gaugeHeldBefore = Number((await tpage.locator('#gauge').textContent() || '').match(/(\d+) ready now/)?.[1] ?? '0');
   await tpage.click('#nextup-done');
   await tpage.waitForTimeout(150);
   const logAfterDone = await tpage.evaluate(async () => {
@@ -669,8 +700,8 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
      document.querySelector('#nextup-behind')?.textContent ?? ''].join(' | '));
   is(offeredText.includes(doneTitle || '\u0000'), false,
     `the completed thing is gone from head AND from the list behind ("${doneTitle}")`);
-  const totalAfter = Number((await tpage.locator('#nextup-count').textContent() || '').match(/(\d+) things/)?.[1] ?? '1');
-  is(totalAfter, totalBefore - 1, `and the count fell (${totalBefore} -> ${totalAfter})`);
+  const gaugeHeldAfter = Number((await tpage.locator('#gauge').textContent() || '').match(/(\d+) ready now/)?.[1] ?? '0');
+  is(gaugeHeldAfter, gaugeHeldBefore - 1, `and what is ready now actually fell (${gaugeHeldBefore} -> ${gaugeHeldAfter})`);
 
   console.log('\nWork mode — the gauge is a claim you can open');
   is(await tpage.locator('#coverage').isVisible(), false, 'the coverage list starts closed');

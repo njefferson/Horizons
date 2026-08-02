@@ -433,6 +433,36 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote and continue")** — **1.11.0 "A few things you
+  could pick up"** — the menu shape he asked for: *"queue towards offering what
+  the user wants to choose to do, as opposed to a list of things waiting to be
+  done."*
+  · **The way through was in the thesis's own wording.** §4's choice-overload
+  finding is qualified — the direction holds "where options are SIMILAR and
+  stakes are ambiguous" — so it does not condemn a small set of options that are
+  deliberately unalike. The mechanism is `NextUpReason`, which already partitions
+  the queue by WHY something is offered: **at most one item per reason**, capped
+  at two. Nothing scored, nothing balanced; the classes do the work.
+  · **The precedence is untouched.** A real date arriving today still leads.
+  · **One wish rides along, and the guard is structural rather than copy.**
+  `offerNow` returns it as a bare node with no reason, no pressure and no demand
+  clock, so there is nothing for a surface to render as a demand, and it carries
+  no Done — law 6's "deliberate promotion, never an obligation that accrued".
+  · **The count is gone.** "8 things are asking" was a count of pending work on
+  the landing surface — the nearest thing this app has to the backlog headline
+  law 8 names outright — while the coverage gauge three lines up already states
+  the honest totals.
+  · **The smoke walk's anti-theatre check moved to the gauge**, and deliberately
+  to `ready now` rather than `held`: a completed thing is still held, because law
+  1 does not exempt finished work, so `held` is exactly the number that must not
+  move when something is done.
+  · A correction to my own working shorthand, for the record: I had been glossing
+  **law 8 as "caps with true counts"**. It is *"Rest is legitimate"*, and its
+  operative second clause is that the bounded surface is **never the backlog**.
+  The repo's own citations of law 8 for caps are right on that clause; my gloss
+  was lossy, and it happened to matter here.
+  · ADR-0060, ACCESSIBILITY B-30, thesis §4 and §9 updated in the same commit.
+
 - **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
   `f237a1f → 0745796`**, carrying 1.9.1, 1.9.2 and 1.10.0. Spine 183 watched
   green on the exact head before the promote; Deploy 180 green on `main` at the
