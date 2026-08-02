@@ -112,6 +112,17 @@ jobs:
       - name: No unrecorded write-gate bypass
         run: npm run writegate:check
 
+      # Twice in one day the same shape landed: `export.written` recorded since
+      # Phase 0 and read by nothing, so no surface could say when a copy last
+      # left (ADR-0062); `snapshot.written` declared in Phase 0 and written by
+      # nothing, so every cold start replayed the whole log (ADR-0063). Both
+      # were invisible — a noun nothing writes breaks nothing, it just means a
+      # feature the record insists exists does not. Every kind is now either
+      # written by the app or says in the vocabulary, in words, that it is not
+      # and why. A stale note fails too.
+      - name: Every noun accounts for itself
+        run: npm run emitters:check
+
       # Storage is IndexedDB via Dexie and localStorage is banned outright. That
       # ban rested on review alone until a security audit pointed out it was the
       # only invariant in CLAUDE.md with no gate behind it — unlike connect-src

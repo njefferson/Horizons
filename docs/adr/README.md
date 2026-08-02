@@ -219,6 +219,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0063](0063-startup-does-not-replay-the-world.md)**
   - Decision: The session cuts a snapshot once per boot — [ADR-0001](0001-event-sourced-log.md)'s first consequence, executed
   - Status: Accepted
+- **[0064](0064-every-noun-accounts-for-itself.md)**
+  - Decision: Every event kind is written by the app, or the vocabulary says in words why it is not
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

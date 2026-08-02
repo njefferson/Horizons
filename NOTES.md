@@ -441,6 +441,46 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
+  `3a9776c → 601bae9`**, carrying **1.14.1**. Spine 195 watched green on the
+  exact head before the promote; **Deploy 192** green on `main` at the same sha
+  after it, both editions out. Same limit as every promote here: production
+  itself was not read ([V-15](docs/verifications.md)).
+
+- **2026-08-02 (Noah: "Promote and continue")** — **1.14.2 "Every noun accounts
+  for itself"** — the generalisation of the two defects the same day produced.
+  · **The shape, twice in one day.** `export.written` recorded since Phase 0 and
+  read by nothing (ADR-0062); `snapshot.written` declared in Phase 0 and written
+  by nothing (ADR-0063). Neither was visible: types compiled, gates passed, 864
+  tests green. **A noun nothing writes breaks nothing** — it just means a feature
+  the record insists exists does not.
+  · **A sweep found 23 more kinds written by nothing, and exactly two carried a
+  note saying so.** From outside, all 23 looked identical — and identical to the
+  two that were real defects.
+  · **New gate `emitters:check`.** Each kind is written by the app, or its own
+  vocabulary entry says in words that it is not. Both directions: a kind the app
+  DOES write must not still be described as unemitted, because a stale note is
+  the next quiet lie and would be written by whoever finally wires the noun up.
+  Both failure modes proved deliberately before trusting it.
+  · **The first version was too coarse and I caught it by running it.** Paragraph
+  splitting made all of section G one lump, so a note about one kind vouched for
+  every kind beside it — the exact sloppiness the gate exists to refuse. Now
+  parsed into per-kind blocks, so a note must sit BESIDE what it is about. One
+  existing note (the `vault.*` supersession) lived in a different section
+  entirely and was moved to where it belongs.
+  · **What the 23 turned out to be:** reserved (the assist ladder, templates,
+  terminology skins, consent), deferred with a named blocker (anchors and their
+  delta; pebbles/capacity/WIP, all waiting on "what does a pebble depress?"),
+  superseded (the vault trio; the comms-sweep pair, replaced by a field on an
+  upkeep node), redundant (`device.registered` — `State.devices` folds from the
+  `device` field every event already carries), and correct by design
+  (`replan.raised`, which ADR-0034 requires to stay unemitted).
+  · **Two notes record open questions rather than answers**, deliberately:
+  whether sync needs a `consent.granted` under ADR-0015, and that compaction —
+  ADR-0001's fifth consequence — is entirely unbuilt.
+  · ADR-0064. Nothing changes on screen; the bundle moves only because the patch
+  notes live in it.
+
 - **2026-08-02 (Noah: "What else is already specified you haven't done yet?" → "continue")** —
   **1.14.1 "Startup does not replay the world"** — the biggest thing the sweep
   found, and the same defect as 1.14.0 one layer down.

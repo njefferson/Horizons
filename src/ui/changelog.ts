@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.14.2',
+    kind: 'ITERATION',
+    date: '2026-08-02',
+    notes: [
+      '**Nothing changes on screen in this one.** It is a check on Quietkeep\u2019s own record-keeping, and it is here because the same mistake happened twice in one day.',
+      'Quietkeep keeps a fixed list of the kinds of thing it can record \u2014 every event it knows how to write down. Twice now, something on that list turned out to be written by nothing at all, so a feature the list insisted existed simply did not. Neither showed up as a fault, because a note nobody writes breaks nothing; it just quietly is not there.',
+      '**Every entry on that list now has to account for itself.** Either the app really writes it, or the record says in plain words that it does not and why \u2014 reserved, waiting on a decision, or replaced by something else. Twenty-three entries were silent; all twenty-three now say which. The check runs on every build, and it catches a note that has gone out of date too.',
+    ],
+  },
+  {
     triplet: '1.14.1',
     kind: 'ITERATION',
     date: '2026-08-02',

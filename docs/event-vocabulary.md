@@ -150,12 +150,25 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 - **`anchor.defined`**
   - Payload: `name, recurrence (RRULE)`
   - Silent risk: no
+  - **Unemitted, deferred with the anchor surface** ([ADR-0057](adr/0057-stakeholders-and-the-decision-log.md)).
+    `anchor` is not in `DEMAND_FREE_KINDS` and this kind is not in
+    `SILENT_RISK_KINDS` with no cure branch, so an anchor node would be silent
+    under law 1 today — and the gauge that PROVES law 1 would start disagreeing
+    with itself. Shipping anchors needs a gate change plus a surface, in a
+    release of its own.
 - **`anchor.fired`**
   - Payload: `anchor, at`
   - Silent risk: no
+  - **Unemitted, deferred with `anchor.defined`** — and it carries no per-device
+    watermark, so a delta cut on it would be the degraded at-only cut that
+    `reportedBefore` exists to avoid. The export mark already does this job
+    better.
 - **`replan.raised`**
   - Payload: `passedClock, fed[], suspense, daysLeft`
   - Silent risk: no — **and nothing emits it** ([ADR-0034](adr/0034-replan-cards-are-computed.md))
+  - **Unemitted BY DESIGN, and it should stay that way.** Replan cards are
+    computed from passed clocks at read time ([ADR-0034](adr/0034-replan-cards-are-computed.md));
+    a stored one could disagree with the clock it describes.
 - **`replan.resolved`**
   - Payload: `choice: compress | escalate | renegotiate | new-date | to-menu`
   - Silent risk: **yes — gated** unless the choice sets a clock or lands on the Menu
@@ -218,9 +231,13 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
 - **`assist.offered`**
   - Payload: `rung: template | workers-ai | byok | manual, suggestions[]`
   - Silent risk: no
+  - **Unemitted — reserved for the assist ladder** ([ADR-0015](adr/0015-ai-never-blocks.md)).
+    No assisted rung of any kind ships, offline or cloud, so nothing has ever
+    had cause to write it.
 - **`assist.applied`**
   - Payload: `accepted[], rejected[]`
   - Silent risk: no
+  - **Unemitted — reserved with `assist.offered`**, for the same reason.
 
 `not-mine-to-carry` still produces a node — it lands on the Not Now ledger with a
 `park.set`. Declining to carry something is recorded, not discarded; that is the
@@ -297,6 +314,9 @@ is a valid, unremarkable value, never nagged about.
 - **`delta.recorded`**
   - Payload: `sinceAnchor | sinceExport, text`
   - Silent risk: no
+  - **Unemitted, deferred with anchors.** The status report ships and records
+    itself as `status.report.exported`; this kind is the anchor-scoped delta,
+    which waits on the watermark this repo does not have.
 - **`status.report.exported`**
   - Payload: `format: clipboard | markdown | print | csv, scope`
   - Silent risk: no — this is the provenance "delta since last export" reads from
@@ -329,9 +349,17 @@ is a valid, unremarkable value, never nagged about.
 - **`comms.sweep.scheduled`**
   - Payload: `at`
   - Silent risk: no
+  - **Unemitted, and superseded in practice.** The comms sweep ships
+    ([ADR-0042](adr/0042-the-comms-sweep.md)) as a FIELD on an upkeep node
+    (`COMMS_FIELD` in `src/comms.ts`) rather than as its own kind, because it
+    decays, completes and renders exactly like an upkeep and inventing a kind
+    would mean teaching every projection about a thing they already know. These
+    two nouns are what that design replaced.
 - **`comms.sweep.ran`**
   - Payload: `at`
   - Silent risk: no
+  - **Unemitted, superseded with `comms.sweep.scheduled`** — a sweep being done
+    is a `done.marked` on the upkeep, like every other completion.
 
 > The app owns **the schedule of looking**, never the messages themselves. There
 > is no event that touches message content, and there is no integration that
@@ -342,14 +370,25 @@ is a valid, unremarkable value, never nagged about.
 - **`pebble.raised`**
   - Payload: `magnitude, affects: NodeId[]`
   - Silent risk: no — pebbles are demand-free by construction (law 6)
+  - **Unemitted, and blocked on a product decision rather than on work.**
+    [ADR-0014](adr/0014-demand-free-types.md)'s central consequence is that a
+    pebble "may depress capacity / WIP while active", and nothing in the app has
+    ever read a capacity or a WIP limit. "What does a pebble actually depress?"
+    has never been answered, and no amount of building resolves it.
 - **`pebble.settled`**
   - Silent risk: no
+  - **Unemitted, blocked with `pebble.raised`.**
 - **`capacity.declared`**
   - Payload: `level: low | steady | sharp | unsure`
   - Silent risk: no
+  - **Unemitted, and type-only.** No projection has ever read a capacity. It is
+    half of the substrate pebbles would need, and it waits on the same decision.
 - **`wip.limit.set`**
   - Payload: `limit`
   - Silent risk: no
+  - **Unemitted, and type-only**, with `capacity.declared`. Next up offers one
+    thing by construction, so there is currently nothing a WIP limit could
+    constrain.
 - **`estimate.recorded`**
   - Payload: `duration, basis: guess | prior`
   - Silent risk: no
@@ -362,12 +401,28 @@ feature can be late; the data cannot be backfilled.
 - **`vault.created`**
   - Payload: `name, domain: work | personal | journal`
   - Silent risk: no
+  - **Unemitted.** Vaults were closed as a mechanism by Q-10 and the journal
+    took the kind-plus-encryption route instead
+    ([ADR-0061](adr/0061-the-journal-is-a-kind-not-a-vault.md)). The `vault`
+    field stays on every event and the gate's cross-vault refusal stays
+    enforced — both cost nothing and removing either would be a destructive
+    schema change — but nothing creates a second vault.
 - **`vault.locked` / `.unlocked`**
   - Payload: `method: passphrase`
   - Silent risk: no
+  - **Unemitted, and superseded** (1.13.0, [ADR-0061](adr/0061-the-journal-is-a-kind-not-a-vault.md)).
+    They belonged to the vault split, which ADR-0061 replaced with
+    `kind: 'journal'` plus an encrypted payload. They stay in the vocabulary
+    because the log is append-only and removing a name is a destructive schema
+    change for no gain — but nothing writes them, and an unlock is a session
+    fact rather than a durable one, so nothing should.
 - **`device.registered`**
   - Payload: `device, label`
   - Silent risk: no
+  - **Unemitted, and redundant.** `State.devices` is folded from the `device`
+    field every event already carries, so a device is known by having written
+    something. There is no surface that lists devices and nothing that needs a
+    label.
 - **`module.enabled` / `.disabled`**
   - Payload: `module`
   - Silent risk: no
@@ -377,18 +432,26 @@ feature can be late; the data cannot be backfilled.
 - **`consent.granted`**
   - Payload: `scope, whatLeaves: string, rung`
   - Silent risk: no
+  - **Unemitted — reserved, and the reservation is load-bearing.**
+    [ADR-0015](adr/0015-ai-never-blocks.md) binds every cloud rung to a recorded
+    consent sentence naming exactly what leaves the device. No such rung ships,
+    so nothing triggers it. **Sync is the open question**: it sends ciphertext to
+    a relay that cannot read it, and [ADR-0037](adr/0037-sync-design.md) never
+    mentions consent — which is a question nobody has asked in writing rather
+    than a settled answer.
 - **`consent.revoked`**
   - Payload: `scope`
   - Silent risk: no
+  - **Unemitted — reserved with `consent.granted`.**
 - **`snapshot.written`**
   - Payload: `upToSeq, reason: periodic | pre-migration`
   - Silent risk: no
   - **Emitted since 1.14.1** with `reason: 'periodic'`, once per boot when the
     log has run more than `SNAPSHOT_LAG_LIMIT` events past the newest snapshot
     ([ADR-0063](adr/0063-startup-does-not-replay-the-world.md)). It was declared
-    in Phase 0 and unemitted until then, which is why every cold start folded the
-    entire log. `reason: 'pre-migration'` stays unemitted — there is no migration
-    path yet, and the record should not claim one.
+    in Phase 0 and written by nothing until then, which is why every cold start
+    folded the entire log. `reason: 'pre-migration'` is never written — there is
+    no migration path yet, and the record should not claim one.
 - **`schema.migrated`**
   - Payload: `from, to`
   - Silent risk: no
@@ -418,12 +481,22 @@ feature can be late; the data cannot be backfilled.
 - **`terminology.skin.applied`**
   - Payload: `skin, vault`
   - Silent risk: no
+  - **Unemitted — reserved.** No terminology skinning is built, and none is
+    scheduled; the app has one vocabulary and it is the one in this document.
 - **`template.loaded`**
   - Payload: `template, source, licence`
   - Silent risk: no
+  - **Unemitted — reserved for the offline template library**, which is the
+    bottom rung of ADR-0015's ladder and unbuilt like the rest of it.
 - **`shard.compacted`**
   - Payload: `device, throughSeq, archivedTo`
   - Silent risk: no
+  - **Unemitted, and the machinery does not exist.** [ADR-0001](adr/0001-event-sourced-log.md)'s
+    fifth consequence is "the log grows forever, compaction is required", and
+    [ADR-0003](adr/0003-folder-mirror.md) even specifies the trigger. Neither is
+    built. It was refused in 1.14.1 deliberately: discarding history under a law
+    that says data is never lost deserves a measurement first
+    ([ADR-0063](adr/0063-startup-does-not-replay-the-world.md)).
 
 **`consent.granted.whatLeaves` is a required human-readable string**, not a flag.
 It is the literal sentence shown to the user, stored so the record of what they
@@ -468,13 +541,6 @@ agreed to survives a copy change (law 10).
 > (law 7). The app plots; the human interprets. **Still unemitted after 1.13.0**:
 > tags are their own decision about what may be rendered from them, and the
 > journal shipped without needing them.
-
-> **`vault.locked` / `vault.unlocked` are superseded and unemitted**
-> (1.13.0, ADR-0061). They belonged to the vault split, which ADR-0061 replaced
-> with `kind: 'journal'` plus an encrypted payload. They are kept in the
-> vocabulary because the log is append-only and removing a name is a destructive
-> schema change for no gain — but nothing writes them, and an unlock is a
-> session fact rather than a durable one, so nothing should.
 
 ### I · Menu and re-entry
 
