@@ -878,3 +878,27 @@ pairs already cover.
   twice with the second framed as demand.
 - **Target sizes are unchanged** — the rows are the same `.behind-open` buttons
   measured since 1.6.0, and the wish adds padding rather than removing any.
+
+### B-31 · A person's own page (1.12.0)
+
+**No new colour tokens.** The group reuses `.detail-label`, `.detail-hint`,
+`.detail-feed`, `.detail-when` and the `linklike` button, all already bound and
+already measured.
+
+- **Names on an item became buttons.** They were `<span>`s, which means a
+  keyboard or screen-reader user had no way to reach a person at all — not a
+  contrast problem but a reachability one, and the more serious of the two. The
+  a11y gate now Tabs to a row in the person group and measures its focus ring.
+- **The registry entry is scoped to the group, not to one of its two lists.**
+  What someone owes you and where else they come up render through identical
+  bindings, and which list is populated depends on the kind of thing they are
+  linked to. An entry naming one list would pass or fail on fixture shape rather
+  than on contrast — which is exactly how the first version of this driver
+  failed, correctly, when it linked a person to a project and then looked for an
+  owed row.
+- **The group is shown even when nothing is with them.** "Nothing is with them
+  just now" is an answer; a group that disappears leaves the question looking
+  unanswerable, which is the empty-state rule this register already records.
+- **Nothing on the page is a grade.** Durations and relationships only — law 7,
+  and it is an accessibility property too: there is no colour, position or
+  emphasis carrying a judgement that a reader has to decode.

@@ -246,6 +246,15 @@ const REGISTRY = {
   // Who cares how it goes (1.9.0, ADR-0057): a name and one ghost verb.
   'detail sheet, who cares': ['#detail-stakeholders-label',
     '#detail-stakeholder-list .detail-feed', '#detail-stakeholder-list button'],
+  // A person's own sheet (1.12.0): what is with them. The relation and the
+  // duration are the quietest text, and both are FACTS — never a grade.
+  // Scoped to the GROUP, not to one of its two lists: what someone owes you
+  // and where else they come up render through identical bindings, and which
+  // list is populated depends on the kind of thing they are linked to. A
+  // registry entry that only matches one of them is a gate that passes or
+  // fails on fixture shape rather than on contrast.
+  'detail sheet, a person': ['#detail-person-count',
+    '#detail-person-group .detail-feed', '#detail-person-group button', '.detail-when'],
   // The decision log (1.9.0): the day on a row is the quietest text here, and
   // it is a DAY — never a count, never a verdict.
   'detail sheet, decisions': ['#detail-decision', '#detail-decision-set',
@@ -1368,6 +1377,21 @@ try {
     await auditAxe(page, 'detail sheet, decisions', theme);
     await auditTargets(page, 'detail sheet, decisions', theme);
     await auditFocusRings(page, 'detail sheet, decisions', theme, ['#detail-decision', '#detail-decision-set']);
+
+    // A person's own sheet (1.12.0). Link somebody as owing something, then
+    // WALK to them the way a reader does — through the name on the item — and
+    // audit the page they land on.
+    await page.fill('#detail-person', 'Ada');
+    await page.selectOption('#detail-relation', 'waiting-on');
+    await page.click('#detail-person-set');
+    await page.waitForFunction(() => /Ada/.test(
+      document.querySelector('#detail-people-list')?.textContent ?? ''));
+    await page.locator('#detail-people-list button', { hasText: /Ada/ }).first().click();
+    await page.waitForSelector('#detail-person-group:not([hidden])');
+    await auditContrast(page, 'detail sheet, a person', theme);
+    await auditAxe(page, 'detail sheet, a person', theme);
+    await auditTargets(page, 'detail sheet, a person', theme);
+    await auditFocusRings(page, 'detail sheet, a person', theme, ['#detail-person-group button']);
     await page.click('#detail-close');
 
     // Asking, and declining (1.8.0, ADR-0056): decline a thing through its own

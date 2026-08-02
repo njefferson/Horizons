@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.12.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**A person now has a page of their own.** Tap somebody\u2019s name anywhere it appears on an item and you land on them: what they owe you, how long it has been, and everywhere else they come up. Every line is a door back to the thing itself.',
+      '**Names on an item were not tappable before.** They were plain text \u2014 so the one question a name raises, *what else is with them?*, could be asked nowhere. They are buttons now.',
+      '**It keeps score on nobody.** A person\u2019s page states durations and relationships and nothing else: no ranking, no comparison between people, and none of the words this app refuses. How long something has been with someone is a fact about a date.',
+      'Quietkeep could already work all of this out \u2014 it simply had nowhere to say it. The answer existed and no screen asked for it.',
+    ],
+  },
+  {
     triplet: '1.11.0',
     kind: 'CAPABILITY',
     date: '2026-08-02',

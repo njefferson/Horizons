@@ -1724,6 +1724,41 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const unnamed = await tpage.locator('.people-why').first().textContent();
   is(unnamed, 'Nobody named yet.', `and it says so rather than inventing a name ("${unnamed}")`);
 
+  // THE PERSON LENS GETS ITS SURFACE (1.12.0). `personView` has been written,
+  // exported and unit-tested since the person work landed, with NO caller
+  // anywhere — a projection with nowhere to render, the same shape
+  // `node.merged` had before 1.7.0. What was never proven is REACHABILITY, so
+  // this walks it: a name on an item's sheet is a door, and a person's own
+  // sheet says what is with them.
+  await fillSearch('the signed form');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /the signed form/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-person', 'Priya');
+  await tpage.selectOption('#detail-relation', 'waiting-on');
+  await tpage.click('#detail-person-set');
+  await tpage.waitForFunction(() => /Priya/.test(
+    document.querySelector('#detail-people-list')?.textContent ?? ''));
+  is(await tpage.locator('#detail-people-list button').count() > 0, true,
+    'a name on an item is a door, not dead text');
+
+  await tpage.locator('#detail-people-list button', { hasText: /Priya/ }).first().click();
+  await tpage.waitForFunction(() => /Priya/.test(
+    document.querySelector('#detail-title')?.textContent ?? ''));
+  is(await tpage.locator('#detail-person-group').isVisible(), true,
+    'tapping the name walks the sheet to the person');
+  const withThem = await tpage.locator('#detail-person-count').textContent() || '';
+  is(/owed to you|with them/.test(withThem), true, `their sheet says what is with them ("${withThem}")`);
+  is(/the signed form/.test(await tpage.locator('#detail-person-owes').textContent() || ''), true,
+    'and names the thing they owe you');
+  // Law 7: the app plots, the human interprets. A person's page never grades
+  // them, never ranks them against anybody, and never reaches for the word.
+  const personText = await tpage.locator('#detail-person-group').textContent() || '';
+  is(/late|slow|behind|worst|best|%|score/i.test(personText), false,
+    'and it keeps score on nobody');
+  await tpage.click('#detail-close');
+  await fillSearch('');
+
   await tpage.locator('#cards .card:has-text("the signed form") .card-open').click();
   await tpage.waitForSelector('#detail[open]');
   await tpage.fill('#detail-person', 'Sam');
@@ -1757,10 +1792,15 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
     return await new Promise((res) => {
       const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
-      tx.onsuccess = () => res(tx.result.filter(e => e.kind === 'person.created').length);
+      // SCOPED TO SAM. This counted every person.created in the store, so it
+      // failed the moment any other section named anybody — which is coupling
+      // to unrelated fixture growth, not a check about matching. The question
+      // is whether "sam" found the Sam that already existed.
+      tx.onsuccess = () => res(tx.result.filter(e =>
+        e.kind === 'person.created' && /^sam$/i.test(String(e.payload?.name ?? ''))).length);
     });
   });
-  is(personCount, 1, `"sam" is the Sam you already have (${personCount} person node)`);
+  is(personCount, 1, `"sam" is the Sam you already have (${personCount} Sam node)`);
 
   // It arrived. Off the owed list — and NOT marked done, because a thing
   // arriving is not a thing finished.

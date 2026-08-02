@@ -40,7 +40,7 @@ import { canHold, legalMergeTargets, mergePlan, unmergeEvents } from './merge-in
 import { decisionsFor, foldedIntoDeep } from '../merged.ts';
 import { carryEvents, declineEvents, parkToSlotEvents } from './request-intents.ts';
 import { nextSlotOccurrence, slotDayWords, slotOf } from '../requests.ts';
-import { stakeholdersOf } from '../people.ts';
+import { personView, stakeholdersOf, type PersonLine } from '../people.ts';
 import { logDecisionEvents, removeStakeholderEvents } from './detail-intents.ts';
 
 /** The relation words the sheet shows. The stored values are the vocabulary's
@@ -88,6 +88,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const decisionCount = q('#detail-decision-count');
   const placeLine = q('#detail-place');
   const kidsList = q('#detail-children');
+  const personCount = q('#detail-person-count');
+  const personOwes = q('#detail-person-owes');
+  const personInvolves = q('#detail-person-involves');
   if (!dlg || !title || !state || !date || !name || !every || !slack || !live || !hint) {
     return { open() {} };
   }
@@ -371,15 +374,76 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       // Stakeholders render in their OWN group (1.9.0) — listing them here
       // too would put one link on the sheet twice, and a removal would leave
       // the stale copy contradicting the record (the OPR defect's shape).
+      // DOORS, not dead text (1.12.0). A name here was a `<span>`, so the one
+      // question a name raises — "what else is with them?" — had no way to be
+      // asked from the place it was raised. Same fix 1.6.0 made for the other
+      // lists, missed here; the fresh-node lookup is that pattern's own rule,
+      // because a row built at paint time can be tapped much later.
       PEOPLE_LIST.replaceChildren(...n.people.filter(l => l.relation !== 'stakeholder').map(l => {
         const li = document.createElement('li');
         li.className = 'detail-feed';
-        const label = document.createElement('span');
         const who = st.nodes.get(l.person)?.title || '(unnamed)';
-        label.textContent = `${who} — ${RELATION_WORDS[l.relation] ?? l.relation}`;
-        li.append(label);
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'linklike';
+        b.textContent = `${who} — ${RELATION_WORDS[l.relation] ?? l.relation}`;
+        b.addEventListener('click', () => {
+          const person = session.state().nodes.get(l.person);
+          if (person) showNode(person);
+        });
+        li.append(b);
         return li;
       }));
+
+      // WHAT IS WITH THEM (1.12.0) — the per-person half of build-plan item 33.
+      // `personView` has been written, exported and unit-tested since the person
+      // work landed, with NO caller anywhere: a projection with nowhere to
+      // render, the same "complete and unreachable" shape `node.merged` had
+      // before 1.7.0. A person is an ordinary node, so its own sheet is the
+      // natural home and this costs no new surface on the landing page.
+      // Shown only on a person, and shown even when nothing is with them —
+      // 'nothing is with them just now' is an answer, and a group that vanishes
+      // leaves the question looking unanswerable.
+      const personGroup = q<HTMLElement>('#detail-person-group');
+      if (personGroup) personGroup.hidden = !(n.kind === 'person' && !n.trashed);
+      if (n.kind === 'person') {
+        const view = personView(st, n.id, new Date(now()).toISOString(), session.zone);
+        const owes = view?.owes ?? [];
+        const involves = view?.involves ?? [];
+        if (personCount) {
+          // A count of what is WITH someone is a fact about work, not a score
+          // about them (law 7: the app plots, the human interprets). It never
+          // says "late", never ranks people, and never compares two of them.
+          personCount.textContent = (view?.total ?? 0) === 0
+            ? 'Nothing is with them just now.'
+            : owes.length === 0
+              ? 'Nothing is owed to you. They come up here:'
+              : `${owes.length === 1 ? 'One thing is' : `${owes.length} things are`} owed to you.`;
+        }
+        const row = (line: { node: NodeState; relation: string; days: number | null }, owed: boolean): HTMLLIElement => {
+          const li = document.createElement('li');
+          li.className = 'detail-feed';
+          const b = document.createElement('button');
+          b.type = 'button';
+          b.className = 'linklike';
+          b.textContent = line.node.title || '(untitled)';
+          const when = document.createElement('span');
+          when.className = 'detail-when';
+          // A duration, never a verdict — the same words the People surface
+          // uses, so one fact reads identically wherever it appears.
+          when.textContent = owed
+            ? (waitingWords(line.days) ?? 'with them')
+            : (RELATION_WORDS[line.relation] ?? line.relation);
+          b.addEventListener('click', () => {
+            const fresh = session.state().nodes.get(line.node.id);
+            if (fresh) showNode(fresh);
+          });
+          li.append(b, when);
+          return li;
+        };
+        personOwes?.replaceChildren(...owes.map((l: PersonLine) => row(l, true)));
+        personInvolves?.replaceChildren(...involves.map((l: PersonLine) => row(l, false)));
+      }
 
       // An open waiting-for says how long, in words, and offers the one action
       // that ends it. A duration, never a verdict: "for three weeks" is a fact
@@ -928,17 +992,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (historyEl.open && current) buildHistory(current.id);
   });
 
-  return {
-    open(node: NodeState): void {
-      // A different item starts with its history folded away — leaving the
-      // last item's lines under a fresh title would be the sheet lying.
-      if (historyEl && current?.id !== node.id) {
-        historyEl.open = false;
-        historyLines?.replaceChildren();
-      }
-      render(node);
-      LIVE.textContent = '';
-      if (!DLG.open) DLG.showModal();
-    },
-  };
+  /** Show a node in this sheet. Named so the sheet's own rows can walk to
+   *  another node — a person, a folded twin — without leaving it (1.12.0). */
+  function showNode(node: NodeState): void {
+    // A different item starts with its history folded away — leaving the
+    // last item's lines under a fresh title would be the sheet lying.
+    if (historyEl && current?.id !== node.id) {
+      historyEl.open = false;
+      historyLines?.replaceChildren();
+    }
+    render(node);
+    LIVE.textContent = '';
+    if (!DLG.open) DLG.showModal();
+  }
+
+  return { open: showNode };
 }

@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.12.0 — CAPABILITY
+
+*2026-08-02*
+
+- **A person now has a page of their own.** Tap somebody’s name anywhere it appears on an item and you land on them: what they owe you, how long it has been, and everywhere else they come up. Every line is a door back to the thing itself.
+- **Names on an item were not tappable before.** They were plain text — so the one question a name raises, *what else is with them?*, could be asked nowhere. They are buttons now.
+- **It keeps score on nobody.** A person’s page states durations and relationships and nothing else: no ranking, no comparison between people, and none of the words this app refuses. How long something has been with someone is a fact about a date.
+- Quietkeep could already work all of this out — it simply had nowhere to say it. The answer existed and no screen asked for it.
+
 ## 1.11.0 — CAPABILITY
 
 *2026-08-02*

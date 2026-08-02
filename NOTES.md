@@ -236,8 +236,13 @@ is not obvious when you come to build them.
 `save-for.updated` was never folded)** · ~~Rest mode + auto re-entry (7-day default)~~
 **(done, 0.18.0 — [ADR-0043](docs/adr/0043-re-entry-is-the-primary-path.md); the
 re-entry vocabulary had been complete and unreachable since the first draft)** ·
-bother
-flow · staff-call lens · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
+~~bother
+flow~~ **(done, 1.5.0/1.8.0 — the flow terminates in clock-guaranteed routes,
+and 1.8.0 made "not mine to carry" keep its decision in the Not Now ledger
+instead of trashing it)** · staff-call lens **(the per-person half shipped
+1.12.0; the DELTA half is what "staff-call" actually means and it waits on
+anchors — see build-plan 33/34. An earlier session of mine recorded this item
+as shipped outright, which was wrong)** · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
 + Not Now ledger~~ **(done, 1.8.0 — ADR-0056)**.
 
 > **Binding condition:** journal **encryption ships in the same commit as the
@@ -432,6 +437,39 @@ decided by a session.**
   before being trusted.
 
 ### Log
+
+- **2026-08-02 (Noah: "Promote and continue")** — **1.12.0 "A person has a page
+  of their own"** — and the records made true in both directions.
+  · **`personView` had no caller.** It was written, exported and unit-tested in
+  two files, and no surface anywhere called it: a projection with nowhere to
+  render, the same "complete and unreachable" shape `node.merged` had before
+  1.7.0. The `#people` surface only ever rendered `waitingOnAnyone`, which is
+  owed-across-everyone, not any one person.
+  · **And names on an item were dead text.** `<span>`s, so the one question a
+  name raises — *what else is with them?* — could be asked from nowhere. That
+  is the "dead lists become doors" work 1.6.0 did everywhere else and missed
+  here, and it is a reachability defect before it is anything else: keyboard and
+  screen-reader users could not get to a person at all.
+  · Their own sheet is the home, so this costs no new chrome on the landing
+  surface — which 1.11.0 had just finished simplifying.
+  · **Two corrections to my own earlier claims.** The readiness sweep recorded
+  "the bother flow and the staff-call/person lens are both shipped". The bother
+  flow is; the lens was **half** shipped, and "staff-call lens" means the DELTA
+  half, which waits on anchors. Build-plan item 33 is annotated rather than
+  struck for the same reason — a build plan that marks a deferred thing done is
+  the drift these records exist to prevent, and that cuts both ways.
+  · Item 35 (the status report) IS struck, after checking all four formats
+  against the code rather than against memory.
+  · **The a11y gate caught its own driver.** The first version linked a person
+  to a project, so nothing landed in the owed list and the registry entry
+  matched nothing — the gate refusing to pass on an empty selector, exactly as
+  designed. The entry is now scoped to the group so it cannot pass or fail on
+  fixture shape.
+  · A brittle smoke assertion fixed on the way past: it counted every
+  `person.created` in the store and expected one, so it failed the moment any
+  other section named anybody. It asks about Sam now, which is what it meant.
+  · ACCESSIBILITY B-31. No ADR: this builds a recorded item on an existing
+  projection and adds no new decision.
 
 - **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
   `0745796 → 8cc85f9`**, carrying 1.11.0. Spine 186 watched green on the exact

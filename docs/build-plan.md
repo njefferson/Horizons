@@ -161,10 +161,22 @@ to build or verify.
 31. ~~`project` extended attributes — OPR, stakeholders, suspense list, decision log.~~ **(done — OPR 0.16.0, suspense 0.16.0, stakeholders and the decision log 1.9.0, ADR-0057)**
 32. `role: Execute | Track`. **Track emits no next actions** — Waiting-Fors and
     Upkeep check-ins only, so children must re-home on the role change.
-33. Person lens — owed-me / owed-them / their projects with delta / their
-    requests / open threads.
+33. ~~Person lens — owed-me / owed-them / their projects with delta / their
+    requests / open threads.~~ **(done, 1.12.0 — `personView` had been written,
+    exported and unit-tested since the person work landed with NO caller in any
+    surface: a projection with nowhere to render, the shape `node.merged` had
+    before 1.7.0. Their own sheet is the home, reached by tapping a name on an
+    item, which was dead text until now. ONE PART REMAINS AND IS DEFERRED WITH
+    ITEM 34: "their projects with delta" needs the per-person delta, and the
+    only honest cut for that is the anchor watermark this repo does not have —
+    the export mark is global. Not marked done, because a build plan that marks
+    a deferred thing done is the drift these records exist to prevent.)**
 34. Anchors and delta computation. **(half done — the delta shipped 0.16.0, ADR-0041; ANCHORS DEFERRED, ADR-0057: an anchor node would be silent under law 1 today, and `anchor.fired` carries no watermark, so its delta cut would be the degraded one. Needs a gate change plus a shipped surface, in a release of its own.)**
-35. Status report generator — clipboard / Markdown / print / CSV.
+35. ~~Status report generator — clipboard / Markdown / print / CSV.~~ **(done —
+    all four formats ship from the ⓘ panel and each is walked by the smoke
+    test; `status.report.exported` carries the watermark the next report cuts
+    from. Struck 1.12.0 after checking each format against the code, not
+    against memory.)**
 
 ### Phase 7 — Review
 
