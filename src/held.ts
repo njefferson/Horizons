@@ -14,7 +14,7 @@
 // PURE. `now` and `zone` are arguments, like everywhere else.
 
 import { isAppClock, type NodeState, type State } from './fold.ts';
-import { heldNodes } from './gate.ts';
+import { heldWork } from './gate.ts';
 import { isReadyAgain, pressureOf } from './pressure.ts';
 import { raisesReplanCard } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
@@ -118,28 +118,20 @@ function dateWords(at: string, zone: string, days: number): string {
 }
 
 /**
- * Exactly one group per held node THAT IS WORK — and the qualifier is new, so
- * the sentence that used to be here is corrected rather than quietly left.
+ * Exactly one group per node in `heldWork` — the grouping is TOTAL over that
+ * set, so the sum of the groups equals `coverageGauge(state).total` and equals
+ * the coverage list's rows. The number, the claim it invites you to open, and
+ * the list you actually work from cannot drift apart.
  *
- * It read: "the grouping is TOTAL, so the sum of the groups always equals
- * `heldNodes(state).length`, which is the same definition the coverage gauge
- * counts. The number and the list cannot drift apart." **That stopped being
- * true in 1.13.0** and nobody noticed, because the exclusions below are skipped
- * before grouping: a spent resume card, a journal entry (ADR-0061) and now a
- * pebble (ADR-0065) are all held, all counted by the gauge, and none of them
- * rendered here.
+ * **That sentence was false between 1.13.0 and 1.15.1**, and it is recorded
+ * rather than quietly repaired: the exclusions were hand-written HERE and the
+ * gauge did not have them, so a journal entry (ADR-0061) and later a pebble
+ * (ADR-0065) were counted by the gauge and never rendered here. `heldWork` is
+ * now the single definition, in `gate.ts` beside the gauge that reads it.
  *
- * The drift is DELIBERATE and both halves are load-bearing. The gauge's `silent`
- * proves law 1 over every node, and excluding a kind from a proof is how law 1
- * gets defined away (the 1.3.1 merged-node finding). This list is the todo list,
- * and a private entry or a weight sitting in it as a row is the pile the file
- * exists to stand between you and.
- *
- * **What is still open, and is named rather than papered over:** the gauge says
- * "N held" while this list shows fewer rows, so the two do describe different
- * sets. Nothing is hidden — every one of those kinds has its own surface — but
- * "held" is doing two jobs in one word, and that is worth a decision of its own
- * rather than a comment in a projection.
+ * `silent` is a different question and is deliberately NOT narrowed: it runs
+ * over every node, because excluding a kind from a proof is how law 1 gets
+ * defined away (the 1.3.1 merged-node finding).
  *
  * Order of the tests matters and is the design:
  *  - **Done first**, so a completed thing stops claiming it is coming back
@@ -157,31 +149,7 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
     unsorted: [], replan: [], ready: [], soon: [], later: [], menu: [], done: [],
   };
 
-  for (const n of heldNodes(state)) {
-    // A SPENT resume card is not a thing you are holding. It is the residue of a
-    // thread you have already picked back up — or let go — and it carries a cure
-    // clock like every other node, so without this it sat in "Ready now" for
-    // ever, reading "where you left off" about work that was finished. Next up
-    // has excluded spent cards since the tier existed; the held list did not,
-    // and the two surfaces disagreed (smoke).
-    //
-    // The card is not trashed and not hidden from an export: it happened, and
-    // the log says so. It simply is not work.
-    if (n.kind === 'resume-card' && n.resumeSpent) continue;
-    // A JOURNAL ENTRY IS NOT WORK YOU ARE HOLDING (1.13.0, ADR-0061). It is
-    // demand-free, so law 1 is satisfied without a clock and the coverage gauge
-    // still counts it — the gauge PROVES law 1 over every node, and excluding a
-    // kind from a proof is how law 1 gets defined away (the merged-node finding
-    // of the 1.3.1 audit). But this list is the todo list, and a private entry
-    // sitting in it as an untitled row is the pile this file exists to stand
-    // between you and. It has its own surface.
-    if (n.kind === 'journal') continue;
-    // AND A PEBBLE IS NOT WORK YOU ARE HOLDING EITHER (1.15.0, ADR-0065) —
-    // same argument, and here it is the whole point of the kind. ADR-0014: a
-    // pebble accounts for weight "without ever becoming a task", and a row in
-    // the todo list is exactly what becoming a task looks like. The gauge still
-    // counts it, for the reason directly above; the load entry is its surface.
-    if (n.kind === 'pebble') continue;
+  for (const n of heldWork(state)) {
     // DONE, and not still running on a cadence. The unconditional version filed
     // a recurring upkeep that had come round again under "Done" while
     // `upkeepChips` was offering it as live work — one node, one screen, two
@@ -343,10 +311,16 @@ export function placeWords(n: NodeState, state: State, childCounts: Map<string, 
  * imported 1,429 things, none of them dated, and the work surface correctly had
  * nothing to offer — which reads as an empty app rather than as a full one waiting
  * on a decision. This is the number that makes the difference sayable.
+ *
+ * Over `heldWork`, not `heldNodes` (1.15.1). A pebble has no date BY
+ * CONSTRUCTION — the gate refuses a clock on a demand-free kind — so counting
+ * one here says "you have not decided about this yet" about the one kind in the
+ * app there is nothing to decide about, and saying so is its whole purpose
+ * (ADR-0014). A journal entry is the same shape.
  */
 export function undatedCount(state: State, nowIso: string, zone: string): number {
   let n = 0;
-  for (const node of heldNodes(state)) {
+  for (const node of heldWork(state)) {
     if (node.lastDone) continue;
     if (node.onMenu) continue;
     if (node.captured && node.route === null) continue;   // the inbox says this already

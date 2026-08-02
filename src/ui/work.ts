@@ -15,7 +15,7 @@
 import type { Session } from './session.ts';
 import type { AppEvent } from '../events.ts';
 import type { NodeState } from '../fold.ts';
-import { heldNodes } from '../gate.ts';
+import { heldWork } from '../gate.ts';
 import { workSurface, type NextUpItem } from '../nextup.ts';
 import { offerNow, offerWords } from '../offer.ts';
 import { loadWords } from '../load.ts';
@@ -302,11 +302,15 @@ export function mountWork(
     if (treeList && !treeList.hidden) buildTree();
   }
 
-  /** The gauge's claim, itemised and checkable. Reads `heldNodes` — the same
-   *  definition the gauge counts — so opening the claim can never contradict it. */
+  /** The gauge's claim, itemised and checkable. Reads `heldWork` — the same
+   *  definition the gauge counts — so opening the claim can never contradict it.
+   *
+   *  It read `heldNodes` until 1.15.1, which is one word wider and was the wrong
+   *  set: every private journal entry has no title by design, so each one
+   *  itemised here as "(untitled) — held". */
   function buildCoverage(): void {
     const state = session.state();
-    const held = [...heldNodes(state)].sort((a, b) => (a.id < b.id ? 1 : -1));
+    const held = [...heldWork(state)].sort((a, b) => (a.id < b.id ? 1 : -1));
     COVERAGE.replaceChildren(...held.map(n => {
       const li = el('li', 'coverage-item');
       // A door (1.6.0), still lazily built — the row count is why this list

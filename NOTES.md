@@ -441,6 +441,41 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Continue")** — **1.15.1 "What *held* means"** — the item
+  ADR-0065 left open, which reading the code turned from a question into a
+  shipped defect.
+  · **The coverage list was itemising journal entries as "(untitled) — held".**
+  A journal entry has no title by design (ADR-0061), and `buildCoverage`
+  renders `title || '(untitled)'` — so opening the gauge listed every private
+  entry as a blank row. ADR-0061 excluded them from the todo list to prevent
+  exactly that row; the coverage list was missed, and it is the *more*
+  prominent surface because the gauge invites you to open it. Since 1.15.0
+  active pebbles were listed there too.
+  · **The cause is the 1.9.2 lesson repeating**: `heldGroups` carried a
+  hand-written list of what is not work and the gauge had none, so the two
+  drifted the moment a kind was added — 1.13.0 and 1.15.0, neither caught.
+  · **`heldWork(state)` in `gate.ts`, read by four surfaces** that make the same
+  claim: the gauge's total, the coverage list, the todo groups, and the ⓘ
+  panel's "Things held" row. `silent` is untouched and still runs over every
+  node — a proof that skips a kind proves nothing. `heldNodes` keeps its meaning
+  for its ~28 other readers.
+  · **Two more readers found by reading rather than by the plan.**
+  `undatedCount` counted pebbles into "you have not decided about these yet",
+  about the one kind there is nothing to decide about. And `searchHeld` now
+  excludes pebbles — not about the set, but because a result row is a door to a
+  work sheet whose every verb the gate must then refuse (the 1.9.2 audit's F-B).
+  · **The import warning deliberately stays on the wider number**, four lines
+  below a row that moved to the narrower one. An import replaces everything, and
+  a warning may not round down. Both call sites now say which and why.
+  · **The smoke assertion had been passing because the case was absent.**
+  Rows-equal-the-gauge now runs with a pebble on, and again with a journal entry
+  written. Reverting the coverage list alone reds four assertions; reverting the
+  gauge alone reds three of the six new unit tests.
+  · **A number Noah sees will drop** by however many entries and weights he
+  holds. The changelog says so plainly, including that 1.15.0's own note —
+  "the count of what is covered does not move" — was half wrong.
+  · ADR-0066. Spine to be watched green on the exact head. Not promoted.
+
 - **2026-08-02 (Noah: "Promote to main")** — **`main` fast-forwarded
   `601bae9 → 60a45c8`**, carrying **1.14.2** (every noun accounts for itself),
   the pebble **correction**, and **1.15.0** (load, not work). Spine 199 watched

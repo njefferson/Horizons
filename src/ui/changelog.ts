@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.15.1',
+    kind: 'ITERATION',
+    date: '2026-08-02',
+    notes: [
+      '**“Held” now means the same thing everywhere it is said.** Tap the line that reads “N held” and you get that claim itemised. The number and the list had drifted apart, and the list was the half that was wrong.',
+      '**Your journal entries were being listed there, one row each, as “(untitled) — held”.** A journal entry has no title on purpose — that is what keeps it private — so every entry you had written showed up as a blank row in the middle of your work. Nothing readable was ever shown, and the entries themselves were never at risk. They simply had no business being on that list, and they are off it.',
+      'Weights were in there too, listed among the things being covered. A weight is not work, which is the whole point of being able to say one.',
+      '**The number will be smaller next time you open it**, by however many journal entries and weights you are carrying. Nothing has been let go and nothing is hidden — it is the same claim, told accurately.',
+      'The last note said the count of what is covered would not move when you named a weight. Half of that was wrong: the list did not move, and the number did. It does not now.',
+      'The check that is supposed to catch exactly this had been passing because the walk never had a journal entry or a weight in it at the moment it looked. It does now, both.',
+    ],
+  },
+  {
     triplet: '1.15.0',
     kind: 'CAPABILITY',
     date: '2026-08-02',

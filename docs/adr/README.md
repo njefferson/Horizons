@@ -225,6 +225,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0065](0065-load-not-work.md)**
   - Decision: Unresolved weight narrows the offer and nothing else — [ADR-0014](0014-demand-free-types.md)'s pebble consequence, executed
   - Status: Accepted
+- **[0066](0066-what-held-means.md)**
+  - Decision: One predicate for "held as work" — the gauge, the list it itemises and the todo list read it
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

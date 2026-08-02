@@ -90,13 +90,63 @@ const newlySilent = (after: State, before: State): NodeState[] =>
 export const silentNodes = (state: State): NodeState[] =>
   [...state.nodes.values()].filter(n => isSilent(n, state));
 
-/** Nodes the gauge counts and the coverage list itemises — ONE definition, so
- *  the two can never disagree. `state.nodes.size` counted trashed and merged
- *  nodes, so the gauge said "3 held" over a list of 2: a claim the user was
- *  invited to open, which then failed to check out (law 2 is about PROVING the
- *  invariant, and a proof that contradicts itself proves nothing). */
+/** Everything still here — not trashed, not merged away. The widest "held"
+ *  there is, and the one most of the app means: the merge picker, the
+ *  portfolio, the dependency views, purge.
+ *
+ *  `state.nodes.size` counted trashed and merged nodes, so the gauge said
+ *  "3 held" over a list of 2: a claim the user was invited to open, which then
+ *  failed to check out (law 2 is about PROVING the invariant, and a proof that
+ *  contradicts itself proves nothing). That is why this exists.
+ *
+ *  **It is no longer what the gauge counts** — see `heldWork` below, and 1.15.1
+ *  for why. */
 export const heldNodes = (state: State): NodeState[] =>
   [...state.nodes.values()].filter(n => !n.trashed && !n.mergedInto);
+
+/**
+ * What you are holding AS WORK — the gauge's number, the coverage list's rows,
+ * and the todo list's groups, from ONE definition so the three can never
+ * disagree.
+ *
+ * The skip list below was hand-written inside `heldGroups`, and the gauge did
+ * not have it, so the two drifted the moment a kind was excluded from the todo
+ * list: 1.13.0 excluded journal entries and 1.15.0 excluded pebbles, and both
+ * times the gauge kept counting them. The visible half was worse than a number
+ * that did not match — opening the gauge ITEMISED every private journal entry,
+ * which has no title by design, as a row reading "(untitled) — held". ADR-0061
+ * excluded them from the todo list precisely so that row would not exist; the
+ * coverage list was missed, and it is the more prominent surface because the
+ * gauge invites you to open it.
+ *
+ * A hand-written list of what a projection carries is the 1.9.2 lesson exactly,
+ * which is why this is a predicate rather than a second copy.
+ *
+ * **`silentNodes` is deliberately NOT built on this.** Law 1's proof runs over
+ * every node, and excluding a kind from a proof is how law 1 gets defined away
+ * (the 1.3.1 merged-node finding). The gauge's two numbers answer two different
+ * questions on purpose: "is anything silent" is about every node this app
+ * stores; "how much are you holding" is about work.
+ */
+export const heldWork = (state: State): NodeState[] =>
+  heldNodes(state).filter(n => {
+    // A SPENT resume card is the residue of a thread already picked back up —
+    // or let go. It carries a cure clock like everything else, so without this
+    // it sat in "Ready now" for ever, reading "where you left off" about work
+    // that was finished. It is not trashed and not hidden from an export: it
+    // happened, and the log says so. It simply is not work.
+    if (n.kind === 'resume-card' && n.resumeSpent) return false;
+    // A JOURNAL ENTRY IS NOT WORK (1.13.0, ADR-0061). It is demand-free, so law
+    // 1 is satisfied without a clock; it has no title by design; and it has its
+    // own surface behind the ⓘ.
+    if (n.kind === 'journal') return false;
+    // NOR IS A PEBBLE (1.15.0, ADR-0065), and here that is the whole point of
+    // the kind: a pebble accounts for weight "without ever becoming a task"
+    // (ADR-0014), and a row in a work list is what becoming a task looks like.
+    // The load entry is its surface.
+    if (n.kind === 'pebble') return false;
+    return true;
+  });
 
 /** Things let go — trashed, not merged away — newest decision first. The trash
  *  view (1.5.0, ADR-0050) reads this; nothing else may treat these as work.
@@ -113,10 +163,13 @@ export const trashedNodes = (state: State): NodeState[] =>
       return a.id < b.id ? 1 : -1;
     });
 
-/** The coverage gauge (law 2). Reads 0 when the gate is doing its job. */
+/** The coverage gauge (law 2). `silent` reads 0 when the gate is doing its job,
+ *  and is counted over EVERY node — a proof that skips a kind proves nothing.
+ *  `total` is the work you are holding, because that is the number the list
+ *  under it itemises and the two must be the same claim. */
 export const coverageGauge = (state: State): { silent: number; total: number } => ({
   silent: silentNodes(state).length,
-  total: heldNodes(state).length,
+  total: heldWork(state).length,
 });
 
 export interface GateOptions {

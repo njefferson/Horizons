@@ -84,11 +84,19 @@ test('weight narrows the OFFER, and nothing else', () => {
   // and a row in the todo list is what becoming a task looks like.
   assert.equal(heldGroups(s, NOW, TZ).flatMap(g => g.items).length, listedBefore,
     'no work left the todo list, and the pebble did not join it');
-  // But the GAUGE counts it. The gauge proves law 1 over every node, and
-  // excluding a kind from a proof is how law 1 gets defined away (1.3.1).
+  // The PROOF still covers it. `silent` runs over every node, and excluding a
+  // kind from a proof is how law 1 gets defined away (1.3.1).
   assert.equal(coverageGauge(s).silent, gaugeBefore.silent, 'nothing went silent');
-  assert.equal(coverageGauge(s).total, gaugeBefore.total + 1,
-    'and the proof still covers the pebble, deliberately');
+  // The gauge's TOTAL does not move, and this assertion is the reverse of what
+  // it said in 1.15.0. It read `+ 1` then, because the gauge counted a pebble
+  // while the list under it did not — so opening the number produced a row
+  // reading "the thing with the roof — held" in the middle of a work list. The
+  // number and the list it itemises are one claim (1.15.1).
+  assert.equal(coverageGauge(s).total, gaugeBefore.total,
+    'the work you are holding did not change — a pebble is not work');
+  // And nothing is hidden: it is still held, and every wider reader sees it.
+  assert.equal(heldNodes(s).length, heldNodes(withWork()).length + 1,
+    'the pebble is still a node you are holding');
 });
 
 test('NEVER BELOW ONE — a heavy day is when that matters most', () => {

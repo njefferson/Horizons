@@ -817,14 +817,33 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // exactly what "becoming a task" looks like.
   is(await tpage.locator('#cards .card').count(), cardsBefore,
     'nothing joined or left what you are holding');
-  // The GAUGE does count it, and that is deliberate — it proves law 1 over every
-  // node, and excluding a kind from a proof is how law 1 gets defined away
-  // (the merged-node finding of the 1.3.1 audit, restated for the journal in
-  // ADR-0061). What must not move is the silent count.
+  // Nothing went silent — `silent` runs over EVERY node, and excluding a kind
+  // from a proof is how law 1 gets defined away (the merged-node finding of the
+  // 1.3.1 audit, restated for the journal in ADR-0061).
   is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
     'and nothing went silent');
-  is((await tpage.locator('#gauge').textContent()) !== gaugeBefore, true,
-    'while the coverage proof does count the pebble, deliberately');
+  // And the gauge's TOTAL does not move either. This assertion is the reverse of
+  // what it said in 1.15.0, where it read `!== gaugeBefore` — the gauge counted
+  // a pebble while the list under it did not, so opening the number produced a
+  // row reading "the thing with the roof — held" in a work list (1.15.1).
+  is(await tpage.locator('#gauge').textContent(), gaugeBefore,
+    'and the number of things you are holding is unchanged — a pebble is not work');
+
+  // THE CHECK THAT WAS PASSING BECAUSE THE CASE WAS ABSENT. The equality below
+  // is asserted elsewhere in this walk too, but only ever with a store that had
+  // no journal entry and no pebble in it. Run it here, with a pebble ON, so it
+  // is a real check.
+  // The gauge is a toggle and earlier sections leave it in either state, so open
+  // it only if it is closed and put it back the way it was found.
+  const gaugeWasOpen = await tpage.locator('#coverage').isVisible();
+  if (!gaugeWasOpen) { await tpage.click('#gauge'); await tpage.waitForSelector('#coverage:not([hidden])'); }
+  const loadRows = await tpage.locator('.coverage-item').count();
+  const loadGauge = await tpage.locator('#gauge').textContent();
+  is(loadRows, Number((loadGauge || '').match(/^(\d+) held/)?.[1] ?? NaN),
+    `the list still itemises exactly what the gauge claims, with a weight on ("${loadGauge}")`);
+  is((await tpage.locator('#coverage').textContent() || '').includes('the thing with the roof'), false,
+    'and the weight is not one of the rows');
+  if (!gaugeWasOpen) await tpage.click('#gauge');
 
   // It survives a reload like everything else, and then comes off.
   await tpage.reload({ waitUntil: 'load' });
@@ -2522,6 +2541,21 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
      document.querySelector('#nextup')?.textContent ?? ''].join(' '));
   is(/kitchen was warm|\(untitled\)/.test(onSurfaces), false,
     'and it appears on no work surface, not even as an untitled row');
+
+  // THE COVERAGE LIST, which is where it DID appear until 1.15.1 — as
+  // "(untitled) — held", one row per private entry, in the one list the gauge
+  // invites you to open. The check above covered `#cards` and `#nextup` and
+  // missed the more prominent surface of the two.
+  const jWasOpen = await tpage.locator('#coverage').isVisible();
+  if (!jWasOpen) { await tpage.click('#gauge'); await tpage.waitForSelector('#coverage:not([hidden])'); }
+  const coverText = await tpage.locator('#coverage').textContent() || '';
+  is(/\(untitled\)/.test(coverText), false,
+    'nor as a row in the claim the gauge invites you to open');
+  const jRows = await tpage.locator('.coverage-item').count();
+  const jGauge = await tpage.locator('#gauge').textContent();
+  is(jRows, Number((jGauge || '').match(/^(\d+) held/)?.[1] ?? NaN),
+    `and the number still equals its own list with an entry written ("${jGauge}")`);
+  if (!jWasOpen) await tpage.click('#gauge');
 
   // "Mine to do something about" becomes ordinary work and joins the inbox.
   // DRAIN FIRST: triage shows one card at a time, so with earlier items still

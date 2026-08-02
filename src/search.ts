@@ -41,18 +41,27 @@ export interface SearchResult {
 /**
  * Everything you are holding whose title contains the query.
  *
- * "Held" is `heldNodes` — not trashed, not merged away — which is the SAME set
- * the coverage gauge counts, so search and the gauge can never disagree about
- * what exists. A thing you decided was not a thing is gone by decision, not
- * lost, so the trash is deliberately not searched; the ways back from a
- * mistaken trashing are the undo bar in the moment and "Things you let go"
- * behind the (i) after it (1.5.0, ADR-0050) — never search, which must only
- * ever answer about what you are holding.
+ * "Held" is `heldNodes` — not trashed, not merged away. A thing you decided was
+ * not a thing is gone by decision, not lost, so the trash is deliberately not
+ * searched; the ways back from a mistaken trashing are the undo bar in the
+ * moment and "Things you let go" behind the (i) after it (1.5.0, ADR-0050) —
+ * never search, which must only ever answer about what you are holding.
+ *
+ * **Not `heldWork`, and the difference is deliberate.** Search answers "where
+ * did that go", and a person, a Menu wish and a container are all findable
+ * because they all exist and can be opened. Only PEBBLES are excluded, for a
+ * reason that is not about the set: a pebble's row is a door to a detail sheet
+ * built for work — routes, clocks, "put it in today" — every one of which the
+ * gate must then refuse on a demand-free kind. That is the offered-then-refused
+ * shape of the 1.9.2 audit's F-B. The load entry is a pebble's surface and it
+ * is the only one. (A journal entry cannot match anyway: it has no title, and
+ * `''.includes(q)` is false for any real query.)
  */
 export function searchHeld(state: State, query: string, cap = SEARCH_CAP): SearchResult {
   const q = normalize(query);
   if (!q) return { items: [], total: 0, query: '' };
   const matches = heldNodes(state)
+    .filter(n => n.kind !== 'pebble')
     .filter(n => normalize(n.title).includes(q))
     // Newest first — ULIDs sort by time, the only order the held surfaces claim.
     .sort((a, b) => (a.id < b.id ? 1 : -1));

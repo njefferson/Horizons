@@ -21,7 +21,7 @@ import { printText } from './print.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
 import { highWaterMark } from '../snapshot.ts';
-import { heldNodes, trashedNodes } from '../gate.ts';
+import { coverageGauge, heldNodes, trashedNodes } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
@@ -241,12 +241,14 @@ export async function mountAbout(
       ['Last copy', copyDayWords(copy, session.zone)],
       ['Room available', r.quotaMb == null ? 'unknown' : `${r.quotaMb.toLocaleString()} MB`],
       ['Used by Quietkeep', r.usageMb == null ? 'unknown' : `${r.usageMb} MB`],
-      // `heldNodes`, NOT `nodes.size`. The gauge on the main screen says
-      // "N held" from `heldNodes`, and this row says "Things held" — the same
-      // words about the same store, and they disagreed by however many things
-      // had been let go, because `nodes.size` counts the trashed and the merged.
-      // One definition, or the app is telling two stories about one number.
-      ['Things held', String(heldNodes(session.state()).length)],
+      // `heldWork`, NOT `nodes.size` and NOT `heldNodes`. The gauge on the main
+      // screen says "N held" and this row says "Things held" — the same words
+      // about the same store, so they must be the same number or the app is
+      // telling two stories about one thing. It said `nodes.size` first and
+      // disagreed by however many things had been let go; it said `heldNodes`
+      // until 1.15.1 and would have disagreed by every journal entry and every
+      // pebble the moment the gauge narrowed. The row follows the gauge.
+      ['Things held', String(coverageGauge(session.state()).total)],
     ];
     body.replaceChildren(...rows.flatMap(([k, v]) => [el('dt', undefined, k), el('dd', undefined, v)]));
 
@@ -646,6 +648,13 @@ export async function mountAbout(
       // this device", about a file exported from this device moments earlier.
       // A person comparing those numbers before a destructive action deserves
       // them to be the same kind of number (audit, found by the smoke walk).
+      //
+      // Deliberately `heldNodes` and NOT `heldWork` (1.15.1), which is the
+      // opposite call to the "Things held" row above. This sentence is a
+      // warning about what an import REPLACES, and it replaces everything — a
+      // journal entry and a pebble go with the rest. The narrower number would
+      // under-state a destructive act, which is the one direction a warning may
+      // never round in.
       const here = heldNodes(session.state()).length;
       // Both numbers, plainly. "412 events" means nothing to a person; "37
       // things" is the number they can check against what they remember.
