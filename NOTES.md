@@ -470,7 +470,7 @@ decided by a session.**
   entirely and was moved to where it belongs.
   · **What the 23 turned out to be:** reserved (the assist ladder, templates,
   terminology skins, consent), deferred with a named blocker (anchors and their
-  delta; pebbles/capacity/WIP, all waiting on "what does a pebble depress?"),
+  delta; pebbles/capacity/WIP — see the correction below),
   superseded (the vault trio; the comms-sweep pair, replaced by a field on an
   upkeep node), redundant (`device.registered` — `State.devices` folds from the
   `device` field every event already carries), and correct by design
@@ -480,6 +480,27 @@ decided by a session.**
   ADR-0001's fifth consequence — is entirely unbuilt.
   · ADR-0064. Nothing changes on screen; the bundle moves only because the patch
   notes live in it.
+  · **CORRECTION, same day, and it is mine.** The note this release forced me to
+  write beside `pebble.raised` said the question "what does a pebble actually
+  depress?" had never been answered. **That is false.** ADR-0014 answers it in
+  its Consequences, in terms: a pebble links to the nodes it affects and "may
+  depress capacity / WIP while active", and it "annotates the timeline, so a
+  stretch of low capacity has a visible reason — co-occurrence only, never
+  causation". The data constitution says the same thing in the same words.
+  `capacity.declared` even carries its own four-value payload. **Nothing about
+  pebbles is undecided; the substrate is unbuilt**, which is a different thing
+  and a much smaller one.
+  · **The framing was mine and it appears nowhere else in this repo.** I put it
+  in the plan file, repeated it in a readiness sweep, said it to Noah twice, and
+  then shipped it into the vocabulary — one turn after writing the cross-app
+  lesson that *an ADR's Consequences section is a build list, not prose, and the
+  bullets nobody converts into work become the app's quietest lies*. I made
+  exactly that mistake about exactly the document that answers it. The new gate
+  did its job and demanded a sentence; the sentence I wrote was wrong.
+  · **My supporting argument was also wrong.** "Next up cannot ask for less than
+  one thing" is true of Next up and does not generalise: `COMPOSED_CAP` is 5,
+  `OFFER_CAP` is 2, `REVIEW_CAP` is 3, and the timeline annotation needs no cap
+  at all.
 
 - **2026-08-02 (Noah: "What else is already specified you haven't done yet?" → "continue")** —
   **1.14.1 "Startup does not replay the world"** — the biggest thing the sweep

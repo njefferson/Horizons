@@ -370,25 +370,38 @@ is a valid, unremarkable value, never nagged about.
 - **`pebble.raised`**
   - Payload: `magnitude, affects: NodeId[]`
   - Silent risk: no — pebbles are demand-free by construction (law 6)
-  - **Unemitted, and blocked on a product decision rather than on work.**
-    [ADR-0014](adr/0014-demand-free-types.md)'s central consequence is that a
-    pebble "may depress capacity / WIP while active", and nothing in the app has
-    ever read a capacity or a WIP limit. "What does a pebble actually depress?"
-    has never been answered, and no amount of building resolves it.
+  - **Unemitted. The design is settled; the substrate is unbuilt.**
+    [ADR-0014](adr/0014-demand-free-types.md) says what a pebble does, in its
+    Consequences and in terms: it links to the nodes it affects and **"may
+    depress capacity / WIP while active"**, and it **"annotates the timeline, so
+    a stretch of low capacity has a visible reason — co-occurrence only, never
+    causation"** (law 7, restated in
+    [the data constitution](../data-constitution.md)). What is missing is not a
+    decision. It is the two things it acts on: nothing has ever read a
+    `capacity.declared` or a `wip.limit.set`.
+  - **Correction, 2026-08-02.** An earlier version of this note said the
+    question "what does a pebble actually depress?" had never been answered.
+    That was false, and it was written after the same day's releases had
+    established that an ADR's Consequences section is a build list rather than
+    prose — the exact mistake, made about the exact document that answers it.
 - **`pebble.settled`**
   - Silent risk: no
-  - **Unemitted, blocked with `pebble.raised`.**
+  - **Unemitted, with `pebble.raised`** — and unbuilt rather than undecided,
+    for the same reason.
 - **`capacity.declared`**
   - Payload: `level: low | steady | sharp | unsure`
   - Silent risk: no
-  - **Unemitted, and type-only.** No projection has ever read a capacity. It is
-    half of the substrate pebbles would need, and it waits on the same decision.
+  - **Unemitted, and type-only.** The payload is fully specified — you say how
+    you are doing, in one of four words — and no projection has ever read one.
+    It is half of what [ADR-0014](adr/0014-demand-free-types.md)'s pebbles act
+    on, and it is unbuilt work rather than an open question.
 - **`wip.limit.set`**
   - Payload: `limit`
   - Silent risk: no
-  - **Unemitted, and type-only**, with `capacity.declared`. Next up offers one
-    thing by construction, so there is currently nothing a WIP limit could
-    constrain.
+  - **Unemitted, and type-only**, with `capacity.declared` — the other half of
+    what a pebble depresses. Next up offers one thing by construction, so a
+    limit does not bear on that surface; the caps it could bear on are elsewhere
+    (`COMPOSED_CAP` is 5, `OFFER_CAP` is 2), and none of them consults one yet.
 - **`estimate.recorded`**
   - Payload: `duration, basis: guess | prior`
   - Silent risk: no
