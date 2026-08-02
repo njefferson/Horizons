@@ -955,3 +955,31 @@ reuses `.storage-note`. Both are in the rendered gate in this commit.
   copy is current — no "you are up to date" line, and so nothing for a screen
   reader to announce either. What is announced is only ever a fact somebody can
   act on.
+
+### B-34 · Load, not work (1.15.0)
+
+**No new colour tokens.** The load entry reuses `.bother-entry`,
+`.detail-label`, `.detail-hint`, `.detail-row`, `.trash-list` and
+`.nextup-count` — every one already bound and measured. Two new states are in
+the rendered gate in this same commit.
+
+- **A collapsed control is still a control.** The entry is a `<details>` closed
+  by default, so the driver opens it and audits what is inside, the way it has
+  audited the bother entry since 0.17.0.
+- **The placeholder needed its own rule**, and the gate caught it: the UA
+  default grey measured 4.08:1 against a 4.5:1 requirement. `#pebble-text`
+  joins `#bother-text` on the explicit `--ink` rule. A placeholder is text
+  somebody has to read to know what the box wants.
+- **`#nextup-load` is registered in its own state, not with the entry.** It
+  renders only while something is on you, and naming it beside the entry would
+  have named a selector matching nothing visible — which this gate fails on by
+  design. It is also why the audit sits immediately after `next up`: the line
+  lives inside the offer, and an offer that is not showing has no line.
+- **Nothing about weight rides on colour.** Heavier is a WORD — a pebble, a
+  rock, a boulder — and the shorter offer is a shorter list, not a warmer one.
+  B-02's rule (the gauge speaks in words, never hue) applies here unchanged.
+- **The row carries one verb**, like the trash view. "Settled", not "Done":
+  nothing here was work, so nothing here is completed.
+- **The list is announced by the surface it changes**, not by a live region of
+  its own. Adding a weight repaints Next up, which already carries
+  `#nextup-live`; a second announcement for the same act would talk over it.

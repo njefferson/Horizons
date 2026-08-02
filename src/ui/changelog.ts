@@ -29,6 +29,20 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.15.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**You can tell Quietkeep what is on you, and it will ask less of you.** Under the box, beside \u201cSomething on your mind\u201d, there is now \u201cSomething weighing on you?\u201d \u2014 say how things are in one of four words, and name anything sitting on you and how heavy it is.',
+      '**None of it becomes a task.** A weight takes no date, appears on no list, and never comes back at you. It cannot: the app refuses to put a clock on one. Saying it is the whole act, and there is nothing to do about it afterwards.',
+      '**While you are carrying enough, Next up offers fewer things** \u2014 never fewer than one, and never anything hidden. What you are holding, and the count of what is covered, do not move at all. Only what the app puts in front of you gets shorter, which is the point.',
+      '**One small thing changes nothing.** A single pebble is meant to be sayable without consequence \u2014 if noting it made the app behave differently, you would stop noting them.',
+      'When it does ask for less, it says so in one line, and that line never tells you why you are how you are. It states two things that are true at the same time. Quietkeep does not diagnose you and has nowhere to store an opinion about you.',
+      'The thing you wanted from the Menu still rides along on a heavy day. That is deliberate: it owes you nothing, and it is often the most appropriate thing there.',
+      '\u201cSettled\u201d takes a weight off. What you wrote is kept in the record like everything else you have ever told it, and the thing itself joins what you have let go, where you can still take it back.',
+    ],
+  },
+  {
     triplet: '1.14.2',
     kind: 'ITERATION',
     date: '2026-08-02',

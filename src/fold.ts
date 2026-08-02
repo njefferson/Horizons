@@ -6,9 +6,11 @@
 // arbitrary moment and grows a timezone bug that only shows up in real use.
 
 import type {
-  AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, MenuCategory, NodeId, NodeKind,
-  ReplanChoice, VaultId,
+  AppEvent, ClarifyRoute, ClockKind, Heat, ISODateTime, Magnitude, MenuCategory,
+  NodeId, NodeKind, ReplanChoice, VaultId,
 } from './events.ts';
+import { CAPACITIES } from './events.ts';
+import type { Capacity } from './events.ts';
 import { isValidIso } from './time.ts';
 
 export interface Clock {
@@ -181,6 +183,20 @@ export interface NodeState {
    */
   notNow: { person: NodeId | null; what: string; at: ISODateTime } | null;
   /**
+   * The weight this pebble is, and what it sits on — or null once settled
+   * (1.15.0, ADR-0065).
+   *
+   * Only ever set on a node of kind `pebble`, which is demand-free by law 6 and
+   * refused a clock at the write gate. `affects` is a plain list of the nodes
+   * the weight is about; it is NOT a dependency and nothing computes from it —
+   * ADR-0014's "co-occurrence only, never causation" (law 7) starts here, at
+   * the shape of the record.
+   *
+   * Its own LWW key `'pebble'`, so raising on one device and settling on
+   * another converges on whichever happened later rather than on arrival order.
+   */
+  pebble: { magnitude: Magnitude; affects: NodeId[] } | null;
+  /**
    * What was decided about this, in the order it was decided (1.9.0,
    * ADR-0057). APPEND-ONLY: a log is not a slot, so there is no LWW stamp
    * and no removal — two devices logging different decisions must end with
@@ -272,6 +288,18 @@ export interface State {
    */
   timerMinutes: number | null;
   timerMinutesStamp: Ordering | null;
+  /**
+   * How you said things are going, or null if you never have (1.15.0,
+   * ADR-0065). State-level and not per-node, because capacity is a property of
+   * the person and the day rather than of any piece of work.
+   *
+   * Four words, from the vocabulary's own closed set — never a number, never a
+   * score, never derived from anything you did. The app does not work out how
+   * you are; it reads what you told it, and forgets nothing else about it.
+   */
+  capacity: Capacity | null;
+  /** Ordering of the last event that moved `capacity`, so it folds LWW. */
+  capacityStamp: Ordering | null;
 }
 
 /**
@@ -302,6 +330,8 @@ export const emptyState = (): State => ({
   requestSlotStamp: null,
   timerMinutes: null,
   timerMinutesStamp: null,
+  capacity: null,
+  capacityStamp: null,
 });
 
 /** (at, device, seq) — `at` first, device as a deterministic tiebreak. */
@@ -366,6 +396,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       leadDays: null,
       todayFor: null,
       notNow: null,
+      pebble: null,
       decisions: [],
       fields: {}, stamps: {},
     };
@@ -396,6 +427,10 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       // Ordering tuples in `stamps` stay SHARED on purpose: every write
       // replaces those wholesale rather than mutating them in place.
       notNow: n.notNow ? { ...n.notNow } : null,
+      // The list is copied too: a shared array would let a later fold mutate
+      // history in place, which is the aliasing class the three-place rule and
+      // the generic `three-place:` test exist to catch.
+      pebble: n.pebble ? { magnitude: n.pebble.magnitude, affects: [...n.pebble.affects] } : null,
     };
     s.nodes.set(id, clone);
     touched.add(id);
@@ -432,6 +467,8 @@ export function cloneShell(base: State): State {
     requestSlotStamp: base.requestSlotStamp ? { ...base.requestSlotStamp } : null,
     timerMinutes: base.timerMinutes,
     timerMinutesStamp: base.timerMinutesStamp ? { ...base.timerMinutesStamp } : null,
+    capacity: base.capacity,
+    capacityStamp: base.capacityStamp ? { ...base.capacityStamp } : null,
   };
 }
 
@@ -924,6 +961,49 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
           const m = e.payload.minutes;
           s.timerMinutes = Number.isFinite(m) && m > 0 ? Math.floor(m) : null;
           s.timerMinutesStamp = o;
+        }
+        break;
+      }
+
+      // The load half of ADR-0014, built at last (1.15.0, ADR-0065).
+      //
+      // A pebble is a NODE of kind `pebble` — demand-free by law 6, refused a
+      // clock at the write gate — and this is the weight on it. Raising and
+      // settling share one LWW key, so two devices disagreeing about whether a
+      // thing is still on converge on the later word rather than on whichever
+      // shard landed last.
+      case 'pebble.raised': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['pebble'], o)) {
+          // `affects` is COPIED, not referenced: the payload belongs to the log
+          // and state must never hold a window onto it.
+          n.pebble = {
+            magnitude: e.payload.magnitude,
+            affects: Array.isArray(e.payload.affects) ? [...e.payload.affects] : [],
+          };
+          setField(n.stamps, 'pebble', o);
+        }
+        break;
+      }
+
+      case 'pebble.settled': {
+        const n = e.node ? s.nodes.get(e.node) : undefined;
+        if (n && wins(n.stamps['pebble'], o)) {
+          n.pebble = null;
+          setField(n.stamps, 'pebble', o);
+        }
+        break;
+      }
+
+      // How you said things are going. State-level LWW, the `timerMinutes`
+      // shape. An unrecognised level is REFUSED rather than guessed — the fold
+      // keeps what was said or keeps nothing, and a capacity nobody chose would
+      // be the app deciding how you are, which is law 7's whole prohibition.
+      case 'capacity.declared': {
+        if (wins(s.capacityStamp ?? undefined, o)) {
+          const lvl = e.payload.level;
+          s.capacity = (CAPACITIES as readonly string[]).includes(lvl) ? lvl : null;
+          s.capacityStamp = o;
         }
         break;
       }

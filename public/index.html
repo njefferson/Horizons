@@ -70,6 +70,52 @@
     </form>
   </details>
 
+  <!-- Load, not work (1.15.0, ADR-0065). The `bother-entry` shape exactly: a
+       collapsed line under capture, invisible until you want it, cheap when you
+       do. Deliberately NOT the same box as a bother — a worry is pre-triage and
+       must terminate in a route; a weight is not going anywhere and is not
+       asking to be dealt with. It sits on you, and saying so is the whole act. -->
+  <details id="load-entry" class="bother-entry">
+    <summary id="load-summary">Something weighing on you?</summary>
+
+    <p id="load-hint" class="detail-hint">
+      None of this becomes a task, takes a date, or comes back at you. It is here
+      so the app can ask less of you while you are carrying it.
+    </p>
+
+    <label class="detail-label" for="capacity-level">How are things just now?</label>
+    <div class="detail-row">
+      <select id="capacity-level">
+        <!-- Disabled: it is the display before you have said anything, not a
+             choice. Stepping back from a declaration is `not sure`, which is
+             one of the four words on purpose. -->
+        <option value="" disabled>not said</option>
+        <option value="low">a low stretch</option>
+        <option value="steady">steady</option>
+        <option value="sharp">sharp</option>
+        <option value="unsure">not sure</option>
+      </select>
+    </div>
+
+    <form id="pebble-form" autocomplete="off">
+      <label class="detail-label" for="pebble-text">Something on you</label>
+      <div class="detail-row">
+        <input id="pebble-text" type="text" enterkeyhint="done" autocomplete="off"
+               autocapitalize="sentences" spellcheck="true"
+               placeholder="the thing with the roof">
+        <label class="visually-hidden" for="pebble-weight">How heavy it is</label>
+        <select id="pebble-weight">
+          <option value="pebble">a pebble</option>
+          <option value="rock">a rock</option>
+          <option value="boulder">a boulder</option>
+        </select>
+        <button type="submit">Note it</button>
+      </div>
+    </form>
+
+    <ul id="pebble-list" class="trash-list"></ul>
+  </details>
+
   <!-- The flow. One at a time, like triage — a list of worries is a worse object
        than any single worry on it. It asks WHOSE IT IS before it asks anything
        else, because asking what you will do about it first is what makes people
@@ -275,6 +321,12 @@
       <button id="nextup-skip" type="button" class="ghost">Not this</button>
     </div>
     <p id="nextup-count" class="nextup-count"></p>
+    <!-- Why the offer is shorter, said as CO-OCCURRENCE and never as cause
+         (1.15.0, law 7). ADR-0014 asks that "a stretch of low capacity has a
+         visible reason"; the data constitution forbids claiming one thing
+         caused the other. "Fewer, while…" names two facts about the same
+         period. "Fewer, because…" would be the app explaining you to yourself. -->
+    <p id="nextup-load" class="nextup-count" hidden></p>
     <ul id="nextup-behind" class="nextup-behind"></ul>
     <p id="nextup-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>

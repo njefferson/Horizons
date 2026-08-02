@@ -25,6 +25,7 @@ import { mountSort } from './sort.ts';
 import { mountFocus, type FocusUI } from './focus.ts';
 import { mountReentry } from './reentry.ts';
 import { mountBother } from './bother.ts';
+import { mountLoad, type LoadUI } from './load-ui.ts';
 import { mountPrint } from './print.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
@@ -566,6 +567,7 @@ export async function main(edition?: Edition): Promise<void> {
   let focus: FocusUI = { refresh() {}, start() {} };
   let reentry: { refresh(): void } = { refresh() {} };
   let bother: { refresh(): void } = { refresh() {} };
+  let load: LoadUI = { refresh() {} };
 
   // ONE render closure, used everywhere. Two call sites used to invoke
   // `render(session)` bare — the URL-capture path and its undo — which silently
@@ -609,7 +611,7 @@ export async function main(edition?: Edition): Promise<void> {
   // while its row was still on screen — one item, two questions, which is
   // exactly what the exclusion exists to prevent. This is what work.ts is handed
   // as its onChange, since work refreshes itself afterwards.
-  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); search.refresh(); sort.refresh(); };
+  const rerenderLists = (): void => { rerender(); replan.refresh(); focus.refresh(); reentry.refresh(); bother.refresh(); load.refresh(); search.refresh(); sort.refresh(); };
   rerenderAll = rerenderLists;
   // `relabelTimer`, not `refresh` (1.10.0): the do-now offer names the timer
   // length it will start, and that length is set in the (i) panel, which can be
@@ -651,6 +653,11 @@ export async function main(edition?: Edition): Promise<void> {
 
   // Naming a worry (v1.5). Mounted before re-entry, which must be last.
   try { bother = mountBother(session, refreshAll); } catch { /* a surface */ }
+
+  // Saying what is on you (1.15.0, ADR-0065). Contained like every other
+  // surface: a failure here costs the load entry and nothing else, and capture
+  // is untouched by it.
+  try { load = mountLoad(session, refreshAll); } catch { /* a surface */ }
 
   // Today, on paper. No state of its own — it builds a card at the moment of
   // printing and empties the area afterwards.

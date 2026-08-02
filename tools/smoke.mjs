@@ -769,6 +769,82 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(/\b(overdue|late|missed|streak)s?\b/i.test(surfaceText), false,
     'the rendered page carries no shame vocabulary');
 
+  // --- Load, not work (1.15.0, ADR-0065) ------------------------------------
+  // ADR-0014 said in the design phase that unresolved weight "may depress
+  // capacity / WIP while active … the mechanism by which it shows up in what the
+  // app asks of you — without ever becoming a task". The nouns were declared in
+  // Phase 0 and nothing ever read them.
+  //
+  // Placed where the offer is LIVE, because the whole claim is about what the
+  // offer does — at the end of the walk Next up is hidden and the line it lives
+  // in cannot render.
+  //
+  // The section leaves the surface exactly as it found it, and getting there is
+  // what found the defect: settling used to keep the node, so three later
+  // assertions comparing the gauge's total against rendered rows went red.
+  // Those assertions are right. A settled pebble appears in NO list — it has
+  // left this one by definition and was never in the todo list — so it was
+  // unreachable from every surface while still counting toward "held". Settling
+  // now takes it out of what you are holding; the log keeps both facts and the
+  // trash view is the way back.
+  console.log('\nLoad, not work — the app asks less while you are carrying something');
+  const gaugeBefore = await tpage.locator('#gauge').textContent();
+  const cardsBefore = await tpage.locator('#cards .card').count();
+
+  await tpage.click('#load-summary');
+  await tpage.waitForSelector('#pebble-text');
+  await tpage.fill('#pebble-text', 'the thing with the roof');
+  await tpage.selectOption('#pebble-weight', 'boulder');
+  await tpage.click('#pebble-form button[type=submit]');
+  await tpage.waitForSelector('#pebble-list li');
+  is((await tpage.locator('#pebble-list li').textContent())?.includes('a boulder'), true,
+    'the weight is listed in the words you chose');
+  is(await tpage.inputValue('#pebble-text'), '', 'and the box clears only after the write landed');
+
+  await tpage.waitForSelector('#nextup-load:not([hidden])');
+  const loadLine = (await tpage.locator('#nextup-load').textContent()) || '';
+  is(/while/i.test(loadLine), true, `the line names two facts about one period ("${loadLine}")`);
+  // LAW 7. The app may show the weight and the shorter offer together; it may
+  // never say one caused the other, and it has nowhere to store an opinion
+  // about you at all.
+  is(/because|due to|caused|that is why/i.test(loadLine), false,
+    'and it never explains you to yourself');
+  is(/\d/.test(loadLine), false, 'no number — a load is not a score (law 5)');
+  is(await tpage.locator('#nextup-title').textContent() !== '', true,
+    'there is still exactly one thing at the head of the offer — never nothing');
+
+  // WHAT MUST NOT HAPPEN: a weight appearing as a row in the todo list, which is
+  // exactly what "becoming a task" looks like.
+  is(await tpage.locator('#cards .card').count(), cardsBefore,
+    'nothing joined or left what you are holding');
+  // The GAUGE does count it, and that is deliberate — it proves law 1 over every
+  // node, and excluding a kind from a proof is how law 1 gets defined away
+  // (the merged-node finding of the 1.3.1 audit, restated for the journal in
+  // ADR-0061). What must not move is the silent count.
+  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+    'and nothing went silent');
+  is((await tpage.locator('#gauge').textContent()) !== gaugeBefore, true,
+    'while the coverage proof does count the pebble, deliberately');
+
+  // It survives a reload like everything else, and then comes off.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForSelector('#nextup-load:not([hidden])');
+  is(true, true, 'the weight is still on after a full reload');
+  await tpage.click('#load-summary');
+  await tpage.waitForSelector('#pebble-list li button');
+  await tpage.click('#pebble-list li button');
+  await tpage.waitForSelector('#nextup-load', { state: 'hidden' });
+  is(await tpage.locator('#pebble-list li').count(), 0, 'settled, and off the list');
+  // And settling takes it out of what you are holding, so the count cannot
+  // climb for ever behind a surface that shows nothing. The log keeps both
+  // facts, and the trash view is the way back.
+  is(await tpage.locator('#gauge').textContent(), gaugeBefore,
+    'settled, and the gauge is exactly where this section found it');
+  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+    'with nothing silent');
+  await tpage.click('#load-summary');
+
   // --- The detail sheet: dates, repeats, undo (Phase 3.5) ------------------
   // The point of this section is that the app is a PLANNER now: it can hold a
   // date and a repeat, not just a list. Each assertion reads the log, because a

@@ -58,8 +58,16 @@ export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' 
 // keeps its history. Additive only, so every log already written stays readable.
 export type CaptureSource = 'quick' | 'share-target' | 'url-endpoint' | 'shortcut' | 'focus-interrupt' | 'sample';
 export type Heat = 'hot' | 'cold';
-export type Capacity = 'low' | 'steady' | 'sharp' | 'unsure';
-export type Magnitude = 'pebble' | 'rock' | 'boulder';
+/** The closed set of capacities, as VALUES so the fold can refuse an
+ *  unrecognised one rather than guess at it (1.15.0). Four words and no
+ *  number: a level you can say out loud is a description, and a number would
+ *  be a score about yourself (law 5). */
+export const CAPACITIES = ['low', 'steady', 'sharp', 'unsure'] as const;
+export type Capacity = (typeof CAPACITIES)[number];
+/** How much a pebble weighs, in the vocabulary's own three words. Ordered
+ *  lightest first — `src/load.ts` reads the ORDER, so the list is the scale. */
+export const MAGNITUDES = ['pebble', 'rock', 'boulder'] as const;
+export type Magnitude = (typeof MAGNITUDES)[number];
 export type ProjectRole = 'execute' | 'track';
 export type ReplanChoice = 'compress' | 'escalate' | 'renegotiate' | 'new-date' | 'to-menu';
 export type MenuCategory = 'read' | 'try' | 'go' | 'make' | 'research' | 'save-for';

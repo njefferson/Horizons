@@ -52,6 +52,7 @@ import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { nextUpQueue, upkeepChips, type NextUpItem } from './nextup.ts';
 import { replanIds } from './replan.ts';
+import { loadNow, offerCapFor, type Load } from './load.ts';
 
 /**
  * How many pieces of WORK may be offered at once.
@@ -71,6 +72,13 @@ export interface Offer {
    * node: no reason, no pressure, nothing a surface could read as a demand.
    */
   wish: NodeState | null;
+  /**
+   * What is on you right now (1.15.0, ADR-0065). Returned rather than left for
+   * the surface to recompute, so the offer and the sentence beside it can never
+   * disagree about whether this is a heavy stretch — the render-contradicts-
+   * record shape ADR-0057 was written to kill.
+   */
+  load: Load;
 }
 
 /** Wishes, in a total order so the same state always offers the same one. */
@@ -95,13 +103,21 @@ export function offerNow(state: State, nowIso: string, zone: string, cycle = 0):
   const queue = nextUpQueue(state, nowIso, zone)
     .filter(i => !chipIds.has(i.node.id) && !replanning.has(i.node.id));
 
+  // ADR-0014's consequence, finally consumed: unresolved weight "depresses
+  // capacity … the mechanism by which it shows up in what the app asks of you".
+  // The offer is exactly that surface, so the cap bends here and nowhere else —
+  // never the gauge, never the held list, never Composed Today, and never below
+  // one (src/load.ts).
+  const load = loadNow(state);
+  const cap = offerCapFor(load, OFFER_CAP);
+
   const work: NextUpItem[] = [];
   if (queue.length > 0) {
     const start = ((cycle % queue.length) + queue.length) % queue.length;
     const rotated = [...queue.slice(start), ...queue.slice(0, start)];
     const taken = new Set<string>();
     for (const item of rotated) {
-      if (work.length >= OFFER_CAP) break;
+      if (work.length >= cap) break;
       // ONE PER REASON. This is the whole mechanism: the set cannot become two
       // near-identical next-actions, because the second would share a class
       // with the first and be skipped.
@@ -116,7 +132,7 @@ export function offerNow(state: State, nowIso: string, zone: string, cycle = 0):
     ? null
     : all[((cycle % all.length) + all.length) % all.length] ?? null;
 
-  return { work, wish };
+  return { work, wish, load };
 }
 
 /**

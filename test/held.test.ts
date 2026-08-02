@@ -164,8 +164,13 @@ test('the group boundary is calendar days in the reader’s zone', () => {
 });
 
 test('a held item with no clock at all is Later, not lost', () => {
+  // A `person`, not a pebble. This used a pebble as its clockless vehicle
+  // because that was the handiest demand-free kind with no surface of its own —
+  // and in 1.15.0 a pebble got one, so the held list excludes it the way it
+  // excludes a journal entry (ADR-0065). The INVARIANT here is unchanged and is
+  // not about pebbles: a held thing with no clock is filed, never dropped.
   const s = st(
-    ev('node.created', 'P', { nodeKind: 'pebble', title: 'a pebble' }),   // demand-free, legal with no clock
+    ev('node.created', 'P', { nodeKind: 'person', title: 'Ada' }),   // demand-free, legal with no clock
   );
   assert.equal(heldGroups(s, NOW, TZ)[0]!.key, 'later');
   assert.equal(heldStatus(s.nodes.get('P')!, NOW, TZ), 'held');

@@ -222,6 +222,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0064](0064-every-noun-accounts-for-itself.md)**
   - Decision: Every event kind is written by the app, or the vocabulary says in words why it is not
   - Status: Accepted
+- **[0065](0065-load-not-work.md)**
+  - Decision: Unresolved weight narrows the offer and nothing else — [ADR-0014](0014-demand-free-types.md)'s pebble consequence, executed
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

@@ -134,7 +134,11 @@ test('the journal is on NO work surface, and in no search result', () => {
     ev('node.created', 'J', { nodeKind: 'journal', title: '' }, { seq: 0 }),
     ev('node.created', 'W', { nodeKind: 'action', title: 'real work' }, { seq: 1 }),
   ]);
-  s = write(s, [ev('journal.entry.written', 'J', { v: 1, iv: 'aa', ct: 'bb' }, { seq: 2 })]);
+  // A distinctive ciphertext. This was 'bb', and 1.15.0's `pebble` field made
+  // the substring check below match the word "pe-bb-le" in the serialised node —
+  // a false positive on a real invariant, which is worse than no check at all.
+  const CT = 'Q1lQSEVSVEVYVA';
+  s = write(s, [ev('journal.entry.written', 'J', { v: 1, iv: 'aa', ct: CT }, { seq: 2 })]);
 
   assert.ok(!nextUpQueue(s, NOW, TZ).some(i => i.node.id === 'J'), 'never offered as the next thing');
   assert.ok(!offerNow(s, NOW, TZ).work.some(i => i.node.id === 'J'), 'never in the offer');
@@ -142,6 +146,6 @@ test('the journal is on NO work surface, and in no search result', () => {
   assert.ok(!searchHeld(s, 'a').items.some(x => x.id === 'J'), 'and search cannot reach it');
   // The ciphertext is in the LOG, and nothing in state carries it — which is
   // why search cannot index the journal even in principle.
-  assert.equal(JSON.stringify(s.nodes.get('J')).includes('bb'), false,
+  assert.equal(JSON.stringify(s.nodes.get('J')).includes(CT), false,
     'the sealed text never reaches state at all');
 });

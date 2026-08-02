@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { admit } from '../src/gate.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { OFFER_CAP, offerNow, offerWords } from '../src/offer.ts';
+import { loadNow } from '../src/load.ts';
 import type { AppEvent } from '../src/events.ts';
 
 const TZ = 'America/Denver';
@@ -146,5 +147,6 @@ test('nothing asking, but something you wanted — and the words say exactly tha
   assert.equal(o.work.length, 0);
   assert.match(offerWords(o), /Nothing is asking/);
   // The genuinely empty case says nothing at all rather than inventing cheer.
-  assert.equal(offerWords({ work: [], wish: null }), '');
+  assert.equal(
+    offerWords({ work: [], wish: null, load: loadNow(emptyState()) }), '');
 });

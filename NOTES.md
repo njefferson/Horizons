@@ -441,6 +441,71 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "YOU FUCKING MADE IT" → "stop asking me for shit without
+  reviewing the project files")** — **1.15.0 "Load, not work"** — the pebble
+  consumer ADR-0014 described in the design phase, built at last.
+  · **He was right, and the rule is now standing: read the files first.** I had
+  carried pebbles as blocked on his decision, repeatedly, when ADR-0014 answers
+  it in its Consequences — "may depress capacity / WIP while active … the
+  mechanism by which unresolved weight shows up in what the app asks of you,
+  without ever becoming a task" — and the data constitution says the same. The
+  correction is recorded beside the vocabulary entry and in the plan file.
+  · **A sweep of everything else I had called "blocked on Noah" found three more
+  already answered in the files.** Anchors: ADR-0057 defers them with four
+  reasons and says what shipping them needs. Sync consent: ADR-0036 already
+  requires each edition's panel to state "exactly what leaves the device", and
+  `src/ui/security.ts` already has the section. The module offer trigger:
+  build-plan item 322 records it as waiting on dogfooding, not on an opinion.
+  **What is genuinely his is only the physical checks** — V-14, V-16/V-17,
+  V-00 step 2, V-20, and item 42's measurement. Those need his hands, not his
+  judgement, and that is a much shorter list.
+  · **No new nouns, no gate change, no vocabulary change.** `pebble` was in
+  `NODE_KINDS` and in `DEMAND_FREE_KINDS`, so the write gate had been refusing
+  to clock one for a year; the four events were declared and typed, and
+  `Capacity` already named its four values. Only the reader was missing.
+  · **Weight narrows THE OFFER and nothing else** — never the gauge (it proves
+  law 1 over every node), never the todo list, never Composed Today (that is
+  what you chose), never below one thing.
+  · **One small thing changes nothing.** `HEAVY_AT` is 3, so a single pebble is
+  sayable without consequence — an app that reacts to every one teaches you not
+  to write them down, which is ADR-0014's own argument for the Menu from the
+  other direction.
+  · **Co-occurrence, never causation.** "Fewer things, *while* you have this
+  much on." The `while` is load-bearing and pinned by a test that rejects
+  because/due-to/caused, and by another that rejects any digit.
+  · **A defect the tests caught before it shipped:** pebbles were appearing in
+  the todo list, which is exactly what "becoming a task" looks like. Now
+  excluded like journal entries — `heldNodes` still counts them so the gauge
+  and the merge picker see them, `heldGroups` does not.
+  · **And a latent fragility surfaced:** the journal test asserted the
+  ciphertext `'bb'` never reaches state, and the word *pe-bb-le* matched it. A
+  false positive on a real invariant is worse than no check; the fixture now
+  uses a distinctive string.
+  · **The timeline half does NOT ship**, and no timeline was invented to carry
+  it. There is no plot surface in this app. Said rather than faked.
+  · **And an older inconsistency surfaced, named rather than patched.**
+  `heldNodes` counts every untrashed node; `heldGroups` skips what is not work.
+  Those drifted apart in 1.13.0 when journal entries were excluded, and nobody
+  noticed because `held.ts` still carried a comment saying they could not. The
+  comment is corrected. The gauge now says "N held" where the list shows fewer
+  rows — nothing is hidden, every excluded kind has its own surface, but "held"
+  is doing two jobs in one word and that wants its own decision.
+  · **The walk found a real defect, and that is the best thing it did.**
+  Settling kept the node, so `heldNodes` counted it for ever — three later
+  assertions comparing the gauge against rendered rows went red. Chasing that
+  showed the node was **unreachable from every surface**: a settled pebble is in
+  no list at all, having left the load entry by definition and never been in the
+  todo list, while still inflating "held" for ever. Settling now emits
+  `pebble.settled` AND `node.trashed`: the log keeps both facts, the trash view
+  is the way back, and the count cannot climb behind a surface that shows
+  nothing. My first two attempts at this — a second "Let it go" verb, then
+  moving the walk to the end of the run — were both working around the defect
+  rather than fixing it.
+  · Two of my own smoke assertions were also simply wrong — the offer's
+  behind-count, and expecting the gauge not to move — and were replaced with
+  what is actually true.
+  · ADR-0065, ACCESSIBILITY B-34, two a11y states, a smoke walk.
+
 - **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
   `3a9776c → 601bae9`**, carrying **1.14.1**. Spine 195 watched green on the
   exact head before the promote; **Deploy 192** green on `main` at the same sha

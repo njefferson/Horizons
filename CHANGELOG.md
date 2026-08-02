@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.15.0 — CAPABILITY
+
+*2026-08-02*
+
+- **You can tell Quietkeep what is on you, and it will ask less of you.** Under the box, beside “Something on your mind”, there is now “Something weighing on you?” — say how things are in one of four words, and name anything sitting on you and how heavy it is.
+- **None of it becomes a task.** A weight takes no date, appears on no list, and never comes back at you. It cannot: the app refuses to put a clock on one. Saying it is the whole act, and there is nothing to do about it afterwards.
+- **While you are carrying enough, Next up offers fewer things** — never fewer than one, and never anything hidden. What you are holding, and the count of what is covered, do not move at all. Only what the app puts in front of you gets shorter, which is the point.
+- **One small thing changes nothing.** A single pebble is meant to be sayable without consequence — if noting it made the app behave differently, you would stop noting them.
+- When it does ask for less, it says so in one line, and that line never tells you why you are how you are. It states two things that are true at the same time. Quietkeep does not diagnose you and has nowhere to store an opinion about you.
+- The thing you wanted from the Menu still rides along on a heavy day. That is deliberate: it owes you nothing, and it is often the most appropriate thing there.
+- “Settled” takes a weight off. What you wrote is kept in the record like everything else you have ever told it, and the thing itself joins what you have let go, where you can still take it back.
+
 ## 1.14.2 — ITERATION
 
 *2026-08-02*

@@ -118,9 +118,28 @@ function dateWords(at: string, zone: string, days: number): string {
 }
 
 /**
- * Exactly one group per held node — the grouping is TOTAL, so the sum of the
- * groups always equals `heldNodes(state).length`, which is the same definition
- * the coverage gauge counts. The number and the list cannot drift apart.
+ * Exactly one group per held node THAT IS WORK — and the qualifier is new, so
+ * the sentence that used to be here is corrected rather than quietly left.
+ *
+ * It read: "the grouping is TOTAL, so the sum of the groups always equals
+ * `heldNodes(state).length`, which is the same definition the coverage gauge
+ * counts. The number and the list cannot drift apart." **That stopped being
+ * true in 1.13.0** and nobody noticed, because the exclusions below are skipped
+ * before grouping: a spent resume card, a journal entry (ADR-0061) and now a
+ * pebble (ADR-0065) are all held, all counted by the gauge, and none of them
+ * rendered here.
+ *
+ * The drift is DELIBERATE and both halves are load-bearing. The gauge's `silent`
+ * proves law 1 over every node, and excluding a kind from a proof is how law 1
+ * gets defined away (the 1.3.1 merged-node finding). This list is the todo list,
+ * and a private entry or a weight sitting in it as a row is the pile the file
+ * exists to stand between you and.
+ *
+ * **What is still open, and is named rather than papered over:** the gauge says
+ * "N held" while this list shows fewer rows, so the two do describe different
+ * sets. Nothing is hidden — every one of those kinds has its own surface — but
+ * "held" is doing two jobs in one word, and that is worth a decision of its own
+ * rather than a comment in a projection.
  *
  * Order of the tests matters and is the design:
  *  - **Done first**, so a completed thing stops claiming it is coming back
@@ -157,6 +176,12 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
     // sitting in it as an untitled row is the pile this file exists to stand
     // between you and. It has its own surface.
     if (n.kind === 'journal') continue;
+    // AND A PEBBLE IS NOT WORK YOU ARE HOLDING EITHER (1.15.0, ADR-0065) —
+    // same argument, and here it is the whole point of the kind. ADR-0014: a
+    // pebble accounts for weight "without ever becoming a task", and a row in
+    // the todo list is exactly what becoming a task looks like. The gauge still
+    // counts it, for the reason directly above; the load entry is its surface.
+    if (n.kind === 'pebble') continue;
     // DONE, and not still running on a cadence. The unconditional version filed
     // a recurring upkeep that had come round again under "Done" while
     // `upkeepChips` was offering it as live work — one node, one screen, two

@@ -32,6 +32,8 @@ export function serialiseState(s: State): unknown {
     requestSlotStamp: s.requestSlotStamp,
     timerMinutes: s.timerMinutes,
     timerMinutesStamp: s.timerMinutesStamp,
+    capacity: s.capacity,
+    capacityStamp: s.capacityStamp,
   });
 }
 
@@ -52,6 +54,8 @@ export function deserialiseState(raw: unknown): State {
     requestSlotStamp?: State['requestSlotStamp'];
     timerMinutes?: State['timerMinutes'];
     timerMinutesStamp?: State['timerMinutesStamp'];
+    capacity?: State['capacity'];
+    capacityStamp?: State['capacityStamp'];
   };
   return {
     // Backfill Phase-2 fields a pre-Phase-2 snapshot never stored. Without this,
@@ -116,6 +120,13 @@ export function deserialiseState(raw: unknown): State {
       // not aliased: a shared object between a snapshot and running state is
       // how a fold rewrote history in place once already (audit).
       notNow: n.notNow ? { ...n.notNow } : null,
+      // The third of the three places (1.15.0). A snapshot written before
+      // pebbles existed has no field at all, and `undefined` reaching a
+      // projection is how a type-lie becomes a runtime one — the generic
+      // `three-place:` test exists because this exact backfill was missed twice.
+      pebble: n.pebble
+        ? { magnitude: n.pebble.magnitude, affects: [...(n.pebble.affects ?? [])] }
+        : null,
       // MUTABLE, and the third place the rule bites: a pre-1.9.0 snapshot
       // stored no decisions — none had been logged.
       decisions: [...(n.decisions ?? [])],
@@ -145,6 +156,9 @@ export function deserialiseState(raw: unknown): State {
     // A pre-1.10.0 snapshot stored no timer length — nobody had chosen one.
     timerMinutes: r.timerMinutes ?? null,
     timerMinutesStamp: r.timerMinutesStamp ? { ...r.timerMinutesStamp } : null,
+    // A pre-1.15.0 snapshot stored no capacity — nobody had been asked.
+    capacity: r.capacity ?? null,
+    capacityStamp: r.capacityStamp ? { ...r.capacityStamp } : null,
   };
 }
 

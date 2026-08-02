@@ -1619,6 +1619,9 @@ dialog, dialog * { overflow-wrap: anywhere; }
 }
 #bother-text { min-height: var(--target); flex: 1 1 6rem; min-width: 0; font: inherit; }
 #bother-text::placeholder { color: var(--ink); opacity: 1; }
+/* The load entry's box, on the same rule and for the same reason (1.15.0): the
+   UA default is a grey nobody chose and it fails the contrast gate. */
+#pebble-text::placeholder { color: var(--ink); opacity: 1; }
 .bother {
   margin: 0 0 1.5rem; padding: 1rem;
   background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);

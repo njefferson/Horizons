@@ -315,6 +315,15 @@ const REGISTRY = {
   'bother entry': ['#bother-summary', '#bother-text',
     { sel: '#bother-text', pseudo: '::placeholder' },
     '#bother-form button[type=submit]', '.detail-hint'],
+  // Load, not work (1.15.0, ADR-0065). The `bother entry` shape, audited the
+  // same way: opened by the driver, because a collapsed control is still a
+  // control. `#nextup-load` is in its OWN state below — it renders only while
+  // something is on you, and registering it here would name a selector that
+  // matches nothing visible, which this gate fails on by design.
+  'load entry': ['#load-summary', '#load-hint', '#capacity-level',
+    '#pebble-text', { sel: '#pebble-text', pseudo: '::placeholder' },
+    '#pebble-weight', '#pebble-form button[type=submit]', '.detail-label'],
+  'load carried': ['#pebble-list li', '#pebble-list li button', '#nextup-load'],
   // The Menu (law 6). The money line is the lowest-contrast text and it is the
   // whole of what a save-for says. There is NO bar and no colour keyed to the
   // numbers anywhere on this surface, and that absence is the measurement.
@@ -753,6 +762,34 @@ try {
     await auditAxe(page, 'next up', theme);
     await auditTargets(page, 'next up', theme);
     await auditFocusRings(page, 'next up', theme, ['#nextup-done', '#nextup-skip', '#gauge', '#cards .card-done']);
+
+    // State 3d1a: saying what is on you (1.15.0). HERE, immediately after 'next
+    // up', because the line beside a narrowed offer renders only when the offer
+    // is live — audited at 3d2 it waited forever on a surface that was hidden. Opened, audited, then a real
+    // weight is put on so the SECOND state — the list row and the line beside a
+    // narrowed offer — has something to render. A boulder, so the threshold is
+    // crossed in one go rather than by piling up three.
+    await page.click('#load-summary');
+    await page.waitForSelector('#pebble-text');
+    await auditContrast(page, 'load entry', theme);
+    await auditAxe(page, 'load entry', theme);
+    await auditTargets(page, 'load entry', theme);
+    await auditFocusRings(page, 'load entry', theme,
+      ['#load-summary', '#pebble-text', '#capacity-level', '#pebble-weight']);
+    await page.fill('#pebble-text', 'the thing with the roof');
+    await page.selectOption('#pebble-weight', 'boulder');
+    await page.click('#pebble-form button[type=submit]');
+    await page.waitForSelector('#pebble-list li');
+    await page.waitForSelector('#nextup-load:not([hidden])');
+    await auditContrast(page, 'load carried', theme);
+    await auditAxe(page, 'load carried', theme);
+    await auditTargets(page, 'load carried', theme);
+    await auditFocusRings(page, 'load carried', theme, ['#pebble-list li button']);
+    // Leave the surface as this section found it: the weight comes off, so the
+    // offer is back to its ordinary shape for every state after this one.
+    await page.click('#pebble-list li button');
+    await page.waitForSelector('#nextup-load', { state: 'hidden' });
+    await page.click('#load-summary');
 
     await page.click('#gauge');
     await page.waitForSelector('#coverage:not([hidden])');

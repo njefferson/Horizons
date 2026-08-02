@@ -18,6 +18,7 @@ import type { NodeState } from '../fold.ts';
 import { heldNodes } from '../gate.ts';
 import { workSurface, type NextUpItem } from '../nextup.ts';
 import { offerNow, offerWords } from '../offer.ts';
+import { loadWords } from '../load.ts';
 import { MENU_WORDS } from '../menu.ts';
 import type { MenuCategory } from '../events.ts';
 import { undatedCount } from '../held.ts';
@@ -71,6 +72,10 @@ export function mountWork(
   const REGION = region, HEADING = heading, TITLE = title, WHY = why, COUNT = count,
     BEHIND = behind, LIVE = live, UPKEEP = upkeepRegion, CHIPS = chips,
     GAUGE = gauge, COVERAGE = coverage;
+  // NOT in the hard guard above, deliberately: a missing load note costs one
+  // sentence, and taking Next up down with it would cost the app's whole
+  // purpose. Same containment every optional element on this surface gets.
+  const LOADNOTE = document.querySelector<HTMLElement>('#nextup-load');
 
   // "Not this" lives HERE, in memory, and nowhere else. It is deliberately not
   // persisted: a skip that survived a reload would be a record of a decision the
@@ -198,6 +203,14 @@ export function mountWork(
       // backlog headline law 8 names outright — and the coverage gauge already
       // states the honest totals a few lines up this same page.
       COUNT.textContent = offerWords(offer);
+      // The visible reason ADR-0014 asks for, in the co-occurrence form law 7
+      // requires. Read from the SAME offer the rows were built from, so the
+      // sentence and the set can never disagree.
+      if (LOADNOTE) {
+        const lw = loadWords(offer.load);
+        LOADNOTE.textContent = lw;
+        LOADNOTE.hidden = lw === '';
+      }
       // Doors, not words-in-a-paragraph (1.6.0): each row opens its sheet, on
       // the FRESH node — a row built at refresh time can be clicked later. What
       // sits here is now the REST OF THE OFFER rather than a queue tail: one
@@ -251,6 +264,7 @@ export function mountWork(
           ? 'One thing is here without a date. It is waiting on you to decide, not the other way round.'
           : `${undated} things are here without a date. They are waiting on you to decide, not the other way round.`;
         COUNT.textContent = '';
+        if (LOADNOTE) { LOADNOTE.textContent = ''; LOADNOTE.hidden = true; }
       } else {
         REGION.hidden = true;
         TITLE.textContent = '';
