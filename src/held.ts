@@ -149,6 +149,14 @@ export function heldGroups(state: State, nowIso: string, zone: string): HeldGrou
     // The card is not trashed and not hidden from an export: it happened, and
     // the log says so. It simply is not work.
     if (n.kind === 'resume-card' && n.resumeSpent) continue;
+    // A JOURNAL ENTRY IS NOT WORK YOU ARE HOLDING (1.13.0, ADR-0061). It is
+    // demand-free, so law 1 is satisfied without a clock and the coverage gauge
+    // still counts it — the gauge PROVES law 1 over every node, and excluding a
+    // kind from a proof is how law 1 gets defined away (the merged-node finding
+    // of the 1.3.1 audit). But this list is the todo list, and a private entry
+    // sitting in it as an untitled row is the pile this file exists to stand
+    // between you and. It has its own surface.
+    if (n.kind === 'journal') continue;
     // DONE, and not still running on a cadence. The unconditional version filed
     // a recurring upkeep that had come round again under "Done" while
     // `upkeepChips` was offering it as live work — one node, one screen, two

@@ -242,7 +242,10 @@ and 1.8.0 made "not mine to carry" keep its decision in the Not Now ledger
 instead of trashing it)** · staff-call lens **(the per-person half shipped
 1.12.0; the DELTA half is what "staff-call" actually means and it waits on
 anchors — see build-plan 33/34. An earlier session of mine recorded this item
-as shipped outright, which was wrong)** · pebbles · journal · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
+as shipped outright, which was wrong)** · pebbles · ~~journal~~ **(done, 1.13.0 — ADR-0061: a
+NodeKind with an encrypted payload rather than a vault, on Noah's decision.
+ADR-0005's encryption-ships-together binding honoured — PBKDF2-SHA-256 at
+600,000 rounds, and the fold never touches ciphertext)** · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
 + Not Now ledger~~ **(done, 1.8.0 — ADR-0056)**.
 
 > **Binding condition:** journal **encryption ships in the same commit as the
@@ -437,6 +440,47 @@ decided by a session.**
   before being trusted.
 
 ### Log
+
+- **2026-08-02 (Noah: "Kind plus encryption sounds best" → "Go")** —
+  **1.13.0 "The journal"** — the last v1.5 item, and the one that was blocked on
+  a decision rather than on work.
+  · **The decision was his because ADR-0005 said no session could make it.** Its
+  overturn clause reads "Nothing about the vault split". ADR-0061 supersedes that
+  clause; 0005 keeps a `Superseded by` header and is otherwise left exactly as
+  written, per the ADR rules. Its other three bindings survive untouched and the
+  release honours all of them.
+  · **Q-10's objection never reached the journal**, and this is the part I had
+  wrong for most of the session. Its argument — two apps, remember to check both,
+  Next up forced to pick a side — is about work versus home, where both sides
+  hold work that must return. The journal holds nothing that returns. And the
+  lens it recommended was never an option: a lens filters what you LOOK AT, while
+  encryption changes what the fold CAN read.
+  · **The fold never touches ciphertext.** Entries are nodes; the surface reads
+  the log and opens them in the UI (the 1.4.0 log-viewer pattern). No new
+  `NodeState` field, no disposition entry, no three-place ceremony — and search
+  cannot index the journal because there is nothing in state to index, which is
+  stronger than remembering to exclude it. Entries carry no title, because a
+  title would be plaintext in the log.
+  · **`journal` joined `DEMAND_FREE_KINDS`**, verified by running the gate first:
+  without it every private entry took a cure clock and came back on a work
+  surface as an untitled row. Deliberate-failure proof pinned.
+  · **The held list excludes journal entries; the coverage gauge still counts
+  them.** The gauge PROVES law 1 over every node, and excluding a kind from a
+  proof is how law 1 gets defined away — the merged-node finding of the 1.3.1
+  audit. The held list is the todo list, which is a different question.
+  · **PBKDF2-SHA-256 at 600,000 rounds**, the count stored with the salt so a
+  later raise can still open older entries, and a count below the floor refused
+  rather than honoured. Argon2id would have meant a WASM dependency; ADR-0005
+  delegated this choice to the build, which I had been wrongly holding as
+  Noah's.
+  · **Unlocking proves the key against a real entry** before reporting success.
+  A wrong passphrase derives a perfectly valid key that opens nothing, so
+  unlocking on derivation alone would have shown an empty journal — which reads
+  as "your entries are gone".
+  · Refused and stated rather than half-built: no passphrase change (it would
+  mean re-sealing every entry), no tags, no counts.
+  · ADR-0061, ACCESSIBILITY B-32, vocabulary updated for `journal.sealed` and
+  the superseded `vault.*` pair.
 
 - **2026-08-02 (Noah: "Promote to main")** — **`main` fast-forwarded
   `8cc85f9 → 155967b`**, carrying 1.12.0. Spine 188 watched green on the exact

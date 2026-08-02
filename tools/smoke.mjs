@@ -2309,7 +2309,77 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(/%|\d+\s*(times|of|\/)\s*\d*|remaining/.test(ledgerText), false,
     'the ledger never counts against anyone');
   await tpage.click('#notnow-open');
+
+  // THE JOURNAL (1.13.0, ADR-0061). The unit tests prove the crypto; what they
+  // cannot prove is that a real passphrase, typed into a real box, seals an
+  // entry that survives a reload and opens again — and that a wrong one says
+  // the honest thing instead of an empty journal.
+  await tpage.click('#journal-open');
+  await tpage.waitForSelector('#journal-view:not([hidden])');
+  is(await tpage.locator('#journal-setup').isVisible(), true, 'with no passphrase it offers to set one');
+  const warned = await tpage.locator('#journal-warning').textContent() || '';
+  is(/no way to recover it/i.test(warned) && /the journal is gone/i.test(warned), true,
+    'and says what a forgotten passphrase costs BEFORE it is set');
+
+  await tpage.fill('#journal-new', 'a passphrase i will remember');
+  await tpage.click('#journal-set');
+  await tpage.waitForSelector('#journal-unlocked:not([hidden])', { timeout: 15000 });
+  await tpage.fill('#journal-text', 'the kitchen was warm this evening');
+  await tpage.click('#journal-write');
+  await tpage.waitForFunction(() => /kitchen was warm/.test(
+    document.querySelector('#journal-list')?.textContent ?? ''), null, { timeout: 15000 });
+  is(true, true, 'an entry is written and read back');
+
+  // NOTHING READABLE REACHES THE LOG. The one thing that must be true.
+  const plaintextInLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const rows = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    return JSON.stringify(rows).includes('kitchen was warm');
+  });
+  is(plaintextInLog, false, 'and the words themselves are nowhere in the log');
+
+  // Closing drops the key; a reload starts closed.
+  await tpage.click('#journal-lock');
+  await tpage.waitForSelector('#journal-locked:not([hidden])');
+  is(/journal is closed/i.test(await tpage.locator('#journal-state').textContent() || ''), true,
+    'closing it is a calm state, not an error');
+
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.click('#open-about');
+  await expandGroups(tpage);
+  await tpage.click('#journal-open');
+  await tpage.waitForSelector('#journal-locked:not([hidden])');
+  is(await tpage.locator('#journal-unlocked').isHidden(), true, 'a reload starts closed');
+
+  // A WRONG PASSPHRASE SAYS SO. Deriving a key always succeeds — it just opens
+  // nothing — so unlocking on derivation alone would show an empty journal and
+  // read as "your entries are gone".
+  await tpage.fill('#journal-pass', 'not the passphrase');
+  await tpage.click('#journal-unlock');
+  await tpage.waitForFunction(() => /does not open/.test(
+    document.querySelector('#journal-state')?.textContent ?? ''), null, { timeout: 15000 });
+  is(await tpage.locator('#journal-unlocked').isHidden(), true,
+    'a wrong passphrase opens nothing and says so, rather than showing an empty journal');
+
+  await tpage.fill('#journal-pass', 'a passphrase i will remember');
+  await tpage.click('#journal-unlock');
+  await tpage.waitForFunction(() => /kitchen was warm/.test(
+    document.querySelector('#journal-list')?.textContent ?? ''), null, { timeout: 15000 });
+  is(true, true, 'and the right one brings the entry back after a reload');
+  await tpage.click('#journal-lock');
+  await tpage.click('#journal-open');
   await tpage.click('#about-close');
+
+  // A journal entry is on NO work surface — the whole point of the kind.
+  const onSurfaces = await tpage.evaluate(() =>
+    [document.querySelector('#cards')?.textContent ?? '',
+     document.querySelector('#nextup')?.textContent ?? ''].join(' '));
+  is(/kitchen was warm|\(untitled\)/.test(onSurfaces), false,
+    'and it appears on no work surface, not even as an untitled row');
 
   // "Mine to do something about" becomes ordinary work and joins the inbox.
   // DRAIN FIRST: triage shows one card at a time, so with earlier items still

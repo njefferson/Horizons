@@ -260,6 +260,14 @@ const REGISTRY = {
   'detail sheet, decisions': ['#detail-decision', '#detail-decision-set',
     '#detail-decision-hint', '#detail-decision-count',
     '#detail-decision-list .detail-feed', '.detail-when'],
+  // The journal (1.13.0, ADR-0061). Three states a person actually meets: no
+  // passphrase yet, closed, and open. The warning is the quietest long text on
+  // the surface and it is the one sentence ADR-0005 insists must be readable.
+  'journal, no passphrase': ['#journal-state', '#journal-warning',
+    '#journal-new', '#journal-set'],
+  'journal, closed': ['#journal-state', '#journal-pass', '#journal-unlock'],
+  'journal, open': ['#journal-state', '#journal-text', '#journal-write',
+    '#journal-hint', '#journal-list li'],
   // The Not Now ledger, open (1.8.0, ADR-0056): the trash view's species —
   // the fact line is the quietest text and it is the row's whole content.
   'ledger open': ['#notnow-open', '#notnow-total', '#notnow-list .trash-row', '.trash-when'],
@@ -1421,6 +1429,32 @@ try {
     await auditContrast(page, 'ledger open', theme);
     await auditAxe(page, 'ledger open', theme);
     await auditTargets(page, 'ledger open', theme);
+    // The journal's three states, walked in the order a person meets them.
+    await page.click('#journal-open');
+    await page.waitForSelector('#journal-view:not([hidden])');
+    await auditContrast(page, 'journal, no passphrase', theme);
+    await auditAxe(page, 'journal, no passphrase', theme);
+    await auditTargets(page, 'journal, no passphrase', theme);
+    await auditFocusRings(page, 'journal, no passphrase', theme, ['#journal-new', '#journal-set']);
+    await page.fill('#journal-new', 'a passphrase for the audit');
+    await page.click('#journal-set');
+    await page.waitForSelector('#journal-unlocked:not([hidden])', { timeout: 20000 });
+    await page.fill('#journal-text', 'one line, so the list has a row to measure');
+    await page.click('#journal-write');
+    await page.waitForFunction(() => (document.querySelector('#journal-list')?.children.length ?? 0) > 0,
+      null, { timeout: 20000 });
+    await auditContrast(page, 'journal, open', theme);
+    await auditAxe(page, 'journal, open', theme);
+    await auditTargets(page, 'journal, open', theme);
+    await auditFocusRings(page, 'journal, open', theme, ['#journal-text', '#journal-write']);
+    await page.click('#journal-lock');
+    await page.waitForSelector('#journal-locked:not([hidden])');
+    await auditContrast(page, 'journal, closed', theme);
+    await auditAxe(page, 'journal, closed', theme);
+    await auditTargets(page, 'journal, closed', theme);
+    await auditFocusRings(page, 'journal, closed', theme, ['#journal-pass', '#journal-unlock']);
+    await page.click('#journal-open');
+
     await auditFocusRings(page, 'ledger open', theme, ['#notnow-list .trash-row', '#notnow-open']);
     await page.click('#notnow-open');
     // The slot: set a day, audit the sheet's offer, then clear it so every

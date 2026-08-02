@@ -223,6 +223,7 @@ export function eventWords(
     // --- people and journal --------------------------------------------------
     case 'person.created': return 'A person was noted.';
     case 'person.linked': return `Linked to ${name(p['person'])}.`;
+    case 'journal.sealed': return 'You set a passphrase for the journal.';
     case 'journal.entry.written': return 'A journal entry was written.';
     case 'journal.tag.attached': return 'A journal tag was attached.';
 

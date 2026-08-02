@@ -41,6 +41,9 @@ import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from 
 import { mountSecurity } from './security.ts';
 import { ledgerRowWords, notNowLedger, slotDayWords, slotOf } from '../requests.ts';
 import { timerMinutesOf, timerWords } from '../timer.ts';
+import { KDF_ITERATIONS, PASSPHRASE_WARNING, deriveKey, journalEntries, journalSeal, newSalt } from '../journal.ts';
+import { open as unseal, seal } from '../seal.ts';
+import { entryEvents, sealJournalEvents } from './journal-intents.ts';
 import { setTimerLengthEvents } from './request-intents.ts';
 import { setSlotEvents } from './request-intents.ts';
 
@@ -964,6 +967,137 @@ export async function mountAbout(
         .catch((err: unknown) => {
           slotNote.textContent = `Not set — ${(err as Error).message}`;
         });
+    });
+  }
+
+  // THE JOURNAL (1.13.0, ADR-0061).
+  //
+  // The key lives in a closure variable and nowhere else: not in state, not in
+  // storage, not on `window`. Closing the journal drops it, and a reload starts
+  // locked — which is the point, and is why there is no "stay open" option.
+  const jOpen = document.querySelector<HTMLButtonElement>('#journal-open');
+  const jView = document.querySelector<HTMLElement>('#journal-view');
+  const jState = document.querySelector<HTMLElement>('#journal-state');
+  const jSetup = document.querySelector<HTMLElement>('#journal-setup');
+  const jWarning = document.querySelector<HTMLElement>('#journal-warning');
+  const jNew = document.querySelector<HTMLInputElement>('#journal-new');
+  const jSet = document.querySelector<HTMLButtonElement>('#journal-set');
+  const jLocked = document.querySelector<HTMLElement>('#journal-locked');
+  const jPass = document.querySelector<HTMLInputElement>('#journal-pass');
+  const jUnlock = document.querySelector<HTMLButtonElement>('#journal-unlock');
+  const jUnlocked = document.querySelector<HTMLElement>('#journal-unlocked');
+  const jText = document.querySelector<HTMLTextAreaElement>('#journal-text');
+  const jWrite = document.querySelector<HTMLButtonElement>('#journal-write');
+  const jLock = document.querySelector<HTMLButtonElement>('#journal-lock');
+  const jList = document.querySelector<HTMLElement>('#journal-list');
+  if (jOpen && jView && jState && jSetup && jWarning && jNew && jSet
+    && jLocked && jPass && jUnlock && jUnlocked && jText && jWrite && jLock && jList) {
+    let key: CryptoKey | null = null;
+    jWarning.textContent = PASSPHRASE_WARNING.join(' ');
+
+    const showPhase = (phase: 'none' | 'locked' | 'open'): void => {
+      jSetup.hidden = phase !== 'none';
+      jLocked.hidden = phase !== 'locked';
+      jUnlocked.hidden = phase !== 'open';
+      // LOCKED IS A CALM STATE, NOT AN ERROR (ADR-0005). Nothing here is a
+      // failure to report; it is simply shut, which is what it is for.
+      jState.textContent = phase === 'none'
+        ? 'No passphrase yet.'
+        : phase === 'locked' ? 'The journal is closed.' : 'The journal is open.';
+    };
+
+    const paintEntries = async (): Promise<void> => {
+      if (!key) { jList.replaceChildren(); return; }
+      const log = await session.store.all();
+      const rows = await Promise.all(journalEntries(log).map(async e => {
+        try {
+          const plain = await unseal(key!, e.sealed) as { text?: unknown };
+          return { at: e.at, text: typeof plain.text === 'string' ? plain.text : '' };
+        } catch {
+          // One unreadable entry must not take the journal down with it.
+          return null;
+        }
+      }));
+      jList.replaceChildren(...rows.filter(Boolean).map(r => {
+        const li = document.createElement('li');
+        const day = document.createElement('span');
+        day.className = 'trash-when';
+        day.textContent = new Intl.DateTimeFormat('en-GB', {
+          timeZone: session.zone, day: 'numeric', month: 'short',
+        }).format(new Date(r!.at));
+        const body = document.createElement('span');
+        body.textContent = r!.text;
+        li.append(body, day);
+        return li;
+      }));
+    };
+
+    const refreshJournal = async (): Promise<void> => {
+      const sealInfo = journalSeal(await session.store.all());
+      if (!sealInfo) { showPhase('none'); return; }
+      showPhase(key ? 'open' : 'locked');
+      if (key) await paintEntries();
+    };
+
+    jOpen.addEventListener('click', () => {
+      const opening = jView.hidden;
+      jView.hidden = !opening;
+      jOpen.setAttribute('aria-expanded', String(opening));
+      jOpen.textContent = opening ? 'Close this' : 'Open the journal';
+      if (opening) void refreshJournal();
+    });
+
+    jSet.addEventListener('click', () => {
+      const pass = jNew.value;
+      if (!pass) { jState.textContent = 'A passphrase is needed first.'; return; }
+      const salt = newSalt();
+      void deriveKey(pass, salt, KDF_ITERATIONS)
+        .then(async k => {
+          await session.commit(ctx => sealJournalEvents(ctx, salt, KDF_ITERATIONS));
+          key = k; jNew.value = '';
+          await refreshJournal();
+        })
+        .catch((err: unknown) => { jState.textContent = `Not set — ${(err as Error).message}`; });
+    });
+
+    jUnlock.addEventListener('click', () => {
+      const pass = jPass.value;
+      void (async () => {
+        const sealInfo = journalSeal(await session.store.all());
+        if (!sealInfo) return;
+        try {
+          const k = await deriveKey(pass, sealInfo.salt, sealInfo.iterations);
+          // PROVE the key before saying it is open. A wrong passphrase derives a
+          // perfectly valid key that opens nothing, so unlocking on derivation
+          // alone would show an empty journal and call it success — which reads
+          // as "your entries are gone".
+          const entries = journalEntries(await session.store.all());
+          if (entries.length > 0) await unseal(k, entries[0]!.sealed);
+          key = k; jPass.value = '';
+          await refreshJournal();
+        } catch {
+          // seal.ts is deliberate about saying ONE thing here, and so is this.
+          jState.textContent = 'That passphrase does not open this journal.';
+        }
+      })();
+    });
+
+    jWrite.addEventListener('click', () => {
+      const text = jText.value.trim();
+      if (!key || !text) return;
+      void (async () => {
+        const sealed = await seal(key!, { text });
+        await session.commit(ctx => entryEvents(ctx, ctx.id(), sealed));
+        jText.value = '';
+        await paintEntries();
+      })().catch((err: unknown) => { jState.textContent = `Not kept — ${(err as Error).message}`; });
+    });
+
+    jLock.addEventListener('click', () => {
+      key = null;
+      jText.value = '';
+      jList.replaceChildren();
+      void refreshJournal();
     });
   }
 

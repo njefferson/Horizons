@@ -902,3 +902,29 @@ already measured.
 - **Nothing on the page is a grade.** Durations and relationships only — law 7,
   and it is an accessibility property too: there is no colour, position or
   emphasis carrying a judgement that a reader has to decode.
+
+### B-32 · The journal, in its three states (1.13.0)
+
+**No new colour tokens.** The journal reuses `.storage-note`, `.detail-label`,
+`.detail-hint`, `.about-caveat` and `.trash-list`, all already bound and
+measured; all three states are in the rendered gate in this same commit.
+
+- **Three states, all audited, because a person meets all three**: no passphrase
+  yet, closed, and open. Each is driven in the order it is actually encountered
+  rather than staged directly, so the gate measures what a reader sees.
+- **The forgotten-passphrase text is the longest quiet passage on the surface**,
+  and it is the one sentence ADR-0005 requires to be readable rather than buried.
+  It sits on `.about-caveat`, measured at 320px and 200% like everything else —
+  a warning nobody can read is not a warning.
+- **Closed is announced as a state, not an error.** `#journal-state` is
+  `role="status"` with `aria-live="polite"`, and it says "The journal is closed."
+  A screen-reader user is told what is true, in the same words a sighted one
+  gets; nothing here is styled as a failure, because none of it is one.
+- **A wrong passphrase is announced through the same live region**, in one
+  sentence carrying no number and no fragment of the entry. Silence here would
+  be worse than a rebuke: a wrong passphrase that appeared to succeed would show
+  an empty journal, which reads as *your entries are gone*.
+- **The passphrase boxes are real `type="password"` inputs** with the right
+  `autocomplete` values — `new-password` when setting, `current-password` when
+  opening — so a password manager can fill them and nobody is forced to type a
+  long passphrase by hand on a touch keyboard.

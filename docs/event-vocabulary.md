@@ -420,16 +420,41 @@ agreed to survives a copy change (law 10).
 - **`person.linked`**
   - Payload: `node, person, relation: opr | stakeholder | waiting-on | requested-by | mentioned`
   - Silent risk: no
-- **`journal.entry.written`**
-  - Payload: `ciphertext, iv` — **payload always encrypted**
+- **`journal.entry.written`** (emitter 1.13.0, ADR-0061)
+  - Payload: `v, iv, ct` — the `seal.ts` envelope. **Always encrypted.** The
+    third field was called `ciphertext` here from the first draft; nothing ever
+    emitted the noun, so it now takes the name the code already uses rather than
+    a translation layer between two names for one thing.
   - Silent risk: no
+  - **The fold never reads this.** It has no key, and it must stay a pure
+    function of the event set whether the journal is unlocked or not. The
+    journal surface reads the log directly and opens entries in the UI — the
+    log-viewer pattern — which is also why search cannot index the journal:
+    there is nothing in state to index.
+- **`journal.sealed`** (emitter 1.13.0, ADR-0061)
+  - Payload: `salt, iterations`. `node: null`. Written ONCE, when the passphrase
+    is first set.
+  - Silent risk: no
+  - The salt is not a secret and is in the log in the clear on purpose: it must
+    reach a second device, because the whole point is that the same passphrase
+    opens the journal there too. The iteration count travels with it so a later
+    release can raise the work factor and still open what an earlier one sealed.
 - **`journal.tag.attached`**
   - Payload: `tag`
   - Silent risk: no
 
 > `journal.tag.attached` exists for **co-occurrence rendering only**. There is no
 > sentiment field, no valence, no score, and no event that could carry one
-> (law 7). The app plots; the human interprets.
+> (law 7). The app plots; the human interprets. **Still unemitted after 1.13.0**:
+> tags are their own decision about what may be rendered from them, and the
+> journal shipped without needing them.
+
+> **`vault.locked` / `vault.unlocked` are superseded and unemitted**
+> (1.13.0, ADR-0061). They belonged to the vault split, which ADR-0061 replaced
+> with `kind: 'journal'` plus an encrypted payload. They are kept in the
+> vocabulary because the log is append-only and removing a name is a destructive
+> schema change for no gain — but nothing writes them, and an unlock is a
+> session fact rather than a durable one, so nothing should.
 
 ### I · Menu and re-entry
 

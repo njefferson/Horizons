@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.13.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-02',
+    notes: [
+      '**The journal.** Somewhere to write that is not a list and asks nothing of you. It is in the \u24d8 panel under Your data, and it starts by asking you to choose a passphrase.',
+      '**Your entries are scrambled with that passphrase, and Quietkeep cannot read them.** Not while the journal is closed, not in a backup, not in anything it syncs through. That is not a promise about good behaviour \u2014 the words genuinely are not there to be read.',
+      '**Which means a forgotten passphrase cannot be recovered, by you or by anyone.** It says so plainly before you set one, because that is the moment it matters rather than something to find out later. Everything else you keep here is untouched by it.',
+      '**Nothing you write is ever counted, searched, or brought back at you.** A journal entry appears on no list, is offered as no next thing, and has no date. It is not work, and the app treats it as though it is not.',
+      'Closing the journal, or simply reloading, shuts it again. There is no setting to leave it open.',
+      'Two things this deliberately does NOT do yet: the passphrase cannot be changed \u2014 that would mean re-scrambling every entry \u2014 and there are no tags. Both are better absent than half-built.',
+    ],
+  },
+  {
     triplet: '1.12.0',
     kind: 'CAPABILITY',
     date: '2026-08-02',

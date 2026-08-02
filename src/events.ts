@@ -38,7 +38,17 @@ export type NodeKind = (typeof NODE_KINDS)[number];
  * away. Nothing may be added here on the argument that it "isn't really work" —
  * only on the argument that a surface renders it, and that the surface ships.
  */
-export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person'] as const satisfies readonly NodeKind[];
+/**
+ * Kinds that cannot carry a clock, and do not need one to satisfy law 1.
+ *
+ * `journal` joined in 1.13.0 (ADR-0061). Without it the gate cures a journal
+ * entry with a review clock — verified by running it — so every private entry
+ * came back at you on a work surface as an untitled thing waiting to be done.
+ * A journal entry is not work, and law 6's "acting on one is a deliberate
+ * promotion, never an obligation that accrued" is exactly the right reading of
+ * it. Same argument that made `person` demand-free when the person lens shipped.
+ */
+export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person', 'journal'] as const satisfies readonly NodeKind[];
 
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
 export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash';
@@ -218,7 +228,34 @@ export type ShardCompacted   = Ev<'shard.compacted',    { device: DeviceId; thro
 export type PersonCreated    = Ev<'person.created',     { name: string }>;
 export type PersonLinked     = Ev<'person.linked',      { node: NodeId; person: NodeId; relation: 'opr'|'stakeholder'|'waiting-on'|'requested-by'|'mentioned' }>;
 /** Payload is ALWAYS encrypted at rest. There is no plaintext journal event. */
-export type JournalEntryWritten = Ev<'journal.entry.written', { ciphertext: string; iv: string }>;
+/**
+ * One journal entry, sealed (1.13.0, ADR-0061).
+ *
+ * The payload IS `seal.ts`'s envelope — `v` the format marker, `iv` the fresh
+ * per-message nonce, `ct` the ciphertext with GCM's tag included. The
+ * vocabulary called the third field `ciphertext` from the first draft; nothing
+ * ever emitted this noun, so it takes the name the code already uses rather
+ * than a translation layer between two names for one thing.
+ *
+ * **The fold never reads this.** It cannot — it has no key, and it must stay a
+ * pure function of the event set whether the journal is unlocked or not. The
+ * journal surface reads the log directly and opens entries in the UI, which is
+ * the log-viewer pattern and is also why search cannot index the journal:
+ * there is nothing in state to index.
+ */
+export type JournalEntryWritten = Ev<'journal.entry.written', { v: number; iv: string; ct: string }>;
+/**
+ * How this journal's key is derived (1.13.0). Written ONCE, when the passphrase
+ * is first set, and `node: null`.
+ *
+ * The salt is not a secret and is in the log in the clear on purpose: it must
+ * travel to a second device, because the whole point is that the same
+ * passphrase opens the journal there too. The iteration count travels with it
+ * so a later release can raise the work factor and still open what an earlier
+ * one sealed — law 9 applied to a number that looks like configuration and is
+ * actually part of the data.
+ */
+export type JournalSealed    = Ev<'journal.sealed',     { salt: string; iterations: number }>;
 /** Co-occurrence rendering only. No sentiment field exists, and none may be
  *  added — law 7. */
 export type JournalTagAttached  = Ev<'journal.tag.attached',  { tag: string }>;
@@ -280,7 +317,7 @@ export type AppEvent =
   | ModuleEnabled | ModuleDisabled | ConsentGranted | ConsentRevoked
   | SnapshotWritten | SchemaMigrated | ExportWritten | ImportSeeded | ShardFolded
   | TerminologySkinApplied | TemplateLoaded | ShardCompacted
-  | PersonCreated | PersonLinked | JournalEntryWritten | JournalTagAttached
+  | PersonCreated | PersonLinked | JournalEntryWritten | JournalSealed | JournalTagAttached
   | MenuItemAdded | MenuItemRemoved | MenuItemPromoted | SaveForUpdated
   | LapseMigrationRan | ReentryGreeted | AmnestyOffered | AmnestyAccepted
   | RangeActed | TodayChosen | TodayReleased;
@@ -306,7 +343,7 @@ export const EVENT_KINDS = [
   'module.enabled','module.disabled','consent.granted','consent.revoked',
   'snapshot.written','schema.migrated','export.written','import.seeded','shard.folded',
   'terminology.skin.applied','template.loaded','shard.compacted',
-  'person.created','person.linked','journal.entry.written','journal.tag.attached',
+  'person.created','person.linked','journal.entry.written','journal.sealed','journal.tag.attached',
   'menu.item.added','menu.item.removed','menu.item.promoted','save-for.updated',
   'lapse.migration.ran','reentry.greeted','amnesty.offered','amnesty.accepted',
   'range.acted','today.chosen','today.released',
