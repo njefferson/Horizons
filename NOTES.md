@@ -433,6 +433,13 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
+  `f237a1f → 0745796`**, carrying 1.9.1, 1.9.2 and 1.10.0. Spine 183 watched
+  green on the exact head before the promote; Deploy 180 green on `main` at the
+  same sha after it. Three releases in one promote: the two gates the repo had
+  claimed but never had, the audit of 1.4.0–1.9.1 and its nine findings, and the
+  timer reframe.
+
 - **2026-08-02 (Noah: "Presence not progress, duration is chosen, and drop the
   abandoned outcome")** — **1.10.0 "What a fold takes with it" → the timer
   reframe** — three decisions of his, and one of them corrected me mid-design.
