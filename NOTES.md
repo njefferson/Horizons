@@ -433,6 +433,10 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote and continue")** — **`main` fast-forwarded
+  `0745796 → 8cc85f9`**, carrying 1.11.0. Spine 186 watched green on the exact
+  head before the promote; Deploy 183 green on `main` at the same sha after it.
+
 - **2026-08-02 (Noah: "Promote and continue")** — **1.11.0 "A few things you
   could pick up"** — the menu shape he asked for: *"queue towards offering what
   the user wants to choose to do, as opposed to a list of things waiting to be
