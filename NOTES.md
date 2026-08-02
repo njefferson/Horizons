@@ -474,7 +474,11 @@ decided by a session.**
   · **A number Noah sees will drop** by however many entries and weights he
   holds. The changelog says so plainly, including that 1.15.0's own note —
   "the count of what is covered does not move" — was half wrong.
-  · ADR-0066. Spine to be watched green on the exact head. Not promoted.
+  · ADR-0066. **Spine 202 green on the exact head** (`a3b3625`) — all 21 steps.
+  Not promoted; 1.14.2, 1.15.0 and this wait on Noah's on-device pass together.
+  · The cross-app lesson went to the hub under **LESSONS 7g**, not a new
+  section: a correct check whose walk never contained the case is that section's
+  "assert the fixture, not just the result" bullet in its quietest form.
 
 - **2026-08-02 (Noah: "Promote to main")** — **`main` fast-forwarded
   `601bae9 → 60a45c8`**, carrying **1.14.2** (every noun accounts for itself),
