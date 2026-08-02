@@ -441,6 +441,53 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "What else is already specified you haven't done yet?" → "continue")** —
+  **1.14.1 "Startup does not replay the world"** — the biggest thing the sweep
+  found, and the same defect as 1.14.0 one layer down.
+  · **ADR-0001's first consequence has never been true.** "Startup must not
+  replay the world. State is `latest snapshot + tail fold`. The < 2 s
+  cold-capture budget depends on this." `writeSnapshot` was written in Phase 0,
+  exported, and exercised by four tests — **and had no caller outside the test
+  suite.** The only production writer was `portability.ts`, storing a snapshot
+  that arrived inside an imported file. So `loadState` found none, fell through,
+  and folded the entire log on every launch, every reload, every return to the
+  Home Screen.
+  · **Nothing was ever wrong.** The fallback path is the correct path and the
+  state it produced was right. What was lost was only the thing the machinery
+  was built to buy — and the loss grows with an append-only log, forever.
+  · **The app cuts one from the state it already holds.** Calling `writeSnapshot`
+  at startup would re-read and re-fold the log, paying exactly the cost the
+  photograph exists to avoid. `snapshotFrom` takes the state the session has just
+  folded; the mark and the count come from the same object read synchronously, so
+  the snapshot is internally consistent even if a commit lands mid-write.
+  · **After `data-ready`, unawaited, and NOT on the commit queue.** Queueing it
+  would put a clone of the whole state in front of the first capture.
+  · **The threshold is a count, not a clock** — 500 events past the newest
+  snapshot. A device used once a fortnight has a short tail and should do no
+  work; elapsed time cannot tell the difference. Same reasoning ADR-0004 used
+  for export staleness.
+  · **Deliver, then record** — the snapshot lands before `snapshot.written` is
+  committed, pinned by a test with a store that refuses to hold a photograph.
+  The noun was declared in Phase 0 and unemitted until now.
+  · **Safe to turn on because the guard predates it**: `loadState` recomputes
+  snapshot-count plus tail against the log and falls back when it disagrees, so
+  the worst case is a slow start, never a wrong state.
+  · **Refused: compaction.** ADR-0001's fifth consequence is also unbuilt and
+  `shard.compacted` also unemitted, but discarding history under a law that says
+  data is never lost deserves a measurement first, not a rider.
+  · **The headless walk measures it, on a synthetic store**: 615 events replayed
+  before, **1 event after**. That is a real browser against real IndexedDB, and
+  it is not Noah's iPad — item 42 is still the measurement that counts, and the
+  changelog says in as many words that this release comes with no number for his
+  device.
+  · **The walk's first version of that proof was vacuous, and the smoke run
+  caught it.** An import seeds a snapshot of its own, and the walk imports a
+  backup — so the store was already covered and a reload correctly did nothing.
+  The check would have passed with the caller deleted. It now empties the
+  snapshots table first, staging the exact state every device was permanently in
+  before this release.
+  · ADR-0063; build-plan items 5 and 6 annotated with what actually happened.
+
 - **2026-08-02 (Noah: "Promote to main and continue")** — **`main`
   fast-forwarded `155967b → 3a9776c`**, carrying **1.13.0** (the journal) and
   **1.14.0** (the copy, and the way back). Spine 192 watched green on the exact

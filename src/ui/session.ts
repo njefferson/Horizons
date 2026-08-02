@@ -16,7 +16,7 @@ import { deviceZone } from '../time.ts';
 import { ulid, newDeviceId } from '../ids.ts';
 import { DexieLogStore } from '../dexie-store.ts';
 import type { LogStore } from '../log-store.ts';
-import { loadState } from '../snapshot.ts';
+import { SNAPSHOT_LAG_LIMIT, loadState, snapshotFrom, snapshotLag } from '../snapshot.ts';
 
 const DEVICE_KEY = 'device.id';
 
@@ -48,6 +48,14 @@ export interface Session {
    * half-way through one and paint a state that never existed.
    */
   refresh(): Promise<State>;
+  /**
+   * Cut a snapshot if startup has drifted too far past the last one (1.14.1).
+   *
+   * Resolves to the number of events the snapshot covered, or null when none
+   * was due. Called once per boot, AFTER the app is on screen — never on the
+   * path to a capture.
+   */
+  maintain(): Promise<number | null>;
   draft(): Promise<string>;
   setDraft(text: string): Promise<void>;
   store: SessionStore;
@@ -144,6 +152,43 @@ export async function openSession(
     return run;
   };
 
+  /**
+   * Keep the startup path honest (1.14.1, ADR-0063).
+   *
+   * ADR-0001's first consequence is "startup must not replay the world", and
+   * for the whole of this app's life it has: `writeSnapshot` existed, was
+   * tested, and had no caller outside the test suite, so `loadState` never
+   * found a snapshot and always fell through to folding the entire log. Nothing
+   * failed — the fallback path is the correct one — it simply cost the thing
+   * the snapshot was built to buy, and cost more every day.
+   *
+   * DELIVER, THEN RECORD, the same ordering the export path learned the hard
+   * way: the snapshot lands first, and only then is an event written saying one
+   * did. A failure leaves no record claiming otherwise.
+   *
+   * Deliberately NOT on the commit queue. It runs after the app is on screen,
+   * and queueing it would put a clone of the whole state in front of the user's
+   * first capture — the one interaction this app protects above all others. The
+   * cost of not queueing is that a commit may land between the photograph and
+   * its record, which is harmless: the snapshot simply covers less than the log.
+   */
+  const maintain: Session['maintain'] = async () => {
+    const lag = await snapshotLag(store, state);
+    if (lag < SNAPSHOT_LAG_LIMIT) return null;
+    // `state` is read synchronously inside `snapshotFrom`, so the mark and the
+    // count it stores are the same state's — internally consistent whatever
+    // else is happening.
+    const covered = state.eventCount;
+    const mark = state.seqByDevice.get(device!) ?? 0;
+    await snapshotFrom(store, state, new Date(now()).toISOString());
+    await commit((ctx) => [{
+      id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
+      kind: 'snapshot.written', node: null,
+      payload: { upToSeq: mark, reason: 'periodic' },
+    } as AppEvent]);
+    return covered;
+  };
+
   return {
     device,
     vault,
@@ -151,6 +196,7 @@ export async function openSession(
     state: () => state,
     commit,
     refresh,
+    maintain,
     draft: async () => (await store.getKv<string>('capture.draft')) ?? '',
     setDraft: (text) => store.setKv('capture.draft', text),
     store,

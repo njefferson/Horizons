@@ -383,9 +383,20 @@ feature can be late; the data cannot be backfilled.
 - **`snapshot.written`**
   - Payload: `upToSeq, reason: periodic | pre-migration`
   - Silent risk: no
+  - **Emitted since 1.14.1** with `reason: 'periodic'`, once per boot when the
+    log has run more than `SNAPSHOT_LAG_LIMIT` events past the newest snapshot
+    ([ADR-0063](adr/0063-startup-does-not-replay-the-world.md)). It was declared
+    in Phase 0 and unemitted until then, which is why every cold start folded the
+    entire log. `reason: 'pre-migration'` stays unemitted — there is no migration
+    path yet, and the record should not claim one.
 - **`schema.migrated`**
   - Payload: `from, to`
   - Silent risk: no
+  - **Unemitted, and no migration machinery exists** as of 1.14.1 — no schema
+    version, no migration path, no pre-migration export, though the Dexie schema
+    has already moved v1 to v2. `log-words.ts` renders this kind as "a copy was
+    exported first", which describes a behaviour that is not built; the sentence
+    is unreachable, but it is a claim and it is recorded here as one.
 - **`export.written`**
   - Payload: `at, scope, encrypted: bool`
   - Silent risk: no

@@ -78,10 +78,20 @@ comparison.
 3. **Fold** — pure, deterministic, `(at, device, seq)` ordering, per-field LWW.
 4. **Write gate** — every `Silent? yes` event and its cure, in-transaction.
 5. **Snapshot + tail** — startup path. Measure cold start from here on.
+   **(The machinery landed in Phase 0 and had NO CALLER until 1.14.1
+   ([ADR-0063](adr/0063-startup-does-not-replay-the-world.md)): `writeSnapshot`
+   was written, exported and tested, nothing in the app ever ran it, so
+   `loadState` never found a snapshot and every cold start folded the whole log.
+   The session now cuts one per boot past a bounded lag. **The measurement half
+   of this item is still item 42** — this removes a known cause of slowness and
+   reports no number.)**
 6. **Export / import** — import seeds fresh. Restore-from-log-alone test.
    **On the reference platform this is the entire durability story**, so it is built
    here in Phase 0, not deferred — including the Restore-on-empty action
    ([ADR-0004](adr/0004-ios-path.md)).
+   **(Export/import landed in Phase 0; the Restore-on-empty action did not, and
+   shipped in 1.14.0 ([ADR-0062](adr/0062-the-copy-and-the-way-back.md)) — seven
+   phases after the item that specified it. Recorded rather than back-dated.)**
 7. **Vaults** — required on every event; cross-vault refusal in the gate.
 
 **Phase 0 exit criteria — all four, or it is not done:**

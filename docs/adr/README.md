@@ -216,6 +216,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0062](0062-the-copy-and-the-way-back.md)**
   - Decision: The copy has a date and the way back is one tap — [ADR-0004](0004-ios-path.md) executed
   - Status: Accepted
+- **[0063](0063-startup-does-not-replay-the-world.md)**
+  - Decision: The session cuts a snapshot once per boot — [ADR-0001](0001-event-sourced-log.md)'s first consequence, executed
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

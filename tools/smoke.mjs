@@ -135,6 +135,13 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // it, so the walkthrough runs again and the app looks brand new to a person
   // who has just lost everything. ADR-0004 decided the answer in the design
   // phase — "one action, one tap, into the picker" — and it was never built.
+  // A fresh store is not worth photographing, and the app knows it (1.14.1).
+  // This is also the pin that the maintenance step HAS a caller at all — the
+  // defect it fixes was machinery nothing ever ran.
+  await page.waitForFunction(() => document.body.dataset.maintained !== undefined);
+  is(await page.evaluate(() => document.body.dataset.maintained), 'not-due',
+    'startup maintenance runs, and leaves a nearly-empty store alone');
+
   is(await page.locator('#restore').isVisible(), true,
     'an empty store offers the way back, not just an empty box');
   is(/Files app/i.test(await page.locator('.restore-note').textContent() || ''), true,
@@ -4019,6 +4026,79 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const lateSurface = await tpage.evaluate(() => document.body.innerText);
   is(/\b(overdue|late|missed|streak)s?\b/i.test(lateSurface), false,
     'still no shame vocabulary, with every surface the walk can reach carrying real content');
+
+  // --- Startup does not replay the world (1.14.1, ADR-0063) ----------------
+  //
+  // `writeSnapshot` was written, tested and never called for this app's whole
+  // life, so every cold start folded the entire log. Nothing went red, because
+  // the fallback path is the correct one — which is exactly why the pin has to
+  // be that a snapshot really gets CUT, in a real browser, against real
+  // IndexedDB, on a store with a real history behind it.
+  console.log('\nStartup does not replay the world');
+  const logSize = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('events', 'readonly').objectStore('events').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  is(logSize > 500, true, `the walk has built a log worth snapshotting (${logSize} events)`);
+
+  // The snapshots table is EMPTIED first, deliberately. An import seeds a
+  // snapshot of its own (`portability.ts`), and this walk imports a backup — so
+  // by here the store is already covered, and a reload correctly does nothing.
+  // Correct, and useless as a proof: it would pass with the caller deleted.
+  // Clearing it stages the exact state every device was permanently in before
+  // 1.14.1 — a long log and no photograph — and asserts the app climbs out.
+  await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    await new Promise((res) => {
+      const tx = db.transaction('snapshots', 'readwrite').objectStore('snapshots').clear();
+      tx.onsuccess = () => res();
+    });
+  });
+
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForFunction(() => document.body.dataset.maintained !== undefined);
+  const cut = await tpage.evaluate(() => document.body.dataset.maintained);
+  is(/^\d+$/.test(cut || ''), true,
+    `a start with no photograph and a long log cuts one (covered ${cut})`);
+  const snapCount = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('snapshots', 'readonly').objectStore('snapshots').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  is(snapCount > 0, true, 'and the photograph is really in the store');
+
+  // The second start is the one that proves the first was worth anything: the
+  // lag has been reset, so nothing is due and no work is done.
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForFunction(() => document.body.dataset.maintained !== undefined);
+  is(await tpage.evaluate(() => document.body.dataset.maintained), 'not-due',
+    'and the next start has nothing to do — it is reading the photograph, not the world');
+  // And what a cold start would now have to fold is bounded, which is the whole
+  // claim of the release stated as a number the walk can check.
+  const tailNow = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const [snaps, total] = await Promise.all([
+      new Promise((res) => {
+        const q = db.transaction('snapshots', 'readonly').objectStore('snapshots').getAll();
+        q.onsuccess = () => res(q.result);
+      }),
+      new Promise((res) => {
+        const c = db.transaction('events', 'readonly').objectStore('events').count();
+        c.onsuccess = () => res(c.result);
+      }),
+    ]);
+    const newest = snaps[snaps.length - 1];
+    return total - (newest?.state?.eventCount ?? 0);
+  });
+  is(tailNow < 500, true,
+    `the next cold start folds a bounded tail, not the world (${tailNow} of ${logSize} events)`);
 
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');

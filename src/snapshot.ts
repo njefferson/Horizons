@@ -151,9 +151,57 @@ export function deserialiseState(raw: unknown): State {
 export const highWaterMark = (s: State): Record<DeviceId, number> =>
   Object.fromEntries(s.seqByDevice);
 
-/** Write a snapshot covering everything currently in the log. */
-export async function writeSnapshot(store: LogStore, at: string): Promise<Snapshot> {
-  const state = fold(await store.all());
+/**
+ * How far the log has run past the newest snapshot, in events.
+ *
+ * `state.eventCount` is folded from the log, and every snapshot carries the
+ * count it was cut at — `loadState` already relies on that number to decide
+ * whether its fast path has earned itself. Subtracting the two answers "how
+ * much would a cold start have to replay right now", which is the only question
+ * that decides whether cutting another one is worth anything.
+ *
+ * With no snapshot at all the answer is the whole log, which is exactly right:
+ * that IS what startup replays today.
+ */
+export async function snapshotLag(store: LogStore, state: State): Promise<number> {
+  const snap = await store.latestSnapshot();
+  const covered = snap ? ((snap.state as { eventCount?: number }).eventCount ?? 0) : 0;
+  return Math.max(0, state.eventCount - covered);
+}
+
+/**
+ * Events past the newest snapshot before another is worth cutting (1.14.1).
+ *
+ * Not a tuning knob so much as a statement of what startup is allowed to cost.
+ * Below it, a cold start folds at most this many events onto a deserialised
+ * state; above it, the tail is doing work a photograph could have done. 500 is
+ * chosen to be comfortably inside the < 2 s cold-capture budget on the
+ * reference device while being large enough that ordinary days never cut one —
+ * a heavy session is tens of events, an import is thousands.
+ *
+ * The number is deliberately NOT time-based. A device used once a fortnight has
+ * a short tail and should do no work; a device that took an import an hour ago
+ * has a long one. Elapsed time knows neither.
+ */
+export const SNAPSHOT_LAG_LIMIT = 500;
+
+/**
+ * Cut a snapshot from a state that has ALREADY been folded.
+ *
+ * This is the one the running app uses, and the distinction from
+ * `writeSnapshot` below is the whole point: re-reading and re-folding the log to
+ * photograph it would cost exactly the work the photograph exists to avoid. The
+ * session has just folded this state; serialising it is a clone and nothing
+ * more.
+ *
+ * The mark and the count both come from the SAME state object, read
+ * synchronously, so the snapshot is internally consistent even if a commit
+ * lands while it is being written. It will simply cover less than the log does,
+ * which is what a snapshot is.
+ */
+export async function snapshotFrom(
+  store: LogStore, state: State, at: string,
+): Promise<Snapshot> {
   const snap: Snapshot = {
     upToSeqByDevice: highWaterMark(state),
     state: serialiseState(state),
@@ -161,6 +209,13 @@ export async function writeSnapshot(store: LogStore, at: string): Promise<Snapsh
   };
   await store.putSnapshot(snap);
   return snap;
+}
+
+/** Write a snapshot covering everything currently in the log, re-folding to get
+ *  it. Used by the tests and by any caller that does not already hold state;
+ *  the app itself uses `snapshotFrom`, which does not pay the fold twice. */
+export async function writeSnapshot(store: LogStore, at: string): Promise<Snapshot> {
+  return snapshotFrom(store, fold(await store.all()), at);
 }
 
 /** The startup path: snapshot + tail — VERIFIED, else a full replay.

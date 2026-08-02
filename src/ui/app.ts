@@ -789,6 +789,20 @@ export async function main(edition?: Edition): Promise<void> {
   // which fires while this function is still awaiting IndexedDB.
   document.body.dataset.ready = 'true';
 
+  // Cut a snapshot if the next cold start would otherwise replay too much
+  // (1.14.1, ADR-0063). AFTER `ready`, deliberately: this is housekeeping for
+  // the NEXT launch and must never be on the path to this one's first capture.
+  //
+  // Not awaited, and contained like everything else here — a store that refuses
+  // to hold a photograph costs a slower start next time, never a capture now.
+  // The flag is for the headless walk, which cannot otherwise tell "no snapshot
+  // was due" from "the write never ran".
+  void session.maintain()
+    .then((covered) => {
+      document.body.dataset.maintained = covered === null ? 'not-due' : String(covered);
+    })
+    .catch(() => { document.body.dataset.maintained = 'failed'; });
+
   // Registration now lives with the update prompt, because the two are one
   // question: the registration is how a newer version is noticed, and noticing it
   // without offering the copy was the gap Noah asked about. Contained there, for

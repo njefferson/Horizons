@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.14.1 — ITERATION
+
+*2026-08-02*
+
+- **Opening Quietkeep no longer rebuilds everything from the beginning.** Every launch, every reload, it replayed your whole history from the first thing you ever put in — and that got a little slower with every day you used it. It now keeps a photograph of where things stand and reads only what has happened since.
+- The photograph is written after the app is already on screen, and only when enough has happened to be worth it. It can never be in the way of putting something down.
+- **Nothing about your history changes.** The record is still every single thing you ever wrote. The app checks the photograph against that record on every start, and if the two ever disagreed it would throw the photograph away and read the record instead.
+- How much faster this makes it on your iPad has not been measured. This removes a known reason for it to be slow; it does not come with a number.
+
 ## 1.14.0 — CAPABILITY
 
 *2026-08-02*
