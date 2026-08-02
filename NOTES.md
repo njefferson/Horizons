@@ -441,6 +441,17 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-02 (Noah: "Promote to main")** — **`main` fast-forwarded
+  `601bae9 → 60a45c8`**, carrying **1.14.2** (every noun accounts for itself),
+  the pebble **correction**, and **1.15.0** (load, not work). Spine 199 watched
+  green on the exact head before the promote — all 21 steps, including the
+  headless walk and the rendered accessibility pass — and **Deploy 196** green
+  on `main` at the same sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
+
+
 - **2026-08-02 (Noah: "YOU FUCKING MADE IT" → "stop asking me for shit without
   reviewing the project files")** — **1.15.0 "Load, not work"** — the pebble
   consumer ADR-0014 described in the design phase, built at last.
