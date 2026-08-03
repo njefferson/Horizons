@@ -445,6 +445,15 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
+  `59644a4 → a796199`**, carrying **1.16.0** (a set with everything in it). Spine
+  206 watched green on the exact head before the promote — 22 steps, including
+  `sample:check` on its first CI run — and **Deploy 204** green on `main` at the
+  same sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
+
 - **2026-08-03 (Noah: "Promote to main and continue")** — **1.17.0 "The staff
   call"** — anchors, and **v1.5 closes**.
   · **ADR-0057 named three blockers and two were already answered in the code.**
