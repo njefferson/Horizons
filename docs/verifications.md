@@ -972,10 +972,45 @@ one remove — generating a correct file is not the same as a reminder arriving.
 ---
 
 ## V-15 · A promote is confirmed by the deploy run, never by reading production
-**Status: KNOWN LIMIT — recorded so it is not mistaken for a stronger claim**
+**Status: HALF CLOSED, 2026-08-03 — `staging` is now VERIFIED from Noah's own
+device; production is still unread**
 · raised 2026-07-29 with the 0.9.0 promote
-· re-tested 2026-08-03 in a fresh container and STILL DENIED; the cause is now
-  narrowed and the route to closing it has changed (see below)
+· re-tested 2026-08-03 in a fresh container and still denied to sessions; the
+  cause is narrowed and the route around it turned out to already exist
+
+**What closed the staging half, and it took no new code.** Noah sent the §7f
+diagnostic from his device on 2026-08-03. It reported:
+
+    Build: 1.18.0
+    Service worker cache: quietkeep-1.18.0
+
+That second line is **read from the live Cache Storage**, not printed from a
+compiled-in constant — `src/ui/about.ts:1647` calls `globalThis.caches?.keys()`
+and takes the `quietkeep-` entry. The cache is created by the service worker
+that the browser fetched over the network, and its name is the `CACHE` constant
+inside that fetched `sw.js`. So a real device, on the real network path, has now
+demonstrated that the deployed `sw.js` carries the released triplet — which is
+exactly the assertion this row said no session could make.
+
+**Stated precisely, because the distinction is the whole point of this file:**
+
+- **Proven:** the origin serving build 1.18.0 served a `sw.js` whose `CACHE` is
+  `quietkeep-1.18.0`, matching `staging`'s commit, at the moment the worker
+  installed on his device.
+- **Inferred, not read:** that the origin was `staging.quietkeep.pages.dev`. The
+  report does not name the host it was loaded from. 1.18.0 exists only on
+  `staging`, so the inference is sound — but it is an inference, and the report
+  should name its origin so the next one does not need one. That is a defect in
+  the diagnostic, logged as such.
+- **Still unproven:** production. `quietkeep.pages.dev` serves 1.17.4 and no
+  device report has been taken from it. The production half of V-15 is open.
+
+**Why this is worth more than the fetch the session wanted.** Doctrine §7f says
+to put the check where the device can run it. The instrument that answered this
+was already built, in 1.18.0, for a different purpose — and it answered a
+question the session had just spent its budget failing to answer from the
+sandbox. The lesson is not "build a probe"; it is **ask what the instrument you
+already shipped can already tell you** before designing a new one.
 
 Every promote in this repo has been reported as verified end-to-end. That is true
 of the *pipeline* and not of the *site*. The session cannot fetch
@@ -994,24 +1029,23 @@ host). So the chain a session can actually observe ends one step short:
   - How: `git`, locally
   - What it does NOT prove: that the **deployed** `sw.js` carries it
 
-**What would close it — and the right answer is no longer "ask Noah to go and
-look".** Doctrine §7f is explicit that when something cannot be verified from
-here, the move is to build the check into the diagnostic surface and let his
-device run it, not to record it unverified and not to send him to read a URL.
-His device can reach `quietkeep.pages.dev`; this session cannot. So the close
-for V-15 is a probe behind the version stamp that fetches `/sw.js` from the
-origin it is served from, reads the `CACHE` constant out of it, and prints that
-string next to the triplet the running build was compiled with. He presses one
-control and pastes back text.
+**What closes the production half.** The same instrument, pointed at production
+— a diagnostic taken on a device running `quietkeep.pages.dev`. It needs no new
+code and it is one paste. Note that `staging` and `main` are **different
+origins**, so a device sitting on staging can say nothing about production; the
+report has to come from the production one.
 
-That is strictly better evidence than the fetch this session wanted, because it
-comes from the real device on the real network path (§7f), and it answers the
-question the row actually asks — *does the deployed `sw.js` carry the released
-triplet* — rather than the weaker one a cache listing answers, which is *what
-did this device keep*. Both are worth printing; only the first closes V-15.
+**Three things the diagnostic should gain, all found by reading the first report
+against this row:**
 
-Until that exists, the honest fallback is unchanged and is Noah's: open the app
-and confirm the version stamp reads the expected triplet. One line either way.
+- **Name the origin.** `location.origin` in the device block. Without it the
+  reader of a report has to infer which site was loaded from the version number,
+  which works only while the two branches differ.
+- **List every cache, not the first match.** `caches.keys()` is already called;
+  the report prints one entry. Two caches on a device is the exact signature of
+  a half-finished update, and §7h.4 asks for which caches are held.
+- **Say whether a worker is waiting**, per §7h.4 — `registration.waiting != null`
+  and whether one controls the page.
 
 **Re-tested 2026-08-03, after Noah said "pages.dev has been allowed now" —
 STILL DENIED from this session, and the distinction matters.** Both hosts were

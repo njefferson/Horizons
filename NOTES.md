@@ -563,17 +563,29 @@ handed over (Doctrine §7).
   beside the compiled-in triplet — one press, pasted back as text, and better
   evidence than the fetch this session wanted. Not built here: 1.18.0 is
   awaiting Noah's pass and adding to `staging` would change what he is testing.
-  · **A real defect found on the way, and it is new.** The hub gained
-  `pwa-check.mjs` and Doctrine §7h *after* this repo last looked, so Quietkeep
-  had never been measured against them. It fails **four ways**: `public/sw.js`
-  calls `skipWaiting()` during install with no `message` listener, so a new
-  worker takes over under the open page — old markup, new modules, exactly the
-  mixed-app failure Intersecting Parallels shipped for twenty-two releases;
-  nothing ever says the words "new version" where a reader can see them; and
-  nothing reads `caches.keys()`, so the §7f diagnostic cannot say which copy the
-  device is holding. **Still true on `staging` at 1.18.0** (`skipWaiting()` at
-  `public/sw.js:26`). The cache names themselves are correct — `quietkeep-1.17.4`
-  on `main`, `quietkeep-1.18.0` on `staging`. Run it with
+  · **A real defect found on the way — TWO of it, not the four first reported.**
+  The hub gained `pwa-check.mjs` and Doctrine §7h *after* this repo last looked,
+  so Quietkeep had never been measured against them. The gate reported four
+  failures and **two of them were the gate's fault**, corrected in the hub the
+  same day (`0eab669` and the commits around it). What is REAL, and stands:
+  `public/sw.js` calls `skipWaiting()` inside its `install` listener
+  (`public/sw.js:26`) and there is **no `message` listener**, so a new worker
+  takes over under the open page — old markup, new modules, exactly the
+  mixed-app failure Intersecting Parallels shipped for twenty-two releases.
+  **Still true on `staging` at 1.18.0.** The odd part is that the *telling* is
+  already built and good — `mountUpdatePrompt` and `UPDATE_WORDS` in
+  `src/ui/update.ts` — so this app says "A newer version is ready" while the
+  worker has already stopped waiting. The words are right and the mechanism
+  underneath them is not.
+  · **What was NOT wrong, so nobody re-reports it:** the app does say the words
+  where a reader can see them, and the diagnostic DOES read the cache store, via
+  `globalThis.caches?.keys()` at `src/ui/about.ts:1647`. The gate missed the
+  second because optional chaining is not a literal `caches.keys()` — and Noah's
+  own diagnostic report is what disproved it, by printing a real cache name the
+  gate had just said nothing could read. §6: when a result looks absurd, suspect
+  the instrument.
+  · The cache names are correct — `quietkeep-1.17.4` on `main`,
+  `quietkeep-1.18.0` on `staging`. Re-run with
   `node ../noahjefferson/pwa-check.mjs --repo .`
   · **`.doctrine-sync` is absent and was deliberately NOT adopted here.** The
   gate is red on purpose: adopting asserts this repo has read the hub's doctrine
