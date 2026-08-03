@@ -481,6 +481,15 @@ decided by a session.**
   · **Item 42 is NOT closed.** The measurement that counts is still the iPad;
   this hardware is not that device. What changed is that the read path has a gate
   at all. ADR-0069.
+  · **Spine 213 green on the exact head** (`616f51c`). Not promoted.
+
+- **2026-08-03 (Noah: "Promote and continue")** — **`main` fast-forwarded
+  `a796199 → 8ece530`**, carrying **1.17.0** (the staff call — anchors, and v1.5
+  closed). Spine 210 watched green on the exact head before the promote, and
+  **Deploy 208** green on `main` at the same sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
 
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
   `59644a4 → a796199`**, carrying **1.16.0** (a set with everything in it). Spine
