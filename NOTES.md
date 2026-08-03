@@ -452,6 +452,22 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote to main and continue")** — **`main`
+  fast-forwarded `bf0e2cb → a281597`**, carrying **1.17.4 "The tail"**. Spine
+  224 watched green on `4240593` before the promote (`a281597` is that head plus
+  one NOTES commit), ancestry verified fast-forward-only immediately before the
+  push, the push then verified by READING `origin/main` rather than by reading
+  the push output (the 2026-08-02 lesson), and **Deploy 222** green on `main` at
+  the exact head afterwards — all 15 steps opened, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
+  · The "continue" half is **1.18.0 "When something is wrong"** — the diagnostic
+  report. Not a planner feature: `docs/data-constitution.md` has promised the
+  reader one since it was written and nothing built it, and Doctrine §7f now
+  requires one in every app. It is the instrument that makes the six outstanding
+  device checks reportable without a photograph.
+
 - **2026-08-03** — **1.17.4 "The tail"** — the seam audit's sixteen unverified
   findings, each VERIFIED against source while being fixed (they had no skeptic
   pass), each code fix pinned by a `seam-t*` test in `test/seam-audit.test.ts`.
