@@ -445,6 +445,16 @@ decided by a session.**
   **`CLOUDFLARE_API_KEY`** (the workflow accepts either that or `CLOUDFLARE_API_TOKEN` and
   logs which name it found). `main` → `quietkeep.pages.dev`, `staging` →
   `staging.quietkeep.pages.dev`. Both have deployed successfully from CI.
+- **No session has ever read production, and the 2026-08-03 attempt narrowed why.**
+  This remains true after re-testing in a fresh container following Noah's
+  `*.pages.dev` grant: every `pages.dev` host is still refused 403 at CONNECT,
+  including `noahjefferson.pages.dev`, while GitHub and the package registries
+  answer normally. The grant is not reaching sessions at all — it is not the
+  "policy binds at container start" theory, which a container thirty-nine seconds
+  old has now falsified. Full evidence with timestamps and per-host status codes
+  in [V-15](docs/verifications.md). **Do not spend another session re-testing
+  this**; the route to closing V-15 is now a probe in the §7f diagnostic that
+  runs on Noah's device, not a fetch from a session.
 - **`main` was promoted to troubleshoot, and it worked** (Noah, 2026-07-28: *"Promote to
   main to troubleshoot"*). Nothing would load on his iPad at the time, so the §7 pass could
   not happen first. The promote gave the Pages project its **first production deployment**,
@@ -528,6 +538,49 @@ handed over (Doctrine §7).
   · The definition at the top of this file now carries the correction, and so
   does ADR-0071. The 0.17.0 entry that first said it is annotated in place rather
   than rewritten.
+
+- **2026-08-03 (the next session, tasked with confirming `*.pages.dev` and
+  closing V-15)** — **V-15 does not close, and the reason is now narrowed
+  rather than merely repeated.** A fresh container was the previous session's
+  proposed test and it has now been run: this one booted at `19:42:51Z` and the
+  first denial landed at `19:43:30.676Z`, thirty-nine seconds later. **The
+  "policy binds at container start" theory is therefore falsified as a
+  sufficient explanation** — a brand-new session does not pick the grant up
+  either, so the grant is not reaching sessions at all. Five hosts were each
+  probed exactly once and all five refused `403 to CONNECT`: both Quietkeep
+  hosts, both Sync hosts, and **`noahjefferson.pages.dev`** — the hub's own
+  site, which rules out anything Quietkeep-specific. Meanwhile `api.github.com`
+  200, `registry.npmjs.org` 200, `raw.githubusercontent.com` 301,
+  `github.com` 400: the proxy is healthy and the network is not the problem
+  (Doctrine §15b requires that be measured per host, not asserted). Probing the
+  other four after the first refusal is §15b item 3 and it earned its keep —
+  reporting off the single denial would have missed that the hub is blocked too.
+  · **The route to closing V-15 has changed, and this is the durable part.**
+  Doctrine §7f says that when a session cannot verify something, the check goes
+  into the diagnostic and *his device* runs it. His device can reach
+  `quietkeep.pages.dev`; no session can. So the close is a probe behind the
+  version stamp that fetches `/sw.js`, reads its `CACHE` constant, and prints it
+  beside the compiled-in triplet — one press, pasted back as text, and better
+  evidence than the fetch this session wanted. Not built here: 1.18.0 is
+  awaiting Noah's pass and adding to `staging` would change what he is testing.
+  · **A real defect found on the way, and it is new.** The hub gained
+  `pwa-check.mjs` and Doctrine §7h *after* this repo last looked, so Quietkeep
+  had never been measured against them. It fails **four ways**: `public/sw.js`
+  calls `skipWaiting()` during install with no `message` listener, so a new
+  worker takes over under the open page — old markup, new modules, exactly the
+  mixed-app failure Intersecting Parallels shipped for twenty-two releases;
+  nothing ever says the words "new version" where a reader can see them; and
+  nothing reads `caches.keys()`, so the §7f diagnostic cannot say which copy the
+  device is holding. **Still true on `staging` at 1.18.0** (`skipWaiting()` at
+  `public/sw.js:26`). The cache names themselves are correct — `quietkeep-1.17.4`
+  on `main`, `quietkeep-1.18.0` on `staging`. Run it with
+  `node ../noahjefferson/pwa-check.mjs --repo .`
+  · **`.doctrine-sync` is absent and was deliberately NOT adopted here.** The
+  gate is red on purpose: adopting asserts this repo has read the hub's doctrine
+  and knows what it owes, and turning that green as a side errand — while the
+  §7h debt above was sitting unmeasured — is the false-confidence failure the
+  gate exists to prevent. `DOCTRINE.md` was read in full this session; `LESSONS.md`
+  was not. Adopt after the §7h audit, not before.
 
 - **2026-08-03 (Noah: "Pages.dev has been allowed now" → "hand off to another
   session")** — **the grant did not reach this session, and that is the finding.**

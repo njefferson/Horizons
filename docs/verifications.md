@@ -974,6 +974,8 @@ one remove — generating a correct file is not the same as a reminder arriving.
 ## V-15 · A promote is confirmed by the deploy run, never by reading production
 **Status: KNOWN LIMIT — recorded so it is not mistaken for a stronger claim**
 · raised 2026-07-29 with the 0.9.0 promote
+· re-tested 2026-08-03 in a fresh container and STILL DENIED; the cause is now
+  narrowed and the route to closing it has changed (see below)
 
 Every promote in this repo has been reported as verified end-to-end. That is true
 of the *pipeline* and not of the *site*. The session cannot fetch
@@ -992,10 +994,24 @@ host). So the chain a session can actually observe ends one step short:
   - How: `git`, locally
   - What it does NOT prove: that the **deployed** `sw.js` carries it
 
-**What would close it**, and only Noah can do either: read
-`quietkeep.pages.dev/sw.js` and confirm the cache name matches the released
-triplet, or simply open the app on the iPad and confirm the (i) panel shows the
-expected version. One line either way.
+**What would close it — and the right answer is no longer "ask Noah to go and
+look".** Doctrine §7f is explicit that when something cannot be verified from
+here, the move is to build the check into the diagnostic surface and let his
+device run it, not to record it unverified and not to send him to read a URL.
+His device can reach `quietkeep.pages.dev`; this session cannot. So the close
+for V-15 is a probe behind the version stamp that fetches `/sw.js` from the
+origin it is served from, reads the `CACHE` constant out of it, and prints that
+string next to the triplet the running build was compiled with. He presses one
+control and pastes back text.
+
+That is strictly better evidence than the fetch this session wanted, because it
+comes from the real device on the real network path (§7f), and it answers the
+question the row actually asks — *does the deployed `sw.js` carry the released
+triplet* — rather than the weaker one a cache listing answers, which is *what
+did this device keep*. Both are worth printing; only the first closes V-15.
+
+Until that exists, the honest fallback is unchanged and is Noah's: open the app
+and confirm the version stamp reads the expected triplet. One line either way.
 
 **Re-tested 2026-08-03, after Noah said "pages.dev has been allowed now" —
 STILL DENIED from this session, and the distinction matters.** Both hosts were
@@ -1009,13 +1025,47 @@ assumed: `api.github.com` answers 200 from here while `example.com` and
 `cloudflare.com` are refused identically to pages.dev. So this is not a
 Quietkeep-specific block and not a site failure.
 
-The likely explanation is that **a session's egress policy is bound when its
-container starts**, so a permission granted mid-session does not reach the
-session that is already running; a fresh session is the thing to try. Recorded
-here rather than left as "not tried", because the next session needs to know
-the difference between *nobody has attempted this* and *it was attempted after
-the grant and still refused*. The agent-proxy README is explicit that policy
-denials are to be reported and not retried, so it was not hammered.
+That session's explanation was that **a session's egress policy is bound when
+its container starts**, so a grant made mid-session cannot reach a session
+already running, and a fresh session was the thing to try.
+
+**Tried, 2026-08-03, in a fresh container — and that explanation is now
+falsified as a sufficient one.** This container booted at `19:42:51Z` (the
+repos were cloned into it at `19:42:58Z` and `19:43:01Z`) and the first denial
+was logged at `19:43:30.676Z` — thirty-nine seconds into the life of a brand
+new session. A container-start binding would have picked the grant up. It did
+not. So the grant is not reaching sessions at all, rather than merely failing
+to reach the one that was already running, and the next session should not
+spend its budget re-testing the container-age theory.
+
+**It is not per-project, and not per-branch either.** Every host was refused
+once each, at the gateway, logged by the proxy by name:
+
+- `quietkeep.pages.dev:443` — 403 to CONNECT, `19:43:30.676Z`
+- `staging.quietkeep.pages.dev:443` — 403 to CONNECT, `19:45:57.053Z`
+- `quietkeep-sync.pages.dev:443` — 403 to CONNECT, `19:45:57.852Z`
+- `staging.quietkeep-sync.pages.dev:443` — 403 to CONNECT, `19:45:58.199Z`
+- `noahjefferson.pages.dev:443` — 403 to CONNECT, `19:45:58.519Z`
+
+The hub's own site is in that list. Whatever the grant did, it did not put the
+`pages.dev` space on this session's allowlist for any project Noah owns.
+
+**And the network is emphatically not the problem** — Doctrine §15b requires
+this be measured per host and stated with codes rather than asserted, so it
+was: `api.github.com` returns 200, `registry.npmjs.org` returns 200,
+`raw.githubusercontent.com` returns 301, `github.com` returns 400. Status codes
+coming back mean the proxy is healthy and passing traffic. `example.com` is
+refused identically to `pages.dev`, which places this as **deny-by-default with
+an allowlist that GitHub and the package registries are on and the general web
+is not**. That is a policy decision about hosts, not a site failure and not a
+connectivity failure.
+
+Each host was probed exactly once. Doctrine §15b item 3 is why the other four
+were probed at all — a CONNECT rejection is a fact about one host at one moment,
+separate allowlist entries answer separately, and reporting "pages.dev is
+blocked" off a single refusal would have missed that the hub is blocked too.
+The agent-proxy README's rule against retrying a policy denial binds the
+*denied host*, and no host here was tried twice.
 
 **Why it is recorded rather than shrugged off:** the wording "verified end-to-end"
 has appeared in this repo's log for five promotes, and it overstates what was
