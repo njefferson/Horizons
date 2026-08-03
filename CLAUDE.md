@@ -75,6 +75,13 @@ read it **before** writing any UI. Pressure and decay never ride on hue; the
 contrast gate is computed in CI and exits non-zero, and new foreground/background
 pairs are added to the gate in the same commit that introduces them.
 
+## Anything he pastes is a code block (Doctrine §2)
+Handoff prompts, commands, configs, a message to send on — if the next thing
+that happens to it is *copy*, it ships as **one fenced code block**, not prose,
+not a blockquote, not styled markdown. Rendered formatting does not survive
+being copied back out, and selecting prose by hand on an iPad is a fight. The
+test is not "is it readable" but "what does he do with it next".
+
 ## No tables, anywhere (Doctrine §2)
 Markdown tables do not render on Noah's iPad — they arrive as pipes and dashes
 and the content is lost. **Never put one in anything he reads**: chat, commit
