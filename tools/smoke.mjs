@@ -2319,6 +2319,76 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('.note-older').count(), 1,
     'older releases are one tap away, not removed');
 
+  // --- the §7e baseline, and §7f's report (1.18.0, ADR-0071) ---------------
+  //
+  // Doctrine §7e ends "Make it a gate", in those words, because prose in that
+  // file did not stop any of the omissions that produced the section. So the
+  // baseline is asserted rather than trusted: the information surface exists,
+  // its name says what it opens, and the two items this app was missing are
+  // there.
+  console.log('\nThe information surface carries what §7e requires');
+  const infoName = await tpage.evaluate(() => {
+    const b = document.querySelector('#open-about');
+    return b ? (b.getAttribute('aria-label') || b.textContent || '').trim() : null;
+  });
+  is(infoName !== null && infoName.length > 1, true,
+    `the (i) control has an accessible name that says what it opens ("${infoName}")`);
+  is(await tpage.locator('#patch-notes .note-head').count() > 0, true,
+    '§7e item 4: what changed is behind it');
+  const notText = await tpage.evaluate(() =>
+    document.body.textContent.includes('not a medical'));
+  is(notText, true, '§7e item 2: what it is NOT is stated where a reader is');
+
+  // §7f: the report exists, is text, and is generated on request rather than
+  // sitting there. "Shown to you in full before it goes anywhere" is the
+  // constitution's own promise and this is the assertion of it.
+  is(await tpage.locator('#diagnostic-text').isHidden(), true,
+    'the report is not there until it is asked for');
+  await tpage.click('#diagnostic-show');
+  await tpage.waitForSelector('#diagnostic-text:not([hidden])');
+  const diag = await tpage.locator('#diagnostic-text').textContent() || '';
+  is(diag.length > 400, true, `the report is a real report (${diag.length} chars)`);
+  is(/WHAT IS WRONG/.test(diag), true, '§7f: it leads with the diagnosis');
+  is(/WHAT THIS REPORT DOES NOT CONTAIN/.test(diag), true,
+    'and states what it withholds, in the file itself');
+
+  // THE ONE THAT MATTERS. The report is the only artefact in this app designed
+  // to be sent to another person, in an app whose whole promise is that nothing
+  // readable leaves the device. The unit test sweeps a synthetic store; this
+  // sweeps the REAL one this walk has spent two thousand lines filling with
+  // titles, a person, notes and a sealed journal entry.
+  // Swept against what the READER can see — every card title on the surfaces
+  // behind this panel — rather than against a state hook, because that is the
+  // same set of words they would recognise as theirs in a file they sent.
+  const leaked = await tpage.evaluate((text) => {
+    const titles = [...document.querySelectorAll('#cards .card-title')]
+      .map(el => el.textContent.trim())
+      .filter(t => t.length > 4 && t !== '(untitled)');
+    return { checked: titles.length, hits: titles.filter(t => text.includes(t)) };
+  }, diag);
+  is(leaked.checked > 0, true,
+    `there really are titles to leak (${leaked.checked} on the surfaces) — a sweep over nothing proves nothing`);
+  is(leaked.hits.length, 0,
+    `nothing the reader wrote is in the report they are about to send${leaked.hits.length ? ` — leaked: ${leaked.hits.slice(0, 3).join(' | ')}` : ''}`);
+
+  // Taking one is not taking a backup (the 1.16.0 trap): it must not move
+  // "Last copy", because somebody reads that row precisely when deciding
+  // whether they are covered.
+  const copyRowBefore = await tpage.evaluate(() => {
+    const dts = [...document.querySelectorAll('#storage-body dt')];
+    const i = dts.findIndex(d => d.textContent.trim() === 'Last copy');
+    return i < 0 ? null : document.querySelectorAll('#storage-body dd')[i].textContent;
+  });
+  await tpage.click('#diagnostic-show');
+  await tpage.waitForSelector('#diagnostic-text:not([hidden])');
+  const copyRowAfter = await tpage.evaluate(() => {
+    const dts = [...document.querySelectorAll('#storage-body dt')];
+    const i = dts.findIndex(d => d.textContent.trim() === 'Last copy');
+    return i < 0 ? null : document.querySelectorAll('#storage-body dd')[i].textContent;
+  });
+  is(copyRowAfter, copyRowBefore,
+    'taking a diagnostic did not claim a backup that does not exist');
+
   // The security explanation Noah asked for: its own place, collapsed, and
   // costing nothing to anybody who never opens it. Checked in the BUILT app
   // because the passages are unit-tested but their reaching the screen is not.

@@ -240,6 +240,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0070](0070-membership.md)**
   - Decision: One kind × surface table with a written reason per surface, checked both ways over the set-of-everything
   - Status: Accepted
+- **[0071](0071-the-diagnostic-report.md)**
+  - Decision: A text diagnostic that carries SHAPE and never content, proved by two differently-worded stores producing identical reports
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

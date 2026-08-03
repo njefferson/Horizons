@@ -937,11 +937,45 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 /* The build, on the main screen. `--ink-soft` on `--bg` is an already-registered
  * pair, so this adds no new colour to the contrast gate — a version stamp is not
  * a reason to introduce a shade nobody has measured. */
+/* It is a <button> since 1.18.0 (it opens the diagnostic, §7f) and it must not
+ * LOOK like one: it is a stamp you can press, not a call to action in the
+ * footer. So the button chrome is stripped and only the target size is kept —
+ * the whole reason it was safe to make this the door is that it costs the
+ * chrome nothing, which stops being true the moment it grows a border. */
 .build {
   margin: 0.25rem 0 0;
   color: var(--ink-soft);
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
+  background: none;
+  border: 0;
+  padding: 0.5rem 0.25rem;
+  min-height: var(--target);
+  font-family: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* The diagnostic report. Bounded on purpose: `#about-body` has a measured
+ * height budget the headless walk asserts (under 9,000px), and a report that
+ * grew the panel by its own length would be the 1.17.3 patch-notes overflow
+ * again. It scrolls inside itself instead. `--ink` on `--surface` is already a
+ * registered pair, so this adds nothing to the contrast gate. */
+.diagnostic-text {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-height: 22rem;
+  overflow: auto;
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+  background: var(--surface);
+  border-radius: var(--radius);
+  color: var(--ink);
+  user-select: all;              /* select the whole report, not a word of it */
 }
 
 .foot a {

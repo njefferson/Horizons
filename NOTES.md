@@ -452,6 +452,55 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03** — **1.18.0 (CAPABILITY) "When something is wrong"** — the
+  diagnostic report. **Not a planner feature**: `docs/data-constitution.md` had
+  promised the reader one since it was written and nothing built it (the 1.9.1
+  class, and the worst variety of it — a promise about what happens when
+  something goes wrong), and Doctrine §7f now requires one in every app. Every
+  outstanding verification here is Noah's, on the iPad; this is what makes them
+  reportable without a photograph.
+  · **The design is one rule: SHAPE, never CONTENT.** Other apps' diagnostics
+  worry about location; this app's promise is that nothing readable leaves the
+  device, and the report is the one artefact designed to leave. Counts, kinds,
+  clock kinds, versions, storage numbers and states — never a title, a name, a
+  note or plaintext. The `reentry.greeted` correction from 1.17.4 as a design
+  rule: WHETHER and HOW MANY, never WHICH.
+  · **The obvious test was not enough, and the failure taught the right one.** A
+  substring sweep red-flagged a node titled *"the numbers"* colliding with the
+  report's own sentence "diagnosed from the numbers above" — loud, and proving
+  nothing. An empty-store differential over-fires the other way, flagging the
+  app's own closed vocabulary. **The property that works: two stores of the same
+  shape with entirely different words must produce byte-identical reports.**
+  Nothing to allowlist, nothing to keep in step with the prose. Both forms kept
+  — the sweep over the real store in the walk, the equality in the unit tests.
+  · **No opt-in to include content**, stated rather than half-built: no
+  diagnostic question a title would answer, and the export already IS the
+  reproduction case (the constitution says so in the same paragraph).
+  · **Records no event** — `deliverGeneratedSet`'s reason exactly, and a test
+  plus a smoke assertion pin that "Last copy" does not move.
+  · **§7e's baseline is a gate now**, because that clause ends "Make it a gate"
+  in those words: the ⓘ control's accessible name, patch notes present, and
+  *what it is NOT* — which had lived only in the thesis, where a reader of the
+  app never goes.
+  · **Two gate defects found by building this, both fixed here.** The panel's
+  9,000px budget went red at 9,345 (baseline was 8,813 — only 187px of
+  headroom), so the 1.18.0 notes were written short and both new paragraphs
+  tightened; and the a11y focus-ring walk was **order-dependent** — `blur()`
+  does not reset Chromium's sequential-focus starting point, so it resumed from
+  the previous audit's focus and had to wrap the whole surface. Four new
+  controls pushed two UNRELATED states past the budget, reporting
+  "#journal-write is not keyboard-focusable" about a button that plainly is.
+  Fixed by focusing the open dialog first, then **verified by planting an
+  unreachable control and watching it go red in both themes** — the hub's own
+  rule for when you change how a check measures.
+  · **A mistake worth recording: `git checkout public/index.html` to remove
+  that planted fault discarded every uncommitted change in the file** — the
+  whole release's markup. Restored from the edits, sweep re-run clean. Undo a
+  planted fault with a saved copy, never with a checkout of a file that holds
+  unmerged work.
+  · 953 unit tests, the full walk, a11y both themes, every static gate. Spine's
+  run on the exact head is recorded in its own entry above. **Not promoted.**
+
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main`
   fast-forwarded `bf0e2cb → a281597`**, carrying **1.17.4 "The tail"**. Spine
   224 watched green on `4240593` before the promote (`a281597` is that head plus

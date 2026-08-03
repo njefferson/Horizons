@@ -1043,3 +1043,40 @@ the rendered gate in this same commit.
   giving — the detail sheet's no-clobber rule, applied to a select.
 - **No new colour pair.** Everything reuses tokens measured since B-08; the six
   new selectors joined the contrast registry in this same commit.
+
+### B-37 · The diagnostic report (1.18.0)
+
+- **The build stamp became a button and did NOT become button-shaped.** It is a
+  stamp you can press, not a call to action in the footer: the chrome is
+  stripped to an underline, and only the 44px target floor and the padding are
+  added. That restraint is load-bearing rather than cosmetic — §7e's rule is
+  that the information surface must never cost the app height, and the whole
+  reason the footer was safe to use as the door is that it was already there.
+- **It still shows the build when nothing else works.** It was a diagnostic
+  before it was a control, and the comment beside it has said since 1.7.x that a
+  diagnostic which disappears in the state that needs it is the wrong way round.
+  Making it a button did not put it inside anything that can fail.
+- **The report is a `<pre>` with `tabindex="0"`.** It scrolls inside itself
+  (`max-height: 22rem`), and a scrollable region a keyboard cannot reach is
+  content a keyboard user cannot read. `user-select: all` so one gesture takes
+  the whole report rather than a word of it — the `.key-text` precedent from
+  pairing, for the same reason: this is text whose value is being complete.
+- **Copy has a stated fallback rather than a silent failure.** When the
+  clipboard API refuses — which it does, in more browsers than one would like —
+  the note says so and points at the selectable text, because the text is always
+  there. A control that fails quietly on the surface people reach for *after
+  something has already gone wrong* is the worst place in the app for it.
+- **Monospace at 0.8125rem is the smallest type in the app**, so the five new
+  selectors joined the contrast registry in this same commit rather than being
+  assumed to inherit a measured pair. Measured at 15.73:1 light and 13.28:1
+  dark, on `--surface`, which adds no new colour.
+- **The focus-ring check itself was found to be order-dependent** while this was
+  built, and fixed here: `blur()` does not reset Chromium's sequential-focus
+  starting point, so the Tab walk resumed from wherever the previous audit left
+  focus and had to wrap the entire surface to reach anything behind it. Four new
+  controls pushed two *unrelated* states past the 60-press budget, reporting
+  "#journal-write is not keyboard-focusable" about a button that plainly is. The
+  walk now focuses the open dialog first, so it is bounded by the surface's own
+  size rather than by audit order — and the repair was verified the way the hub's
+  own lesson requires: an unreachable control was planted, the gate went red in
+  both themes, and only then was the green believed.

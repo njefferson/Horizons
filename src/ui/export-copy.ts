@@ -94,6 +94,31 @@ export async function deliverGeneratedSet(
 }
 
 /**
+ * The diagnostic report as a text file (1.18.0, §7f, ADR-0071).
+ *
+ * **Records nothing, for the `deliverGeneratedSet` reason above** — this file
+ * contains no data of yours at all, only counts, so writing `export.written`
+ * would move "Last copy" and tell somebody they had a backup they do not have.
+ * A test pins that `lastCopy` is unmoved after taking one.
+ *
+ * `text/plain`, so it opens in anything and can be pasted into a message
+ * without a reader having to know what a `.json` is.
+ */
+export async function deliverDiagnostic(
+  session: Session, text: string, at: string,
+): Promise<void> {
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = exportFilename('diagnostic', at, false, 'txt', session.zone);
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
+}
+
+/**
  * A READING COPY of one range: these things and their history, verbatim
  * (1.5.0). Deliberately NOT an `ExportFile` and not importable — a range's
  * events in isolation cannot carry the coverage law 1 requires (the clocks

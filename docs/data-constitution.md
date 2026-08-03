@@ -146,6 +146,17 @@ it — nothing transmits by itself. Because the log *is* the history, an exporte
 segment is a complete reproduction case, so we never have to ask you to remember
 what you did.
 
+**Built in 1.18.0** ([ADR-0071](adr/0071-the-diagnostic-report.md)), under "If
+something is wrong" in the ⓘ panel and behind the build stamp in the footer.
+This paragraph was written long before it existed, and saying so is the point:
+a promise the product makes and does not keep is a defect, and this one sat
+unbuilt while the paragraph read as though it were true.
+
+**The report contains nothing you wrote** — no titles, no names, no notes, no
+journal text, only counts and states. There is no setting to change that. If a
+specific problem needs the actual data, the export named above is the
+reproduction case and it stays your decision to send.
+
 ---
 
 ## AI and consent

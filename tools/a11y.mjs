@@ -287,6 +287,12 @@ const REGISTRY = {
   // The Not Now ledger, open (1.8.0, ADR-0056): the trash view's species —
   // the fact line is the quietest text and it is the row's whole content.
   'ledger open': ['#notnow-open', '#notnow-total', '#notnow-list .trash-row', '.trash-when'],
+  // The diagnostic report, taken (1.18.0, §7f). Monospace at 0.8125rem is the
+  // smallest type in the app, and it is text somebody reads carefully before
+  // sending it to another person — so it is exactly the wrong place to trust
+  // that a registered pair "probably" holds. The controls are audited with it.
+  'diagnostic taken': ['#diagnostic-text', '#diagnostic-note',
+    '#diagnostic-show', '#diagnostic-copy', '#diagnostic-save'],
   // The sheet once something IS declined: the standing words and the way back.
   'detail sheet, declined': ['#detail-declined-words', '#detail-carry'],
   // The sheet when a request slot is set: the park button names the real day.
@@ -541,7 +547,21 @@ async function auditFocusRings(page, stateName, theme, selectors) {
   // it, and the walk declaring it unreachable at 40 was the budget lying, not
   // the sheet failing. 60 covers today's worst case with headroom; a control
   // genuinely beyond that is a real finding.
-  await page.evaluate(() => (document.activeElement)?.blur?.());
+  // `blur()` alone does NOT reset the sequential-focus starting point in
+  // Chromium: the next Tab resumes from wherever focus last was, so the walk
+  // had to WRAP the whole surface to reach anything behind it. That made the
+  // budget a function of where the previous audit happened to leave focus —
+  // and 1.18.0's four new controls pushed two states over it, reporting
+  // "#journal-write is not keyboard-focusable" about a button that plainly is.
+  //
+  // Focusing the open dialog itself puts the starting point at the top of that
+  // surface, so the walk is deterministic and bounded by the surface's own
+  // size rather than by audit order.
+  await page.evaluate(() => {
+    document.activeElement?.blur?.();
+    const dlg = document.querySelector('dialog[open]');
+    if (dlg) { dlg.setAttribute('tabindex', '-1'); dlg.focus(); }
+  });
   for (let i = 0; i < 60 && remaining.size > 0; i++) {
     await page.keyboard.press('Tab');
     const hit = await page.evaluate((sels) => {
@@ -1482,6 +1502,21 @@ try {
     await auditContrast(page, 'ledger open', theme);
     await auditAxe(page, 'ledger open', theme);
     await auditTargets(page, 'ledger open', theme);
+    // The diagnostic (1.18.0, §7f). Driven, not assumed: the report only
+    // exists once somebody asks for it, so a state registered without taking
+    // one would match nothing and pass for the wrong reason.
+    //
+    // No group toggle here — `expandGroups()` above has already opened every
+    // group, and clicking the About toggle CLOSED it, which is how the first
+    // version of this block timed out on a button it could see but not reach.
+    await page.click('#diagnostic-show');
+    await page.waitForSelector('#diagnostic-text:not([hidden])');
+    await page.click('#diagnostic-copy');
+    await page.waitForSelector('#diagnostic-note:not([hidden])');
+    await auditContrast(page, 'diagnostic taken', theme);
+    await auditAxe(page, 'diagnostic taken', theme);
+    await auditTargets(page, 'diagnostic taken', theme);
+    await auditFocusRings(page, 'diagnostic taken', theme, ['#diagnostic-show', '#diagnostic-copy']);
     // The journal's three states, walked in the order a person meets them.
     await page.click('#journal-open');
     await page.waitForSelector('#journal-view:not([hidden])');

@@ -905,7 +905,15 @@
        which build it was — and that is precisely how a session ends up
        diagnosing a feature the reader's device does not have yet. Discrete, but
        present in every screenshot without opening anything. -->
-  <p class="build" id="build-version" aria-label="Build"></p>
+  <!-- The stamp is the DOOR to the diagnostic (1.18.0, §7f: "the version stamp
+       is a good home"). It was already here and already in every screenshot, so
+       making it the control costs the chrome nothing — §7e warns that one 44px
+       button added to a header cost another app 51px of height, and the footer
+       is measured before and after in the a11y pass. It still SHOWS the build
+       when the panel behind it cannot open: a diagnostic that disappears in the
+       state that needs it is the wrong way round. -->
+  <button class="build" id="build-version" type="button"
+          aria-label="Build — open the diagnostic report"></button>
 </footer>
 
 <!-- The walkthrough (src/ui/tour.ts). A calm, skippable, replayable first-run
@@ -983,6 +991,18 @@
     planner that lives on your devices: no account, no sign-in, and nothing
     readable ever leaves them &mdash; what your devices trade is sealed with a
     key only they hold.
+  </p>
+
+  <!-- §7e item 2: the limits, stated as plainly as the capabilities, WHERE A
+       READER IS. They existed only in the thesis (docs/planning-for-humans.md),
+       which a person using the app never opens. Short on purpose — the panel
+       has a measured height budget (smoke asserts #about-body under 9,000px)
+       and 1.17.3 already blew it once. -->
+  <h3 class="about-section">What it is not</h3>
+  <p class="about-p">
+    It is <strong>not a medical or therapeutic tool</strong>, and nothing in it
+    is advice. It never scores you. It cannot reach you on its own, so reminders
+    go through your calendar. It holds only what you put in.
   </p>
 
   <h3 class="about-section">How to use it</h3>
@@ -1590,6 +1610,26 @@
   <div id="group-about" hidden>
   <h3 class="about-section">What&rsquo;s new</h3>
   <div id="patch-notes"></div>
+
+  <!-- §7f: ask for the diagnostic, never for a screenshot. The reader's other
+       door to this is the build stamp in the footer, which is where §7f says a
+       version stamp belongs; this is the (i) panel's listing of it, required by
+       §7e item 6. Kept to a heading, a sentence and controls — the report text
+       itself is populated on request into the bounded region below, never as
+       inline prose, because #about-body has a 9,000px budget the walk asserts. -->
+  <h3 class="about-section">If something is wrong</h3>
+  <p class="about-p">
+    Quietkeep can write out what it knows about itself.
+    <strong>It contains nothing you wrote</strong> &mdash; only counts. Read it
+    before you send it; nothing goes anywhere on its own.
+  </p>
+  <div class="about-actions">
+    <button id="diagnostic-show" type="button" class="ghost">Show me the report</button>
+    <button id="diagnostic-copy" type="button" class="ghost" hidden>Copy it</button>
+    <button id="diagnostic-save" type="button" class="ghost" hidden>Save it as a file</button>
+  </div>
+  <p id="diagnostic-note" class="about-p" hidden></p>
+  <pre id="diagnostic-text" class="diagnostic-text" tabindex="0" hidden></pre>
 
   <h3 class="about-section">Part of a family of free apps</h3>
   <p class="about-p">

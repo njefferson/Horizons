@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.18.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-03',
+    notes: [
+      '**If something goes wrong, Quietkeep can now tell you what it knows.** Under “If something is wrong” in the ⓘ panel, it writes out a report you can read, copy or save: what it is holding, what state this device is in, and anything it can see that looks wrong.',
+      '**It contains nothing you wrote** — no titles, no names, no notes, no journal text, only counts. That is checked on every build, by generating the report over two planners that hold the same shapes under completely different names and requiring the two reports to come out identical.',
+      'The build number at the bottom of the screen opens it. Nothing is ever sent anywhere on its own; you read it first, and you decide.',
+      '**Also: what Quietkeep is NOT** now sits beside what it is — it is not a medical or therapeutic tool, it does not score you, and it cannot reach you on its own.',
+    ],
+  },
+  {
     triplet: '1.17.4',
     kind: 'ITERATION',
     date: '2026-08-03',

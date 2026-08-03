@@ -26,6 +26,7 @@ import type { NodeState } from '../fold.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
+import { diagnosticReport, type DeviceReading } from '../diagnostic.ts';
 import type { Session } from './session.ts';
 import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
 import { bigSampleEvents, bigSampleSummary, bigSampleWords } from '../big-sample.ts';
@@ -33,7 +34,7 @@ import { CONFIRM_WORD, clearEvents, confirmMatches, eraseEverything, purgeCount,
 import { KEY_KV } from '../sync-keys.ts';
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
-import { deliverCopy, deliverGeneratedSet } from './export-copy.ts';
+import { deliverCopy, deliverDiagnostic, deliverGeneratedSet } from './export-copy.ts';
 import { eventWords, isCure } from '../log-words.ts';
 import { localDayKey, recordDayWords } from '../time.ts';
 import { TODAY_MODULE, todayIsOn } from '../composed.ts';
@@ -94,6 +95,17 @@ export async function mountAbout(
    *  after "off" is the panel lying about what it just did. */
   onChange?: () => void,
 ): Promise<void> {
+  /**
+   * How many journal entries would not decrypt at the last unlock — for the
+   * diagnostic (1.18.0).
+   *
+   * **Null means "not checked", which is NOT zero**, and the two must never
+   * collapse: only the journal surface holds the key, so an unset or locked
+   * journal has simply not been asked. Reporting zero there would send somebody
+   * looking somewhere else for a problem that is sitting unexamined.
+   */
+  let journalUnreadable: number | null = null;
+
   const dialog = document.querySelector<HTMLDialogElement>('#about');
   const open = document.querySelector<HTMLButtonElement>('#open-about');
   const intro = document.querySelector<HTMLElement>('#about-intro');
@@ -1169,6 +1181,11 @@ export async function mountAbout(
           return null;
         }
       }));
+      // Counted for the diagnostic (1.18.0). This is the ONE place in the app
+      // that can know it — the key lives here and nowhere else — and an entry
+      // that will not open is exactly the kind of thing a person cannot
+      // describe in a message but the report can state precisely.
+      journalUnreadable = rows.filter(r => r === null).length;
       jList.replaceChildren(...rows.filter(Boolean).map(r => {
         const li = document.createElement('li');
         const day = document.createElement('span');
@@ -1604,7 +1621,119 @@ export async function mountAbout(
     });
   }
 
+  // --- the diagnostic report (1.18.0, §7f, ADR-0071) -----------------------
+  //
+  // Gathered HERE and shaped in `src/diagnostic.ts`, which is pure and cannot
+  // read a browser: everything device-shaped is looked up once, at the moment
+  // the reader asks, and handed over as arguments. Nothing is painted at mount
+  // — a report is a snapshot of NOW, and one painted at startup would describe
+  // the app as it was when it launched (the paintCalendar lesson, restated).
+  {
+    const showBtn = document.querySelector<HTMLButtonElement>('#diagnostic-show');
+    const copyBtn = document.querySelector<HTMLButtonElement>('#diagnostic-copy');
+    const saveBtn = document.querySelector<HTMLButtonElement>('#diagnostic-save');
+    const out = document.querySelector<HTMLElement>('#diagnostic-text');
+    const dnote = document.querySelector<HTMLElement>('#diagnostic-note');
+
+    /** Everything the pure module cannot find out for itself. */
+    const reading = async (): Promise<DeviceReading> => {
+      const r = await read();
+      // The cache name proves which build is actually being SERVED, which is a
+      // different fact from the one the version stamp shows — a device running
+      // a stale worker reports the new triplet and the old code.
+      let cache: string | null = null;
+      try {
+        const names = await globalThis.caches?.keys();
+        cache = names?.find(k => k.startsWith('quietkeep-')) ?? null;
+      } catch { /* no Cache API, or a browser refusing it — 'not answering' */ }
+      // Asked of the store, never of the sync module: this file ships in BOTH
+      // editions and the default one does not contain that module (ADR-0036).
+      let paired = false;
+      try { paired = typeof (await session.store.getKv<string>(KEY_KV)) === 'string'; } catch { /* not paired */ }
+      return {
+        triplet: CURRENT.triplet,
+        edition: editionOf(globalThis.location?.hostname ?? ''),
+        cache,
+        device: session.device,
+        zone: session.zone,
+        installed: globalThis.matchMedia?.('(display-mode: standalone)').matches === true
+          || (globalThis.navigator as { standalone?: boolean }).standalone === true,
+        storageSupported: r.supported,
+        persisted: r.persisted,
+        quotaMb: r.quotaMb,
+        usageMb: r.usageMb,
+        paired,
+        // Null, not zero. Only the journal surface holds the key, and "we did
+        // not look" is a different fact from "we looked and they all opened" —
+        // reporting the second when the first is true is how a report sends
+        // somebody hunting in the wrong place.
+        unreadableEntries: journalUnreadable,
+      };
+    };
+
+    let text = '';
+    const paint = async (): Promise<void> => {
+      const log = await session.store.all();
+      text = diagnosticReport(session.state(), log, await reading(), new Date().toISOString());
+      if (out) { out.textContent = text; out.hidden = false; }
+      if (copyBtn) copyBtn.hidden = false;
+      if (saveBtn) saveBtn.hidden = false;
+      if (showBtn) showBtn.textContent = 'Take it again';
+    };
+
+    showBtn?.addEventListener('click', () => {
+      void paint().catch((err: Error) => {
+        // A diagnostic that cannot say why it failed is the one thing this
+        // control may never be.
+        if (dnote) { dnote.hidden = false; dnote.textContent = `The report could not be built — ${err.message}`; }
+      });
+    });
+
+    copyBtn?.addEventListener('click', () => {
+      void (async () => {
+        if (!dnote) return;
+        dnote.hidden = false;
+        try {
+          await navigator.clipboard.writeText(text);
+          dnote.textContent = 'Copied. Paste it wherever you are reporting the problem.';
+        } catch {
+          // Selectable text is the fallback and it is always there, which is
+          // why the report is a <pre> and not a canvas or a set of rows.
+          dnote.textContent = 'This browser would not let the app copy for you — select the text below and copy it yourself.';
+        }
+      })();
+    });
+
+    saveBtn?.addEventListener('click', () => {
+      void (async () => {
+        if (!dnote) return;
+        dnote.hidden = false;
+        try {
+          // Records NOTHING: no data of yours is in it, so moving "Last copy"
+          // would claim a backup that does not exist (1.16.0's trap).
+          await deliverDiagnostic(session, text, new Date().toISOString());
+          dnote.textContent = 'Saved. It is a plain text file — open it and read it before you send it.';
+        } catch (err) {
+          dnote.textContent = `That file could not be saved — ${(err as Error).message}`;
+        }
+      })();
+    });
+  }
+
   open.addEventListener('click', () => show(false));
+
+  // The build stamp in the footer is the diagnostic's other door (§7f: "the
+  // version stamp is a good home"). Same shape as `#restore-go` below: open the
+  // panel, unfold the group through its own toggle so the choice is remembered
+  // the way every other unfold is, then scroll and focus.
+  document.querySelector<HTMLButtonElement>('#build-version')?.addEventListener('click', () => {
+    show(false);
+    const toggle = document.querySelector<HTMLButtonElement>('#group-about-open');
+    if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
+    const btn = document.querySelector<HTMLButtonElement>('#diagnostic-show');
+    btn?.scrollIntoView({ block: 'center' });
+    btn?.focus();
+  });
 
   // The way back, from the empty screen (1.14.0, ADR-0062).
   //
