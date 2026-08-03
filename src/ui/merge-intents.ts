@@ -24,6 +24,7 @@ import { wouldCycle } from '../dependencies.ts';
 import { choosable } from '../composed.ts';
 import { localDayKey } from '../time.ts';
 import { heldNodes } from '../gate.ts';
+import { standingDecline } from '../requests.ts';
 import type { StampContext } from './session.ts';
 
 const base = (ctx: StampContext, kind: string, node: string | null, payload: unknown): AppEvent => ({
@@ -134,6 +135,15 @@ export const CARRY_FIELDS: Record<string, string> = {
   note: 'copied when the survivor has none, joined when both speak',
 };
 
+/** The source has a clock a fold would actually CARRY — `CARRY_CLOCKS` minus
+ *  the standing decline's park, which `mergePlan` deliberately never carries
+ *  (it IS the decline, not a date about the work). `canHold` counted that park
+ *  until 1.17.4, so a source whose only clock was its decline's park had every
+ *  Menu and demand-free target withheld — legal folds the gate would have
+ *  accepted, refused by the picker alone. One exclusion, asked by both. */
+const bringsAClock = (source: NodeState): boolean =>
+  CARRY_CLOCKS.some(k => source.clocks[k] && !(k === 'park' && standingDecline(source) !== null));
+
 /**
  * Can this target hold what the source brings across?
  *
@@ -144,7 +154,7 @@ export const CARRY_FIELDS: Record<string, string> = {
  * time, because a sheet can sit open while the world moves.
  */
 export const canHold = (target: NodeState, source: NodeState): boolean =>
-  !CARRY_CLOCKS.some(k => source.clocks[k])
+  !bringsAClock(source)
   || (target.onMenu === null && !(DEMAND_FREE_KINDS as readonly string[]).includes(target.kind));
 
 /**
@@ -232,7 +242,9 @@ export function mergePlan(
     // work went quiet with nothing on any surface saying why (1.9.2). The
     // decline itself is preserved by the ledger reading through the fold.
     // An ordinary park — a real "come back to this on Thursday" — still comes.
-    if (k === 'park' && source.notNow !== null) continue;
+    // `standingDecline`, the same predicate `bringsAClock` asks (1.17.4), so
+    // the picker and the carry cannot disagree about which park this is.
+    if (k === 'park' && standingDecline(source) !== null) continue;
     if (k === 'park') {
       out.push(base(ctx, 'park.set', target.id, { returnAt: c.at, reason: 'merge:carried' }));
     } else if (k === 'suspense') {

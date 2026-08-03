@@ -20,6 +20,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { heldGroups } from './held.ts';
+import { standingDecline } from './requests.ts';
 import { localDayKey, isValidIso } from './time.ts';
 
 /**
@@ -150,7 +151,7 @@ export const CALENDAR_KINDS: ReadonlySet<string> = new Set(['due', 'start', 'sus
  *   ledger exists to remove — about the very thing you said no to.
  */
 export const exportsToCalendar = (n: NodeState): boolean =>
-  n.kind !== 'bother' && !n.notNow;
+  n.kind !== 'bother' && standingDecline(n) === null;
 
 /** The soonest clock a calendar may carry. NOT `soonestClock`, which answers a
  *  different question — `held.ts` groups on any clock, because the app genuinely

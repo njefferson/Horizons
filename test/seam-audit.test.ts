@@ -1,10 +1,10 @@
-// The seam audit's confirmed findings, pinned (1.17.3).
-//
-// Fourteen findings survived adversarial verification — six finder lenses, then
-// a skeptic per finding told to refute it, and none were refuted. Each test here
-// carries its finding's number and pins the FIX, so the defect cannot return
-// without a named test going red. The convention is `audit-regressions.test.ts`
-// from 1.9.2: family-prefixed names, one seam per test.
+// The seam audit's confirmed findings, pinned (1.17.3), and the audit's TAIL
+// (1.17.4) — the sixteen findings that had no skeptic pass and were therefore
+// verified against source WHILE being fixed. The tail's tests are the
+// `seam-t*` family below; each pins one fix. Each test here carries its
+// finding's number, so the defect cannot return without a named test going
+// red. The convention is `audit-regressions.test.ts` from 1.9.2:
+// family-prefixed names, one seam per test.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -24,6 +24,17 @@ import { deltaBetween } from '../src/delta.ts';
 import { todayCard } from '../src/today.ts';
 import { workSurface } from '../src/nextup.ts';
 import { declinePair } from '../src/ui/request-intents.ts';
+import { parseTaskPaper, importSummary, taskPaperEvents } from '../src/taskpaper.ts';
+import { purgeCount, purgeSummary, purgeWords } from '../src/purge.ts';
+import { menuCount, menuGroups } from '../src/menu.ts';
+import { greetEvents } from '../src/ui/reentry-intents.ts';
+import { routeBotherEvents } from '../src/ui/bother-intents.ts';
+import { declareFeedsEvents } from '../src/ui/detail-intents.ts';
+import { ledgerRowWords, notNowLedger, standingDecline } from '../src/requests.ts';
+import { canHold } from '../src/ui/merge-intents.ts';
+import { anchorWords } from '../src/anchors.ts';
+import { daysWords, everyDaysWords, recordDayWords } from '../src/time.ts';
+import { renderCsv, renderMarkdown, type DeltaReport } from '../src/delta.ts';
 import type { AppEvent } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
 
@@ -240,4 +251,212 @@ test('seam-f3: the printed card never offers what the screen holds back', () => 
   assert.ok(!paperIds.includes('lapsed thing'),
     'the paper offers a lapsed commitment as ordinary work while the screen shows a decision');
   assert.equal(paper.head?.title, screen.head?.node.title, 'one definition of "the one thing"');
+});
+
+// ============================================================================
+// The tail (1.17.4): the audit's sixteen unverified findings, fixed under test.
+// Ten carried code; the six record-drift findings are docs-only and need none.
+// ============================================================================
+
+// --- T1: the import summary counts notes the way the mapper writes them ------
+
+test('seam-t1: consecutive note lines are ONE note, and the summary says so', () => {
+  const text = [
+    'Trip:',
+    '\t- Book the ferry',
+    '\t\tcall after nine',
+    '\t\tthe direct line is faster',
+    '\t- Pack the charger',
+    '\t\tthe white one',
+  ].join('\n');
+  const { lines, unreadable } = parseTaskPaper(text);
+  const s = importSummary(lines, unreadable, NOW, TZ);
+  // Three note LINES, two joined notes. The count used to say 3 — "3 notes
+  // come across" for a file whose import writes 2 `node.field.set`s.
+  assert.equal(s.notes, 2, 'the summary counts joined notes, not lines');
+  const written = taskPaperEvents(ctx(), lines)
+    .filter(e => e.kind === 'node.field.set' && (e.payload as { field?: string }).field === 'note');
+  assert.equal(s.notes, written.length,
+    'the stated count and the events the mapper writes are the same number');
+});
+
+// --- T2: the purge number names what it counts -------------------------------
+
+test('seam-t2: purge words name the wide count, beside the gauge\'s narrow one', () => {
+  // A store where the two "things" numbers genuinely differ: one work item,
+  // one person, one pebble. The gauge (heldWork) counts 2 — a pebble is load
+  // and stays on the gauge's list via its own rules; a person is not work.
+  let s = write(emptyState(), [ev('node.created', 'W', { nodeKind: 'action', title: 'real work' })]);
+  s = write(s, [ev('person.created', 'ADA', { name: 'Ada' })]);
+  s = write(s, [ev('node.created', 'J', { nodeKind: 'journal', title: '' })]);
+  const wide = purgeCount(s, []).things;
+  const narrow = coverageGauge(s).total;
+  assert.ok(wide > narrow, `fixture: the two numbers differ (${wide} vs ${narrow})`);
+  // The fix is WORDS: wherever the wide number is rendered, it says what it
+  // counts, so the panel cannot show two unexplained "things" numbers.
+  const summary = purgeSummary(purgeCount(s, []));
+  assert.match(summary, /people, weights and private entries included/);
+  const confirm = purgeWords('clear', purgeCount(s, []), false);
+  assert.match(confirm, /people, weights and private entries included/);
+  assert.match(confirm, /not only the work the gauge counts/);
+});
+
+// --- T3: the Menu's number is the sum of its rows ----------------------------
+
+test('seam-t3: an onMenu value outside the closed list renders nowhere and counts nowhere', () => {
+  let s = write(emptyState(), [ev('node.created', 'M', { nodeKind: 'aspiration', title: 'learn the fiddle' })]);
+  s = write(s, [ev('menu.item.added', 'M', { category: 'read' })]);
+  assert.equal(menuCount(s), 1, 'fixture: an ordinary Menu item counts');
+  // A category from outside the closed list — an import from a newer edition.
+  // Straight through `fold`, as a foreign shard would arrive.
+  const foreign = fold([ev('node.created', 'X', { nodeKind: 'aspiration', title: 'from the future' }),
+    ev('menu.item.added', 'X', { category: 'someday-2' })], s);
+  const rendered = menuGroups(foreign).reduce((t, g) => t + g.items.length, 0);
+  // Before 1.17.4 menuCount said 2 while the Menu rendered 1 row.
+  assert.equal(menuCount(foreign), rendered,
+    'the Menu\'s stated count disagrees with the rows it renders');
+});
+
+// --- T4: reentry.greeted records what the emitter actually says --------------
+
+test('seam-t4: the greeting records WHETHER, never WHICH — and the cap holds', () => {
+  const [greet] = greetEvents(ctx(), 12, 5);
+  const shown = (greet!.payload as { shown: { nextUp: unknown; triage: unknown; gauge: unknown } }).shown;
+  // The declaration claimed {nextUp: NodeId|null, triage: NodeId[], gauge:
+  // number} — node ids in a greeting. The emitter has always written the
+  // privacy-better shape, and the declaration now matches it.
+  assert.equal(typeof shown.nextUp, 'boolean', 'whether Next-up was shown, never which node');
+  assert.equal(typeof shown.gauge, 'boolean');
+  assert.equal(shown.triage, 3, 'a count, capped by schema at three');
+});
+
+// --- T5: bother.routed's declared union is the one the emitters write --------
+
+test('seam-t5: every bother route writes {route:"inbox"} or {park:true}, nothing else', () => {
+  let s = write(emptyState(), [ev('bother.received', 'B', { text: 'the noise' })]);
+  s = write(s, [ev('bother.owned', 'B', { ownership: 'mine-to-solve' })]);
+  for (const own of ['mine-to-solve', 'mine-to-track', 'not-mine-to-carry'] as const) {
+    const routed = routeBotherEvents(ctx(), s, 'B', own)
+      .filter(e => e.kind === 'bother.routed');
+    assert.equal(routed.length, 1, `${own}: exactly one routing record`);
+    const p = routed[0]!.payload;
+    // The old declaration said {route: ClarifyRoute | 'park'} — a shape no
+    // emitter ever wrote ('inbox' is not even a ClarifyRoute).
+    assert.ok(
+      JSON.stringify(p) === '{"route":"inbox"}' || JSON.stringify(p) === '{"park":true}',
+      `${own} wrote ${JSON.stringify(p)} — outside the declared union`);
+  }
+});
+
+// --- T6: dependency.declared carries no meaningless timestamp ----------------
+
+test('seam-t6: declaring an edge writes no suspense, and a bare edge is legal', () => {
+  let s = write(emptyState(), [
+    ev('node.created', 'UP', { nodeKind: 'action', title: 'order the glass' }),
+    ev('node.created', 'DOWN', { nodeKind: 'action', title: 'fit the window' }),
+  ]);
+  const declared = declareFeedsEvents(ctx(), 'UP', 'DOWN', 5);
+  // The builder used to fill `suspense` with its own stamp time — a value no
+  // fold case reads and no clock comes from, required only by a wrong type.
+  assert.ok(!('suspense' in (declared[0]!.payload as Record<string, unknown>)),
+    'the builder still writes the meaningless timestamp');
+  s = write(s, declared);
+  assert.equal(s.nodes.get('UP')!.leadDays, 5);
+  // The merge-carried shape — feeds alone, no lead — is an ordinary payload,
+  // not a malformed one, and folds without inventing a lead.
+  s = write(s, [ev('node.created', 'SIDE', { nodeKind: 'action', title: 'order the sealant' })]);
+  const bare = write(s, [ev('dependency.declared', 'SIDE', { feeds: 'DOWN' })]);
+  assert.deepEqual(bare.nodes.get('SIDE')!.feeds, ['DOWN']);
+  assert.equal(bare.nodes.get('SIDE')!.leadDays, null);
+});
+
+// --- T7: done-then-undone keeps the standing decline -------------------------
+
+test('seam-t7: completing a declined thing settles the decline; undoing brings it back', () => {
+  let s = write(emptyState(), [ev('node.created', 'D', { nodeKind: 'action', title: 'the survey' })]);
+  s = write(s, declinePair(ctx(), s, 'D', 'the survey', null, 'detail'));
+  assert.equal(notNowLedger(s).length, 1, 'fixture: the decline stands');
+
+  // LATER than the decline (declinePair stamps NOW = 18:00) — the completion
+  // must be the newer decision for it to settle the decline.
+  s = write(s, [ev('done.marked', 'D', { at: '2026-08-03T19:00:00.000Z' }, { at: '2026-08-03T19:00:00.000Z' })]);
+  assert.equal(notNowLedger(s).length, 0, 'a completed thing is not a declined thing (ADR-0056)');
+  assert.equal(standingDecline(s.nodes.get('D')!), null, 'and every surface asks the same predicate');
+
+  s = write(s, [ev('done.unmarked', 'D', {}, { at: '2026-08-03T20:00:00.000Z' })]);
+  // Before 1.17.4 the fold NULLED the record on done.marked while undone
+  // restored only lastDone — so this row was gone for ever, though the log
+  // still held the decline.
+  assert.equal(notNowLedger(s).length, 1, 'undone dropped a standing decline permanently');
+  // And the other direction: declining AFTER a completion stands.
+  let t = write(emptyState(), [ev('node.created', 'E', { nodeKind: 'action', title: 'the audit' })]);
+  t = write(t, [ev('done.marked', 'E', { at: '2026-08-03T10:00:00.000Z' }, { at: '2026-08-03T10:00:00.000Z' })]);
+  t = write(t, declinePair(ctx(), t, 'E', 'the audit', null, 'detail'));
+  assert.equal(notNowLedger(t).length, 1, 'a decline made after an old completion stands');
+});
+
+// --- T8: the picker and the carry agree about the decline's park -------------
+
+test('seam-t8: a source whose only clock is its decline\'s park may fold into a wish', () => {
+  let s = write(emptyState(), [
+    ev('node.created', 'SRC', { nodeKind: 'action', title: 'their request' }),
+    ev('node.created', 'ASP', { nodeKind: 'aspiration', title: 'the same wish, said once' }),
+  ]);
+  s = write(s, declinePair(ctx(), s, 'SRC', 'their request', null, 'detail'));
+  const src = s.nodes.get('SRC')!, asp = s.nodes.get('ASP')!;
+  assert.ok(src.clocks.park && src.notNow, 'fixture: the decline and its park are on');
+  // `mergePlan` deliberately never carries the decline's park — so there is
+  // nothing the aspiration would be asked to hold, and withholding it was the
+  // picker refusing a fold the gate accepts.
+  assert.equal(canHold(asp, src), true,
+    'the picker withholds a legal target because it counts a park the carry skips');
+  assert.ok(legalMergeTargets(s, src).some(t => t.id === 'ASP'), 'and the picker offers it');
+  const plan = mergePlan(ctx(), s, src, asp);
+  assert.ok(!plan.events.some(e => e.kind === 'park.set'),
+    'parity: the carry indeed skips the decline\'s park');
+  const committed = write(s, plan.events);
+  assert.equal(silentNodes(committed).length, 0, 'and the fold lands with law 1 intact');
+});
+
+// --- T9: a record date a year away says which year ---------------------------
+
+test('seam-t9: ledger rows, the anchor line and record day words carry the far year', () => {
+  assert.match(recordDayWords('2036-09-01T12:00:00.000Z', TZ, NOW), /2036/,
+    'a far future day must say which year');
+  assert.match(recordDayWords('2024-08-01T12:00:00.000Z', TZ, NOW), /2024/,
+    'a record from another year must say which year');
+  assert.doesNotMatch(recordDayWords('2026-08-10T12:00:00.000Z', TZ, NOW), /2026/,
+    'a near day stays short');
+
+  // The ledger row, through the same helper.
+  let s = write(emptyState(), [ev('node.created', 'L', { nodeKind: 'action', title: 'old request' })]);
+  s = write(s, [
+    ev('request.declined', 'L', { person: null, what: 'old request', reason: 'detail' }, { at: '2024-08-01T12:00:00.000Z' }),
+    ev('park.set', 'L', { returnAt: '2026-08-24T23:59:59.000Z', reason: 'not-now-ledger' }, { at: '2024-08-01T12:00:00.000Z' }),
+  ]);
+  const row = notNowLedger(s)[0]!;
+  assert.match(ledgerRowWords(row, () => null, TZ, NOW), /2024/,
+    'a decline recorded two years ago reads as this year\'s');
+
+  // The anchor line, through the same helper.
+  let a = write(emptyState(), [ev('anchor.defined', 'A', { name: 'the staff call', recurrence: '' })]);
+  const words = anchorWords(a.nodes.get('A')!, { at: '2025-06-05T12:00:00.000Z', mark: null }, '', TZ, NOW);
+  assert.match(words, /2025/, 'a firing from last year reads as this year\'s');
+});
+
+// --- T10: interval and duration words go singular at one ---------------------
+
+test('seam-t10: "every day" and "1 day", never "every 1 days" or "1 days"', () => {
+  assert.equal(everyDaysWords(1), 'every day');
+  assert.equal(everyDaysWords(3), 'every 3 days');
+  assert.equal(daysWords(1), '1 day');
+  assert.equal(daysWords(14), '14 days');
+  // The report's outstanding row — the rendered path that shipped "1 days".
+  const r: DeltaReport = {
+    since: null, changes: [],
+    outstanding: [{ node: { id: 'W', title: 'the quote' } as never, whom: 'Ada', days: 1 }],
+    ahead: [], decided: [],
+  };
+  assert.ok(!renderCsv(r, TZ).includes('1 days'), 'the CSV report still says "1 days"');
+  assert.ok(!renderMarkdown(r, TZ).includes('1 days'), 'the markdown report still says "1 days"');
 });

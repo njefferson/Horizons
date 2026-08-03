@@ -16,7 +16,7 @@
 import type { NodeState, State } from './fold.ts';
 import { survivorOf } from './merged.ts';
 import { compareOrdering } from './fold.ts';
-import { endOfLocalDay, localParts, utcMs } from './time.ts';
+import { endOfLocalDay, localParts, recordDayWords, utcMs } from './time.ts';
 
 /** The closed recurrence vocabulary: one slot, weekday granularity. Full
  *  RRULE is deliberately absent — the single consumer is "the end of the next
@@ -67,6 +67,30 @@ export function nextSlotOccurrence(day: SlotDay, nowIso: string, zone: string): 
 export const slotDayWords = (day: SlotDay): string => DAY_WORDS[day];
 
 /**
+ * The decline that STANDS on this node, or null once a later completion
+ * settled it (1.17.4).
+ *
+ * "A completed thing is not a declined thing" (ADR-0056) used to be enforced
+ * by the fold nulling `n.notNow` on `done.marked` — which meant done-then-
+ * undone dropped the record from state permanently, because `done.unmarked`
+ * restores only `lastDone`. Now the fold keeps the record and THIS predicate
+ * decides, in one place for every surface: a completion whose LWW stamp is
+ * newer than the decline's settles it; undoing the completion clears
+ * `lastDone` and the record stands again. A decline made AFTER a completion
+ * stands — declining a thing you once did is an ordinary decision. When
+ * either stamp is missing the decline stands: a record surface may only hide
+ * a decline it can PROVE was settled.
+ */
+export function standingDecline(n: NodeState): NodeState['notNow'] {
+  if (n.notNow === null) return null;
+  if (n.lastDone !== null) {
+    const done = n.stamps['lastDone'], declined = n.stamps['notNow'];
+    if (done && declined && compareOrdering(done, declined) > 0) return null;
+  }
+  return n.notNow;
+}
+
+/**
  * One ledger row: the declined thing, and where it lives now if it has since
  * been folded into something else (1.9.2). `host` is null for the ordinary
  * case — the thing is still itself.
@@ -91,7 +115,7 @@ export interface LedgerRow {
 export function notNowLedger(state: State): LedgerRow[] {
   const out: LedgerRow[] = [];
   for (const n of state.nodes.values()) {
-    if (n.notNow === null || n.trashed) continue;
+    if (standingDecline(n) === null || n.trashed) continue;
     if (!n.mergedInto) { out.push({ node: n, host: null }); continue; }
     // Folded away: keep it only while the chain still ends somewhere alive.
     // A chain into the trash or into nothing is not a place it "lives now".
@@ -114,13 +138,13 @@ export function notNowLedger(state: State): LedgerRow[] {
  * you, and neither is this app's to keep).
  */
 export function ledgerRowWords(
-  row: LedgerRow, titleOf: (id: string) => string | null, zone: string,
+  row: LedgerRow, titleOf: (id: string) => string | null, zone: string, nowIso: string,
 ): string {
   const entry = row.node.notNow;
   if (!entry) return '';
-  const day = new Intl.DateTimeFormat('en-GB', {
-    timeZone: zone, day: 'numeric', month: 'short',
-  }).format(new Date(entry.at));
+  // `recordDayWords`, so a decline from another year says which year — the
+  // held list's far-date rule, applied to the record surfaces too (1.17.4).
+  const day = recordDayWords(entry.at, zone, nowIso);
   const who = entry.person ? titleOf(entry.person) : null;
   const said = who ? `${who} asked · declined ${day}` : `declined ${day}`;
   // Where it lives now, when it has been folded into something else. Still a

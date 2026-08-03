@@ -295,7 +295,12 @@ export const declareFeedsEvents = (
 ): AppEvent[] => [{
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
   kind: 'dependency.declared', node,
-  payload: { feeds, suspense: ctx.at, leadEstimateDays },
+  // No `suspense` (1.17.4): this builder used to fill that slot with its own
+  // stamp time — a value that MEANS nothing (suspense clocks come solely from
+  // `suspense.set`, and no fold case reads this field) and was written only
+  // because the declaration wrongly required it. The field is optional now
+  // and nothing writes it.
+  payload: { feeds, leadEstimateDays },
 } as AppEvent];
 
 /** Withdraw the edge. Not a deletion of history — the declaration stays in the

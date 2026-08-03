@@ -361,7 +361,11 @@ decided by a session.**
   *horizon-integrity engine* — and `changelog:check` asserts it was not lost to a rename.
 - **Phase 0 (the spine) is built** — log, fold, write gate, snapshot, export/import, 14
   tests, all four exit criteria met.
-- **`main` is at `0.11.0` (`af2e415`), promoted 2026-07-29** — Noah's "Promote",
+- **Where `main` is NOW lives in the Log below** — the newest promote entry is
+  the live fact. The entries that follow here are the early promote history,
+  kept as written. (Corrected 1.17.4: the first of them still read as the
+  present tense — "`main` is at 0.11.0" — fourteen promotes later.)
+- **Previously `main` was at `0.11.0` (`af2e415`), promoted 2026-07-29** — Noah's "Promote",
   onto watched-green **spine run 57** (all 13 steps read individually) with
   **deploy run 54** watched to success. Carries **0.10.0** (bringing a copy
   back), **0.10.1** (the do-now flow, the panel's close and calendar
@@ -417,11 +421,12 @@ decided by a session.**
   is recorded rather than tidied away, but the promote was the right call and it was his.
 - **Normal flow resumes:** `staging` branches off `main` for future development, promoted
   on Noah's word (Doctrine §7). `main` is the baseline.
-- **Hub wiring:** the app is **not yet** linked from
-  `noahjefferson/public/index.html`. That edit is deliberately held until there
-  is a deployed page to visit — adding a dead link to the live hub is a site
-  regression, not progress. Doctrine §13.6 closes when it lands, together with
-  the app's About linking back to the shared `/accessibility` statement.
+- **Hub wiring: DONE.** The hub links Quietkeep — verified against
+  `noahjefferson/public/index.html` (the apps list and the icon grid both
+  carry `quietkeep.pages.dev`), and the app's ⓘ panel links back to the shared
+  `/accessibility` statement. (Corrected 1.17.4: this fact still said "not
+  yet linked... held until there is a deployed page to visit" long after both
+  halves had landed — the seam audit's record-drift pass caught it.)
 - **Repo metadata: all four §10 values are set** — description, website, topics, social
   preview (Noah, 2026-07-28). **Quietkeep's repo is "set up"**, and this is the first time
   that can be said without a caveat. His confirmation is the verification and there is no
@@ -434,8 +439,10 @@ decided by a session.**
   palette and its measured ratios are `ACCESSIBILITY.md` B-10.
 - **Code:** Phase 0 spine, Phase 1 (shell, Dump surface, ⓘ panel, export, public capture
   surfaces + CSP), Phase 2 (triage), Phase 3 (work mode), Phase 3.5 (detail sheet, the
-  grouped todo list, rename). `main` is at 0.6.0; `staging` carries 0.7.0 on top.
+  grouped todo list, rename) — and everything the Log records since.
   `staging` → `staging.quietkeep.pages.dev`, `main` → `quietkeep.pages.dev`, both live.
+  (Corrected 1.17.4: this fact still pinned "`main` is at 0.6.0; `staging`
+  carries 0.7.0" — the Log below is the live record of where the branches are.)
 - **UI is the platform, no framework**, and there is exactly one build step — esbuild,
   stripping types and bundling `src/ui` to `public/app.js`, which is generated and not
   committed ([ADR-0026](docs/adr/0026-ui-and-build.md)).
@@ -444,6 +451,57 @@ decided by a session.**
   before being trusted.
 
 ### Log
+
+- **2026-08-03** — **1.17.4 "The tail"** — the seam audit's sixteen unverified
+  findings, each VERIFIED against source while being fixed (they had no skeptic
+  pass), each code fix pinned by a `seam-t*` test in `test/seam-audit.test.ts`.
+  · **Fifteen held; one half-refuted and recorded**: build-plan item 33's
+  "annotate shipped" claim — the watermark blocker DID fall in 1.17.0, but the
+  per-person delta has no code anywhere, so the item stays open on its merits
+  and the refutation is written into the item.
+  · **The deepest fix is the decline lifecycle.** `done.marked` used to null
+  `n.notNow` in the fold while `done.unmarked` restored only `lastDone` — so
+  done-then-undone dropped a standing decline from state for ever. The record
+  now survives in state and ONE exported predicate (`standingDecline`,
+  `requests.ts`) settles it for every reader — ledger, sheet, calendar
+  exclusion, merge carry, merge picker (`canHold` parity was its own finding).
+  ADR-0056 corrected in place: mechanism moved, rule unchanged.
+  · **Payload declarations moved to reality**, not the other way:
+  `reentry.greeted.shown` (booleans and a count, never node ids),
+  `bother.routed` (`{route:'inbox'} | {park:true}` — 'inbox' was never even a
+  `ClarifyRoute`), `dependency.declared` (both trailing fields optional, the
+  meaningless `suspense` timestamp no longer written by anything).
+  · **Counts and words**: the import summary counts JOINED notes the way the
+  mapper writes them (the old 1.4.0 test asserted the line-count four lines
+  above its own proof that one event is written — corrected); `menuCount` is
+  the sum of the rendered groups; the purge words name the wide count so the ⓘ
+  panel's two "things" numbers explain themselves; `recordDayWords` (time.ts)
+  gives the ledger, the anchor line and the journal list the held list's
+  far-year rule; "1 days" is gone from the report and the repeat words.
+  · **Deleted rather than kept warm**: `firingCount` (its comment claimed a
+  call site that did not exist; production asks `lastFiring !== null`).
+  Docs drift corrected beside the claims: NOTES' three stale facts (main-at,
+  hub wiring — verified against the hub's `index.html` — and the Code line),
+  the vocabulary's `delta.recorded` watermark clause, anchors.ts's RRULE
+  comment, build-plan items 33/34.
+  · Deliberate-failure proofs watched red: reverting the fold fix reds
+  `seam-t7` by name; reverting `menuCount` reds `seam-t3`. 940 unit tests
+  green.
+  · **The sweep found a latent flake in the walk, and it was the walk's own
+  documented failure mode.** The 1.17.2 membership section filled
+  `#search-input` with a bare `tpage.fill` immediately after `#about-close` —
+  and `fillSearch`, the helper twenty lines up, exists precisely because
+  "filling while a modal dialog is open (or still closing) resolves without
+  the value landing". The box kept the previous query, the anchor never
+  appeared, and the walk timed out on a row that was never going to be there.
+  It passed in Spine 217–222 by timing luck. Instrumented rather than guessed
+  at (the input's value was dumped on failure and read "fielding review"),
+  then fixed by using the helper at both sites; three consecutive green runs
+  afterwards. **A check that depends on luck is not a check** — and a helper
+  written for a known race is worth nothing at the one call site that skips
+  it. Appended to the hub's LESSONS.
+  · Spine's run on the exact head is recorded in its own entry above,
+  as every release here does it. **Not promoted without Noah's word.**
 
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
   `b797083 → bf0e2cb`**, carrying 1.17.2 "Membership" and 1.17.3 "What the seam

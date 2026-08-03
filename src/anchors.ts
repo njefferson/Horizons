@@ -27,6 +27,7 @@ import type { AppEvent } from './events.ts';
 import { compareEvents } from './fold.ts';
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
+import { recordDayWords } from './time.ts';
 
 /** Every anchor you have named, oldest first — ids are ULIDs, so id order is
  *  the order they were made. Trashed and merged ones are gone, like everywhere
@@ -69,23 +70,23 @@ export function lastFiring(log: readonly AppEvent[], anchor: string): Firing | n
   };
 }
 
-/**
- * How many times an anchor has been fired.
- *
- * Used ONLY to answer "has this ever been fired" at a call site that needs a
- * boolean. It is deliberately not rendered: a number of firings is a count of
- * meetings you did or did not hold, which is the shape law 5 forbids and which
- * no surface in this app has any business showing.
- */
-export const firingCount = (log: readonly AppEvent[], anchor: string): number =>
-  log.filter(e => e.kind === 'anchor.fired' && (e.payload as { anchor?: string }).anchor === anchor).length;
+// `firingCount` lived here until 1.17.4. Its comment claimed it was "used only
+// to answer 'has this ever been fired' at a call site that needs a boolean" —
+// no such call site existed; production answers that question with
+// `lastFiring(...) !== null`. A count of firings is a count of meetings you
+// did or did not hold (law 5), so an unrendered counter whose only consumer
+// was its own test was a liability waiting for a surface, and it is deleted
+// rather than kept warm.
 
 /**
  * The recurrence somebody typed, as they typed it.
  *
- * A string for a reader. `anchor.defined` calls it an RRULE and this does not
- * parse one — if it ever needs to, that is a decision about scheduling and it
- * comes with an ADR, not with a regex added quietly here.
+ * A string for a reader. `anchor.defined` declares it a plain string and the
+ * vocabulary keeps it "as typed" — nothing anywhere calls it an RRULE (this
+ * comment used to claim the declaration did, which was never true; corrected
+ * 1.17.4). This does not parse it — if it ever needs to, that is a decision
+ * about scheduling and it comes with an ADR, not with a regex added quietly
+ * here.
  */
 export function recurrenceOf(log: readonly AppEvent[], anchor: string): string {
   let best: AppEvent | null = null;
@@ -103,11 +104,12 @@ export function recurrenceOf(log: readonly AppEvent[], anchor: string): string {
  * A name, a rhythm if one was given, and when it last came round. **A date, never
  * a count** — the law-5 rule this app applies to every record surface.
  */
-export function anchorWords(n: NodeState, firing: Firing | null, recurrence: string, zone: string): string {
+export function anchorWords(n: NodeState, firing: Firing | null, recurrence: string, zone: string, nowIso: string): string {
   const parts: string[] = [];
   if (recurrence.trim()) parts.push(recurrence.trim());
+  // `recordDayWords`: a firing from another year says which year (1.17.4).
   parts.push(firing
-    ? `last one ${new Intl.DateTimeFormat('en-GB', { timeZone: zone, day: 'numeric', month: 'short' }).format(new Date(firing.at))}`
+    ? `last one ${recordDayWords(firing.at, zone, nowIso)}`
     : 'not marked yet');
   return parts.join(' · ');
 }

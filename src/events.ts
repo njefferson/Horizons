@@ -175,7 +175,12 @@ export type ClarifyReopened  = Ev<'clarify.reopened',   { from: ClarifyRoute }>;
 export type DoNowTimed       = Ev<'do-now.timed',       { startedAt: ISODateTime; endedAt: ISODateTime }>;
 export type BotherReceived   = Ev<'bother.received',    { text: string }>;
 export type BotherOwned      = Ev<'bother.owned',       { ownership: Ownership }>;
-export type BotherRouted     = Ev<'bother.routed',      { route: ClarifyRoute | 'park' }>;
+/** The real union, corrected 1.17.4. It was declared `{route: ClarifyRoute |
+ *  'park'}` while every emitter wrote either `{route:'inbox'}` — which is not
+ *  a `ClarifyRoute` at all — or `{park:true}` with no `route` key. Mine-to-solve
+ *  sends the worry to the inbox (the kind change to `action` rides in the same
+ *  batch); both other ownerships park it. The fold reads neither field. */
+export type BotherRouted     = Ev<'bother.routed',      { route: 'inbox' } | { park: true }>;
 export type AssistOffered    = Ev<'assist.offered',     { rung: 'template' | 'workers-ai' | 'byok' | 'manual'; suggestions: string[] }>;
 export type AssistApplied    = Ev<'assist.applied',     { accepted: string[]; rejected: string[] }>;
 
@@ -190,7 +195,15 @@ export type ResumeCardExpired= Ev<'resume.card.expired',{ toReviewQuestion: bool
 // --- E · work domain ---------------------------------------------------------
 export type WaitingOpened    = Ev<'waiting.opened',     { person: NodeId; forWhat: string; since: ISODateTime }>;
 export type WaitingClosed    = Ev<'waiting.closed',     { outcome: string }>;
-export type DependencyDeclared=Ev<'dependency.declared',{ feeds: NodeId; suspense: ISODateTime; leadEstimateDays: number }>;
+/** Both trailing fields optional (corrected 1.17.4). `leadEstimateDays` folds
+ *  into `leadDays` when present; the merge-carried edge omits it when the
+ *  source has none, so requiring it made every carried edge fail the type.
+ *  `suspense` is folded by NOTHING (suspense clocks come solely from
+ *  `suspense.set`) and was only ever written as the declaration's own
+ *  timestamp — a meaningless value in old logs; nothing writes it any more.
+ *  It stays declared optional so the type still describes the recorded
+ *  population instead of disowning it. */
+export type DependencyDeclared=Ev<'dependency.declared',{ feeds: NodeId; suspense?: ISODateTime; leadEstimateDays?: number }>;
 export type DependencyReleased=Ev<'dependency.released',{ feeds: NodeId }>;
 export type SuspenseSet      = Ev<'suspense.set',       { at: ISODateTime; label?: string }>;
 export type ProjectRoleSet   = Ev<'project.role.set',   { role: ProjectRole }>;
@@ -320,8 +333,16 @@ export type SaveForUpdated   = Ev<'save-for.updated',   { target: number; saved:
  *  the system (vocabulary §I). */
 export type LapseMigrationRan= Ev<'lapse.migration.ran',{ absenceDays: number; itemsTriaged: number }>;
 /** Bounded BY SCHEMA: at most three triage items. There is no shape this could
- *  take that shows the backlog (law 8). */
-export type ReentryGreeted   = Ev<'reentry.greeted',    { absenceDays: number; shown: { nextUp: NodeId | null; triage: NodeId[]; gauge: number } }>;
+ *  take that shows the backlog (law 8).
+ *
+ *  Corrected 1.17.4 to what the only emitter has always written: WHETHER each
+ *  part was shown and how many triage items, never which nodes. It was declared
+ *  `{nextUp: NodeId|null, triage: NodeId[], gauge: number}` — a shape nothing
+ *  ever produced, and one that would have recorded ids into a greeting whose
+ *  own docstring says it records what was SHOWN, not what exists. The booleans
+ *  and the count are the privacy-better shape, so the declaration moves to the
+ *  emitter rather than the other way. */
+export type ReentryGreeted   = Ev<'reentry.greeted',    { absenceDays: number; shown: { nextUp: boolean; triage: number; gauge: boolean } }>;
 export type AmnestyOffered   = Ev<'amnesty.offered',    { scope: string }>;
 export type AmnestyAccepted  = Ev<'amnesty.accepted',   { scope: string }>;
 

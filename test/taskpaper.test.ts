@@ -404,8 +404,11 @@ test('1.4.0: TaskPaper note lines attach to the item ABOVE them, consecutive lin
   const text = '- A thing\n  first line of its note\n  second line of it\n- Another thing\n';
   const { lines, unreadable } = parseTaskPaper(text);
   const s = importSummary(lines, unreadable);
-  assert.equal(s.notes, 2, 'two note lines, both attached');
-  assert.match(importWords(s), /2 notes come across/);
+  // Corrected 1.17.4 (seam-t1): this asserted `notes === 2` — counting LINES —
+  // four lines above its own proof that the mapper writes ONE event. The
+  // summary now counts the way the mapper writes.
+  assert.equal(s.notes, 1, 'two consecutive lines are ONE joined note');
+  assert.match(importWords(s), /One note comes across/);
   const events = taskPaperEvents(ctxFor(), lines);
   const notes = events.filter(e => e.kind === 'node.field.set');
   assert.equal(notes.length, 1, 'consecutive lines are ONE note, one event');

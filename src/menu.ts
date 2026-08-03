@@ -73,9 +73,14 @@ export function menuGroups(state: State): MenuGroup[] {
     }));
 }
 
-/** How many are on the Menu altogether. */
+/** How many are on the Menu altogether — the SUM OF THE GROUPS, one
+ *  definition (1.17.4). This counted ANY truthy `onMenu` while `menuGroups`
+ *  renders only the six closed-list categories, so a category from outside
+ *  the list — an import from a newer edition, a hand-edited shard — was
+ *  counted by the Menu's own line while rendering nowhere. The count is now
+ *  derived from the groups, so the number and the rows cannot disagree. */
 export const menuCount = (state: State): number =>
-  heldNodes(state).filter(n => n.onMenu).length;
+  menuGroups(state).reduce((t, g) => t + g.items.length, 0);
 
 /** The save-for items, with their numbers. */
 export function saveFors(state: State): SaveFor[] {

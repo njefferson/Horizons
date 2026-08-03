@@ -81,7 +81,7 @@ test('clear is admitted by the real write boundary, not forced past it', () => {
 test('clearing an empty planner does nothing at all, quietly', () => {
   const empty = fold([]);
   assert.deepEqual(clearEvents(ctxFor(), empty), []);
-  assert.match(purgeSummary(purgeCount(empty, [])), /nothing on your surfaces/);
+  assert.match(purgeSummary(purgeCount(empty, [])), /nothing here to clear/);
 });
 
 test('clearing twice is not an error and does not double-trash', () => {
@@ -162,9 +162,9 @@ test('the unsorted are counted separately, and only real inbox items count', () 
 
 test('one thing is "1 thing", not "1 things"', () => {
   const one = { things: 1, unsorted: 0, events: 4 };
-  assert.match(purgeSummary(one), /^1 thing on/);
+  assert.match(purgeSummary(one), /^1 thing kept here/);
   assert.match(purgedWords('clear', one), /^Cleared\. One thing/);
-  assert.match(purgeWords('clear', one, true), /1 thing off/);
+  assert.match(purgeWords('clear', one, true), /clears 1 thing —/);
 });
 
 // --- the words -------------------------------------------------------------

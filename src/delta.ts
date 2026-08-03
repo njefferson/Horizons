@@ -16,7 +16,7 @@ import type { NodeState, State } from './fold.ts';
 import { decisionsFor } from './merged.ts';
 import { heldNodes } from './gate.ts';
 import { isOpenWaiting, withWhom, openDays } from './people.ts';
-import { calendarDaysBetween, isValidIso, localDayKey } from './time.ts';
+import { calendarDaysBetween, daysWords, isValidIso, localDayKey } from './time.ts';
 
 /**
  * What a report may say changed.
@@ -279,7 +279,7 @@ export function renderMarkdown(r: DeltaReport, zone: string): string {
     for (const w of r.outstanding) {
       const bits = [mdTitle(w.node)];
       if (w.whom) bits.push(`— ${mdSafe(w.whom)}`);
-      if (w.days != null && w.days >= 1) bits.push(`(${w.days} days)`);
+      if (w.days != null && w.days >= 1) bits.push(`(${daysWords(w.days)})`);
       out.push(`- ${bits.join(' ')}`);
     }
     out.push('');
@@ -328,7 +328,7 @@ export function renderCsv(r: DeltaReport, zone: string): string {
   }
   for (const w of r.outstanding) {
     rows.push(['Still with someone else', title(w.node),
-      [w.whom ?? '', w.days != null && w.days >= 1 ? `${w.days} days` : ''].filter(Boolean).join(', ')]);
+      [w.whom ?? '', w.days != null && w.days >= 1 ? daysWords(w.days) : ''].filter(Boolean).join(', ')]);
   }
   for (const d of r.decided) rows.push(['Decided', title(d.node), d.text]);
   for (const a of r.ahead) rows.push(['Coming up', title(a.node), a.day]);

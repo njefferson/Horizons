@@ -498,13 +498,30 @@ export function importSummary(
   return {
     projects: parsed.filter(l => l.kind === 'project').length,
     actions: parsed.filter(l => l.kind === 'action').length,
-    // Notes that actually ATTACH (1.4.0): note-bearing CSV rows, plus TaskPaper
-    // note lines that follow an item — a note line before any item has nothing
-    // to belong to and is dropped, so counting it as carried would be the old
-    // lie with the sign flipped. Mirrors the mapper's own attachment rule.
-    notes: parsed.filter((l, i) =>
-      l.note !== undefined ||
-      (l.kind === 'note' && parsed.slice(0, i).some(p => p.kind !== 'note'))).length,
+    // Notes that actually ATTACH (1.4.0), counted the way the mapper WRITES
+    // them (1.17.4): consecutive TaskPaper note lines are joined into ONE
+    // `node.field.set`, so this used to count LINES and claim "3 notes come
+    // across" for a single three-line note. This is the mapper's own walk —
+    // buffer a run while an item exists to attach to, count the run when it
+    // would flush non-empty — restated over the parse, so the number and the
+    // events agree by construction. CSV rows still carry their note on the
+    // line, one each, through the same `cleanNote` non-empty rule.
+    notes: (() => {
+      let count = parsed.filter(l => l.note !== undefined && cleanNote(l.note) !== '').length;
+      let met = false;
+      let run: string[] = [];
+      const flush = (): void => {
+        if (met && run.length > 0 && cleanNote(run.join('\n')) !== '') count++;
+        run = [];
+      };
+      for (const l of parsed) {
+        if (l.kind === 'note') { if (met) run.push(l.title); continue; }
+        flush();
+        met = true;
+      }
+      flush();
+      return count;
+    })(),
     done: parsed.filter(l => l.done).length,
     // Only dates that actually came across, so this number and the store agree.
     withDates: parsed.filter(live).length,

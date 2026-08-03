@@ -902,9 +902,14 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
       case 'done.marked': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['lastDone'], o)) { n.lastDone = e.payload.at; n.stamps['lastDone'] = o; }
-        // A completed thing is not a declined thing — the ledger row would be
-        // the state lying. The LOG keeps the decline either way (ADR-0056).
-        if (wins(n.stamps['notNow'], o)) { n.notNow = null; setField(n.stamps, 'notNow', o); }
+        // The decline RECORD survives completion (1.17.4). This used to null
+        // `notNow` ("a completed thing is not a declined thing"), but
+        // `done.unmarked` restores only `lastDone` — so done-then-undone
+        // dropped a standing decline from state permanently while the log
+        // still held it. The visible rule is unchanged and now lives in ONE
+        // place, `standingDecline` (requests.ts): a completion newer than the
+        // decline settles it on every surface, and undoing the completion
+        // brings the record back (ADR-0056, corrected in place).
         break;
       }
       case 'done.unmarked': {
@@ -1063,8 +1068,11 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         // Idempotent: declaring the same edge twice is one edge, not two. Two
         // devices can legitimately declare it independently (ADR-0035).
         if (feeds && !n.feeds.includes(feeds)) n.feeds = [...n.feeds, feeds];
+        // Optional since 1.17.4 — the merge-carried edge omits it when the
+        // source has none, so an absent lead is an ordinary payload, not a
+        // malformed one.
         const lead = e.payload.leadEstimateDays;
-        if (Number.isFinite(lead) && lead > 0 && wins(n.stamps['lead'], o)) {
+        if (typeof lead === 'number' && Number.isFinite(lead) && lead > 0 && wins(n.stamps['lead'], o)) {
           n.leadDays = lead;
           n.stamps['lead'] = o;
         }

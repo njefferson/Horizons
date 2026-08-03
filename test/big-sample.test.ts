@@ -224,7 +224,7 @@ test('big-sample: NO PROJECTION RENDERS A BROKEN STRING', async () => {
   }
   said.push(say('roots', roots(state).length));
   for (const r of notNowLedger(state)) {
-    said.push(say(`ledger.${r.node.id}`, ledgerRowWords(r, id => state.nodes.get(id)?.title ?? null, TZ)));
+    said.push(say(`ledger.${r.node.id}`, ledgerRowWords(r, id => state.nodes.get(id)?.title ?? null, TZ, NOW)));
   }
   for (const n of trashedNodes(state)) said.push(say(`trash.${n.id}`, n.title));
   for (const n of composedFor(state, NOW, TZ)) said.push(say(`composed.${n.id}`, n.title));

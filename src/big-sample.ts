@@ -349,11 +349,13 @@ export async function bigSampleEvents(
     node('action', 'Book the fitter', projects[5]),
   ];
   for (const c of chain) clock(c, 'due', int(10, 40));
-  stamp('dependency.declared', chain[0]!, { feeds: chain[1]!, suspense: day(12), leadEstimateDays: 5 });
-  stamp('dependency.declared', chain[1]!, { feeds: chain[2]!, suspense: day(20), leadEstimateDays: 7 });
+  // No `suspense` in these payloads (1.17.4): the field was only ever noise —
+  // no fold case reads it — and nothing writes it any more.
+  stamp('dependency.declared', chain[0]!, { feeds: chain[1]!, leadEstimateDays: 5 });
+  stamp('dependency.declared', chain[1]!, { feeds: chain[2]!, leadEstimateDays: 7 });
   const released = node('action', 'Confirm the access arrangements', projects[5]);
   clock(released, 'due', 15);
-  stamp('dependency.declared', released, { feeds: chain[2]!, suspense: day(18), leadEstimateDays: 2 });
+  stamp('dependency.declared', released, { feeds: chain[2]!, leadEstimateDays: 2 });
   stamp('dependency.released', released, { feeds: chain[2]! });
   stamp('suspense.set', chain[2]!, { at: day(25), label: 'the fitter’s first free week' });
 

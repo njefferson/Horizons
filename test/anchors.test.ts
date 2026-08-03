@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { admit, coverageGauge, gateOptionsFor, heldNodes, heldWork, silentNodes } from '../src/gate.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { heldGroups } from '../src/held.ts';
-import { anchors, anchorPeriodWords, anchorWords, firingCount, lastFiring, recurrenceOf } from '../src/anchors.ts';
+import { anchors, anchorPeriodWords, anchorWords, lastFiring, recurrenceOf } from '../src/anchors.ts';
 import { defineAnchorEvents, fireAnchorEvents } from '../src/ui/anchor-intents.ts';
 import { reportedBefore } from '../src/delta.ts';
 import { searchHeld } from '../src/search.ts';
@@ -140,15 +140,16 @@ test('anchors: the newest firing wins, in any order', () => {
 test('anchors: it states a date, never a count (law 5)', () => {
   const { state, log } = withAnchor();
   const fired = fireAnchorEvents(ctx(), 'A', { d0: 1 })[0]!;
-  const words = anchorWords(anchors(state)[0]!, lastFiring([...log, fired], 'A'), recurrenceOf(log, 'A'), TZ);
+  const words = anchorWords(anchors(state)[0]!, lastFiring([...log, fired], 'A'), recurrenceOf(log, 'A'), TZ, NOW);
   assert.match(words, /Thursdays/);
   assert.match(words, /last one/);
   // Not "3 times", not "2 weeks ago", not "you have missed one". A count of
   // meetings held or not held is a streak wearing a work word.
   assert.doesNotMatch(words, /\b\d+\s*(times?|weeks?|days?|months?)\b/i);
   assert.doesNotMatch(words, /\b(missed|late|streak|overdue|behind)\b/i);
-  // The count exists for one boolean question and is deliberately unrendered.
-  assert.equal(firingCount([...log, fired], 'A'), 1);
+  // `firingCount` is GONE (1.17.4): its comment claimed a call site that never
+  // existed, and an unrendered counter of meetings held is a law-5 liability
+  // waiting for a surface. "Has this ever fired" is `lastFiring(...) !== null`.
 });
 
 test('anchors: never fired reads as "everything so far", like the first report', () => {
@@ -156,7 +157,7 @@ test('anchors: never fired reads as "everything so far", like the first report',
   assert.equal(lastFiring(log, 'A'), null);
   assert.equal(anchorPeriodWords('the staff call', null), 'Everything so far');
   assert.equal(anchorPeriodWords('the staff call', { at: NOW, mark: null }), 'Since the last the staff call');
-  assert.match(anchorWords(anchors(state)[0]!, null, '', TZ), /not marked yet/);
+  assert.match(anchorWords(anchors(state)[0]!, null, '', TZ, NOW), /not marked yet/);
 });
 
 test('anchors: naming refuses an empty name rather than making a blank period', () => {

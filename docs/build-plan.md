@@ -181,7 +181,20 @@ to build or verify.
     only honest cut for that is the anchor watermark this repo does not have —
     the export mark is global. Not marked done, because a build plan that marks
     a deferred thing done is the drift these records exist to prevent.)**
-34. Anchors and delta computation. **(half done — the delta shipped 0.16.0, ADR-0041; ANCHORS DEFERRED, ADR-0057: an anchor node would be silent under law 1 today, and `anchor.fired` carries no watermark, so its delta cut would be the degraded one. Needs a gate change plus a shipped surface, in a release of its own.)**
+    **(Corrected 1.17.4: the watermark clause is stale — `anchor.fired` has
+    carried `upToSeqByDevice` since 1.17.0, so the BLOCKER is gone. The
+    per-person delta itself remains unbuilt — nothing in `people.ts` or the
+    person sheet computes one — so this part stays open, now on its merits
+    rather than on a missing mechanism. The seam audit claimed this item
+    could be annotated shipped; checked against source, it cannot, and that
+    half of the finding is refuted.)**
+34. ~~Anchors and delta computation.~~ **(done — the delta shipped 0.16.0,
+    ADR-0041; anchors shipped 1.17.0, ADR-0068: `anchor` joined
+    `DEMAND_FREE_KINDS` with its surface behind ⓘ in the same release, and
+    `anchor.fired` carries the per-device watermark, so the anchor cut reuses
+    `reportedBefore` unchanged. The previous annotation deferred this per
+    ADR-0057 on "an anchor node would be silent" and "no watermark" — both
+    answered by 1.17.0; annotated 1.17.4, the seam audit's record-drift pass.)**
 35. ~~Status report generator — clipboard / Markdown / print / CSV.~~ **(done —
     all four formats ship from the ⓘ panel and each is walked by the smoke
     test; `status.report.exported` carries the watermark the next report cuts

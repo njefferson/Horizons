@@ -234,8 +234,13 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
   - Payload: `ownership: mine-to-solve | mine-to-track | not-mine-to-carry`
   - Silent risk: **yes — gated**
 - **`bother.routed`**
-  - Payload: `route | park`
+  - Payload: `{route: 'inbox'} | {park: true}` — the real union, one or the
+    other, never both
   - Silent risk: no — the flow **cannot** exit without one of these
+  - **Corrected 1.17.4:** `events.ts` declared `{route: ClarifyRoute | 'park'}`
+    while every emitter wrote `{route:'inbox'}` — not a `ClarifyRoute` at all —
+    or `{park:true}` with no `route` key. The declaration moved to reality;
+    no emitter changed and the fold reads neither field.
 - **`assist.offered`**
   - Payload: `rung: template | workers-ai | byok | manual, suggestions[]`
   - Silent risk: no
@@ -284,8 +289,16 @@ is a valid, unremarkable value, never nagged about.
   - Payload: `outcome`
   - Silent risk: **yes — gated**
 - **`dependency.declared`**
-  - Payload: `feeds: NodeId, suspense, leadEstimate`
+  - Payload: `feeds: NodeId, leadEstimateDays?, suspense?`
   - Silent risk: no — **gated**: must name a live target and must not close a loop (build-plan 27)
+  - **Corrected 1.17.4:** both trailing fields are optional now, and `suspense`
+    is dead. It was required, folded by NOTHING (suspense clocks come solely
+    from `suspense.set`), and the sheet's builder filled it with its own stamp
+    time — a meaningless value — only because the type demanded one. The
+    merge-carried edge omits `leadEstimateDays` when the source has none, so
+    requiring that made every carried edge fail the type too. Nothing writes
+    `suspense` any more; it stays declared optional so the type still
+    describes the recorded population instead of disowning old logs.
 - **`dependency.released`**
   - Payload: `feeds`
   - Silent risk: **yes — gated**
@@ -325,6 +338,13 @@ is a valid, unremarkable value, never nagged about.
   - **Unemitted, deferred with anchors.** The status report ships and records
     itself as `status.report.exported`; this kind is the anchor-scoped delta,
     which waits on the watermark this repo does not have.
+  - **Corrected 1.17.4:** the watermark clause is stale — the repo HAS the
+    per-device watermark since 1.17.0 (`anchor.fired.upToSeqByDevice`, read by
+    `reportedBefore`). The kind stays unemitted for a simpler reason: the
+    anchor-cut delta shipped without it. A report cut at an anchor is still
+    recorded as `status.report.exported`, and the cut itself is derived from
+    `anchor.fired` — there is nothing left for this noun to say. Reserved
+    additively (law 9).
 - **`status.report.exported`**
   - Payload: `format: clipboard | markdown | print | csv, scope, upToSeqByDevice?`
   - Silent risk: no — this is the provenance "delta since last export" reads from
@@ -589,8 +609,13 @@ agreed to survives a copy change (law 10).
   - Payload: `absenceDays, itemsTriaged`
   - Silent risk: no
 - **`reentry.greeted`**
-  - Payload: `absenceDays, shown: {nextUp, triage[≤3], gauge}`
+  - Payload: `absenceDays, shown: {nextUp: boolean, triage: count ≤3, gauge: boolean}`
   - Silent risk: no
+  - **Corrected 1.17.4:** `events.ts` declared `shown` as `{nextUp:
+    NodeId|null, triage: NodeId[], gauge: number}` — node ids in a greeting —
+    while the only emitter has always written WHETHER each part was shown and
+    how many triage items, never which nodes. The declaration moved to the
+    emitter's privacy-better shape.
 - **`amnesty.offered` / `.accepted`**
   - Payload: `scope`
   - Silent risk: no

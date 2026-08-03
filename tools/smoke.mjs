@@ -4056,7 +4056,14 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // and a result row opens the sheet — so this drives that exact path in the
   // real DOM. The unit test pins the predicate; only this proves the sheet.
   console.log('\nThe sheet offers nothing the gate would refuse');
-  await tpage.fill('#search-input', 'staff call');
+  // `fillSearch`, not a bare fill (1.17.4): this section is entered straight
+  // off `#about-close`, and the helper's own comment names the failure —
+  // "filling while a modal dialog is open (or still closing) resolves without
+  // the value landing". The search box kept the PREVIOUS query, the anchor
+  // never appeared in the results, and the walk timed out on a row that was
+  // never going to be there. It passed by timing luck until this release
+  // changed it; a check that depends on luck is not a check.
+  await fillSearch('staff call');
   await tpage.waitForSelector('#search-results .search-open');
   await tpage.locator('#search-results .search-open', { hasText: /staff call/ }).first().click();
   await tpage.waitForSelector('#detail[open]');
@@ -4066,7 +4073,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('#detail-repeat-group').isHidden(), true,
     'and no repeat — makeRepeatEvents carries a clock.set the gate refuses');
   await tpage.click('#detail-close');
-  await tpage.fill('#search-input', 'Priya');
+  await fillSearch('Priya');
   await tpage.waitForSelector('#search-results .search-open');
   await tpage.locator('#search-results .search-open', { hasText: /Priya/ }).first().click();
   await tpage.waitForSelector('#detail[open]');

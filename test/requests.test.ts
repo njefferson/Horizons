@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { admit, gateOptionsFor, silentNodes } from '../src/gate.ts';
 import {
-  SLOT_DAYS, parseSlot, slotOf, nextSlotOccurrence, notNowLedger, ledgerRowWords,
+  SLOT_DAYS, parseSlot, slotOf, nextSlotOccurrence, notNowLedger, ledgerRowWords, standingDecline,
 } from '../src/requests.ts';
 import {
   declineEvents, carryEvents, parkToSlotEvents, setSlotEvents,
@@ -94,7 +94,13 @@ test('done clears the ledger row — a completed thing is not a declined thing',
   let s = capture(emptyState(), 'A');
   s = write(s, declineEvents(ctx(), s, s.nodes.get('A')!));
   s = write(s, [ev('done.marked', 'A', { at: '2026-07-30T01:00:00.000Z' }, '2026-07-30T01:00:00.000Z')]);
-  assert.equal(s.nodes.get('A')!.notNow, null);
+  // The visible rule is unchanged; the MECHANISM moved (1.17.4). The fold used
+  // to null the record here, which made done-then-undone drop a standing
+  // decline for ever. Now state keeps the record and `standingDecline` — the
+  // one predicate every surface asks — settles it.
+  assert.equal(notNowLedger(s).length, 0, 'no ledger row for a completed thing');
+  assert.equal(standingDecline(s.nodes.get('A')!), null, 'the decline is settled');
+  assert.ok(s.nodes.get('A')!.notNow, 'but the record survives, so undone can restore it');
 });
 
 test('LWW: decline vs carry converge on the later decision, in any shard order', () => {
@@ -130,7 +136,7 @@ test('the ledger: standing declines only, newest first, and its words never coun
   // Law 5: a row is a name and a date, never a count and never a verdict.
   const titleOf = (id: string): string | null => s.nodes.get(id)?.title ?? null;
   for (const row of notNowLedger(s)) {
-    const words = ledgerRowWords(row, titleOf, TZ);
+    const words = ledgerRowWords(row, titleOf, TZ, NOW);
     assert.match(words, /declined \d+ \w+/, 'a date in words');
     assert.doesNotMatch(words, /\d+\s*(times|of|\/)|%|remaining/, 'never a tally');
   }

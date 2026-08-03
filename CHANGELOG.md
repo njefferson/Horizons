@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.17.4 — ITERATION
+
+*2026-08-03*
+
+- **The rest of the seam audit’s findings, checked and fixed.** Last release fixed the fourteen findings that had been independently verified; this one takes the sixteen that had not, verifies each against the code while fixing it, and pins each fix with its own test. One claim did not fully hold and is recorded as refuted rather than quietly dropped.
+- **Un-ticking something brings back what it knew.** Marking a declined thing done, then un-marking it, used to lose the record that you had declined it — permanently. The record survives now: done hides it everywhere, undone brings it back everywhere.
+- **Numbers say what they count.** The clear-out confirmation now says its count includes people, weights and private entries — so it can sit beside the gauge’s narrower “Things held” without the two looking like a mistake. The Menu’s count is now the sum of its rows, an import summary counts joined notes the way they actually arrive, and “1 days” reads “1 day” wherever it could appear.
+- **Dates from another year say which year.** The declined list, the named-period line and the journal all showed “5 Sep” for a September years away or years ago; they now follow the same rule as the todo list.
+- **Duplicates: folding a declined thing into a wish works now** — the picker was refusing a fold the app itself would accept — and a few payloads the app records were declared wrongly in the schema and are now declared as what has always actually been written. Nothing about your data changed.
+
 ## 1.17.3 — ITERATION
 
 *2026-08-03*

@@ -17,7 +17,7 @@
 import type { Session } from './session.ts';
 import { noteOf, type NodeState } from '../fold.ts';
 import { DEMAND_FREE_KINDS } from '../events.ts';
-import { localDayKey } from '../time.ts';
+import { everyDaysWords, localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
 import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
@@ -40,7 +40,7 @@ import { choosable, chosenToday, composedFull, todayIsOn } from '../composed.ts'
 import { canHold, legalMergeTargets, mergePlan, unmergeEvents } from './merge-intents.ts';
 import { decisionsFor, foldedIntoDeep } from '../merged.ts';
 import { carryEvents, declineEvents, parkToSlotEvents } from './request-intents.ts';
-import { nextSlotOccurrence, slotDayWords, slotOf } from '../requests.ts';
+import { nextSlotOccurrence, slotDayWords, slotOf, standingDecline } from '../requests.ts';
 import { personView, stakeholdersOf, type PersonLine } from '../people.ts';
 import { logDecisionEvents, removeStakeholderEvents } from './detail-intents.ts';
 
@@ -267,15 +267,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       fact.hidden = !who;
       if (who) fact.textContent = `${who} asked for this.`;
     }
-    const declined = n.notNow !== null;
+    // `standingDecline`, not raw `n.notNow` (1.17.4): the record now survives
+    // completion in state, and a completed thing must not read as declined
+    // here while the ledger — the same predicate — shows no row.
+    const standing = standingDecline(n);
+    const declined = standing !== null;
     const declineBtn = btn('#detail-decline');
     if (declineBtn) declineBtn.hidden = declined;
     const declinedBox = q<HTMLElement>('#detail-declined');
     if (declinedBox) declinedBox.hidden = !declined;
     const words = q<HTMLElement>('#detail-declined-words');
-    if (words && n.notNow) {
-      const day = localDayKey(n.notNow.at, session.zone);
-      const who = n.notNow.person ? (st.nodes.get(n.notNow.person)?.title || null) : null;
+    if (words && standing) {
+      const day = localDayKey(standing.at, session.zone);
+      const who = standing.person ? (st.nodes.get(standing.person)?.title || null) : null;
       words.textContent = who
         ? `Declined ${day} — ${who} asked. It sits in the Not Now ledger.`
         : `Declined ${day}. It sits in the Not Now ledger.`;
@@ -335,11 +339,11 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     }
     if (n.onMenu) bits.push('on the Menu');
     if (n.lastDone) bits.push('done');
-    if (n.kind === 'upkeep' && n.intervalDays) bits.push(`repeats every ${n.intervalDays} days`);
+    if (n.kind === 'upkeep' && n.intervalDays) bits.push(`repeats ${everyDaysWords(n.intervalDays)}`);
     // The quiet fact line (1.4.0): where a sorted thing went, in the sorting's
     // own words — the sheet is where "it feels lost" gets its answer.
     if (n.route && n.route !== 'trash') bits.push(`sorted as ${String(n.route).replace(/-/g, ' ')}`);
-    if (n.notNow) bits.push('in the Not Now ledger');
+    if (standingDecline(n)) bits.push('in the Not Now ledger');
     const words = pressureWords(p);
     if (words) bits.push(words);
     const clock = n.clocks.due ?? n.clocks.review ?? n.clocks.start;
@@ -866,7 +870,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   btn('#detail-repeat-set')?.addEventListener('click', () => {
     const i = positiveInt(EVERY), c = positiveInt(SLACK);
     if (i === null || c === null) { say('Both numbers need to be whole days, at least 1.'); return; }
-    void run(ctx => makeRepeatEvents(ctx, current!.id, current!.kind, i, c), `Repeats every ${i} days.`);
+    void run(ctx => makeRepeatEvents(ctx, current!.id, current!.kind, i, c), `Repeats ${everyDaysWords(i)}.`);
   });
   btn('#detail-repeat-stop')?.addEventListener('click', () => {
     void run(ctx => stopRepeatEvents(ctx, current!.id), 'It no longer repeats.');

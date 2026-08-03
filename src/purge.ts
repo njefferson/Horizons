@@ -71,7 +71,12 @@ export function confirmMatches(mode: PurgeMode, typed: string): boolean {
 }
 
 export interface PurgeCount {
-  /** Things currently on a surface — what "clear" would empty. */
+  /** Things currently held — the WIDE count (`heldNodes`): people, weights,
+   *  private entries and periods included, deliberately wider than the
+   *  gauge's `heldWork` (1.15.1), because clearing empties everything. The
+   *  words that render it must NAME that width (1.17.4): this number sits on
+   *  the same panel as the "Things held" row, and two "things" numbers that
+   *  disagree without saying why is the panel telling two stories. */
   things: number;
   /** Of those, ones never sorted. Counted separately because losing something you
    *  never even read is a different loss from losing something you decided about. */
@@ -192,7 +197,7 @@ export function purgeWords(mode: PurgeMode, count: PurgeCount, savedACopy: boole
     ? ' It also unpairs this device, so it stops syncing: without that, the other device would simply fill this one back up. The other device keeps its own copy — to empty that one too, do this again over there.'
     : '';
   const body = mode === 'clear'
-    ? `This clears ${things} off your surfaces. Everything that happened stays in the log, so a copy you export afterwards still has all of it.`
+    ? `This clears ${things} — everything you are keeping here, people, weights and private entries included, not only the work the gauge counts. Everything that happened stays in the log, so a copy you export afterwards still has all of it.`
     : `This replaces everything with an empty planner — ${things} and all ${count.events} records of what happened. It cannot be undone from inside the app.${pairing}`;
   const copy = savedACopy
     ? 'You have saved a copy.'
@@ -202,14 +207,17 @@ export function purgeWords(mode: PurgeMode, count: PurgeCount, savedACopy: boole
   return `${body} ${copy}`;
 }
 
-/** The one line above the button, before anything is chosen. Says the count and
- *  nothing else — the consequences belong beside the mode that carries them. */
+/** The one line above the button, before anything is chosen. Says the count
+ *  AND what it counts — everything kept, not only the work the gauge counts —
+ *  because this number shares a panel with the "Things held" row and the two
+ *  may not silently disagree (1.17.4). The consequences belong beside the
+ *  mode that carries them. */
 export function purgeSummary(count: PurgeCount): string {
-  if (count.things === 0) return 'There is nothing on your surfaces to clear.';
+  if (count.things === 0) return 'There is nothing here to clear.';
   const things = count.things === 1 ? '1 thing' : `${count.things} things`;
   return count.unsorted > 0
-    ? `${things} on your surfaces, ${count.unsorted} of them never sorted.`
-    : `${things} on your surfaces.`;
+    ? `${things} kept here — people, weights and private entries included — ${count.unsorted} of them never sorted.`
+    : `${things} kept here — people, weights and private entries included.`;
 }
 
 /** After the fact, and it says which mode ran — the two outcomes are different

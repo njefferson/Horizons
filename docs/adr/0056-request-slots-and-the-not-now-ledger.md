@@ -27,6 +27,18 @@ ADR-0045) exists. Declining someone's request becomes a first-class decision:
   completed thing is not a declined thing; the log keeps the decline either
   way). `person` is null when nobody said who (the `waitingOn` precedent);
   `what` is the title snapshot, so the record survives a rename.
+  - **Corrected 1.17.4 — the mechanism moved, the rule did not.** The
+    `done.marked` clear had a hole this clause did not see: `done.unmarked`
+    restores only `lastDone`, so done-then-undone dropped a standing decline
+    from STATE permanently while the log still held it — the seam audit's
+    lifecycle lens found it. The fold now keeps the record, and the visible
+    rule ("a completed thing is not a declined thing") lives in one exported
+    predicate, `standingDecline` (`requests.ts`): a completion whose stamp is
+    newer than the decline's settles it on every surface — the ledger, the
+    sheet, the calendar exclusion, the merge carry — and undoing the
+    completion brings the record back. `clock.cleared{park}` still clears in
+    the fold: taking the thing back IS un-declining, and there is nothing for
+    an undo to restore.
 - **The ledger lives behind ⓘ in Your data, beside "Things you let go"** —
   the same species (ADR-0050): a capped, true-counted record of deliberate
   decisions, rows are doors carrying exactly one verb, built on reveal, the

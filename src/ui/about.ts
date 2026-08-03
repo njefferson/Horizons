@@ -35,7 +35,7 @@ import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badg
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
 import { deliverCopy, deliverGeneratedSet } from './export-copy.ts';
 import { eventWords, isCure } from '../log-words.ts';
-import { localDayKey } from '../time.ts';
+import { localDayKey, recordDayWords } from '../time.ts';
 import { TODAY_MODULE, todayIsOn } from '../composed.ts';
 import { enableModuleEvents, disableModuleEvents } from './detail-intents.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
@@ -608,7 +608,7 @@ export async function mountAbout(
       name.textContent = a.title || '(unnamed)';
       const fact = document.createElement('span');
       fact.className = 'anchor-fact';
-      fact.textContent = anchorWords(a, lastFiring(log, a.id), recurrenceOf(log, a.id), session.zone);
+      fact.textContent = anchorWords(a, lastFiring(log, a.id), recurrenceOf(log, a.id), session.zone, new Date().toISOString());
       const fire = document.createElement('button');
       fire.type = 'button';
       fire.className = 'ghost';
@@ -1074,7 +1074,7 @@ export async function mountAbout(
         title.textContent = row.node.notNow?.what || row.node.title || '(untitled)';
         const fact = document.createElement('span');
         fact.className = 'trash-when';
-        fact.textContent = ledgerRowWords(row, titleOf, session.zone);
+        fact.textContent = ledgerRowWords(row, titleOf, session.zone, new Date().toISOString());
         b.append(title, fact);
         // The DECLINED node's own sheet, even when it has since been folded
         // into something else — that sheet is where "Split back out" lives,
@@ -1173,9 +1173,9 @@ export async function mountAbout(
         const li = document.createElement('li');
         const day = document.createElement('span');
         day.className = 'trash-when';
-        day.textContent = new Intl.DateTimeFormat('en-GB', {
-          timeZone: session.zone, day: 'numeric', month: 'short',
-        }).format(new Date(r!.at));
+        // `recordDayWords`: an entry from another year says which year — the
+        // far-date rule, applied to the record surfaces too (1.17.4).
+        day.textContent = recordDayWords(r!.at, session.zone, new Date().toISOString());
         const body = document.createElement('span');
         body.textContent = r!.text;
         li.append(body, day);

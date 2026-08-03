@@ -235,6 +235,34 @@ export function calendarDaysBetween(fromIso: string, toIso: string, tz: string):
   return Math.round((utcMs(ty, tm, td) - utcMs(fy, fm, fd)) / 86_400_000);
 }
 
+/**
+ * A day on a RECORD surface — "3 Aug", with the year once the day is a year or
+ * more from now in either direction.
+ *
+ * The rule is the held list's (`held.ts` `dateWords`): "Sep 1" for 2036 — or
+ * for a decline recorded in 2025 — is indistinguishable from this September's,
+ * in an app whose whole job is telling you when. The ledger rows, the anchor
+ * line and the journal list each re-wrote this format inline and every one of
+ * them dropped the year clause (1.17.4), which is why it is ONE helper now:
+ * a record surface that wants day words has no format of its own to forget
+ * the rule in. en-GB day-month order, the house style of the record surfaces.
+ */
+export function recordDayWords(atIso: string, tz: string, nowIso: string): string {
+  const days = calendarDaysBetween(nowIso, atIso, tz);
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: tz, day: 'numeric', month: 'short',
+    ...(Math.abs(days) >= 365 ? { year: 'numeric' } : {}),
+  }).format(new Date(atIso));
+}
+
+/** "1 day" / "N days". Duration words re-written inline are how "1 days"
+ *  shipped in the status report's outstanding rows (1.17.4). */
+export const daysWords = (n: number): string => (n === 1 ? '1 day' : `${n} days`);
+
+/** "every day" / "every N days" — the repeat interval's words. "Repeats every
+ *  1 days" is the same seam as `daysWords`, on the interval side. */
+export const everyDaysWords = (n: number): string => (n === 1 ? 'every day' : `every ${n} days`);
+
 /** The device's zone, read at the UI edge and threaded inward. Falls back to UTC
  *  only if the platform refuses to name one — which no supported browser does. */
 export const deviceZone = (): string =>
