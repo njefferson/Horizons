@@ -22,7 +22,10 @@ wrong.
 photograph his screen is asking him to do worse work on its behalf."* Every
 outstanding verification in this repo is his, on an iPad — V-14, V-16/V-17,
 V-00 step 2, V-20, build-plan 42 — and the dogfood gate that decides whether
-any of this is good has not started. A photograph loses every reason string and
+any of this is good has been running the whole time and resetting daily,
+because the app cannot survive a day (corrected 2026-08-03 on Noah's word — an
+earlier draft of this paragraph said it "has not started", which read an absent
+record of success as an absent attempt). A photograph loses every reason string and
 shows no internal state at all.
 
 So this is not a planner feature. **It is the instrument that makes the device

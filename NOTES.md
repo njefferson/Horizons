@@ -292,6 +292,38 @@ Not a checklist of features. Thirty **consecutive working days** in which:
 Under thirty days, the gate resets. This is the only thing that decides v1 is
 finished.
 
+**THE GATE HAS BEEN RUNNING SINCE 0.17.0. IT RESETS CONSTANTLY, AND THAT IS THE
+MEASUREMENT.** Noah, 2026-08-03: *"The dogfood gate has always been running. Your
+app just sucks so much I can't get through one fucking day yet. That's how it
+fucking works."*
+
+Read that as the instrument reporting, because that is what it is. The gate is
+not waiting to be switched on and never was — it has been running every working
+day, and **the app has failed it every working day.** The counter sits near zero
+not because nobody is counting but because the app cannot survive a day of the
+work it was built for.
+
+**A session recorded this backwards for weeks**, and the error is worth keeping:
+it read "nothing in the repo counts a day" and concluded *the gate has never
+started*, when the true reading was *the gate runs daily and the app keeps
+losing*. That is hub LESSONS §23 — "the source gave me null" is not the same
+fact as "this is unknowable" — applied to a process instead of to data, and the
+checklist item for it (`null-is-not-unknowable`) was already written and already
+being ignored. **An absent record of success is not an absent attempt.**
+
+What follows from the correction, and it changes the ordering of everything:
+
+- **There is no "get the gate started" work. There never was.** The work is
+  finding out what ends his day, on the day it ends.
+- **The failures are the dataset and this repo has none of them.** Every day
+  that reset is a defect report nobody wrote down. Sessions have been asking him
+  for a *promote* and an *on-device pass* — the wrong two questions. The one that
+  matters is what stopped him.
+- **This is what the 1.18.0 diagnostic is actually for.** Not tidiness, and not
+  §7f compliance: it is the instrument for capturing a bad day while it is
+  happening, in text, without him having to write an essay when he is already
+  out of patience.
+
 ---
 
 ## Open questions
@@ -472,6 +504,30 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-03 (Noah, correcting the record)** — **THE DOGFOOD GATE HAS ALWAYS
+  BEEN RUNNING.** His words: *"The dogfood gate has always been running. Your app
+  just sucks so much I can't get through one fucking day yet. That's how it
+  fucking works."*
+  · Sessions have written *"the gate has never started"* into the assessment, the
+  plan, an ADR and a handoff prompt. **It is the single most consequential thing
+  this repo has got wrong**, because it converted a daily failing measurement
+  into an item waiting on him. It was never waiting on him.
+  · **The reasoning error, kept because it will recur:** the repo counts no
+  completed day, and a session read that as *the gate has not begun* rather than
+  *the gate runs and the app keeps losing*. Hub LESSONS §23 is exactly this — "the
+  source gave me null" is not "this is unknowable" — and its checklist item
+  `null-is-not-unknowable` was already written, already printed before handoffs,
+  and still missed, because it was filed as a rule about DATA and this was a
+  process. **An absent record of success is not an absent attempt.**
+  · **What it changes.** There is no "start the gate" work and never was. The
+  work is finding out what ends his day, on the day it ends — and this repo holds
+  **none of that data**, because sessions asked for promotes and on-device passes
+  instead of asking what stopped him. Every reset is a defect report nobody wrote
+  down.
+  · The definition at the top of this file now carries the correction, and so
+  does ADR-0071. The 0.17.0 entry that first said it is annotated in place rather
+  than rewritten.
 
 - **2026-08-03 (Noah: "Pages.dev has been allowed now" → "hand off to another
   session")** — **the grant did not reach this session, and that is the finding.**
@@ -1961,6 +2017,8 @@ handed over (Doctrine §7).
   inference from a successful push, and V-10 says the observed run gets written down. **Every item on the frozen v1 Must list is now built.** That
   is a statement about the list and not about a version: `NOTES.md`'s own definition of v1 done
   is the **dogfood gate** — thirty consecutive working days — and day one has not happened.
+  **(Corrected 2026-08-03: this and every later "the gate has not started" was wrong. It has
+  been running since this day and resetting daily. See the gate's own definition above.)**
   **Noah starts using the app today** and will give feedback as he finds things. V-14 remains
   the one claim no gate here can settle.
 
