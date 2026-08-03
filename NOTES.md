@@ -445,6 +445,64 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03** — **1.17.3 "What the seam audit found"** — every verified
+  finding fixed, each pinned by a named test.
+  · **The audit's shape:** six adversarial finder lenses over the seams
+  (membership, count agreement, record-vs-code drift, words honesty, write-path,
+  lifecycle), 31 raw findings, the top 14 each attacked by a skeptic told to
+  refute it. **None were refuted.** Twenty agents, ~2M tokens, every claim
+  traced to file:line on both sides.
+  · **The worst one was in the write path:** the `pebble.settled` fold case was
+  the fold's ONE bypass of copy-on-write — `s.nodes.get` plus direct mutation —
+  so a REJECTED batch containing a settle left the settle applied to live
+  state, the class the 1.3.1 audit filed as severe. And nulling the weight
+  stranded "Keep it after all": a kept pebble existed on NO surface. The case is
+  now a no-op — the trash beside it does the removing, the raise's data
+  survives, and untrash puts the weight back.
+  · **A worry was offered as work.** `nextup`'s private NOT_ACTIONABLE (a
+  byte-identical copy of the set `kinds.ts` was created to be the single home
+  of, never imported) omitted `bother`, and `isAppClock` exempted only
+  `gate:node.created` — so the bother cure read as an arrived demand, a fresh
+  worry got a Done button before "whose is this?" was asked, and a DECLINED one
+  sat under "Ready now" for ever. Fixed at the root: `bother` into the one
+  shared set, `gate:bother.received` into `isAppClock` by that predicate's own
+  doctrine (a cure inherits the intent of the event it cured; a worry entering
+  has none about when). Heals old logs with no new events.
+  · **The calendar carried the nag ADR-0056 removed:** a decline's park exported
+  as an all-day event with a 9 am alarm. `exportsToCalendar` — one predicate for
+  the file AND the count — now excludes bothers and standing declines.
+  · **The paper contradicted the screen:** `todayCard`'s docstring promised "the
+  SAME projections the screen uses" while calling raw `nextUp`; the screen
+  subtracts chips and replan items (law 3). It reads `workSurface` now.
+  · **The report disclosed private things:** journal entries as "New —
+  (untitled)", pebbles/people/anchors as new work, in the one document that
+  leaves the device. The four not-work kinds never enter `deltaBetween` now.
+  · **The merge picker offered journal entries and anchors as survivors** — a
+  titleless journal sorted FIRST as "(untitled)" — and an accepted fold hid real
+  work from every surface with the gauge still zero (law 1 rides the chain to a
+  demand-free survivor). The person/pebble clauses now cover both kinds, both
+  directions. Also: trash is no longer offered on a merge survivor (sheet hides
+  it, bulk skips-and-counts — the gate refused it after the preview promised
+  it); a decline is no longer offered on demand-free kinds; and `mergePlan` no
+  longer drops a source's OPEN wait when the survivor's wait had already CLOSED
+  (`waiting.closed` sets the outcome without clearing `waitingOn`, and the old
+  test was bare `!target.waitingOn`).
+  · **The import panel denied its own default button:** "Nothing is merged —
+  this is a replacement", said unconditionally, while focus landed on the
+  ADDITIVE "Take in what I don't have". Both doors are now named truthfully,
+  here and in the big-sample caveat.
+  · **Two 1.15.0 tests had pinned the defective semantics** (settle nulls the
+  weight) and were rewritten to the corrected design with the reason recorded.
+  The membership table's own bother-in-next-up sentence was DISPROVED by the
+  audit's verifier — the mechanism it described cannot occur — and the row now
+  says so.
+  · **Seventeen further findings are recorded and queued** (the un-verified
+  tail: count seams like menuCount vs menuGroups and the ⓘ panel's two "held"
+  numbers; payload-shape drift on `reentry.greeted` and `bother.routed`; stale
+  records — build-plan 33/34, two NOTES facts, a vocabulary note; far-date
+  years on three surfaces; "1 days" plurals; done-then-undone dropping a
+  standing decline). None loses data. Next batch.
+
 - **2026-08-03 (Noah: "Everything I've found has pointed to an unfinished
   product." → "The same. Please continue.")** — **1.17.2 "Membership"**, and a
   change of direction: **no new features. The seams, gated.**

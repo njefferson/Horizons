@@ -1496,7 +1496,11 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const goodNote = await tpage.locator('#import-note').textContent();
   is(new RegExp(`holds ${heldBefore} thing`).test(goodNote || ''), true,
     `it says what is in the file, in things (${heldBefore}) not just records ("${goodNote}")`);
-  is(/replaces the/.test(goodNote || ''), true, 'and says plainly that this replaces what is here');
+  is(/replaces the/.test(goodNote || ''), true, 'and says plainly what replacing swaps out');
+  // Both doors named (1.17.3): the note used to deny the additive path existed
+  // while focusing its button. Now it must describe each door truthfully.
+  is(/adds what this device is missing and removes nothing/.test(goodNote || ''), true,
+    'and it no longer denies the additive door it focuses');
   is(await tpage.locator('#import-actions').isVisible(), true, 'only now is the replacement offered');
 
   // Now REPLACE, with a file that differs from the current store, so "it landed"

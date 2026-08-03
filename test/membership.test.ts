@@ -39,6 +39,7 @@ import { choosable, composedFor } from '../src/composed.ts';
 import { notNowLedger } from '../src/requests.ts';
 import { loadNow } from '../src/load.ts';
 import { anchors } from '../src/anchors.ts';
+import { toCalendar } from '../src/ics.ts';
 import { people } from '../src/people.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -90,14 +91,14 @@ const SURFACES: Record<string, SurfaceRule> = {
     rows: st => searchHeld(st, 'e', 100000).items,
   },
   'next-up queue': {
-    why: 'What the app offers to DO next. Actionable work only — upkeep arrives via chips but the queue may rank it; a bother mid-flow may surface if it carries a live demand clock (the mine-to-track park returning is the flow bringing it back). Never demand-free kinds, never a spent card.',
-    allowed: ['action', 'outcome', 'project', 'area', 'goal', 'upkeep', 'bother', 'resume-card'],
+    why: 'What the app offers to DO next: NOT_ACTIONABLE (kinds.ts) is the rule, so actions, upkeep and resume cards only. The 1.17.2 version of this row allowed bothers with a sentence about the mine-to-track park "bringing it back" — the seam audit proved that mechanism cannot occur (parks are excluded from arrival), and the bother that WAS surfacing was the unanswered fresh worry, offered with a Done button before "whose is this?" was ever asked. A worry is not work (1.17.3).',
+    allowed: ['action', 'upkeep', 'resume-card'],
     expect: ['action'],
     rows: st => nextUpQueue(st, NOW, TZ).map(q => q.node),
   },
   'the offer (offerNow work)': {
     why: 'Up to OFFER_CAP pieces of work, chosen so picking is a preference (ADR-0060). Same actionable bound as the queue it draws from.',
-    allowed: ['action', 'outcome', 'project', 'area', 'goal', 'upkeep', 'bother', 'resume-card'],
+    allowed: ['action', 'upkeep', 'resume-card'],
     expect: ['action'],
     rows: st => offerNow(st, NOW, TZ).work.map(w => w.node),
   },
@@ -166,6 +167,15 @@ const SURFACES: Record<string, SurfaceRule> = {
     allowed: ['person'],
     expect: ['person'],
     rows: st => people(st),
+  },
+  'the exported calendar': {
+    why: 'What leaves for the OS diary — read from the real ICS output, because the diary cannot be corrected by the next glance. Work with real dates only. Never a bother (a worry with an alarm is an appointment nobody made) and never a standing decline (ADR-0056: no nag when the slot day arrives — the seam audit found the decline\u2019s park exporting as an all-day event with a 9 am alarm, the exact nag the ledger removes). Both closed by `exportsToCalendar`, one predicate for the file and the count (1.17.3).',
+    allowed: ['action', 'outcome', 'project', 'area', 'goal', 'waiting-for', 'upkeep', 'resume-card'],
+    expect: ['action', 'waiting-for'],
+    rows: st => {
+      const ids = [...toCalendar(st, NOW, TZ).matchAll(/^UID:(.+)@quietkeep$/gm)].map(m => m[1]!);
+      return ids.map(id => st.nodes.get(id)).filter((n): n is NodeState => Boolean(n));
+    },
   },
   'trash view': {
     why: 'Things let go — an explicit decision about ANY kind is kept, including a settled pebble (ADR-0065 trashes on settle so the way back exists). The one deliberately total list.',

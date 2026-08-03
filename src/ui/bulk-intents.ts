@@ -27,6 +27,7 @@ import type { AppEvent, ClockKind, MenuCategory, NodeId } from '../events.ts';
 import type { NodeState, State } from '../fold.ts';
 import type { Session, StampContext } from './session.ts';
 import { sortable } from '../range.ts';
+import { foldedInto } from '../merged.ts';
 import { demandClocksOf } from './triage-intents.ts';
 import { endOfDayKey } from './detail-intents.ts';
 import { wouldParentCycle } from '../tree.ts';
@@ -94,8 +95,14 @@ export function eligible(verb: BulkVerb, n: NodeState | undefined, state: State,
     case 'park':
       return sortable(n);
     case 'let-go':
-      // Legal from both families: runway work, or a wish on the Menu.
-      return !n.trashed && !n.mergedInto && (sortable(n) || n.onMenu !== null);
+      // Legal from both families: runway work, or a wish on the Menu — and
+      // never a merge SURVIVOR (1.17.3, the seam audit): trashing a node that
+      // others folded into makes the folded-in nodes newly silent, so the gate
+      // refuses the whole batch after the preview promised it. Skip-and-count,
+      // like every other per-item ineligibility; splitting the folds back out
+      // first is the door.
+      return !n.trashed && !n.mergedInto && (sortable(n) || n.onMenu !== null)
+        && foldedInto(state, n.id).length === 0;
     case 'bring-back':
       return !n.trashed && !n.mergedInto && n.onMenu !== null;
   }

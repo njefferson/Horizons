@@ -83,7 +83,16 @@ export function deltaBetween(
 ): DeltaReport {
   const changes: Change[] = [];
 
+  // Kinds that are NOT WORK never enter the report (1.17.3, the seam audit).
+  // The report is the one document that leaves the device for another person's
+  // eyes: a journal entry itemised as "New — (untitled)" is a private thing
+  // disclosed by count; a pebble is weight the reader has no business seeing
+  // (ADR-0014); a person is a roster change, and ADR-0057 already ruled rosters
+  // out of reports as a disclosure nobody asked for; an anchor is a period, not
+  // news. The same four kinds every work surface excludes, for the same reasons.
+  const NOT_REPORTABLE = new Set(['journal', 'pebble', 'person', 'anchor']);
   for (const n of after.nodes.values()) {
+    if (NOT_REPORTABLE.has(n.kind)) continue;
     const was = before.nodes.get(n.id);
 
     if (n.trashed && (!was || !was.trashed)) {

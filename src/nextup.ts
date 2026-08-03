@@ -25,6 +25,7 @@
 import { isAppClock, type NodeState, type State } from './fold.ts';
 import { pressureOf } from './pressure.ts';
 import { replanIds } from './replan.ts';
+import { NOT_ACTIONABLE } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
@@ -40,19 +41,13 @@ export interface NextUpItem {
   words: string;
 }
 
-/** Kinds that can never be "the next thing to do". A waiting-for is someone
- *  else's move; the demand-free kinds refuse clocks by law and must not be
- *  dressed up as demands here either; a person/anchor/journal is not an action. */
-const NOT_ACTIONABLE = new Set([
-  'waiting-for', 'aspiration', 'pebble', 'person', 'anchor', 'journal',
-  // Altitude nodes. Product law 4: "levels push down; the user never climbs —
-  // the runway is the only workspace", and ADR-0013 makes altitude views
-  // inspection modes, not destinations. Offering an AREA called "Health" as the
-  // single next thing to do, with a Done button that writes `done.marked` on it,
-  // is the climbing task law 4 forbids — and a goal or an area cannot be "done"
-  // at all. They shape the ranking of the runway; they do not enter the queue.
-  'goal', 'area', 'outcome', 'project',
-]);
+// NOT_ACTIONABLE comes from `kinds.ts` — its one declared home, whose header
+// says "One neutral home, imported by both" and whose docblock names THIS file
+// as the consumer. For a year this file kept a byte-identical private copy and
+// imported nothing from it (the seam audit's finding 14), which meant the first
+// kind added there — `bother`, in the same release — would have changed replan
+// and review while Next up silently kept offering it: the refused-on-one-
+// surface, offered-on-another class kinds.ts was created to prevent.
 
 /** Live, actionable, and not still sitting in the inbox. An unclarified capture
  *  belongs to triage — offering it here would be asking the same question twice,

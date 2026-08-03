@@ -28,6 +28,13 @@ import type { NodeKind } from './events.ts';
 export const NOT_ACTIONABLE: ReadonlySet<NodeKind> = new Set<NodeKind>([
   'waiting-for', 'aspiration', 'pebble', 'person', 'anchor', 'journal',
   'goal', 'area', 'outcome', 'project',
+  // `bother` joined in 1.17.3 (the seam audit). A worry is "not a task, has no
+  // next action" by its own module's header, and its surface is the bother
+  // flow, which asks "whose is this?" FIRST. Before this, an unanswered worry
+  // was offered on the landing surface with a Done button — and Done never
+  // answers the flow's question, so the same node read as done in the todo
+  // list and open in the bother box at once.
+  'bother',
 ]);
 
 /**

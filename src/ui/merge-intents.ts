@@ -179,6 +179,18 @@ export function legalMergeTargets(state: State, n: NodeState): NodeState[] {
     // carrying" is not a sentence, and neither is its reverse. Two pebbles CAN
     // be one weight said twice, so that direction stays open.
     .filter(t => (n.kind === 'pebble' ? t.kind === 'pebble' : t.kind !== 'pebble'))
+    // JOURNAL ENTRIES AND ANCHORS: the same rule, added by the seam audit
+    // (1.17.3) — 1.13.0 and 1.17.0 each added a not-work kind without revisiting
+    // this list, exactly as 1.15.0 had to for pebbles. The stated rationale
+    // applies word for word: "this task is the same as my private entry" is not
+    // a sentence, and folding work INTO one was worse than a refusal — the gate
+    // ACCEPTED it, the work left every list (mergedInto), the survivor was
+    // excluded from every list by kind, and the gauge still read zero because
+    // law 1 rides the chain to a demand-free survivor. A titleless journal even
+    // sorted FIRST in the picker, as "(untitled)" at the top. Nothing folds
+    // into either, and neither folds into anything.
+    .filter(t => t.kind !== 'journal' && n.kind !== 'journal')
+    .filter(t => t.kind !== 'anchor' && n.kind !== 'anchor')
     // Never offer what the gate must refuse (ADR-0038). Until 1.9.2 this
     // stopped at the three filters above, so a source carrying a date could be
     // folded into a Menu item or a demand-free kind and be rejected AFTER the
@@ -295,7 +307,15 @@ export function mergePlan(
   // `waiting-for`, `isOpenWaiting` will not count it — a fold must never
   // change the survivor's kind, so this is a downgrade, not a loss, and the
   // confirmation says so.
-  if (source.waitingOn && !source.waitingOutcome && !target.waitingOn) {
+  // "No open waiting" — the disposition's own words. This tested bare
+  // `!target.waitingOn` until the seam audit (1.17.3), and `waiting.closed`
+  // sets `waitingOutcome` without clearing `waitingOn` — so a survivor whose
+  // wait had already CLOSED blocked the carry, and folding a still-open
+  // duplicate into it silently dropped the open wait: the person disappeared
+  // from "with other people" with no record anywhere, the swallow the file
+  // header forbids. A closed wait is an ANSWERED question, not a standing one.
+  if (source.waitingOn && !source.waitingOutcome
+      && !(target.waitingOn && !target.waitingOutcome)) {
     out.push(base(ctx, 'waiting.opened', target.id, {
       person: source.waitingOn,
       forWhat: source.waitingFor ?? '',

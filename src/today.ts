@@ -17,7 +17,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
-import { nextUp } from './nextup.ts';
+import { workSurface } from './nextup.ts';
 import { waitingOnAnyone, withWhom, waitingWords } from './people.ts';
 import { calendarDaysBetween, isValidIso, localDayKey } from './time.ts';
 
@@ -58,7 +58,14 @@ const title = (n: NodeState): string => n.title || '(untitled)';
  * while both looked authoritative.
  */
 export function todayCard(state: State, nowIso: string, zone: string, aheadDays = 7): TodayCard {
-  const up = nextUp(state, nowIso, zone);
+  // `workSurface`, NOT `nextUp` — corrected by the seam audit (1.17.3). The
+  // docstring above promised "the SAME projections the screen uses" while the
+  // code called the raw queue: the screen subtracts upkeep chips (they have
+  // their own strip) and everything holding a live replan card (law 3 — a
+  // passed date is a DECISION, and printing it as "the one thing" hands you the
+  // lapsed commitment as if it were ordinary work). So the paper offered items
+  // the screen deliberately does not, and both looked authoritative.
+  const up = workSurface(state, nowIso, zone).up;
   const behind = up.behind;
 
   const owed = waitingOnAnyone(state, nowIso, zone);

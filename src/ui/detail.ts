@@ -614,8 +614,14 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // demand clock and the gate's belt refuses it on a wish, so the verb is
     // never offered where it cannot land — and on people and resume cards.
     {
+      // Every demand-free kind, not only `person` (1.17.3, the seam audit):
+      // declining writes a park in the same batch, and the gate refuses a park
+      // on a demand-free kind — so "Not mine to carry" on an anchor reached
+      // through search, or an off-Menu aspiration in the todo list, was offered
+      // and then refused. The same shape 1.17.2 closed for dates, one group down.
       const canDecline = !n.trashed && !n.mergedInto && n.onMenu === null
-        && !['person', 'resume-card'].includes(n.kind);
+        && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind)
+        && n.kind !== 'resume-card';
       grp('#detail-request-group', canDecline);
       if (canDecline) paintRequest(n);
     }
@@ -679,7 +685,13 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     show('#detail-undone', Boolean(n.lastDone));
     show('#detail-menu', !n.onMenu && !n.trashed);
     show('#detail-promote', Boolean(n.onMenu));
-    show('#detail-trash', !n.trashed);
+    // Not on a merge SURVIVOR (1.17.3, the seam audit): trashing a node that
+    // others folded into makes the folded-in nodes newly silent and the gate
+    // refuses the batch after the tap — the error toast even leaked gate
+    // internals ("batch would leave 1 silent node(s)"). The way to let a
+    // survivor go is on this same sheet: split the folds back out first, and
+    // the merged-group below already offers exactly that.
+    show('#detail-trash', !n.trashed && foldedIntoDeep(session.state(), n.id).length === 0);
     show('#detail-untrash', n.trashed);
     // "On its own" only when there is something to come out of, and the promote
     // to a container only when it is not one already — the same rule as every

@@ -29,6 +29,23 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.17.3',
+    kind: 'ITERATION',
+    date: '2026-08-03',
+    notes: [
+      '**The seam audit\u2019s findings, fixed.** Thirty-one findings from six independent passes over the places where two parts of the app must agree; fourteen were put to adversarial verification and every one survived. All fourteen are fixed in this release, each pinned by its own test.',
+      '**A worry is no longer offered as work.** Something you put in through \u201cSomething on your mind\u201d showed up on the work surface the same day with a Done button \u2014 before its own flow had asked you \u201cwhose is this?\u201d. And one you had said \u201cnot mine to carry\u201d about sat under \u201cReady now\u201d asking for ever. A worry now stays in its own flow, and a declined one rests quietly under Later, the way the design always said it should.',
+      '**Your calendar gets no nags.** A thing you declined was exported to the OS calendar as an all-day event with a morning alarm \u2014 the exact nag the Not Now ledger exists to remove, rebuilt in the diary you trust, about the very thing you said no to. Declines and worries no longer export at all, and the stated event count matches the file.',
+      '**The printed card and the screen now say the same thing.** Paper offered items the screen deliberately holds back \u2014 a lapsed date the screen shows as a decision was printed as the one thing to do.',
+      '**The status report stops disclosing private things.** Journal entries went out as \u201cNew \u2014 (untitled)\u201d, and weights, people and named periods as new work \u2014 in the one document written to hand to another person. None of them enter it now.',
+      '**Folding into the wrong thing is no longer possible.** The duplicate picker offered your private journal entries \u2014 titleless, sorted first \u2014 and named periods as things to fold work into; accepting hid the work from every list while the counts still read clean. Also fixed on the way: letting go of a thing that others were folded into is skipped with a count instead of failing mid-batch, and a duplicate of something someone already sent you no longer loses track of who owes you what.',
+      '**\u201cKeep it after all\u201d on a settled weight works now.** It said \u201cKept.\u201d and the thing then existed on no screen at all. Kept means back on the load list, carrying what it carried.',
+      '**One deeper repair underneath:** a settle used to be the one write that could leak into live state even when the batch around it was refused. That hole is closed.',
+      'The words beside \u201cBringing a copy back\u201d now describe both doors truthfully \u2014 the one that adds and the one that replaces \u2014 instead of denying the first one existed.',
+      'Seventeen further findings from the same audit are recorded and queued; none of them loses data.',
+    ],
+  },
+  {
     triplet: '1.17.2',
     kind: 'ITERATION',
     date: '2026-08-03',

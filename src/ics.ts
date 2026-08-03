@@ -133,6 +133,25 @@ const stampValue = (iso: string): string =>
  */
 export const CALENDAR_KINDS: ReadonlySet<string> = new Set(['due', 'start', 'suspense', 'park']);
 
+/**
+ * May this node appear in the exported calendar at all? ONE predicate, read by
+ * the file and the count, so the ⓘ panel can never state a number the file
+ * does not hold.
+ *
+ * Two exclusions, both from the seam audit (1.17.3):
+ *
+ * - **A worry never exports.** A bother's only clocks are the flow's own — the
+ *   entry cure and the mine-to-track park — and a calendar event with an alarm
+ *   turns "keep an eye on this" into an appointment nobody made.
+ * - **A standing decline never exports.** ADR-0056's relief is the point: "a
+ *   park never demands... no nag when the slot day arrives — no notification,
+ *   no banner, no badge." Exporting the decline's park as an all-day event with
+ *   a morning alarm rebuilt, in the OS calendar you trust, the exact nag the
+ *   ledger exists to remove — about the very thing you said no to.
+ */
+export const exportsToCalendar = (n: NodeState): boolean =>
+  n.kind !== 'bother' && !n.notNow;
+
 /** The soonest clock a calendar may carry. NOT `soonestClock`, which answers a
  *  different question — `held.ts` groups on any clock, because the app genuinely
  *  should resurface a review-clocked item. Only the export is narrower. */
@@ -191,6 +210,7 @@ export function toCalendar(
   for (const group of heldGroups(state, nowIso, zone)) {
     if (!inCalendar(group.key)) continue;
     for (const n of group.items) {
+      if (!exportsToCalendar(n)) continue;
       const at = soonestAt(n, zone, nowIso);
       // No real clock, nothing to put in a calendar. Skipping rather than
       // throwing is deliberate: one malformed stored date must not take the
@@ -247,7 +267,10 @@ export function calendarCount(state: State, nowIso: string, zone: string): numbe
   let n = 0;
   for (const group of heldGroups(state, nowIso, zone)) {
     if (!inCalendar(group.key)) continue;
-    for (const item of group.items) if (soonestAt(item, zone, nowIso)) n++;
+    for (const item of group.items) {
+      if (!exportsToCalendar(item)) continue;
+      if (soonestAt(item, zone, nowIso)) n++;
+    }
   }
   return n;
 }

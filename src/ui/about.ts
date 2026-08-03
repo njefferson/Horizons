@@ -759,11 +759,18 @@ export async function mountAbout(
       const here = heldNodes(session.state()).length;
       // Both numbers, plainly. "412 events" means nothing to a person; "37
       // things" is the number they can check against what they remember.
+      // BOTH doors, named (1.17.3, the seam audit). This sentence used to say
+      // "Bringing it in replaces... Nothing is merged — this is a replacement"
+      // unconditionally, while the focus landed on "Take in what I don't have"
+      // — which is additive and removes nothing. The one paragraph a person
+      // reads before the most consequential act in the app denied that the
+      // default button existed.
       importNote.textContent =
         `That file holds ${summary.items} thing${summary.items === 1 ? '' : 's'} ` +
         `(${summary.events} record${summary.events === 1 ? '' : 's'}), saved ${made}. ` +
-        `Bringing it in replaces the ${here} thing${here === 1 ? '' : 's'} on this device. ` +
-        'Nothing is merged — this is a replacement.';
+        `“Take in what I don’t have” adds what this device is missing and removes nothing. ` +
+        `“Replace everything” replaces the ${here} thing${here === 1 ? '' : 's'} on this device with the file — ` +
+        'nothing is merged on that path; it is a clean swap.';
       importActions.hidden = false;
       importExplainer.hidden = false;
       // Focus the ADDITIVE one. It is the everyday action and it cannot lose

@@ -57,7 +57,16 @@ export interface Clock {
  * towards showing work rather than quieting it.
  */
 export const isAppClock = (c: Clock | undefined | null): boolean =>
-  c != null && c.source === 'gate:node.created';
+  // `gate:bother.received` joined in 1.17.3 (the seam audit), by this
+  // predicate's own doctrine: a cure inherits the intent of the event it cured,
+  // and a worry ENTERING carries no intent about when — its surface is the
+  // bother flow, which asks "whose is this?" before anything else
+  // (src/bother.ts: "not a task, has no next action"). Without this, every
+  // worry was offered on the work surface as "this one is waiting" with a Done
+  // button the same day, and a routed one kept asking for ever. The demand
+  // cures in the list above stay demands — this adds one no-intent case, it
+  // does not reopen the "any gate:" mistake the comment records.
+  c != null && (c.source === 'gate:node.created' || c.source === 'gate:bother.received');
 
 /** One line of a node's decision log. `meeting` is folded and rendered when
  *  present, and written by nothing in 1.9.0 — nothing resolves a meeting
@@ -986,14 +995,26 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
         break;
       }
 
-      case 'pebble.settled': {
-        const n = e.node ? s.nodes.get(e.node) : undefined;
-        if (n && wins(n.stamps['pebble'], o)) {
-          n.pebble = null;
-          setField(n.stamps, 'pebble', o);
-        }
+      // Settling a pebble no longer touches the node, and the empty case is
+      // load-bearing twice over (1.17.3, the seam audit):
+      //
+      // - **The old body was the fold's ONE aliasing hole.** It used
+      //   `s.nodes.get` instead of `ensureNode`, then wrote `n.pebble = null`
+      //   straight into a possibly base-aliased node — so a REJECTED batch
+      //   containing a settle left the settle applied to live state, which is
+      //   the exact class the 1.3.1 audit filed as severe and the copy-on-write
+      //   contract above exists to prevent.
+      // - **Nulling the weight stranded the way back.** Settling emits
+      //   `node.trashed` beside it (ADR-0065), and the trash view promises
+      //   "Keep it after all" — but untrash only restores `trashed`, so a kept
+      //   pebble had `pebble: null` and appeared on NO surface at all: not the
+      //   load list (which requires the weight), not search, not the todo list.
+      //
+      // The trash is what removes a settled pebble from the load list, and the
+      // raise's data survives so untrash puts the weight back where it was. The
+      // log still says the settling happened; nothing needs to fold from it.
+      case 'pebble.settled':
         break;
-      }
 
       // How you said things are going. State-level LWW, the `timerMinutes`
       // shape. An unrecognised level is REFUSED rather than guessed — the fold

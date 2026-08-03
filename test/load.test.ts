@@ -156,31 +156,60 @@ test('a pebble names what it sits on, and claims nothing about it', () => {
     '`affects` is a list to read, not a dependency — nothing derives from it');
 });
 
-test('settling lifts the weight and keeps the record', () => {
+test('settling lifts the weight, keeps the record, AND keeps the way back', () => {
+  // REWRITTEN by the seam audit (1.17.3). The 1.15.0 version asserted that a
+  // bare `pebble.settled` nulled the weight — and that null was the defect: the
+  // trash view promises "Keep it after all", untrash restores only `trashed`,
+  // so a kept pebble had no weight and appeared on NO surface at all. Settling
+  // is the PAIR settlePebbleEvents writes (ADR-0065: the settle and the trash),
+  // the trash is what lifts it from the load list, and the raise's data
+  // survives so the way back is real.
   let s = withWork();
   s = pebble(s, 'P', 'the roof', 'boulder');
   assert.equal(loadNow(s).heavy, true);
-  s = write(s, [ev('pebble.settled', 'P', {})]);
+  s = write(s, [
+    ev('pebble.settled', 'P', {}),
+    ev('node.trashed', 'P', { reason: 'pebble:settled' }),
+  ]);
   assert.equal(loadNow(s).heavy, false, 'it is off you');
   assert.equal(loadNow(s).pebbles.length, 0, 'and out of the list');
   assert.ok(s.nodes.get('P'), 'but the node is still there — nothing here deletes');
   assert.equal(s.nodes.get('P')!.title, 'the roof', 'with what you called it');
+  assert.deepEqual(s.nodes.get('P')!.pebble, { magnitude: 'boulder', affects: [] },
+    'and the weight is kept, so "Keep it after all" has something to bring back');
+
+  s = write(s, [ev('node.untrashed', 'P', {})]);
+  assert.equal(loadNow(s).pebbles.length, 1, 'kept after all: back on the load list');
+  assert.equal(loadNow(s).heavy, true, 'carrying what it carried');
 });
 
 test('raise and settle converge whatever order the shards arrive in', () => {
-  // Their own LWW key, so two devices disagreeing about whether a thing is
-  // still on land on the later word rather than on whichever folded last.
+  // Whether a thing is still ON you now rides the `trashed` LWW key — the
+  // settle pair carries a trash, and trash/untrash already converge like every
+  // other stamped fact. `pebble.settled` itself folds to nothing (1.17.3): its
+  // old body was the fold's one copy-on-write bypass, and nulling the weight
+  // stranded the way back.
+  const born = ev('node.created', 'P', { nodeKind: 'pebble', title: 'x' },
+    { id: 'a0', at: '2026-08-02T08:00:00.000Z', seq: 4 });
   const raised = ev('pebble.raised', 'P', { magnitude: 'rock', affects: [] },
     { id: 'a1', at: '2026-08-02T09:00:00.000Z', seq: 5 });
   const settled = ev('pebble.settled', 'P', {},
     { id: 'a2', at: '2026-08-02T10:00:00.000Z', seq: 6 });
-  const born = ev('node.created', 'P', { nodeKind: 'pebble', title: 'x' },
-    { id: 'a0', at: '2026-08-02T08:00:00.000Z', seq: 4 });
-  const forward = fold([born, raised, settled], emptyState());
-  const backward = fold([born, settled, raised], emptyState());
-  assert.equal(forward.nodes.get('P')!.pebble, null);
-  assert.deepEqual(serialiseState(forward), serialiseState(backward),
-    'same log, same state, whatever order it arrived in');
+  const trashed = ev('node.trashed', 'P', { reason: 'pebble:settled' },
+    { id: 'a3', at: '2026-08-02T10:00:00.000Z', seq: 7 });
+  const orders = [
+    [born, raised, settled, trashed],
+    [born, settled, trashed, raised],
+    [trashed, settled, raised, born],
+  ];
+  const states = orders.map(o => fold(o, emptyState()));
+  assert.equal(states[0]!.nodes.get('P')!.trashed, true, 'settled means off you');
+  assert.deepEqual(states[0]!.nodes.get('P')!.pebble, { magnitude: 'rock', affects: [] },
+    'with the weight retained for the way back');
+  for (const st of states.slice(1)) {
+    assert.deepEqual(serialiseState(st), serialiseState(states[0]!),
+      'same log, same state, whatever order it arrived in');
+  }
 });
 
 test('a pebble survives a snapshot round trip, list and all', () => {
