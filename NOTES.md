@@ -473,6 +473,38 @@ handed over (Doctrine §7).
 
 ### Log
 
+- **2026-08-03 (Noah: "Pages.dev has been allowed now" → "hand off to another
+  session")** — **the grant did not reach this session, and that is the finding.**
+  Both hosts were refused at the gateway and the proxy logged it:
+  `quietkeep.pages.dev:443` and `staging.quietkeep.pages.dev:443`, `403 to
+  CONNECT`, 18:35:10Z and 18:35:11Z. The policy is **deny-by-default with an
+  allowlist**, measured rather than assumed — `api.github.com` answers 200 from
+  here while `example.com` and `cloudflare.com` are refused identically, so this
+  is not a Quietkeep-specific block. A session's egress policy looks to be bound
+  at container start, so a grant made mid-session cannot reach the session that
+  is already running. Not retried in a loop: the agent-proxy README is explicit
+  that policy denials are reported. Recorded against [V-15](docs/verifications.md).
+  · **Three things were fixed on the way to handing off, all found by gates.**
+  · **The hub's `handoff-check.mjs` was false-failing this repo** — it read
+  `--project-name=([\w-]+)`, which cannot match `${{ env.PROJECT }}`, and
+  `deploy.yml` parameterises the name (correctly). **The false positive was the
+  lesser half**: `project` also feeds the §7 staging-URL assertion, so that
+  check had NEVER RUN here — and on its first real run it found a genuine
+  violation. `NOTES.md` had named the hostname in prose for weeks and never as
+  a URL anyone could tap, which is a staged candidate not handed over. The
+  **Staged and waiting on Noah** block above is the fix. Gate corrected in the
+  hub (`972f966`) and proved by planting.
+  · **A live SC 2.5.3 defect in 1.18.0's own new control.** Hub LESSONS §29
+  landed today from a sibling and names the class: the build stamp read
+  "1.18.0" while announcing itself as "Build — open the diagnostic report", so
+  a voice-control user reads the button, says what it says, and nothing matches.
+  **This repo's a11y gate has no label-in-name check**, so nothing here caught
+  it — that gap is real and is left for the next session. Fixed by setting text
+  and name in one place, verified in the rendered DOM rather than by reading
+  the edit.
+  · `.doctrine-sync` adopted at hub `972f966` after reading LESSONS §28 and
+  §29 — an assertion the drift was read, not a formality.
+
 - **2026-08-03** — **1.18.0 (CAPABILITY) "When something is wrong"** — the
   diagnostic report. **Not a planner feature**: `docs/data-constitution.md` had
   promised the reader one since it was written and nothing built it (the 1.9.1
