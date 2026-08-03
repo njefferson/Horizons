@@ -492,6 +492,11 @@ decided by a session.**
   both new inputs at 21px against the 44px floor.
   · ADR-0068, B-36. **The Should—v1.5 list is empty after this**, and pebbles is
   struck from it at last.
+  · **Spine 210 green on `1a24b4e`** — all 22 steps. Worth naming precisely: the
+  code commit's own run (209 on `8f64495`) was **cancelled**, not failed —
+  `spine.yml` sets `cancel-in-progress: true`, so the docs commit that landed a
+  minute later superseded it. The green run is on the head that carries every
+  line of the release, which is what V-10 asks for. Not promoted.
 
 - **2026-08-03 (Noah: "Generate enough test data in all categories, types, etc,
   to see real data errors")** — **1.16.0 "A set with everything in it"**.
