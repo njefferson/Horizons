@@ -2899,6 +2899,58 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.click('#open-about');
   await expandGroups(tpage);
   await tpage.waitForSelector('#about[open]');
+
+  // --- a whole invented life, as a file (1.16.0, ADR-0067) -----------------
+  //
+  // Run BEFORE the small set, because that one reloads the page.
+  //
+  // The three claims worth checking on the real thing: the file it hands over is
+  // one the app would accept back, it changed NOTHING on this device, and it did
+  // not record a copy — `export.written` is what the panel reads to say "Last
+  // copy", and a file containing none of your work must never move that row.
+  console.log('\nA whole invented life — a file, not an append');
+  const logBefore = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  const copiesBefore = logBefore.filter(e => e.kind === 'export.written').length;
+  const [bigDl] = await Promise.all([
+    tpage.waitForEvent('download', { timeout: 120000 }),
+    tpage.click('#big-sample'),
+  ]);
+  await tpage.waitForFunction(() => /invented things/.test(
+    document.querySelector('#big-sample-note')?.textContent ?? ''), null, { timeout: 120000 });
+  const bigSaid = await tpage.locator('#big-sample-note').textContent() || '';
+  is(/\d+ invented things/.test(bigSaid), true,
+    `it says how many it made ("${bigSaid.slice(0, 60)}")`);
+  is(/replaces what is on this device/.test(bigSaid), true,
+    'and that bringing it back in replaces what is here');
+  is(/backup/i.test(bigSaid), false, 'and it never calls the file a backup');
+
+  const bigFile = JSON.parse(readFileSync(await bigDl.path(), 'utf8'));
+  is(bigFile.format, 'planner-log', 'the file is an ordinary export, so the ordinary import reads it');
+  const bigLines = String(bigFile.logJsonl).split('\n').filter(Boolean);
+  is(bigLines.length > 1000, true, `and it carries a real log (${bigLines.length} records)`);
+  const bigKinds = new Set(bigLines.map(l => JSON.parse(l).kind));
+  for (const kind of ['node.merged', 'decision.logged', 'pebble.raised', 'journal.entry.written',
+                      'request.declined', 'dependency.declared', 'today.chosen', 'node.trashed']) {
+    is(bigKinds.has(kind), true, `it contains ${kind}, which no sample has ever had`);
+  }
+
+  const logAfter = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(logAfter.length, logBefore.length, 'and it wrote NOTHING to this device — the store is untouched');
+  is(logAfter.filter(e => e.kind === 'export.written').length, copiesBefore,
+    'including no export.written, so "Last copy" cannot claim a file holding none of your work');
+
   await tpage.click('#sample');
   await tpage.waitForFunction(() => /sample things/.test(
     document.querySelector('#sample-note')?.textContent ?? ''), null, { timeout: 4000 });

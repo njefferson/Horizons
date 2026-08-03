@@ -983,3 +983,32 @@ the rendered gate in this same commit.
 - **The list is announced by the surface it changes**, not by a live region of
   its own. Adding a weight repaints Next up, which already carries
   `#nextup-live`; a second announcement for the same act would talk over it.
+
+### B-35 · A whole invented life, as a file (1.16.0)
+
+- **The two sample controls have separate headings**, and that is an
+  accessibility decision as much as an editorial one. One adds a little work to
+  your store; the other makes a file of several hundred invented things and
+  touches nothing. Two buttons under one heading would make a screen-reader
+  listener choose between them from their labels alone, with the caveat that
+  distinguishes them attached to only one of them.
+- **`#big-sample-note` is a `role="status"` live region**, like `#sample-note`
+  and the storage note beside them — the same shape for the same job, so a
+  reader who has met one has met all three.
+- **The button says "Making it…" before the work starts.** Deriving the
+  journal's key is PBKDF2 at 600,000 iterations and the set is ~1,570 events
+  through the write gate, so there is a real pause on a tablet. A control that
+  goes quiet for two seconds reads as a broken one, and this audience is the
+  least well served by having to guess whether a tap registered.
+- **The button is disabled only while it runs**, and comes back either way —
+  including on failure. A control that stays disabled after an error strands
+  somebody with no way to retry and no statement of what happened.
+- **No new colour pair.** The block reuses `.about-section`, `.about-p`,
+  `.about-caveat`, `.ghost` and `.storage-note`, all measured since B-08; the
+  two new selectors are added to the contrast registry in this same commit and
+  measure 10.07:1 and 7.20:1 in light, 8.21:1 and 9.73:1 in dark.
+- **The caveat states the destructive half in the caveat's own place**, not
+  inside the button label: bringing the file back in replaces what is on the
+  device. The act that replaces is the existing import, which already carries
+  its own warning and its own confirm — this text points at it rather than
+  duplicating it, so there is one place where that fact is stated authoritatively.

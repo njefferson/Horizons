@@ -102,6 +102,9 @@ const DIALOG_COMMON = [
   '#storage-body dt', '#storage-body dd', '#storage-note',
   '#export', '#about-close', '#storage-ask', '#calendar', '#calendar-note', '.about-caveat',
   '#sample', '#sample-note', '#badge-explainer', '#badge-toggle', '#badge-note',
+  // The bigger set (1.16.0). Its note is a status region that only fills after a
+  // press, so it is driven in the walk rather than measured empty.
+  '#big-sample', '#big-sample-note',
   '#other-file', 'label[for="other-file"]', '#other-note',
   '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
   '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',

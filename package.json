@@ -30,7 +30,8 @@
     "thesis:check": "node tools/thesis.mjs --check",
     "events:check": "node --experimental-strip-types tools/event-list.mjs",
     "writegate:check": "node tools/write-gate.mjs",
-    "emitters:check": "node --experimental-strip-types tools/emitters.mjs"
+    "emitters:check": "node --experimental-strip-types tools/emitters.mjs",
+    "sample:check": "node --experimental-strip-types tools/sample-coverage.mjs"
   },
   "//build": "esbuild strips types and bundles src/ui into one ES module. It is the ONLY build step and it does no transpiling down \u2014 target es2022 is what the reference platform already runs. See ADR-0026 for why a build exists at all in a family that avoids them.",
   "//playwright": "1.56.0 ships chromium revision 1194, which is what /opt/pw-browsers/chromium-1194 is. These are a MATCHED PAIR \u2014 see the hub's LESSONS.md section 8. Bumping one without the other silently breaks every render with no useful error.",

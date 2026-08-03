@@ -14,25 +14,26 @@
 
 import { requestPersistence, ulid } from '../ids.ts';
 import { toCalendar, calendarCount } from '../ics.ts';
-import { exportFilename, inspectExport, importSeedingFresh, foldInShard } from '../portability.ts';
+import { exportFilename, inspectExport, importSeedingFresh, foldInShard, toJsonl } from '../portability.ts';
 import { statusReport, renderReport, reportedBefore, type ReportFormat } from '../delta.ts';
 import { commsNode } from '../comms.ts';
 import { printText } from './print.ts';
 import { startCommsSweepEvents, stopCommsSweepEvents } from './focus-intents.ts';
 import { fold } from '../fold.ts';
 import { highWaterMark } from '../snapshot.ts';
-import { coverageGauge, heldNodes, trashedNodes } from '../gate.ts';
+import { admit, coverageGauge, gateOptionsFor, heldNodes, trashedNodes } from '../gate.ts';
 import type { NodeState } from '../fold.ts';
 import type { ExportFile } from '../portability.ts';
 import type { AppEvent } from '../events.ts';
 import { RELEASES, CURRENT } from './changelog.ts';
 import type { Session } from './session.ts';
 import { sampleEvents, sampleSummary, sampleWords } from '../sample.ts';
+import { bigSampleEvents, bigSampleSummary, bigSampleWords } from '../big-sample.ts';
 import { CONFIRM_WORD, clearEvents, confirmMatches, eraseEverything, purgeCount, purgeSummary, purgeWords, purgedWords, type PurgeCount, type PurgeMode } from '../purge.ts';
 import { KEY_KV } from '../sync-keys.ts';
 import { badgeWords, badgeToggleLabel, isBadgeOn, setBadgeEnabled } from './badge.ts';
 import { importSummary, importWords, parseAnyExport, taskPaperEvents } from '../taskpaper.ts';
-import { deliverCopy } from './export-copy.ts';
+import { deliverCopy, deliverGeneratedSet } from './export-copy.ts';
 import { eventWords, isCure } from '../log-words.ts';
 import { localDayKey } from '../time.ts';
 import { TODAY_MODULE, todayIsOn } from '../composed.ts';
@@ -1215,6 +1216,60 @@ export async function mountAbout(
           sampleNote.textContent =
             `That could not be added — ${(err as Error).message} Nothing was changed.`;
           sampleButton.disabled = false;
+        }
+      })();
+    });
+  }
+
+  // --- a whole invented life, as a file (1.16.0, ADR-0067) ------------------
+  //
+  // Three things this does NOT do, each of them deliberate:
+  //
+  //  - **It does not touch the store.** The demonstration set above appends, and
+  //    at fourteen things that is a fair trade. At this size it is not: there is
+  //    no verb that takes just these back out, and there must not be one (law 9
+  //    — that is `import.merged` in costume). So it makes a file and the ordinary
+  //    import brings it in, with the warning that already exists.
+  //  - **It records no event.** `deliverGeneratedSet` writes nothing, because
+  //    nothing happened to your data. Recording `export.written` would make the
+  //    "Last copy" row claim a backup containing none of your work.
+  //  - **It does not go through `session.commit`.** It still goes through the
+  //    real `admit` — the file must be one the app would have written, and
+  //    `inspectExport` refuses anything that folds to a silent node — but the
+  //    admitted events go into the file rather than into this device's log.
+  const bigButton = document.querySelector<HTMLButtonElement>('#big-sample');
+  const bigNote = document.querySelector<HTMLElement>('#big-sample-note');
+  if (bigButton && bigNote) {
+    bigButton.addEventListener('click', () => {
+      void (async () => {
+        bigButton.disabled = true;
+        // Said BEFORE the work starts: deriving the journal key is PBKDF2 at
+        // 600,000 iterations and the set is a few thousand events, so there is a
+        // real pause here and a silent button reads as a broken one.
+        bigNote.textContent = 'Making it…';
+        try {
+          const at = new Date().toISOString();
+          let n = 0, s = 0;
+          const offered = await bigSampleEvents({
+            at, device: session.device, vault: 'personal', zone: session.zone,
+            seq: () => s++, id: () => `sample-${at}-${n++}`,
+          }, at);
+          // The real write boundary, exactly as a keystroke takes it. A set that
+          // needed a private door would be demonstrating a state the app does
+          // not permit — and would be refused on the way back in anyway.
+          const admitted = admit(offered, fold([]), gateOptionsFor(session.zone));
+          await deliverGeneratedSet(session, {
+            format: 'planner-log', version: 1, at, scope: 'sample-set',
+            encrypted: false, logJsonl: toJsonl(admitted), snapshot: null,
+          }, at);
+          bigNote.textContent = bigSampleWords(bigSampleSummary(admitted));
+        } catch (err) {
+          // A refusal here is a defect in the generator, not something the
+          // reader did, and the sentence says so rather than blaming them.
+          bigNote.textContent =
+            `That set could not be made — ${(err as Error).message} Nothing on this device changed.`;
+        } finally {
+          bigButton.disabled = false;
         }
       })();
     });

@@ -441,6 +441,48 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Generate enough test data in all categories, types, etc,
+  to see real data errors")** — **1.16.0 "A set with everything in it"**.
+  · **The number that made the case.** `src/sample.ts` was right when it was
+  written at 0.22.0. Measured before building anything: the app emits **70** of
+  its 90 event kinds and the sample contained **8**, plus 8 of 14 node kinds. So
+  every surface built in sixteen releases — merges, dependencies, decisions, the
+  ledger, the trash, Composed Today, focus, weight, the journal — **had never
+  once been seen with data in it**, except whatever happened to be in Noah's
+  store. 1.15.1 is the worked example of what that costs.
+  · **A FILE, not an append.** The small set appends and admits "yours to sort
+  out afterwards"; at ~560 things that trade is not fair, and no verb takes just
+  those back out (law 9 — that is `import.merged` in costume). So it writes a
+  `planner-log` file and the ordinary import brings it in, with the warning that
+  already exists. No new destructive act.
+  · **It records nothing**, deliberately. Both existing deliverers write
+  `export.written`, which `copies.ts` reads to say "Last copy" — a generated file
+  holds none of Noah's data, so recording one would make that row claim a backup
+  that does not exist, in the one place somebody reads to decide if they are
+  covered. Smoke pins the store's event count and its `export.written` count
+  unchanged after making a set.
+  · **`sample:check` generates the set for real and asks what came out** — not a
+  grep, which would pass on a kind named in a comment. Both directions, like
+  `emitters:check`. Nine exemptions with written reasons: eight device-local acts
+  (a snapshot, a copy, another device's shard or greeting), and `anchor`, which
+  would be a **silent node** and is refused by the gate — ADR-0057's deferral,
+  arriving as a machine-checked consequence.
+  · **The sweep is the half that answers the request.** Every projection over the
+  folded set, asserting no `undefined` / `NaN` / `Invalid Date` /
+  `[object Object]` / bare `null` in any rendered string — 4,000+ strings a run,
+  including `eventWords` over all 1,569 events and the report in four formats.
+  · **Two defects in the checks themselves, both found by planting.** The sweep
+  first stringified whole nodes and reported 94 hits, every one its own
+  scaffolding (`"parent":null`) — a check that flags its own instrumentation
+  teaches you to ignore it. And the trigger-list check searched the journal's
+  base64 ciphertext, where a random IV produced "gtd": **the second time that
+  exact collision has happened here**, after 1.15.0's `'bb'` matching
+  "pe-bb-le". Both now read authored words only.
+  · Deliberate-failure proofs: removing one kind from the set reds `sample:check`
+  naming that kind; removing the null branch from `ledgerRowWords` reds the sweep
+  with `ledger.g1562: null asked · declined 3 Aug`.
+  · ADR-0067, B-35. Nothing on any existing screen changed.
+
 - **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
   `60a45c8 → 59644a4`**, carrying **1.15.1** (what "held" means). Spine 202
   watched green on the exact head before the promote — all 21 steps — and

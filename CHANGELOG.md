@@ -14,6 +14,17 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.16.0 — CAPABILITY
+
+*2026-08-03*
+
+- **There is a way to see how Quietkeep behaves with a whole life in it.** In the ⓘ panel, under “A whole invented life”, Quietkeep now makes a file of several hundred invented things — jobs with steps under them, dates that have gone by, people you are waiting on, duplicates folded together, things you let go, weights, a sealed journal. Something of every kind it can hold.
+- **It does not touch what is on this device.** It makes a file and stops. The file only becomes real work if you bring it back in — and doing that replaces everything here, the way bringing any copy back does. So take a copy of your own first and bring that one back when you have finished looking.
+- An empty planner is easy to judge kindly. A full one is where you find out whether a screen still reads properly with three hundred things behind it.
+- **The reason this exists is a number.** The small sample set was written a long time ago and contains eight of the seventy kinds of thing Quietkeep records. Everything built since — folding duplicates, decisions, the things-you-said-no-to list, what you let go, weights, the journal — had never once been seen with anything in it.
+- So from now on, a new kind of thing has to appear in that set, or the build says so and stops. And every screen is now run over the full set on every build, checking for the small wrong things a person should never have to notice: a blank where a name should be, a date that is not a date, a count that does not match its own list.
+- Nothing on your screens changed in this one.
+
 ## 1.15.1 — ITERATION
 
 *2026-08-02*

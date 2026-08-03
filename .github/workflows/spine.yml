@@ -123,6 +123,14 @@ jobs:
       - name: Every noun accounts for itself
         run: npm run emitters:check
 
+      # And every kind is DEMONSTRATED, or says why not (1.16.0, ADR-0067). The
+      # sample set was written at 0.22.0 and sixteen releases later contained 8
+      # of the 70 kinds the app emits — so every surface built after it had
+      # never once been seen with data in it. This generates the set for real,
+      # runs it through the write boundary, and asks what came out.
+      - name: The sample set covers the app
+        run: npm run sample:check
+
       # Storage is IndexedDB via Dexie and localStorage is banned outright. That
       # ban rested on review alone until a security audit pointed out it was the
       # only invariant in CLAUDE.md with no gate behind it — unlike connect-src

@@ -63,6 +63,37 @@ export async function deliverCopy(session: Session, scope = 'all', ext = 'json')
 }
 
 /**
+ * A generated set to try things on (1.16.0, ADR-0067) — a file of invented work
+ * covering every kind the app has, for finding the places a surface says
+ * something wrong.
+ *
+ * **This one records NOTHING, and that is the decision rather than an
+ * omission.** Both deliverers above write `export.written`, and `src/copies.ts`
+ * reads that noun to say "Last copy". This file contains none of your data, so
+ * recording it would make the panel claim a backup that does not exist — the
+ * worst possible lie for that particular row to tell, since somebody reads it
+ * precisely when deciding whether they are covered. Nothing happened to your
+ * data here, so there is nothing for the log to explain.
+ *
+ * It is an ordinary `planner-log` export, so the ordinary import brings it in:
+ * a fresh store, the warning the import already gives, and no new destructive
+ * act anywhere. The way back is the copy you took first.
+ */
+export async function deliverGeneratedSet(
+  session: Session, file: unknown, at: string,
+): Promise<void> {
+  const blob = new Blob([JSON.stringify(file)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = exportFilename('sample-set', at, false, 'json', session.zone);
+  document.body.append(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), REVOKE_AFTER_MS);
+}
+
+/**
  * A READING COPY of one range: these things and their history, verbatim
  * (1.5.0). Deliberately NOT an `ExportFile` and not importable — a range's
  * events in isolation cannot carry the coverage law 1 requires (the clocks
