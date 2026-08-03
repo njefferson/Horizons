@@ -29,6 +29,16 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.17.2',
+    kind: 'ITERATION',
+    date: '2026-08-03',
+    notes: [
+      '**The sheet no longer offers what the app will refuse.** Opening a person, a named period, a weight, a private entry, or a wish taken off the Menu no longer shows date, \u201cnot before\u201d, or repeat controls \u2014 none of those things can carry a date, and until now the controls were shown and the tap was refused afterwards. \u201cPut it in today\u201d is likewise no longer offered on a named period or a journal entry.',
+      '**This was the fourth of the same defect**, after private entries showing in the coverage list and people sitting in the todo list \u2014 a kind of thing appearing somewhere it does not belong. So the fix comes with the thing that was missing: a written table of which kinds belong on which of the sixteen list surfaces, with a reason for each, checked on every build over the set-of-everything. The next one of these fails a named check before it ships instead of waiting for someone to notice.',
+      'You said everything you found pointed to an unfinished product. This is the start of the answer to that: no new features \u2014 the seams, gated. A wider audit of the same class is running and its findings come next.',
+    ],
+  },
+  {
     triplet: '1.17.1',
     kind: 'ITERATION',
     date: '2026-08-03',

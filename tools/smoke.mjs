@@ -4044,6 +4044,33 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.selectOption('#anchor-period', '');
   await tpage.click('#about-close');
 
+  // --- membership at the sheet (1.17.2, ADR-0070) ---------------------------
+  //
+  // The fourth offered-then-refused defect: `temporal = !n.onMenu` showed the
+  // date/start/repeat controls on every demand-free kind, and the gate refused
+  // the verb after the tap. Search is the door — it returns anchors and people,
+  // and a result row opens the sheet — so this drives that exact path in the
+  // real DOM. The unit test pins the predicate; only this proves the sheet.
+  console.log('\nThe sheet offers nothing the gate would refuse');
+  await tpage.fill('#search-input', 'staff call');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /staff call/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-date-group').isHidden(), true,
+    'no date controls on a named period — the gate would refuse the verb');
+  is(await tpage.locator('#detail-start-group').isHidden(), true, 'no "not before" either');
+  is(await tpage.locator('#detail-repeat-group').isHidden(), true,
+    'and no repeat — makeRepeatEvents carries a clock.set the gate refuses');
+  await tpage.click('#detail-close');
+  await tpage.fill('#search-input', 'Priya');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: /Priya/ }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  is(await tpage.locator('#detail-date-group').isHidden(), true,
+    'no date controls on a person either');
+  await tpage.click('#detail-close');
+  await tpage.fill('#search-input', '');
+
   console.log('\nAsking, and declining (1.8.0)');
   // Decline from the sheet: the record, the park, the state bit — and the way
   // back, a door away in the ledger.

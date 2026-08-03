@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.17.2 — ITERATION
+
+*2026-08-03*
+
+- **The sheet no longer offers what the app will refuse.** Opening a person, a named period, a weight, a private entry, or a wish taken off the Menu no longer shows date, “not before”, or repeat controls — none of those things can carry a date, and until now the controls were shown and the tap was refused afterwards. “Put it in today” is likewise no longer offered on a named period or a journal entry.
+- **This was the fourth of the same defect**, after private entries showing in the coverage list and people sitting in the todo list — a kind of thing appearing somewhere it does not belong. So the fix comes with the thing that was missing: a written table of which kinds belong on which of the sixteen list surfaces, with a reason for each, checked on every build over the set-of-everything. The next one of these fails a named check before it ships instead of waiting for someone to notice.
+- You said everything you found pointed to an unfinished product. This is the start of the answer to that: no new features — the seams, gated. A wider audit of the same class is running and its findings come next.
+
 ## 1.17.1 — ITERATION
 
 *2026-08-03*

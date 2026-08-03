@@ -16,6 +16,7 @@
 
 import type { Session } from './session.ts';
 import { noteOf, type NodeState } from '../fold.ts';
+import { DEMAND_FREE_KINDS } from '../events.ts';
 import { localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
 import {
@@ -559,13 +560,23 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       if (b) b.hidden = !on;
     };
     const repeats = n.kind === 'upkeep' && (n.intervalDays ?? 0) > 0;
-    // A Menu item shows NO temporal controls. The gate's law-6 check guards
-    // demand-free KINDS, not Menu membership — a someday-routed action keeps
-    // kind 'action', so a date set here would be ACCEPTED and then unrenderable
-    // (the Menu group wins every surface). The sheet's own rule covers it: only
-    // what is possible is shown, and dating a wish goes through "Bring back as
-    // real work" first, which is the deliberate act law 6 wants it to be.
-    const temporal = !n.onMenu;
+    // No temporal controls on a Menu item OR on a demand-free kind — and the
+    // second clause was MISSING until 1.17.2, which was a shipped instance of
+    // offered-then-refused (the 1.9.2 audit's F-B, a fourth time). The comment
+    // here even named the gap while the code walked into it: it said "the
+    // gate's law-6 check guards demand-free KINDS, not Menu membership" and then
+    // tested only Menu membership. So the sheet offered "Not before ⟨day⟩" on a
+    // person or an anchor reached through search — and an off-Menu aspiration in
+    // the todo list — and the gate refused all of it after the tap. The repeat
+    // verb too: `makeRepeatEvents` carries a `clock.set`, refused the same way.
+    //
+    // Both clauses still matter. Menu membership is not a kind — a
+    // someday-routed action keeps kind 'action', so without the first clause a
+    // date on a wish would be ACCEPTED and then unrenderable (the Menu group
+    // wins every surface). Dating a wish goes through "Bring back as real work"
+    // first, which is the deliberate act law 6 wants it to be.
+    const temporal = !n.onMenu
+      && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind);
     const grp = (sel: string, on: boolean): void => {
       const g = q<HTMLElement>(sel);
       if (g) g.hidden = !on;

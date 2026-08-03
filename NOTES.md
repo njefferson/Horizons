@@ -445,6 +445,41 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Everything I've found has pointed to an unfinished
+  product." → "The same. Please continue.")** — **1.17.2 "Membership"**, and a
+  change of direction: **no new features. The seams, gated.**
+  · **He is right, and the defect record says where the unfinishedness lives.**
+  Three of the last four shipped defects were one defect in different clothes: a
+  kind on a surface it does not belong on (journal entries in the coverage list,
+  1.15.1; people in the todo list, 1.17.0; and this release's — the detail sheet
+  offering date/start/repeat on every demand-free kind, refused by the gate
+  after the tap). Each was found by READING, none by an instrument. The finds
+  were luck; the misses are still out there.
+  · **The fourth instance, fixed:** `temporal` was `!n.onMenu`, and the comment
+  beside it stated the correct rule while the code broke it. Now
+  `!n.onMenu && !DEMAND_FREE_KINDS.includes(n.kind)`. Reachable before the fix:
+  search returns people and anchors and a result row opens the sheet; the todo
+  list holds an off-Menu aspiration. `choosable` also gains `journal` and
+  `anchor` — "Put it in today" was offered on a named period one search away.
+  `resume-card` stays choosable with the reason written.
+  · **The class, gated:** `test/membership.test.ts` — one declared table, kind ×
+  surface for all sixteen list surfaces, a written reason per surface, computed
+  over the 1.16.0 set-of-everything, checked both ways (actual ⊆ allowed AND
+  expected-present, so no row can go vacuous — LESSONS 7g), plus totality over
+  `NODE_KINDS` and an offered-then-refused check closed at both ends for dates.
+  The `MERGE_DISPOSITION` idiom, fourth instance: a class closed, not an
+  instance patched.
+  · **Deliberate-failure proofs, all watched red:** reverting the 1.17.0 person
+  exclusion reds the table naming both surfaces; reverting `choosable` reds the
+  today test naming `anchor`; reverting the `temporal` fix reds exactly the four
+  new smoke assertions that drive the real DOM (search → anchor sheet → groups
+  hidden; same via a person).
+  · **A seam audit is running in parallel** — six adversarial finder lenses
+  (membership beyond the sheet, count agreement, record-vs-code drift, words
+  honesty, write-path seams, lifecycle seams), findings then adversarially
+  verified by skeptics told to refute. Confirmed findings get fixed with tests,
+  not listed. ADR-0070.
+
 - **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
   `8ece530 → b797083`**, carrying **1.17.1** (what it costs to look). Spine 213
   watched green on the exact head before the promote, and **Deploy 211** green on

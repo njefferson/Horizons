@@ -237,6 +237,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0069](0069-what-it-costs-to-look.md)**
   - Decision: `localParts` is memoised and the read path gets a gate — measured, not extrapolated
   - Status: Accepted
+- **[0070](0070-membership.md)**
+  - Decision: One kind × surface table with a written reason per surface, checked both ways over the set-of-everything
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

@@ -39,7 +39,13 @@ export const COMPOSED_CAP = 5;
  *  container for today is a legitimate way to say "this area, today". */
 export const choosable = (n: NodeState): boolean =>
   !n.trashed && !n.mergedInto && !n.lastDone && n.onMenu === null
-  && !['person', 'bother', 'pebble'].includes(n.kind);
+  // `journal` and `anchor` joined in 1.17.2. Both are demand-free kinds whose
+  // whole point is that nothing is ever done to them — a private entry and a
+  // named period have no business in a hand of five things chosen for today,
+  // and offering the verb put an anchor reached through search one tap from the
+  // composed strip. `resume-card` deliberately stays choosable: "pick that
+  // thread back up today" is a legitimate choice about a legitimate thing.
+  && !['person', 'bother', 'pebble', 'journal', 'anchor'].includes(n.kind);
 
 /**
  * Today's chosen set — the one reader. Chosen-for-today, still live, oldest
