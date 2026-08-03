@@ -445,6 +445,43 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote and continue")** — **1.17.1 "What it costs to
+  look"** — the read path measured, fixed and gated.
+  · **The estimate had sat in the roadmap for months and nobody could check it**:
+  "~18–20 full-state projection passes per commit (~220 ms today, 1.56 s at
+  10k)", with the work deferred to item 42's on-device measurement. Correctly —
+  this repo does not optimise against a guess. **1.16.0 built the instrument**,
+  and timing it made the estimate a fact: **one refresh cost ~100 ms at 566
+  things**, and the cost was not spread evenly — nine projections cost 4–16 ms
+  each and the other eight under 0.3 ms. Every expensive one walks nodes asking
+  for calendar distances.
+  · **`Intl` formatter CONSTRUCTION was already cached; the formatting was not.**
+  `formatToParts` is the expensive half. `calendarDaysBetween` resolves two
+  instants per call, called once per node per clock per projection — and the
+  `nowIso` side is **the same instant every time**, resolved from scratch on
+  every one of thousands of calls.
+  · **A memo on `localParts`: ~100 ms → ~22 ms**, A/B, three runs each. Four
+  times, from caching one pure function. It inherits the `FORMATTERS` precedent
+  directly above it rather than inventing a pattern.
+  · The cached object is **frozen** — a memo hands one object to every caller,
+  and the three-place rule in `fold.ts` exists because this repo has already paid
+  for aliasing once. The key is **(zone, instant)**, pinned by a test: keyed on
+  the instant alone it would hand a traveller the wrong day, which is worse than
+  being slow.
+  · **Two gates, failing for different reasons.** A structural one that cannot
+  flake (identity — the same instant resolves to the same object), which is what
+  the deliberate-failure proof reds; and a loose 250 ms wall-clock one in the
+  spirit of the admit gate's 800 ms around a 55 ms operation. Plus the check that
+  matters most: the same store answers the same after any number of refreshes.
+  · **A correction made in the commit that found it.** The memo's first draft
+  carried a NaN guard for malformed instants with a confident paragraph beside
+  it. `formatToParts` **throws** on an invalid date — the branch was unreachable
+  and the paragraph described behaviour the platform does not have. Replaced by
+  the truth and a test pinning it.
+  · **Item 42 is NOT closed.** The measurement that counts is still the iPad;
+  this hardware is not that device. What changed is that the read path has a gate
+  at all. ADR-0069.
+
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
   `59644a4 → a796199`**, carrying **1.16.0** (a set with everything in it). Spine
   206 watched green on the exact head before the promote — 22 steps, including

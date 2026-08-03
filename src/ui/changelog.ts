@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.17.1',
+    kind: 'ITERATION',
+    date: '2026-08-03',
+    notes: [
+      '**Every screen redraws about four times faster.** Nothing looks different \u2014 it is the same screens, sooner. On a store of around 560 things, one redraw went from roughly a tenth of a second to about two hundredths.',
+      'The cause was small and silly: working out what calendar day an instant falls on is expensive, and Quietkeep was working out the SAME day \u2014 today \u2014 thousands of times in a single redraw, from scratch each time. It remembers now.',
+      '**This was a guess until last release.** The estimate had been sitting in the notes for months with nobody able to check it, because there was no store big enough to time. The set-of-everything added last release is what made the number real, and the number was worse than the guess.',
+      'There is now a check on every build that catches this coming back \u2014 the writing side has had one for a long time; the reading side never did.',
+      'The measurement that actually counts is still on the iPad, not on a build machine. This makes the shape right; the device gets the final word.',
+    ],
+  },
+  {
     triplet: '1.17.0',
     kind: 'CAPABILITY',
     date: '2026-08-03',

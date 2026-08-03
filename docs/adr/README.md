@@ -234,6 +234,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0068](0068-the-staff-call.md)**
   - Decision: Anchors are named periods — demand-free, with a surface, and a delta cut on the existing watermark
   - Status: Accepted
+- **[0069](0069-what-it-costs-to-look.md)**
+  - Decision: `localParts` is memoised and the read path gets a gate — measured, not extrapolated
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

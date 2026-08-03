@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.17.1 — ITERATION
+
+*2026-08-03*
+
+- **Every screen redraws about four times faster.** Nothing looks different — it is the same screens, sooner. On a store of around 560 things, one redraw went from roughly a tenth of a second to about two hundredths.
+- The cause was small and silly: working out what calendar day an instant falls on is expensive, and Quietkeep was working out the SAME day — today — thousands of times in a single redraw, from scratch each time. It remembers now.
+- **This was a guess until last release.** The estimate had been sitting in the notes for months with nobody able to check it, because there was no store big enough to time. The set-of-everything added last release is what made the number real, and the number was worse than the guess.
+- There is now a check on every build that catches this coming back — the writing side has had one for a long time; the reading side never did.
+- The measurement that actually counts is still on the iPad, not on a build machine. This makes the shape right; the device gets the final word.
+
 ## 1.17.0 — CAPABILITY
 
 *2026-08-03*
