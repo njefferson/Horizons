@@ -997,6 +997,26 @@ host). So the chain a session can actually observe ends one step short:
 triplet, or simply open the app on the iPad and confirm the (i) panel shows the
 expected version. One line either way.
 
+**Re-tested 2026-08-03, after Noah said "pages.dev has been allowed now" —
+STILL DENIED from this session, and the distinction matters.** Both hosts were
+tried and both were refused at the gateway, logged by the proxy itself:
+
+- `quietkeep.pages.dev:443` — `gateway answered 403 to CONNECT` at 18:35:10Z
+- `staging.quietkeep.pages.dev:443` — the same, at 18:35:11Z
+
+The policy is **deny-by-default with an allowlist**, measured rather than
+assumed: `api.github.com` answers 200 from here while `example.com` and
+`cloudflare.com` are refused identically to pages.dev. So this is not a
+Quietkeep-specific block and not a site failure.
+
+The likely explanation is that **a session's egress policy is bound when its
+container starts**, so a permission granted mid-session does not reach the
+session that is already running; a fresh session is the thing to try. Recorded
+here rather than left as "not tried", because the next session needs to know
+the difference between *nobody has attempted this* and *it was attempted after
+the grant and still refused*. The agent-proxy README is explicit that policy
+denials are to be reported and not retried, so it was not hammered.
+
 **Why it is recorded rather than shrugged off:** the wording "verified end-to-end"
 has appeared in this repo's log for five promotes, and it overstates what was
 seen — the same class of error as [V-10](#v-10), where running a thing was
