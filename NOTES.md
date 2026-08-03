@@ -500,8 +500,9 @@ decided by a session.**
   afterwards. **A check that depends on luck is not a check** — and a helper
   written for a known race is worth nothing at the one call site that skips
   it. Appended to the hub's LESSONS.
-  · Spine's run on the exact head is recorded in its own entry above,
-  as every release here does it. **Not promoted without Noah's word.**
+  · **Spine 224 green on the exact head** (`4240593`) — all 22 steps opened
+  and read individually, not inferred from the run's conclusion (V-10).
+  **Not promoted without Noah's word.**
 
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
   `b797083 → bf0e2cb`**, carrying 1.17.2 "Membership" and 1.17.3 "What the seam
