@@ -748,8 +748,21 @@ export async function main(edition?: Edition): Promise<void> {
   // precisely because it is allowed to fail. A version stamp is a diagnostic, and
   // a diagnostic that disappears when something breaks is the wrong way round: it
   // is needed most in exactly the state that would have removed it.
+  //
+  // The accessible name is set HERE, with the text, and CONTAINS it — WCAG SC
+  // 2.5.3, label in name. Since 1.18.0 this stamp is also the diagnostic's
+  // door, and the first version carried a static `aria-label="Build — open the
+  // diagnostic report"` while the visible text said "1.18.0". Somebody driving
+  // this app by voice reads the button and says "1.18.0"; nothing would have
+  // matched. Hub LESSONS §29 names that class — a control whose visible text
+  // and spoken name have nothing in common — and **this repo's a11y gate has
+  // no label-in-name check at all**, so nothing here would have caught it.
+  // Setting both in one place is what stops them drifting again.
   const build = document.querySelector<HTMLElement>('#build-version');
-  if (build) build.textContent = CURRENT.triplet;
+  if (build) {
+    build.textContent = CURRENT.triplet;
+    build.setAttribute('aria-label', `Build ${CURRENT.triplet} — open the diagnostic report`);
+  }
 
   // Read BEFORE the first render that paints the icon, so a device with the badge
   // switched off never flashes a number on the way to obeying the preference.

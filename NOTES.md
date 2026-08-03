@@ -450,6 +450,27 @@ decided by a session.**
   thought, reloads the whole page, and asserts it came back. It was made to fail once
   before being trusted.
 
+### Staged and waiting on Noah
+
+**1.18.0 is on `staging` and has not been promoted.** It is deployed and
+openable right now:
+
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.0**
+- **https://quietkeep.pages.dev** — production, currently **1.17.4**
+
+The Sync edition deploys alongside it at
+**https://staging.quietkeep-sync.pages.dev** (production:
+**https://quietkeep-sync.pages.dev**).
+
+**What to look at first:** the build number at the bottom of the screen is a
+control now — press it and it opens the diagnostic report. Read it, and if
+anything is wrong, copy it and send that instead of a screenshot (§7f).
+
+This block exists because `handoff-check.mjs` failed the repo for not having
+one, and it was right: `NOTES.md` had mentioned the hostname in prose for weeks
+but never as a URL a person can tap. A staged candidate nobody can reach is not
+handed over (Doctrine §7).
+
 ### Log
 
 - **2026-08-03** — **1.18.0 (CAPABILITY) "When something is wrong"** — the

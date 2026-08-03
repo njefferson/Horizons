@@ -912,8 +912,13 @@
        is measured before and after in the a11y pass. It still SHOWS the build
        when the panel behind it cannot open: a diagnostic that disappears in the
        state that needs it is the wrong way round. -->
+       The accessible name is set in app.ts ALONGSIDE the text and contains it
+       (SC 2.5.3) — a static label here would say "Build" while the button
+       reads "1.18.0", and a voice-control user has no phrase that works. The
+       label below is only the pre-paint fallback, when there is no visible
+       text for 2.5.3 to be about. -->
   <button class="build" id="build-version" type="button"
-          aria-label="Build — open the diagnostic report"></button>
+          aria-label="Open the diagnostic report"></button>
 </footer>
 
 <!-- The walkthrough (src/ui/tour.ts). A calm, skippable, replayable first-run
