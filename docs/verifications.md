@@ -1002,8 +1002,9 @@ exactly the assertion this row said no session could make.
   `staging`, so the inference is sound — but it is an inference, and the report
   should name its origin so the next one does not need one. That is a defect in
   the diagnostic, logged as such.
-- **Still unproven:** production. `quietkeep.pages.dev` serves 1.17.4 and no
-  device report has been taken from it. The production half of V-15 is open.
+- **Still unproven:** production. `quietkeep.pages.dev` serves 1.17.4, which
+  ships no diagnostic at all, so no report can be taken from it by anyone. The
+  production half of V-15 is open and is blocked on the promote — see below.
 
 **Why this is worth more than the fetch the session wanted.** Doctrine §7f says
 to put the check where the device can run it. The instrument that answered this
@@ -1029,11 +1030,40 @@ host). So the chain a session can actually observe ends one step short:
   - How: `git`, locally
   - What it does NOT prove: that the **deployed** `sw.js` carries it
 
-**What closes the production half.** The same instrument, pointed at production
-— a diagnostic taken on a device running `quietkeep.pages.dev`. It needs no new
-code and it is one paste. Note that `staging` and `main` are **different
-origins**, so a device sitting on staging can say nothing about production; the
-report has to come from the production one.
+**What closes the production half: THE PROMOTE, and nothing before it.**
+
+Production is 1.17.4 and **1.17.4 has no diagnostic** — the surface shipped in
+1.18.0, which is still on `staging`. There is no control to press on
+`quietkeep.pages.dev` and no report to take from it. A session asked Noah for one
+anyway on 2026-08-03; he answered *"there's no way to get data from main since it
+doesn't have that ability"*, and he was right. Checked afterwards rather than
+before: `origin/main` carries no diagnostic source at all, and its only
+`caches.keys()` is the eviction sweep inside `sw.js`, which no page can read.
+
+That is a §6 failure and the plainest kind — a manual step handed over that was
+impossible, when both facts needed to rule it out (production is 1.17.4; the
+diagnostic landed in 1.18.0) were already written down **in this very file** by
+the session that asked. Verifying the step would have cost one `git ls-tree`.
+
+**The consequence is better than the mistake.** The production half of this row
+is not waiting on Noah to go and look — it is **blocked on the promote**, and it
+unblocks itself the moment 1.18.0 reaches production. So:
+
+- **Do not ask for a production diagnostic before 1.18.0 is promoted.** There is
+  nothing there to answer with.
+- **Do not substitute the on-screen build stamp.** 1.17.4 has one, and reading it
+  would prove only what the app *reports* — which is exactly the weaker claim
+  §7f and §7h warn about, since a stamp cannot tell "this is current" from "this
+  is what the cache still holds". It would not close this row, so asking for it
+  is a second goose chase for evidence that arrives insufficient.
+- **After the promote, one paste closes it**, and every promote after that is
+  confirmable the same way.
+
+**Which makes 1.18.0 the release that ends this row's whole class of problem.**
+V-15 has been open since 0.9.0 for one reason: no release before this one carried
+an instrument that could answer it. The staging half is already proven above. The
+mechanism works; only the production instance is unmeasured, and the promote is
+what measures it.
 
 **Three things the diagnostic should gain, all found by reading the first report
 against this row:**
