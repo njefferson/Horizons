@@ -164,16 +164,29 @@ test('the group boundary is calendar days in the reader’s zone', () => {
 });
 
 test('a held item with no clock at all is Later, not lost', () => {
-  // A `person`, not a pebble. This used a pebble as its clockless vehicle
-  // because that was the handiest demand-free kind with no surface of its own —
-  // and in 1.15.0 a pebble got one, so the held list excludes it the way it
-  // excludes a journal entry (ADR-0065). The INVARIANT here is unchanged and is
-  // not about pebbles: a held thing with no clock is filed, never dropped.
+  // THIRD VEHICLE, and the reason is worth writing down because it has been the
+  // same reason every time. This needs something held, clockless and legal, and
+  // it has twice reached for a demand-free kind: a `pebble` until 1.15.0 gave
+  // pebbles a surface of their own, then a `person` until 1.17.0 found that
+  // people had been rows in the todo list since the beginning. Each time the
+  // vehicle acquired a surface, `heldWork` stopped counting it and this test
+  // went red for a reason that had nothing to do with what it asserts.
+  //
+  // So it now uses the vehicle that is genuinely WORK: a child under a clocked
+  // parent. Law 1 clause (d) is satisfied by the parent, so the gate attaches
+  // no clock of its own — the one clockless work item the app can actually
+  // produce, which makes it the honest subject for "a held thing with no clock
+  // is filed, never dropped".
   const s = st(
-    ev('node.created', 'P', { nodeKind: 'person', title: 'Ada' }),   // demand-free, legal with no clock
+    ev('node.created', 'PROJ', { nodeKind: 'project', title: 'the loft' }),
+    clockAt('PROJ', 9),
+    ev('node.created', 'KID', { nodeKind: 'action', title: 'clear the boxes', parent: 'PROJ' }),
   );
-  assert.equal(heldGroups(s, NOW, TZ)[0]!.key, 'later');
-  assert.equal(heldStatus(s.nodes.get('P')!, NOW, TZ), 'held');
+  const kid = heldGroups(s, NOW, TZ).flatMap(g => g.items).find(n => n.id === 'KID');
+  assert.ok(kid, 'a clockless child fell out of the list entirely');
+  assert.equal(heldStatus(s.nodes.get('KID')!, NOW, TZ), 'held');
+  const group = heldGroups(s, NOW, TZ).find(g => g.items.some(n => n.id === 'KID'));
+  assert.equal(group!.key, 'later', 'and it is filed under Later rather than claiming a date');
 });
 
 test('a malformed stored date does not throw out of the list (audit class)', () => {

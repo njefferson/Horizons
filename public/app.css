@@ -1335,6 +1335,58 @@ dialog, dialog * { overflow-wrap: anywhere; }
    verb only — skinned like list rows, never like a to-do card. */
 .trash-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
 .trash-list li { margin: 0 0 0.4rem; }
+
+/* Named periods (1.17.0). Same list skin as the trash view and the ledger — a
+   record you read, never a to-do. `.about-sub` is a heading one step below
+   `.about-section`, because anchors live INSIDE the report section: an anchor
+   answers "since when" for a report and has no other job, and a section of its
+   own would make it look like a thing to maintain. */
+.about-sub {
+  margin: 1.1rem 0 0.4rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+.anchor-label { color: var(--ink-soft); font-size: 0.875rem; }
+.anchor-list { list-style: none; margin: 0.6rem 0 0; padding: 0; }
+.anchor-list li {
+  display: flex;
+  flex-wrap: wrap;               /* 320px: the button drops below rather than pushing the row wide */
+  align-items: baseline;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+}
+.anchor-list .anchor-fact { color: var(--ink-soft); font-size: 0.875rem; }
+/* The two boxes carry the same 44px floor every other control here has, from
+   `--target` rather than a number — the a11y gate caught these at 21px, which is
+   the UA default and less than half the floor. Borrowed wholesale from
+   `#purge-word` for the same stated reason: a surface somebody reaches for at a
+   moment they are not at their best. */
+#anchor-name,
+#anchor-recurrence {
+  display: block;
+  width: 100%;
+  min-height: var(--target);
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.5rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
+/* The UA placeholder grey is a colour nobody chose and it fails the contrast
+   gate — the same correction `#pebble-text` and `#capture` already carry. */
+#anchor-name::placeholder,
+#anchor-recurrence::placeholder { color: var(--ink); opacity: 1; }
+#anchor-period {
+  min-height: var(--target);
+  padding: 0.4rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 2px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+}
 /* A decision row's day (1.9.0): the quietest text on the sheet, and it is a
    day — never a count, never a verdict. */
 .detail-when {

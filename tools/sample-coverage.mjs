@@ -68,11 +68,19 @@ const EVENT_EXEMPT = {
 /**
  * Node kinds the set deliberately does not contain.
  *
- * One, and it is not a choice about the fixture — it is the gate.
+ * **Empty, as of 1.17.0 — and that is this gate's first real result.** It
+ * shipped one release earlier carrying exactly one entry: `anchor`, exempt
+ * because an anchor node would have been a SILENT node (not in
+ * `DEMAND_FREE_KINDS`, no cure branch), so `admit` refused it and
+ * `inspectExport` would have refused the file. ADR-0057 had deferred anchors for
+ * that reason and said shipping them needed a gate change plus a surface in one
+ * release. ADR-0068 paid that price, the exemption came out, and the set gained
+ * an anchor — which is the whole mechanism working as designed.
+ *
+ * Note what the gate does NOT need: nobody had to remember to delete this. A
+ * kind the set now produces fails its own exemption below.
  */
-const NODE_EXEMPT = {
-  anchor: 'An anchor node would be a SILENT node today: `anchor` is not in DEMAND_FREE_KINDS, `anchor.defined` is not silent-risk and has no cure branch, so it has no clock, no Menu, no parent and no exemption. `admit` refuses it and `inspectExport` would refuse the file. ADR-0057 defers anchors for exactly this reason and says shipping them needs a gate change plus a surface in one release.',
-};
+const NODE_EXEMPT = {};
 
 const failures = [];
 const fail = (m) => { failures.push(m); console.error(`  FAIL  ${m}`); };

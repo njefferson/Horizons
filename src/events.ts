@@ -48,7 +48,19 @@ export type NodeKind = (typeof NODE_KINDS)[number];
  * promotion, never an obligation that accrued" is exactly the right reading of
  * it. Same argument that made `person` demand-free when the person lens shipped.
  */
-export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person', 'journal'] as const satisfies readonly NodeKind[];
+/**
+ * `anchor` joined in 1.17.0 (ADR-0068), and the exemption is EARNED exactly as
+ * `person`'s and `journal`'s were.
+ *
+ * An anchor is a NAMED PERIOD — "the staff call" — not work. Nothing is ever
+ * done to it; it is fired when the meeting happened, and what it does is cut a
+ * delta. Before this it was in `NODE_KINDS` with no exemption and no cure
+ * branch, so defining one made a silent node and the coverage gauge stopped
+ * reading zero (ADR-0057 deferred anchors for that reason). This comment's own
+ * price is paid in the same release: the surface that renders anchors ships
+ * with it.
+ */
+export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person', 'journal', 'anchor'] as const satisfies readonly NodeKind[];
 
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
 export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash';
@@ -114,7 +126,21 @@ export type UpkeepIntervalSet= Ev<'upkeep.interval.set',{ intervalDays: number; 
 export type DoneMarked       = Ev<'done.marked',        { at: ISODateTime }>;
 export type DoneUnmarked     = Ev<'done.unmarked',      Record<string, never>>;
 export type AnchorDefined    = Ev<'anchor.defined',     { name: string; recurrence: string }>;
-export type AnchorFired      = Ev<'anchor.fired',       { anchor: NodeId; at: ISODateTime }>;
+/**
+ * A named period ended — the staff call happened (1.17.0, ADR-0068).
+ *
+ * `upToSeqByDevice` is the addition, and it is what made anchors shippable.
+ * ADR-0057 deferred them partly because this kind carried "no per-device
+ * watermark, so a delta cut on it would be the degraded at-only cut that
+ * `reportedBefore` exists to avoid". It carries one now — the SAME field
+ * `status.report.exported` carries and the same one `reportedBefore` already
+ * prefers, so the anchor cut is the existing mechanism with a second writer
+ * rather than a second mechanism.
+ *
+ * Optional, because a firing written before this existed is still a firing and
+ * an old log must keep working (law 9). `reportedBefore` falls back to `at`.
+ */
+export type AnchorFired      = Ev<'anchor.fired',       { anchor: NodeId; at: ISODateTime; upToSeqByDevice?: Record<string, number> }>;
 export type ReplanRaised     = Ev<'replan.raised',      { passedClock: ClockKind; fed: NodeId[]; suspense?: ISODateTime; daysLeft?: number }>;
 export type ReplanResolved   = Ev<'replan.resolved',    { choice: ReplanChoice }>;
 export type ParkSet          = Ev<'park.set',           { returnAt: ISODateTime; reason?: string }>;
@@ -173,7 +199,18 @@ export type StakeholderAdded = Ev<'stakeholder.added',  { person: NodeId }>;
 export type StakeholderRemoved=Ev<'stakeholder.removed',{ person: NodeId }>;
 export type DecisionLogged   = Ev<'decision.logged',    { text: string; at: ISODateTime; meeting?: string }>;
 export type DeltaRecorded    = Ev<'delta.recorded',     { since: 'anchor' | 'export'; text: string }>;
-export type StatusReportExported=Ev<'status.report.exported',{ format: 'clipboard'|'markdown'|'print'|'csv'; scope: string }>;
+/**
+ * A report left the device.
+ *
+ * **`upToSeqByDevice` was written and read for four releases without being
+ * declared here** (1.17.0). `src/ui/about.ts` has put it in this payload since
+ * the watermark landed, and `src/fold.ts` reads it into `State.lastReportMark`,
+ * which is what makes the next delta a question about what was REPORTED rather
+ * than about the clock. Nothing misbehaved — but the type said a field the delta
+ * cut depends on did not exist, in the one path an audit already had to rescue
+ * from time-only cuts. Found while giving `anchor.fired` the same field.
+ */
+export type StatusReportExported=Ev<'status.report.exported',{ format: 'clipboard'|'markdown'|'print'|'csv'; scope: string; upToSeqByDevice?: Record<string, number> }>;
 /** Declining someone's request is a decision worth keeping (the Not Now
  *  ledger, ADR-0056). `person` is null when nobody has said who — the
  *  `waitingOn` precedent: an ordinary state, not a defect. `what` is the

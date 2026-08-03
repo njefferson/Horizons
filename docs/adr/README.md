@@ -231,6 +231,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0067](0067-a-set-with-everything-in-it.md)**
   - Decision: A generated set covering every kind, delivered as a file, with a coverage gate and a projection sweep over it
   - Status: Accepted
+- **[0068](0068-the-staff-call.md)**
+  - Decision: Anchors are named periods — demand-free, with a surface, and a delta cut on the existing watermark
+  - Status: Accepted
 
 **Provisional** means: decided well enough to build on, and explicitly awaiting the
 owner's word. It is not the same as Accepted, and it is not the same as open.

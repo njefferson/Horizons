@@ -145,6 +145,19 @@ export const heldWork = (state: State): NodeState[] =>
     // (ADR-0014), and a row in a work list is what becoming a task looks like.
     // The load entry is its surface.
     if (n.kind === 'pebble') return false;
+    // NOR A PERSON — and this one was a SHIPPED DEFECT, not a new exclusion
+    // (1.17.0). Every person you had ever named was a row in your todo list:
+    // "Alex", sitting among your work, with nothing to do about it. It predates
+    // this predicate, which is why nothing caught it — 1.13.0 and 1.15.0 each
+    // added a kind to a hand-written list inside `heldGroups` and neither
+    // revisited what was already in there. A person has had its own surface
+    // since 1.12.0 (ADR-0040), which is the same argument ADR-0061 makes for a
+    // journal entry: not work, and it has somewhere of its own to be.
+    if (n.kind === 'person') return false;
+    // NOR AN ANCHOR (1.17.0, ADR-0068). A named period is not a thing to do —
+    // nothing is ever done to one. It is fired when the meeting happened, and
+    // what it does is cut a delta. Its surface is the report section.
+    if (n.kind === 'anchor') return false;
     return true;
   });
 

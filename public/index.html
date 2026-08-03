@@ -1418,6 +1418,38 @@
     Nothing is sent anywhere. It is written for you to paste or hand over
     yourself, and the next one starts from this moment.
   </p>
+
+  <!--
+    Named periods (1.17.0, ADR-0068). Inside the report section deliberately: an
+    anchor exists to answer "since when", and it has no other job. Giving it a
+    section of its own would make it look like a thing to maintain.
+  -->
+  <h4 class="about-sub">Since when</h4>
+  <p class="about-p">
+    By default a report covers everything since the last one you handed over. If
+    you have a meeting that sets the rhythm &mdash; a staff call, a catch-up
+    &mdash; you can name it and say when it came round, and the report will cover
+    the time since then instead.
+  </p>
+  <div class="about-actions">
+    <label class="anchor-label" for="anchor-period">Report covers</label>
+    <select id="anchor-period">
+      <option value="">Since your last report</option>
+    </select>
+  </div>
+  <form id="anchor-form" class="about-actions">
+    <label class="anchor-label" for="anchor-name">Name a period</label>
+    <input id="anchor-name" type="text" autocomplete="off" placeholder="the staff call">
+    <input id="anchor-recurrence" type="text" autocomplete="off" placeholder="Thursdays (optional)">
+    <button type="submit" class="ghost">Name it</button>
+  </form>
+  <ul id="anchor-list" class="anchor-list"></ul>
+  <p id="anchor-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    Nothing here asks anything of you. A period is a name for a stretch of time,
+    not a thing to do &mdash; it takes no date, it never comes back at you, and
+    Quietkeep does not count how often you mark it.
+  </p>
   <pre id="report-preview" class="report-preview" hidden></pre>
 
   <h3 class="about-section">Reminders that reach you</h3>

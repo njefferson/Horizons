@@ -547,6 +547,22 @@ export async function bigSampleEvents(
   stamp('clock.set', sweep, { clockKind: 'review', at: day(1), source: 'comms:start' });
   stamp('done.marked', sweep, { at: day(-1) });
 
+  // --- a named period, and one that has come round -------------------------
+  //
+  // `anchor` was this set's one node-kind exemption when the coverage gate
+  // shipped in 1.16.0: an anchor was a silent node, so `admit` refused it and
+  // the whole file would have been refused on import. 1.17.0 paid ADR-0057's
+  // stated price (a gate change plus a shipped surface, in one release), and the
+  // exemption came out.
+  //
+  // The firing carries the watermark, because a firing without one is the
+  // degraded at-only cut `reportedBefore` exists to avoid — and a sample that
+  // demonstrated the degraded path would teach the wrong thing.
+  const staffCall = ctx.id();
+  stamp('anchor.defined', staffCall, { name: 'the staff call', recurrence: 'Thursdays' });
+  stamp('anchor.fired', null, { anchor: staffCall, at: day(-7), upToSeqByDevice: { [ctx.device]: 40 } });
+  stamp('anchor.defined', ctx.id(), { name: 'the monthly catch-up', recurrence: '' });
+
   // --- Composed Today, last, and only for TODAY ----------------------------
   //
   // After `module.enabled`, because the strip does not render otherwise. And the

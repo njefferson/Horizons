@@ -48,6 +48,8 @@ import { open as unseal, seal } from '../seal.ts';
 import { entryEvents, sealJournalEvents } from './journal-intents.ts';
 import { setTimerLengthEvents } from './request-intents.ts';
 import { setSlotEvents } from './request-intents.ts';
+import { anchors, anchorWords, lastFiring, recurrenceOf } from '../anchors.ts';
+import { defineAnchorEvents, fireAnchorEvents } from './anchor-intents.ts';
 
 const SEEN = 'about.seen';
 const FIRST_GRANT = 'v00.firstGrant';
@@ -472,6 +474,9 @@ export async function mountAbout(
   // as one over a history this device wrote.
   const reportNote = document.querySelector<HTMLElement>('#report-note');
   const reportPreview = document.querySelector<HTMLElement>('#report-preview');
+  // Declared beside the report's own controls, because that is what it changes:
+  // an anchor's ONLY job is to answer "since when" for this report (1.17.0).
+  const anchorPeriod = document.querySelector<HTMLSelectElement>('#anchor-period');
 
   /**
    * Hand it over, THEN record it — the ordering an audit already had to fix on
@@ -484,12 +489,20 @@ export async function mountAbout(
     if (!reportNote) return;
     const nowIso = new Date().toISOString();
     const after = session.state();
-    const since = after.lastReportAt;
     const all = await session.store.all();
+    // WHICH PERIOD (1.17.0, ADR-0068). Default: since your last report. When a
+    // named period is picked and has been marked, the cut is that firing
+    // instead — and it is the SAME cut, because `anchor.fired` carries the same
+    // per-device watermark `status.report.exported` does and `reportedBefore`
+    // already prefers it. One reader, two writers.
+    const picked = anchorPeriod?.value || '';
+    const firing = picked ? lastFiring(all, picked) : null;
+    const since = firing ? firing.at : after.lastReportAt;
+    const mark = firing ? firing.mark : after.lastReportMark;
     // What was already REPORTED, not what is merely older. A shard union brings
     // in another device's history stamped before your last report; a time cut
     // would bury it for ever (audit).
-    const before = fold(reportedBefore(all, { at: since, upToSeqByDevice: after.lastReportMark }));
+    const before = fold(reportedBefore(all, { at: since, upToSeqByDevice: mark }));
     const r = statusReport(before, after, since, nowIso, session.zone);
     const text = renderReport(r, format, session.zone);
 
@@ -549,6 +562,93 @@ export async function mountAbout(
       void deliverReport(format);
     });
   }
+
+  // --- named periods (1.17.0, ADR-0068) -------------------------------------
+  //
+  // Three controls and no fourth: name one, mark that it came round, pick it as
+  // the period a report covers. There is no delete, no schedule, no "next
+  // occurrence" and no count of firings — an anchor that fires itself is a nag
+  // with a calendar, and a tally of the meetings you did or did not hold is the
+  // shape law 5 exists to forbid.
+  //
+  // Everything is read from the LOG rather than from state (`src/anchors.ts`),
+  // the `copies.ts` precedent: a firing is a thing that happened at a moment,
+  // carrying the watermark current then, and folding that into `NodeState`
+  // would be four ceremonies to store what the log already says.
+  const anchorForm = document.querySelector<HTMLFormElement>('#anchor-form');
+  const anchorName = document.querySelector<HTMLInputElement>('#anchor-name');
+  const anchorRec = document.querySelector<HTMLInputElement>('#anchor-recurrence');
+  const anchorList = document.querySelector<HTMLUListElement>('#anchor-list');
+  const anchorNote = document.querySelector<HTMLElement>('#anchor-note');
+
+  const paintAnchors = async (): Promise<void> => {
+    if (!anchorList || !anchorPeriod) return;
+    const st = session.state();
+    const log = await session.store.all();
+    const all = anchors(st);
+
+    // The picker. Its current value is preserved across a repaint — a repaint
+    // landing mid-choice is how a surface throws away an answer somebody was in
+    // the middle of giving (the detail sheet's no-clobber rule).
+    const keep = anchorPeriod.value;
+    const first = document.createElement('option');
+    first.value = '';
+    first.textContent = 'Since your last report';
+    anchorPeriod.replaceChildren(first, ...all.map(a => {
+      const o = document.createElement('option');
+      o.value = a.id;
+      o.textContent = a.title || '(unnamed)';
+      return o;
+    }));
+    if (all.some(a => a.id === keep)) anchorPeriod.value = keep;
+
+    anchorList.replaceChildren(...all.map(a => {
+      const li = document.createElement('li');
+      const name = document.createElement('span');
+      name.textContent = a.title || '(unnamed)';
+      const fact = document.createElement('span');
+      fact.className = 'anchor-fact';
+      fact.textContent = anchorWords(a, lastFiring(log, a.id), recurrenceOf(log, a.id), session.zone);
+      const fire = document.createElement('button');
+      fire.type = 'button';
+      fire.className = 'ghost';
+      // "It came round", not "Done". Nothing here was work, so nothing here is
+      // completed — a period ended, which is a different sentence.
+      fire.textContent = 'It came round';
+      fire.addEventListener('click', () => {
+        void session.commit(ctx => fireAnchorEvents(ctx, a.id, highWaterMark(session.state())))
+          .then(() => {
+            if (anchorNote) anchorNote.textContent = `Marked. A report can now cover the time since this ${a.title}.`;
+            void paintAnchors();
+          })
+          .catch((err) => {
+            if (anchorNote) anchorNote.textContent = `That did not record — ${(err as Error).message}`;
+          });
+      });
+      li.append(name, fact, fire);
+      return li;
+    }));
+  };
+
+  anchorForm?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!anchorName) return;
+    const name = anchorName.value.trim();
+    if (!name) { anchorName.focus(); return; }
+    void session.commit(ctx => defineAnchorEvents(ctx, ulid(Date.parse(ctx.at)), name, anchorRec?.value ?? ''))
+      .then(() => {
+        // Cleared only after the write has LANDED (ADR-0008), like capture — an
+        // input that empties before the commit resolves can lose what you typed.
+        anchorName.value = '';
+        if (anchorRec) anchorRec.value = '';
+        anchorName.focus();
+        if (anchorNote) anchorNote.textContent = `"${name}" is a period you can report against.`;
+        void paintAnchors();
+      })
+      .catch((err) => {
+        if (anchorNote) anchorNote.textContent = `That could not be named — ${(err as Error).message}`;
+      });
+  });
 
   // --- export ---------------------------------------------------------------
   // The way out, on the surface that talks about durability. DELIVER, then
@@ -1182,6 +1282,10 @@ export async function mountAbout(
     // at mount, so reopening the panel showed the PREVIOUS action's outcome —
     // "Sent. Open the file…" — indefinitely, whatever had changed since (audit).
     paintCalendar();
+    // Anchors likewise: the list and the picker are read from the log at open,
+    // for the same reason — a panel that paints once at mount shows the state
+    // the app was in when it started, not the state it is in now (1.17.0).
+    void paintAnchors().catch(() => { /* the next open repaints it */ });
   };
 
   // --- sample work ---------------------------------------------------------

@@ -147,22 +147,30 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
   - Silent risk: **yes — gated** (a completed one-off can orphan its parent)
 - **`done.unmarked`**
   - Silent risk: no
-- **`anchor.defined`**
-  - Payload: `name, recurrence (RRULE)`
+- **`anchor.defined`** (emitters 1.17.0, [ADR-0068](adr/0068-the-staff-call.md))
+  - Payload: `name, recurrence`
   - Silent risk: no
-  - **Unemitted, deferred with the anchor surface** ([ADR-0057](adr/0057-stakeholders-and-the-decision-log.md)).
-    `anchor` is not in `DEMAND_FREE_KINDS` and this kind is not in
-    `SILENT_RISK_KINDS` with no cure branch, so an anchor node would be silent
-    under law 1 today — and the gauge that PROVES law 1 would start disagreeing
-    with itself. Shipping anchors needs a gate change plus a surface, in a
-    release of its own.
+  - Names a period — "the staff call" — so a report can say *since the last one*
+    instead of naming a date. **`anchor` joined `DEMAND_FREE_KINDS` in the same
+    release**, which is the price
+    [ADR-0057](adr/0057-stakeholders-and-the-decision-log.md) named: before it,
+    an anchor node satisfied no clause of law 1, and the gauge that PROVES law 1
+    stopped reading zero. A gate change plus a shipped surface, in one release.
+  - `recurrence` is kept as typed and **nothing derives from it**. There is no
+    scheduler and no next-occurrence; if one is ever wanted it arrives with an
+    ADR, not with a parser added quietly (the `affects` rule, ADR-0065).
 - **`anchor.fired`**
   - Payload: `anchor, at`
   - Silent risk: no
-  - **Unemitted, deferred with `anchor.defined`** — and it carries no per-device
-    watermark, so a delta cut on it would be the degraded at-only cut that
-    `reportedBefore` exists to avoid. The export mark already does this job
-    better.
+  - It came round — marked as an ACT, never on a schedule (1.17.0).
+  - **`upToSeqByDevice` is the addition that made anchors shippable.** ADR-0057
+    deferred them partly because this kind carried no per-device watermark, so a
+    cut on it would be the degraded at-only cut `reportedBefore` exists to
+    avoid — a shard can deliver work stamped before your last meeting that you
+    had never seen. It now carries the same field `status.report.exported` does,
+    read by the same `reportedBefore`: one mechanism, two writers. Optional,
+    because a firing written before this is still a firing and an old log must
+    keep working (law 9).
 - **`replan.raised`**
   - Payload: `passedClock, fed[], suspense, daysLeft`
   - Silent risk: no — **and nothing emits it** ([ADR-0034](adr/0034-replan-cards-are-computed.md))
@@ -318,8 +326,16 @@ is a valid, unremarkable value, never nagged about.
     itself as `status.report.exported`; this kind is the anchor-scoped delta,
     which waits on the watermark this repo does not have.
 - **`status.report.exported`**
-  - Payload: `format: clipboard | markdown | print | csv, scope`
+  - Payload: `format: clipboard | markdown | print | csv, scope, upToSeqByDevice?`
   - Silent risk: no — this is the provenance "delta since last export" reads from
+  - **`upToSeqByDevice` was written and read for four releases without being
+    declared** — here or in `events.ts` (corrected 1.17.0). `src/ui/about.ts`
+    has put it in this payload since the watermark landed and `src/fold.ts`
+    folds it into `State.lastReportMark`, which is what makes the next delta a
+    question about what was REPORTED rather than about the clock. Nothing
+    misbehaved; the record simply omitted a field the delta cut depends on, in
+    the one path an audit had already rescued from time-only cuts. Found while
+    giving `anchor.fired` the same field.
 - **`request.declined`** (emitters 1.8.0, ADR-0056)
   - Payload: `person (NodeId | null), what, reason?`
   - Silent risk: **yes — gated** → Not Now ledger + park. The write paths carry

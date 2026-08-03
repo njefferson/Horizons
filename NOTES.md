@@ -242,7 +242,11 @@ and 1.8.0 made "not mine to carry" keep its decision in the Not Now ledger
 instead of trashing it)** · staff-call lens **(the per-person half shipped
 1.12.0; the DELTA half is what "staff-call" actually means and it waits on
 anchors — see build-plan 33/34. An earlier session of mine recorded this item
-as shipped outright, which was wrong)** · pebbles · ~~journal~~ **(done, 1.13.0 — ADR-0061: a
+as shipped outright, which was wrong. **The delta half shipped 1.17.0** —
+ADR-0068: anchors are demand-free named periods and the cut runs on the same
+per-device watermark the export mark uses)** · ~~pebbles~~ **(done, 1.15.0 —
+ADR-0065; this line said otherwise until 1.17.0, the same drift 1.9.1 corrected
+elsewhere)** · ~~journal~~ **(done, 1.13.0 — ADR-0061: a
 NodeKind with an encrypted payload rather than a vault, on Noah's decision.
 ADR-0005's encryption-ships-together binding honoured — PBKDF2-SHA-256 at
 600,000 rounds, and the fold never touches ciphertext)** · ~~printable today-card~~ **(done, 0.21.0 — and it fixed the print path shipped in 0.16.0, which had no stylesheet behind it at all)** · ~~request slots
@@ -440,6 +444,45 @@ decided by a session.**
   before being trusted.
 
 ### Log
+
+- **2026-08-03 (Noah: "Promote to main and continue")** — **1.17.0 "The staff
+  call"** — anchors, and **v1.5 closes**.
+  · **ADR-0057 named three blockers and two were already answered in the code.**
+  The silent-node one had its price written in the same paragraph
+  (`DEMAND_FREE_KINDS`' own comment: a gate change plus a shipped surface, in one
+  release) — that is what `person` paid in 0.15.0 and `journal` in 1.13.0, and it
+  is paid here. The watermark one needed no new mechanism at all:
+  `reportedBefore` already takes `{at, upToSeqByDevice}` and prefers the mark,
+  `status.report.exported` already carries one, the fold already reads it. The
+  blocker was that `anchor.fired` did not carry the field, not that the field had
+  to be invented. **One mechanism, two writers.**
+  · The test that matters stages the audit's own case on the anchor path: a
+  second device delivers work stamped *before* the meeting that this device never
+  saw. The watermark reports it; the time-only cut buries it. **Both directions
+  asserted**, so the degraded mode is demonstrated rather than described.
+  · **A person node has been a row in the todo list since the beginning.** Every
+  person Noah had ever named sat among his work with nothing to do about it. It
+  predates `heldWork` (1.15.1), which is why nothing caught it — 1.13.0 and
+  1.15.0 each added a kind to a hand-written list and neither revisited what was
+  already in there. `person` and `anchor` both join the skip list: **one edit,
+  four surfaces**, which is exactly what 1.15.1 was for.
+  · **`status.report.exported` never declared `upToSeqByDevice`** — written by
+  the UI and read by the fold for four releases, with the delta cut's correctness
+  depending on it. A type lying by omission, found while giving `anchor.fired`
+  the same field.
+  · **The 1.16.0 coverage gate's node exemptions are now empty**, and nobody had
+  to remember to delete the entry: a kind the set produces fails its own
+  exemption. The mechanism working as designed, one release later.
+  · **A test was rewritten for the third time, same reason each time.** "A held
+  item with no clock at all is Later, not lost" kept reaching for a demand-free
+  kind as its clockless vehicle — a pebble until 1.15.0, a person until now. It
+  uses a child under a clocked parent now: the one clockless *work* item the app
+  can produce.
+  · `vocabulary`, `emitters:check` and the **a11y target gate** all caught real
+  things: two banned words in new comments, two vocabulary notes gone false, and
+  both new inputs at 21px against the 44px floor.
+  · ADR-0068, B-36. **The Should—v1.5 list is empty after this**, and pebbles is
+  struck from it at last.
 
 - **2026-08-03 (Noah: "Generate enough test data in all categories, types, etc,
   to see real data errors")** — **1.16.0 "A set with everything in it"**.

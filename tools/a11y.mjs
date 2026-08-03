@@ -105,6 +105,10 @@ const DIALOG_COMMON = [
   // The bigger set (1.16.0). Its note is a status region that only fills after a
   // press, so it is driven in the walk rather than measured empty.
   '#big-sample', '#big-sample-note',
+  // Named periods (1.17.0). The list is built on open from the log, so the
+  // registry sees rows only after the walk has named one — the driver does.
+  '.about-sub', '.anchor-label', '#anchor-name', '#anchor-recurrence',
+  '#anchor-period', '#anchor-note',
   '#other-file', 'label[for="other-file"]', '#other-note',
   '#purge-summary', '#purge-backup', '#purge-pick-clear', '#purge-pick-erase',
   '#purge-note', '#purge-backup-note', '.purge-label', '#purge-word', '#purge-go',

@@ -3994,6 +3994,54 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const reportAgain = await tpage.evaluate(() => window.__reports[1]);
   is(/we ship on the 12th/.test(reportAgain), false,
     'what they have already heard does not repeat');
+
+  // --- named periods (1.17.0, ADR-0068) -------------------------------------
+  //
+  // The last v1.5 item, and it was deferred for a reason the gauge could see:
+  // an anchor node had no clause of law 1 to stand on, so defining one made the
+  // coverage proof contradict itself. `anchor` is demand-free now and the
+  // surface ships with it, which is the price ADR-0057 named.
+  console.log('\nNamed periods — since the last staff call');
+  const gaugeBeforeAnchor = await tpage.locator('#gauge').textContent();
+  await tpage.fill('#anchor-name', 'the staff call');
+  await tpage.fill('#anchor-recurrence', 'Thursdays');
+  await tpage.click('#anchor-form button[type=submit]');
+  await tpage.waitForSelector('#anchor-list li');
+  const anchorRow = await tpage.locator('#anchor-list li').first().textContent() || '';
+  is(/the staff call/.test(anchorRow), true, `it is named ("${anchorRow.slice(0, 50)}")`);
+  is(/Thursdays/.test(anchorRow), true, 'and it says the rhythm you gave it');
+  is(/not marked yet/.test(anchorRow), true, 'and that it has not come round yet');
+  is(await tpage.inputValue('#anchor-name'), '', 'the box clears only after the write landed');
+
+  // WHAT MUST NOT HAPPEN. A named period is not work: no row in the todo list,
+  // and the gauge does not move. This is the check that would have caught the
+  // silent-node problem the whole deferral was about.
+  is(await tpage.locator('#gauge').textContent(), gaugeBeforeAnchor,
+    'naming a period changed nothing about what you are holding');
+  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+    'and nothing went silent — which is why this could not ship before');
+
+  // It comes round, and the report can then cut there.
+  await tpage.locator('#anchor-list li button', { hasText: 'It came round' }).first().click();
+  await tpage.waitForFunction(() => /last one/.test(
+    document.querySelector('#anchor-list')?.textContent ?? ''), null, { timeout: 4000 });
+  is(true, true, 'marking it records a date, not a count');
+  const marked = await tpage.locator('#anchor-list li').first().textContent() || '';
+  is(/\b\d+\s*(times?|weeks?|days?)\b/.test(marked), false,
+    'and it never says how many times or how long ago (law 5)');
+
+  // Pick it as the period, and the report is cut at the firing rather than at
+  // the last export.
+  await tpage.selectOption('#anchor-period', { label: 'the staff call' });
+  await tpage.evaluate(() => { window.__reports = []; });
+  await tpage.click('#report-copy');
+  await tpage.waitForFunction(() => (window.__reports ?? []).length === 1);
+  const anchorReport = await tpage.evaluate(() => window.__reports[0]);
+  is(typeof anchorReport === 'string' && anchorReport.length > 0, true,
+    'a report cut at a named period is produced');
+  is(/overdue|streak|missed/i.test(anchorReport), false, 'and carries no shame vocabulary');
+  // Back to the default, so nothing later in the walk inherits the choice.
+  await tpage.selectOption('#anchor-period', '');
   await tpage.click('#about-close');
 
   console.log('\nAsking, and declining (1.8.0)');

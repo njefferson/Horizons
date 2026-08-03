@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.17.0 — CAPABILITY
+
+*2026-08-03*
+
+- **A report can now cover “since the last staff call” instead of a date.** Under “Telling someone where things are” you can name a period — whatever sets your rhythm — say when it came round, and have the report cover the time since then.
+- Naming one asks nothing of you. It takes no date, it never comes back at you, it is on no list, and Quietkeep does not count how often you mark it or notice when you do not.
+- **A correction, and it has been there from the beginning: everyone you had named was sitting in your list of things to do.** Not a bug that appeared — people have been rows among your work since people existed here, with nothing to do about them. They have had a page of their own since a while back, which is where they belong. They are off the list.
+- That is the same fix as the one two releases ago that took private journal entries out of the same list, and it was one line this time because of it.
+- The report’s idea of “since when” also got safer across two devices. If a second device hands over work dated before your last meeting that this one had never seen, it now counts as news rather than being quietly treated as already told.
+
 ## 1.16.0 — CAPABILITY
 
 *2026-08-03*

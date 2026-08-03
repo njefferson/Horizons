@@ -1012,3 +1012,34 @@ the rendered gate in this same commit.
   device. The act that replaces is the existing import, which already carries
   its own warning and its own confirm — this text points at it rather than
   duplicating it, so there is one place where that fact is stated authoritatively.
+
+### B-36 · Named periods (1.17.0)
+
+- **The two text boxes carry the 44px floor from `--target`, not from a number**,
+  and the gate caught them at **21px** before this shipped — the UA default,
+  less than half the floor. Borrowed wholesale from `#purge-word` for the reason
+  that control already states: a surface somebody reaches for at a moment they
+  are not at their best. The select carries it too.
+- **The placeholder colour is set explicitly.** The UA grey is a colour nobody
+  chose and it fails the contrast gate; `#pebble-text` and `#capture` already
+  carry the same correction, so this is the third instance of one rule rather
+  than a new one.
+- **The row wraps rather than widening.** `.anchor-list li` is a flex row with
+  `flex-wrap`, so at 320px the button drops below the name instead of pushing
+  the panel into a horizontal scroll (B-04's hardest viewport).
+- **`#anchor-note` is a `role="status"` live region**, like every other note in
+  this panel — one shape for one job, so a reader who has met one has met all.
+- **The verb is "It came round", not "Done".** Nothing here was work, so nothing
+  here is completed: a period ended, which is a different sentence and a
+  different mental model. Same reasoning as "Settled" on a weight (B-34).
+- **The heading is `.about-sub`, one level below `.about-section`**, because
+  anchors sit INSIDE the report section. An anchor answers "since when" for a
+  report and has no other job; its own section would announce it to a
+  screen-reader listener as a separate area to maintain, which is precisely what
+  it is not.
+- **The picker keeps its value across a repaint.** The list is rebuilt from the
+  log whenever the panel opens or an anchor changes, and a repaint landing
+  mid-choice is how a surface throws away an answer somebody was in the middle of
+  giving — the detail sheet's no-clobber rule, applied to a select.
+- **No new colour pair.** Everything reuses tokens measured since B-08; the six
+  new selectors joined the contrast registry in this same commit.
