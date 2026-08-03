@@ -445,6 +445,15 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03** — **1.17.3, second commit: Spine 219 went RED and it was right
+  twice.** The headless walk's panel-height gate failed on the 1.17.3 patch
+  notes (9,273px against a 9,000px budget — ten long notes), and my local smoke
+  had passed because I ran it BEFORE writing the changelog entry. That is
+  **V-10, literally**: a gate run against a tree that is not the tree you ship
+  is a gate you have not run. Notes trimmed to five, sweep re-run in the right
+  order, and the walk's own words stand: the panel is for reading, not for a
+  scroll of history.
+
 - **2026-08-03** — **1.17.3 "What the seam audit found"** — every verified
   finding fixed, each pinned by a named test.
   · **The audit's shape:** six adversarial finder lenses over the seams

@@ -18,16 +18,11 @@ triplet and what it did for you.
 
 *2026-08-03*
 
-- **The seam audit’s findings, fixed.** Thirty-one findings from six independent passes over the places where two parts of the app must agree; fourteen were put to adversarial verification and every one survived. All fourteen are fixed in this release, each pinned by its own test.
-- **A worry is no longer offered as work.** Something you put in through “Something on your mind” showed up on the work surface the same day with a Done button — before its own flow had asked you “whose is this?”. And one you had said “not mine to carry” about sat under “Ready now” asking for ever. A worry now stays in its own flow, and a declined one rests quietly under Later, the way the design always said it should.
-- **Your calendar gets no nags.** A thing you declined was exported to the OS calendar as an all-day event with a morning alarm — the exact nag the Not Now ledger exists to remove, rebuilt in the diary you trust, about the very thing you said no to. Declines and worries no longer export at all, and the stated event count matches the file.
-- **The printed card and the screen now say the same thing.** Paper offered items the screen deliberately holds back — a lapsed date the screen shows as a decision was printed as the one thing to do.
-- **The status report stops disclosing private things.** Journal entries went out as “New — (untitled)”, and weights, people and named periods as new work — in the one document written to hand to another person. None of them enter it now.
-- **Folding into the wrong thing is no longer possible.** The duplicate picker offered your private journal entries — titleless, sorted first — and named periods as things to fold work into; accepting hid the work from every list while the counts still read clean. Also fixed on the way: letting go of a thing that others were folded into is skipped with a count instead of failing mid-batch, and a duplicate of something someone already sent you no longer loses track of who owes you what.
-- **“Keep it after all” on a settled weight works now.** It said “Kept.” and the thing then existed on no screen at all. Kept means back on the load list, carrying what it carried.
-- **One deeper repair underneath:** a settle used to be the one write that could leak into live state even when the batch around it was refused. That hole is closed.
-- The words beside “Bringing a copy back” now describe both doors truthfully — the one that adds and the one that replaces — instead of denying the first one existed.
-- Seventeen further findings from the same audit are recorded and queued; none of them loses data.
+- **The seam audit’s findings, fixed.** Six independent passes over the places where two parts of the app must agree found thirty-one; the top fourteen were each put to adversarial verification and every one survived. All fourteen are fixed here, each pinned by its own test.
+- **A worry is no longer offered as work.** It showed up on the work surface with a Done button before its own flow asked “whose is this?”, and a declined one sat under “Ready now” for ever. A worry stays in its flow now; a declined one rests under Later, as designed.
+- **Your calendar gets no nags.** A declined thing exported as an all-day event with a morning alarm — the exact nag the Not Now ledger removes, rebuilt in the diary you trust. Declines and worries no longer export, and the stated count matches the file.
+- **Private things stay private, and lists agree.** The status report itemised journal entries as “New — (untitled)”; the printed card offered lapsed items the screen shows only as decisions; the duplicate picker offered journal entries and named periods as things to fold work into, which hid the work from every list. All closed.
+- **“Keep it after all” on a settled weight works** — it used to say “Kept.” and keep nothing — and one deeper repair underneath: a settle was the one write that could leak into live state even when its batch was refused. The import panel’s words now name both of its doors truthfully. Seventeen smaller findings are recorded and queued; none loses data.
 
 ## 1.17.2 — ITERATION
 
