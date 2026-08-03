@@ -186,6 +186,15 @@ test('diag-findings: a silent node is reported as a CAUSE, with its kinds', () =
   assert.ok(f[0]?.startsWith('LAW 1 IS BROKEN'), 'it leads with the root cause');
   assert.match(f[0]!, /action/, 'and names the kind, which is shape, not content');
   assert.match(f[0]!, /downstream/, 'and says the rest may be consequence');
+  // The verb agrees with the count, singular and plural. The plural read "31
+  // things … is on no surface" until a real report was read by eye — on the
+  // one line in the app whose entire job is to be believed.
+  assert.match(f[0]!, /1 thing in this store is on no surface/);
+  const many = fold([
+    ev('node.created', 'X1', { nodeKind: 'action', title: 'a' }),
+    ev('node.created', 'X2', { nodeKind: 'action', title: 'b' }),
+  ], emptyState());
+  assert.match(findings(many, [], wellDevice())[0]!, /2 things in this store are on no surface/);
 });
 
 test('diag-findings: each absence carries its reason, never a bare "missing"', () => {

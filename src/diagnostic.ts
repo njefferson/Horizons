@@ -117,8 +117,13 @@ export function findings(state: State, log: readonly AppEvent[], r: DeviceReadin
 
   const silent = silentNodes(state);
   if (silent.length > 0) {
+    // The verb agrees with the count. "31 things in this store is on no
+    // surface" was the first sentence this report ever produced in anger, and
+    // it read as though the app could not count — on the one line whose whole
+    // job is to be believed. Caught by reading a real report, not by a test.
     out.push(`LAW 1 IS BROKEN — ${plural(silent.length, 'thing', 'things')} in this store `
-      + 'is on no surface, under no clock, on no Menu, and parented to nothing under a clock. '
+      + `${silent.length === 1 ? 'is' : 'are'} on no surface, under no clock, on no Menu, `
+      + 'and parented to nothing under a clock. '
       + 'The write boundary is supposed to make that impossible, so this is a cause and not a '
       + 'symptom: anything else odd in this report may be downstream of it. '
       + `Kinds affected: ${[...new Set(silent.map(n => n.kind))].sort().join(', ')}.`);

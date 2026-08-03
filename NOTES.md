@@ -498,6 +498,14 @@ decided by a session.**
   whole release's markup. Restored from the edits, sweep re-run clean. Undo a
   planted fault with a saved copy, never with a checkout of a file that holds
   unmerged work.
+  · **And the thing the tests could not catch: I generated a real report and
+  read it.** The first sentence it ever produced in anger was *"31 things in
+  this store IS on no surface"* — the verb not agreeing with the count, on the
+  one line in the app whose entire job is to be believed. Thirteen tests
+  asserted the finding's content, its kinds, its ordering and its privacy, and
+  not one of them read it as English. Fixed, and pinned both ways (singular and
+  plural). **A property test proves a shape; only a person reading the output
+  catches a sentence that makes the app look like it cannot count.**
   · 953 unit tests, the full walk, a11y both themes, every static gate. Spine's
   run on the exact head is recorded in its own entry above. **Not promoted.**
 
