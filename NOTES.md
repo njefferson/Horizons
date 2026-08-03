@@ -453,6 +453,7 @@ decided by a session.**
   is a gate you have not run. Notes trimmed to five, sweep re-run in the right
   order, and the walk's own words stand: the panel is for reading, not for a
   scroll of history.
+  · **Spine 220 green on the exact head** (`29a7063`). Not promoted.
 
 - **2026-08-03** — **1.17.3 "What the seam audit found"** — every verified
   finding fixed, each pinned by a named test.
