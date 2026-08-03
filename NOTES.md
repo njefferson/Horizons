@@ -445,6 +445,15 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote to main and continue")** — **`main` fast-forwarded
+  `b797083 → bf0e2cb`**, carrying 1.17.2 "Membership" and 1.17.3 "What the seam
+  audit found" to production. Fast-forward ancestry verified first; **Deploy 218
+  green on that exact head**. Spine 220 had been watched green on `29a7063`;
+  `bf0e2cb` is that head plus one docs-only NOTES commit. The "continue" half is
+  1.17.4 — the seam audit's sixteen unverified tail findings, each to be
+  verified against source while fixing (they had no skeptic pass; any that does
+  not hold is recorded as refuted, not silently dropped).
+
 - **2026-08-03** — **1.17.3, second commit: Spine 219 went RED and it was right
   twice.** The headless walk's panel-height gate failed on the 1.17.3 patch
   notes (9,273px against a 9,000px budget — ten long notes), and my local smoke
