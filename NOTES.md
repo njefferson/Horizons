@@ -441,6 +441,14 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
+  `60a45c8 → 59644a4`**, carrying **1.15.1** (what "held" means). Spine 202
+  watched green on the exact head before the promote — all 21 steps — and
+  **Deploy 200** green on `main` at the same sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
+
 - **2026-08-02 (Noah: "Continue")** — **1.15.1 "What *held* means"** — the item
   ADR-0065 left open, which reading the code turned from a question into a
   shipped defect.
