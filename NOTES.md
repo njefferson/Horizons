@@ -445,6 +445,17 @@ decided by a session.**
 
 ### Log
 
+- **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
+  `8ece530 → b797083`**, carrying **1.17.1** (what it costs to look). Spine 213
+  watched green on the exact head before the promote, and **Deploy 211** green on
+  `main` at the same sha after it, both editions out.
+  · Same limit as every promote here: production itself was not read
+  ([V-15](docs/verifications.md)). The evidence is the deploy run's own green
+  Cloudflare steps.
+  · **Everything built this session is now on production** — 1.14.2 through
+  1.17.1. What is outstanding is entirely Noah's: the on-device pass, and the
+  five physical checks (V-20, V-14, V-16/V-17, V-00 step 2, item 42).
+
 - **2026-08-03 (Noah: "Promote and continue")** — **1.17.1 "What it costs to
   look"** — the read path measured, fixed and gated.
   · **The estimate had sat in the roadmap for months and nobody could check it**:
