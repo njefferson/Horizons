@@ -482,6 +482,8 @@ decided by a session.**
   naming that kind; removing the null branch from `ledgerRowWords` reds the sweep
   with `ledger.g1562: null asked · declined 3 Aug`.
   · ADR-0067, B-35. Nothing on any existing screen changed.
+  · **Spine 206 green on the exact head** (`807dbbd`) — 22 steps now, the new one
+  being `sample:check`, green on its first CI run. Not promoted.
 
 - **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
   `60a45c8 → 59644a4`**, carrying **1.15.1** (what "held" means). Spine 202
