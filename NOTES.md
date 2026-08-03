@@ -506,8 +506,11 @@ decided by a session.**
   not one of them read it as English. Fixed, and pinned both ways (singular and
   plural). **A property test proves a shape; only a person reading the output
   catches a sentence that makes the app look like it cannot count.**
-  · 953 unit tests, the full walk, a11y both themes, every static gate. Spine's
-  run on the exact head is recorded in its own entry above. **Not promoted.**
+  · 953 unit tests, the full walk, a11y both themes, every static gate.
+  **Spine 228 green on `8610c1f`** (the release) and **Spine 229 green on
+  `b2fd458`** (that plus the grammar fix) — all 22 steps opened and read
+  individually, not inferred from the run's conclusion (V-10).
+  **Not promoted — this one waits on Noah's on-device pass and his word.**
 
 - **2026-08-03 (Noah: "Promote to main and continue")** — **`main`
   fast-forwarded `bf0e2cb → a281597`**, carrying **1.17.4 "The tail"**. Spine
