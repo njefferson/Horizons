@@ -479,6 +479,7 @@ decided by a session.**
   honesty, write-path seams, lifecycle seams), findings then adversarially
   verified by skeptics told to refute. Confirmed findings get fixed with tests,
   not listed. ADR-0070.
+  · **Spine 217 green on the exact head** (`6f2f81f`). Not promoted.
 
 - **2026-08-03 (Noah: "Promote to main")** — **`main` fast-forwarded
   `8ece530 → b797083`**, carrying **1.17.1** (what it costs to look). Spine 213
