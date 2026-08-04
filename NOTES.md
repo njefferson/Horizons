@@ -612,6 +612,61 @@ and the register classifies each one.
 
 ### Log
 
+- **2026-08-04 — docs/horizon-models.md: what exists for working at different
+  horizons, surveyed against the laws.** Noah asked: *"What models exist for
+  different horizons? I know of the Army's Lines of Effort… those kinds of
+  views are NEVER offered in planning software. Each horizon is briefly
+  discussed by David Allen, but not in a way that leads to actual action."*
+  Eighteen models surveyed — military doctrine, strategy deployment, OKRs,
+  PARA and ND-community practice among them — each with its origin, its
+  mechanism, why it does or does not lead to action, why planning software
+  never offers it, and what survives the ten laws.
+  · **The central finding: a line of effort and a Q-13 role are the same
+  shape** — a named purpose-line cutting across the areas of a single-parent
+  tree. The model Noah named first is the strongest external corroboration
+  Q-13 has: roles ride a cross-cutting link (the feeds relation's shape),
+  never a container.
+  · **His critique of the six-horizons model is structurally correct**, not a
+  matter of emphasis: no artifact in that model links a goal to a next
+  action — no link record, no computed health, no cadence that survives the
+  reviewer's own executive function, which is the capacity this app's thesis
+  says cannot be relied on. Law 4 is that model's deliberate inversion: the
+  horizons come down; the user never climbs.
+  · **Backward planning is already shipped** (feeds → latest-start → replan
+  card, 0.12.0) — the one surveyed model found already mostly inside the laws.
+  · Refused, by name: cascaded targets, RAG status, scoring, mandatory
+  cadences, and every word of military vocabulary (voice rule — the shapes
+  may ship; the words may not).
+
+- **2026-08-04 — The privacy FAIL state: named by Noah, found already
+  breached, gated. And a §7 breach committed during the repair, reverted.**
+  His standing rule, verbatim: *"Make sure you never record anything in the
+  repo that is personal or embarrassing for me. That is a FAIL state."*
+  · **It had already happened.** In recording design conversation faithfully,
+  a session had written sentences into this public file that attached
+  personal facts to the owner rather than to the product or its users. They
+  were removed the hour the rule was stated (ce6448f), and a grey-zone quote
+  was rephrased to keep its design content without its personal frame. What
+  the removal cannot reach — git history is append-only — was put to the
+  owner directly with his options; that decision is his, not a session's.
+  · **The rule now has teeth in three places.** `test/privacy.test.ts` runs
+  in this repo's CI: patterns deliberately narrow — the person, linked by a
+  verb, to the term — so the product's own public framing never trips them,
+  with a built-in plant proving every pattern bites. The hub's
+  `privacy-check.mjs` carries the same patterns for every sibling repo. And
+  this repo's CLAUDE.md now opens its app-specific rules with the rule
+  itself. Hub LESSONS §52 records the class: design statements the owner
+  makes are recordable; who he is, is not.
+  · **The scrub push broke §7.** Urgency is no excuse and it was the cause:
+  the scrub went out as `git push origin staging:main`, which carried the
+  UNPASSED 1.20.0 code (1a531dc) to production alongside the docs fix.
+  Repair, in order: 1a531dc reverted on `main` (c6e7182 — production runs
+  1.19.0 again, the docs kept truthful), `staging` restored by
+  revert-of-revert (002e195 — 1.20.0 intact, 973 tests green), both verified
+  by reading the remote. The rule that was already written and still missed
+  under urgency: docs bound for `main` travel as a docs-only commit,
+  cherry-picked — never as a branch push that happens to contain code.
+
 - **2026-08-04 — Noah answered the two open design questions from the V2
   planning session.** Verbatim: *"1. Roles are identities for me, that cross
   multiple areas. 2. You are right — it has to follow the principles of
