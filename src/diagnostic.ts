@@ -79,6 +79,25 @@ export interface DeviceReading {
    *  fastest way to see a device serving a stale build. Null when the worker
    *  has not answered — an ordinary state, and said as one. */
   cache: string | null;
+  /** EVERY Quietkeep cache this device holds, not just the first. Two is the
+   *  signature of a half-finished update, and a report naming one cache cannot
+   *  show it (§7h.4). */
+  caches: string[];
+  /** Is a service worker controlling this page at all? A page with no
+   *  controller is serving straight from the network, which changes what every
+   *  other line here means. */
+  controlled: boolean;
+  /** Is a NEWER worker installed and waiting for the reader to accept it? This
+   *  is the state that tells "running the current build" from "running an old
+   *  build with the new one already downloaded" — which the triplet above
+   *  cannot, because it is whatever the cache served (§7f, §7h). */
+  waiting: boolean;
+  /** WHICH SITE this report came from. Added after a report read
+   *  `quietkeep-sync-1.18.0` and could not settle whether it came from
+   *  production or staging, because both served that build — it cost V-15 a
+   *  round trip on a line that costs nothing. A report that cannot say where it
+   *  came from cannot close a verification on its own. */
+  origin: string | null;
   device: string;
   zone: string;
   /** Home-screen or browser tab. The install steps and the persistence story
@@ -159,6 +178,21 @@ export function findings(state: State, log: readonly AppEvent[], r: DeviceReadin
       + 'claims, which is how a fixed defect appears to still be present.');
   }
 
+  // §7h. Said in the diagnosis and not only in the device block, because the
+  // whole point of this release is that a reader should never have to open a
+  // report to find out they are running last week's build. This line is the
+  // backstop for the case where they did open one.
+  if (r.waiting) {
+    out.push('A newer version is downloaded and waiting on this device. Nothing installs '
+      + 'until you choose it, so what you are using now is whole and keeps working — but '
+      + 'a defect you are about to report may already be fixed in the copy sitting here.');
+  }
+  if (r.caches.length > 1) {
+    out.push(`This device holds ${r.caches.length} copies of the app (${r.caches.join(', ')}). `
+      + 'One of them is left over from an update that did not finish clearing up. It is '
+      + 'harmless, and it is the fingerprint worth reporting.');
+  }
+
   return out;
 }
 
@@ -222,9 +256,18 @@ export function diagnosticReport(
   L.push(`  Edition: ${r.edition === 'default' ? 'default (cannot sync — no network code in this build)'
     : r.edition === 'sync' ? 'sync'
     : 'cannot be told from this address — a local build, or an unexpected host'}`);
+  L.push(`  Address: ${r.origin ?? 'not answering'}`);
   L.push(`  Service worker cache: ${r.cache ?? 'not answering'}`);
+  if (r.caches.length > 1) {
+    L.push(`  Caches held: ${r.caches.length} — ${r.caches.join(', ')}`);
+    L.push('    (more than one means an update is part-finished on this device)');
+  }
+  L.push(`  A worker is serving this page: ${r.controlled ? 'yes' : 'no — straight from the network'}`);
+  L.push(`  A newer version is waiting to be installed: ${r.waiting ? 'yes' : 'no'}`);
   L.push(`  Installed to home screen: ${r.installed ? 'yes' : 'no — running in a browser tab'}`);
-  L.push(`  Device id: ${r.device}`);
+  L.push(`  This store's id: ${r.device}`);
+  L.push('    (one per site and per browser, not per machine — the same iPad');
+  L.push('     has a different one for each edition, and a fresh one after a clear)');
   L.push(`  Time zone: ${r.zone}`);
   L.push(`  Paired with another device: ${r.paired ? 'yes' : 'no'}`);
   L.push('');
@@ -247,7 +290,7 @@ export function diagnosticReport(
   L.push(`  In the Not Now ledger: ${notNowLedger(state).length}`);
   L.push(`  Weights being carried: ${load.pebbles.length}${load.capacity ? ` · capacity said to be ${load.capacity}` : ''}`);
   L.push(`  Events in the log: ${state.eventCount}`);
-  L.push(`  Devices seen in the log: ${state.devices.size}`);
+  L.push(`  Stores seen in the log: ${state.devices.size}`);
   L.push('  By kind:');
   const counts = kindCounts(state);
   for (const k of NODE_KINDS) L.push(`    ${k}: ${counts[k]}`);

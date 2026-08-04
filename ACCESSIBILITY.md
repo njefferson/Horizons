@@ -1080,3 +1080,40 @@ the rendered gate in this same commit.
   size rather than by audit order — and the repair was verified the way the hub's
   own lesson requires: an unreachable control was planted, the gate went red in
   both themes, and only then was the green believed.
+
+### B-38 · An update no longer changes the app underneath a reader (1.18.1)
+
+Doctrine §7h.1 and §4, and it is an accessibility finding rather than only a
+release-engineering one — which is why it is recorded here.
+
+- **The failure, in interaction terms.** `public/sw.js` called `skipWaiting()`
+  inside `install`, so a new worker took over while the page somebody was reading
+  carried on running the previous release's markup and modules. `activate` then
+  deleted the old cache, so every later request from that page was served the new
+  file. **The app changed under the reader with no announcement, no consent and
+  no way back** — the same class as a mode that hands control over silently
+  (Doctrine §3), and worse, because there is no indicator to notice.
+- **The fix is consent.** The worker waits; a standing line says a newer version
+  is ready; nothing moves until the reader presses **Install it now**. Declining
+  leaves them on a whole, working build. The line is `role="status"` with
+  `aria-live="polite"`, already registered, and it keeps its three plain
+  choices — save a copy, install, not now — with the way out wired first.
+- **The label now says what the control does (SC 2.5.3).** `Reload now` became
+  `Install it now`. It was accurate under the old model, where the update had
+  already landed and only a reload remained; under the new one it would have
+  described the wrong action. The accessible name is the visible text, as before,
+  so the criterion is satisfied by construction rather than by a matching
+  `aria-label` — the accident hub LESSONS §29 warns about.
+- **No new colour pairs.** The change is behavioural and textual; every selector
+  involved was already in the contrast registry, and the gate was re-run in both
+  themes with the update strip in its shown state.
+- **The reader is never told on a first visit** (§7h.3). The no-controller gate
+  moved to the top of `updateIsReady`, above the `waiting` and `installing`
+  checks, so somebody thirty seconds into their first-ever load is not informed
+  that a new version is ready. It is pinned by a test, and the test was proved by
+  planting.
+- **Still owed, and stated rather than implied:** the promotion path is asserted
+  against the worker's SOURCE and the decision function's logic, not driven
+  end-to-end with a real second worker. §7h asks for the real thing, because a
+  mocked registration only proves the mock works. Recorded in
+  [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md).

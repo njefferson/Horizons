@@ -8,10 +8,12 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 
 import {
   UPDATE_WORDS, UPDATE_SAVED_WORDS, updateFailedWords, updateIsReady,
 } from '../src/ui/update.ts';
+import { CURRENT } from '../src/ui/changelog.ts';
 
 // --- the detection ----------------------------------------------------------
 
@@ -25,11 +27,15 @@ test('an installed-but-not-promoted worker counts too', () => {
     'still installing is not yet ready');
 });
 
-test('THE ONE THAT MATTERS ON THIS APP: an active worker that is not ours counts', () => {
-  // `sw.js` calls `skipWaiting()`, so a new worker activates without asking and
-  // `waiting` is empty by the time anything could look. A `waiting`-only check
-  // therefore misses every real update on this app — the shell has already moved on
-  // beneath the page, which is exactly the moment worth offering a copy.
+test('an active worker that is not ours still counts, and 1.18.1 did not delete it', () => {
+  // This branch was written when `sw.js` called `skipWaiting()`: a new worker
+  // activated without asking, `waiting` was empty by the time anything looked, and
+  // a `waiting`-only check missed every real update on this app.
+  //
+  // 1.18.1 removed that skipWaiting, so `waiting` is now the ordinary signal — but
+  // this check STAYS, because it is what catches a device whose page is controlled
+  // by a worker the registration no longer considers current. Deleting a branch
+  // because the common case moved is how the uncommon case stops being covered.
   const ours = { id: 'old' };
   assert.equal(updateIsReady({ active: { id: 'new' } }, ours), true);
   assert.equal(updateIsReady({ active: ours }, ours), false, 'our own worker is not an update');
@@ -40,6 +46,18 @@ test('a first-ever load is not an update', () => {
   // store to somebody who has just arrived would be nonsense.
   assert.equal(updateIsReady({ active: {} }, null), false);
   assert.equal(updateIsReady({ waiting: null, installing: null, active: null }, null), false);
+});
+
+test('§7h.3 — A NEWCOMER IS NEVER TOLD, even with a worker already waiting', () => {
+  // The regression this pins: the no-controller gate used to sit BELOW the
+  // `waiting` and `installing` checks, so a first-ever visit that managed to get
+  // a worker installed was told its brand-new install was an update. "A new
+  // version is ready" thirty seconds after arriving is nonsense, and §7h.3 asks
+  // for exactly this gate.
+  assert.equal(updateIsReady({ waiting: {} }, null), false,
+    'a waiting worker with nothing controlling the page is a first install');
+  assert.equal(updateIsReady({ installing: { state: 'installed' } }, null), false,
+    'an installed worker with no controller is a first install');
 });
 
 test('no registration at all is not an update', () => {
@@ -99,4 +117,41 @@ test('none of the three sentences reaches for a word this app refuses', () => {
       assert.doesNotMatch(w, new RegExp(bad, 'i'), `"${w}" says "${bad}"`);
     }
   }
+});
+
+// --- the worker itself, read as text ----------------------------------------
+//
+// §7h.1 is a property of `public/sw.js`, and the hub's `pwa-check.mjs` is the
+// gate that owns it. These assert it HERE too, because that gate is not run by
+// this repo's CI and a rule enforced only in another repo's tooling is a rule
+// this repo can silently lose. Comments are stripped first: a comment explaining
+// why skipWaiting is absent is not a call to it, and matching one would demand
+// the comment be deleted to go green.
+
+const swSource = readFileSync(new URL('../public/sw.js', import.meta.url), 'utf8');
+const withoutComments = swSource
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+
+test('§7h.1 — the new worker WAITS: no skipWaiting() inside install', () => {
+  const install = /addEventListener\(\s*['"]install['"][\s\S]*?\n\}\);/.exec(withoutComments)?.[0];
+  assert.ok(install, 'no install listener found in sw.js');
+  assert.doesNotMatch(install, /skipWaiting/,
+    'skipWaiting() in install takes over under the open page — old markup, new modules (§7h.1)');
+});
+
+test('§7h.1 — and the READER releases it: a message handler, checked by name', () => {
+  assert.match(withoutComments, /addEventListener\(\s*['"]message['"]/,
+    'nothing the reader does can promote the waiting worker');
+  assert.match(withoutComments, /SKIP_WAITING/,
+    'the message is not checked by name, so any stray postMessage would promote it');
+  assert.match(withoutComments, /skipWaiting/,
+    'a worker that never calls skipWaiting can never be promoted at all');
+});
+
+test('the cache name carries the running triplet, so a release cannot reuse it', () => {
+  const name = /(?:const|let|var)\s+CACHE\s*=\s*['"]([^'"]+)['"]/.exec(withoutComments)?.[1];
+  assert.ok(name, 'no CACHE constant found');
+  assert.equal(name, `quietkeep-${CURRENT.triplet}`,
+    'sw.js cache name and the running release have drifted apart');
 });

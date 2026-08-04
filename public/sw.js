@@ -3,7 +3,7 @@
 // The cache name carries the version.capability.iteration triplet and is bumped
 // with it (Doctrine §7, CLAUDE.md). Changing the triplet is what retires the old
 // cache — that is the whole mechanism, so it is not optional.
-const CACHE = 'quietkeep-1.18.0';
+const CACHE = 'quietkeep-1.18.1';
 
 // The shell only. User data is NEVER cached here — it lives in IndexedDB, which
 // this file does not touch and must not.
@@ -21,15 +21,37 @@ const SHELL = [
   './brand/favicon-32.png',
 ];
 
+// THE NEW WORKER WAITS. It does not take over on its own (Doctrine §7h.1).
+//
+// This file used to call skipWaiting() here, with the comment "take over
+// promptly: a half-updated shell is worse than a brief wait". That reasoning is
+// backwards and the cost of it was real. Taking over promptly does not replace
+// the open page — the page keeps running the PREVIOUS release's HTML and
+// modules, while activate below deletes the old cache, so every request that
+// page makes afterwards is served the NEW file. Old markup, new modules, no
+// reload, and nothing said to anybody. That IS the half-updated shell, and
+// skipWaiting is what creates it rather than what avoids it.
+//
+// Waiting produces the opposite: the reader keeps a CONSISTENT old app until
+// they choose to move. An old app that works is a smaller problem than a mixed
+// one that does not.
 self.addEventListener('install', (event) => {
-  // Take over promptly: a half-updated shell is worse than a brief wait.
-  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE).then((c) => c.addAll(SHELL)).catch(() => {
       // A failed precache must not block install. The app still works online,
       // and capture — the one thing that must never break — needs no network.
     }),
   );
+});
+
+// ...and the READER'S DECISION is the only thing that releases it (§7h.1).
+//
+// Nothing else may call skipWaiting: not a timer, not install, not activate. The
+// page posts this after it has told somebody a newer version is ready and they
+// have pressed the control that says so. That is the entire contract, and it is
+// why the message is checked by name rather than treated as a bare ping.
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 self.addEventListener('activate', (event) => {

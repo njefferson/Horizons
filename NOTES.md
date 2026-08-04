@@ -501,16 +501,26 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**Nothing is staged and waiting. 1.18.0 was PROMOTED on 2026-08-04** — Noah's
-*"Promote and continue"*. `staging` and `main` are both at `1dd696a` and
-production now serves the diagnostic.
+**1.18.1 is on `staging` and has not been promoted.** It is deployed and openable
+right now:
 
-- **https://quietkeep.pages.dev** — production, now **1.18.0**
-- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.1**
+- **https://quietkeep.pages.dev** — production, **1.18.0**
 
 The Sync edition deploys alongside it at
-**https://quietkeep-sync.pages.dev** (staging:
-**https://staging.quietkeep-sync.pages.dev**).
+**https://staging.quietkeep-sync.pages.dev** (production:
+**https://quietkeep-sync.pages.dev**).
+
+**What to look at first, and it is the whole release:** when a newer version
+arrives it now WAITS. You get a line saying so, and nothing changes until you
+press **Install it now**. Press *Not now* and the app you are using stays exactly
+as it is.
+
+**The one thing that will look wrong and is not.** Going FROM 1.18.0 to this
+release, the update still lands on its own, because 1.18.0's code is what is
+doing the landing and it cannot be patched from here. On this build and every one
+after it, the asking is real. That is stated in the patch notes too rather than
+left to be discovered.
 
 **That paste has been made and [V-15](docs/verifications.md) is CLOSED.** Noah's
 diagnostic from the production sync host read `quietkeep-sync-1.18.0`, which is
@@ -528,6 +538,51 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — 1.18.1 (ITERATION) staged: an update waits for the reader.**
+  Doctrine §7h.1, and the last of the four §7h failures the hub gate found. Two
+  of those four were the gate's fault and were fixed in the hub; this is the real
+  one, and it had been in this repo since the first release.
+  · **What was wrong, precisely.** `public/sw.js` called `skipWaiting()` inside
+  `install`, under the comment *"Take over promptly: a half-updated shell is
+  worse than a brief wait."* That is backwards. Taking over promptly does not
+  replace the open page — that page keeps running the PREVIOUS release's markup
+  and modules, while `activate` deletes the old cache, so every request it makes
+  afterwards is served the NEW file. Old markup, new modules, nothing said. The
+  comment described the exact state its own line was creating.
+  · **Why it was not a one-line fix.** `src/ui/update.ts` was written *around*
+  `skipWaiting()` and said so in its header: the prompt "is never 'apply the
+  update'", and the button read `Reload now` for that reason. Honest words about
+  a wrong model. The worker now waits, the page posts `SKIP_WAITING` on the
+  reader's press and reloads only once the swap has HAPPENED — reloading first
+  re-enters the same old worker and shows the line again, which is the loop a
+  plain `location.reload()` produces once waiting works. Full reasoning in
+  [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md).
+  · **Also fixed here, both found by reading the code rather than by the gate:**
+  §7h.3's newcomer gate sat BELOW the `waiting` check, so a first visit that
+  raced a worker into `installed` was told its brand-new install was an update;
+  and the diagnostic now carries §7h.4's state — every cache rather than the
+  first, whether a worker controls the page, whether one waits — plus the
+  **address** it came from, which is what cost V-15 a round trip.
+  · **`Devices seen in the log` is now `Stores seen in the log`**, after Noah
+  read three ids as including the OmniFocus import. It counts one per store, and
+  a store is per-origin — the same iPad has one per edition and a fresh one after
+  a clear.
+  · **Verified by planting, not by going green.** Putting `skipWaiting()` back
+  into `install`, deleting the `message` handler, and leaving the cache name at
+  the old release each turn exactly one test red and only that one. 957 tests
+  pass, typecheck clean, a11y green in both themes, and the hub's `pwa-check`
+  now passes all six checks with zero failures.
+  · **Honestly not done:** the promotion path is asserted against the worker's
+  SOURCE and the decision function's logic, never driven end-to-end with a real
+  second worker, which is what §7h actually asks for. fauxplane's
+  `checkUpdateStrip` is the thing to copy.
+  · **And a constraint worth knowing before writing another changelog:** the ⓘ
+  panel's 9,000px budget is now binding two releases running. 1.18.0 sat at
+  8,813; this release's first draft reached **8,985 — fifteen pixels of
+  headroom** — and the notes were shortened for the second release in a row.
+  Collapsed older releases are not the cause and bounding them would not help.
+  Nobody has measured what the baseline is made of. ADR-0072 says so.
 
 - **2026-08-04 — THE FIRST REAL USAGE DATA THIS REPO HAS EVER HELD.** Noah sent
   a §7f diagnostic from his actual instance: the **sync edition, 1.18.0,

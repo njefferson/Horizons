@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.18.1 — ITERATION
+
+*2026-08-04*
+
+- **An update no longer arrives without asking.** A new version used to take over the moment it downloaded, underneath whatever you had open. Now it waits and says so, what you are using stays whole, and it lands when you press Install it now. Declining costs nothing.
+- **The report says more about this device:** which address it came from, whether a version is waiting, and whether more than one copy of the app is here — the sign of an update that did not finish tidying up. “Devices seen in the log” is now “Stores”, because it always counted one per site and per browser rather than one per machine.
+- *Still true:* if you are on 1.18.0 now, this one update still lands on its own — the version that asks first is the one arriving. Every update after it asks.
+
 ## 1.18.0 — CAPABILITY
 
 *2026-08-03*

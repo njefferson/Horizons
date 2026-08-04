@@ -1642,10 +1642,25 @@ export async function mountAbout(
       // different fact from the one the version stamp shows — a device running
       // a stale worker reports the new triplet and the old code.
       let cache: string | null = null;
+      let caches: string[] = [];
       try {
         const names = await globalThis.caches?.keys();
-        cache = names?.find(k => k.startsWith('quietkeep-')) ?? null;
+        caches = (names ?? []).filter(k => k.startsWith('quietkeep'));
+        cache = caches[0] ?? null;
       } catch { /* no Cache API, or a browser refusing it — 'not answering' */ }
+      // §7h.4. TWO caches is the signature of a half-finished update, and
+      // reporting only the first hides exactly that — the state this whole
+      // release exists to make visible. Controlled/waiting come with it: a
+      // reader running an old build with a new one waiting is the case the
+      // version stamp alone cannot tell from being current.
+      let controlled = false;
+      let waiting = false;
+      try {
+        const sw = globalThis.navigator?.serviceWorker;
+        controlled = sw?.controller != null;
+        waiting = (await sw?.getRegistration())?.waiting != null;
+      } catch { /* no worker, or an engine refusing it */ }
+      const swOrigin = globalThis.location?.origin ?? null;
       // Asked of the store, never of the sync module: this file ships in BOTH
       // editions and the default one does not contain that module (ADR-0036).
       let paired = false;
@@ -1654,6 +1669,10 @@ export async function mountAbout(
         triplet: CURRENT.triplet,
         edition: editionOf(globalThis.location?.hostname ?? ''),
         cache,
+        caches,
+        controlled,
+        waiting,
+        origin: swOrigin,
         device: session.device,
         zone: session.zone,
         installed: globalThis.matchMedia?.('(display-mode: standalone)').matches === true

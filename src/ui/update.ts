@@ -20,14 +20,28 @@
 // one is a line with three plain choices and no modal, and the app keeps working
 // untouched if it is ignored — the old code carries on until somebody reloads.
 //
-// ## Why it appears at all, given `skipWaiting()`
+// ## What changed in 1.18.1, and why the whole model moved
 //
-// The service worker takes over promptly on install, so the new shell is already in
-// the cache and the next load gets it. The running page keeps executing the old
-// bundle until it reloads. So this is never "apply the update" — it is "there is a
-// newer version than the one you are looking at, and here is a moment to take a copy
-// before you go to it". Saying that accurately is why the button reads as a reload
-// rather than as an install.
+// This file used to be written AROUND `skipWaiting()`. The worker took over on
+// install, so by the time anybody read this line the new shell was already in the
+// cache and the old cache was already deleted — the running page was executing the
+// previous release's bundle while every fresh request it made was served the new
+// file. The prompt could therefore never be "apply the update"; it could only be
+// "you have already moved, here is a moment to take a copy before you reload".
+//
+// That is Doctrine §7h.1's mixed app, and the reader had no say in it. The worker
+// now WAITS, and this prompt is the only thing that releases it: press the control
+// and the page posts `SKIP_WAITING`, the waiting worker activates, `controllerchange`
+// fires, and the page reloads onto a build that is new all the way through. Decline,
+// and nothing moves — the old app stays whole and keeps working.
+//
+// **The one-release cost, stated because it is a real edge and it is invisible.**
+// A device still running 1.18.0 has 1.18.0's page code, which cannot post
+// `SKIP_WAITING`. It will see this prompt and its Reload will not promote the
+// waiting worker; the update lands when every client of the old worker is gone,
+// which for a home-screen app means the next full close. That is one hop, it leaves
+// them on a CONSISTENT 1.18.0 throughout, and it is the price of not being able to
+// patch code that has already shipped.
 
 import { deliverCopy } from './export-copy.ts';
 import type { Session } from './session.ts';
@@ -35,7 +49,7 @@ import type { Session } from './session.ts';
 /** What the line says. Precise about the risk, which is small and real, and silent
  *  about the risk it does not carry. */
 export const UPDATE_WORDS =
-  'A newer version is ready. Nothing you have written is at risk — this app only ever adds to its record, and an update cannot rewrite it. A copy is worth taking if you would like a point to come back to.';
+  'A newer version is ready, and it waits until you say so — what you are using now keeps working until you install it. Nothing you have written is at risk: this app only ever adds to its record, and an update cannot rewrite it. A copy is worth taking first if you would like a point to come back to.';
 
 /** After a copy has been handed over. States what happened, and what is still true. */
 export const UPDATE_SAVED_WORDS =
@@ -63,10 +77,15 @@ export function updateIsReady(reg: {
   active?: unknown;
 } | null, controller: unknown): boolean {
   if (!reg) return false;
+  // A NEWCOMER IS NEVER TOLD (§7h.3), and this gate comes FIRST rather than
+  // third. No controller means nothing has ever controlled this page, so there
+  // is no older version to be newer than — "a new version is ready" thirty
+  // seconds after arriving is nonsense. The gate used to sit below the `waiting`
+  // and `installing` checks, which left a first-ever visit that raced two
+  // workers being told its brand-new install was an update.
+  if (controller == null) return false;
   if (reg.waiting != null) return true;
   if (reg.installing?.state === 'installed') return true;
-  // Controlled by nothing yet means a first-ever load, not an update.
-  if (controller == null) return false;
   return reg.active != null && reg.active !== controller;
 }
 
@@ -99,11 +118,48 @@ export function mountUpdatePrompt(session: Session): void {
   const ui = find();
   if (!ui) return;
 
+  /** Held so the Install control can reach the WAITING worker at click time.
+   *  Registration resolves asynchronously and the control is wired before it
+   *  does (the way out is wired first, §14) — so this is read on click, never
+   *  captured at wiring time. */
+  let registration: ServiceWorkerRegistration | null = null;
+
   // THE WAY OUT FIRST, before anything that can fail — the same ordering the (i)
   // panel had to learn the hard way when its close button ended up wired 490 lines
   // below the things that could throw.
   ui.dismiss.addEventListener('click', () => { ui.region.hidden = true; });
-  ui.reload.addEventListener('click', () => { location.reload(); });
+
+  /** Set when WE asked the worker to step aside, so `controllerchange` can tell
+   *  "the reader pressed the button" from "a legacy worker claimed this page on
+   *  its own". The first must reload; the second must only offer. */
+  let asked = false;
+  /** A reload is one-way and must happen exactly once. `controllerchange` can
+   *  fire more than once, and reloading twice loses whatever the reader typed
+   *  between the press and the swap. */
+  let reloading = false;
+  const reloadOnce = (): void => {
+    if (reloading) return;
+    reloading = true;
+    location.reload();
+  };
+
+  ui.reload.addEventListener('click', () => {
+    // Ask the waiting worker to take over, then reload when it HAS — reloading
+    // first would just re-enter the same old worker and show this line again,
+    // which is the loop a plain `location.reload()` produces once the worker
+    // waits properly. If there is nothing waiting (a legacy worker that already
+    // claimed the page, or no worker at all), a plain reload is still correct.
+    const waiting = registration?.waiting;
+    if (waiting) {
+      asked = true;
+      try { waiting.postMessage({ type: 'SKIP_WAITING' }); } catch { reloadOnce(); }
+      // If the swap never happens — a worker that ignores the message, an
+      // engine that refuses — the reader is not left pressing a dead control.
+      setTimeout(reloadOnce, 3000);
+      return;
+    }
+    reloadOnce();
+  });
   ui.save.addEventListener('click', () => {
     void (async () => {
       ui.save.disabled = true;
@@ -130,6 +186,7 @@ export function mountUpdatePrompt(session: Session): void {
   if (!('serviceWorker' in navigator)) return;
 
   navigator.serviceWorker.register('./sw.js').then(reg => {
+    registration = reg;
     if (updateIsReady(reg, navigator.serviceWorker.controller)) show();
     reg.addEventListener('updatefound', () => {
       const fresh = reg.installing;
@@ -143,7 +200,13 @@ export function mountUpdatePrompt(session: Session): void {
     // the app.
   });
 
-  // `skipWaiting()` in the worker means the new one activates without asking, so
-  // this is the signal that actually fires on Noah's device.
-  navigator.serviceWorker.addEventListener('controllerchange', () => { show(); });
+  // Two different events wear the same name here. If WE asked, the swap is the
+  // reader's decision arriving and the page reloads onto a build that is new all
+  // the way through. If we did not, something claimed this page without being
+  // asked — a 1.18.0 worker still out there — and the honest response is to
+  // OFFER, never to reload underneath somebody who is typing.
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (asked) { reloadOnce(); return; }
+    show();
+  });
 }

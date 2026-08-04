@@ -34,7 +34,9 @@ const write = (prior: State, offered: AppEvent[]): State =>
 /** A healthy device: everything the app can check for is fine, so `findings`
  *  has nothing to say and the report must say THAT rather than nothing. */
 const wellDevice = (over: Partial<DeviceReading> = {}): DeviceReading => ({
-  triplet: '1.18.0', edition: 'default', cache: 'quietkeep-1.18.0',
+  triplet: '1.18.1', edition: 'default', cache: 'quietkeep-1.18.1',
+  caches: ['quietkeep-1.18.1'], controlled: true, waiting: false,
+  origin: 'https://quietkeep.pages.dev',
   device: 'd0', zone: TZ, installed: true,
   storageSupported: true, persisted: true, quotaMb: 1024, usageMb: 2.4,
   paired: false, unreadableEntries: null, ...over,
