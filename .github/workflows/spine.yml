@@ -63,6 +63,14 @@ jobs:
       - name: Headless walk of the built app
         run: npm run smoke
 
+      # Doctrine §7h asks for a REAL second worker rather than a mocked
+      # registration, because a mock proves the mock works. This serves a
+      # genuinely different sw.js and lets Chromium's own update machinery run.
+      # It found a live §7h.3 defect on its first run that the source-reading
+      # unit tests could not see.
+      - name: A real second worker waits for the reader
+        run: npm run update:walk
+
       # The rendered app, audited: contrast computed per state in both themes,
       # axe per state, targets, and B-04's hardest viewport (320px at 200%
       # text). This is B-08's claimed gate actually existing for the app, not

@@ -29,6 +29,14 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.18.2',
+    kind: 'ITERATION',
+    date: '2026-08-04',
+    notes: [
+      '**Opening Quietkeep for the first time no longer greets you with “a newer version is ready”.** It was announcing your first install as an update, thirty seconds after you arrived. It now says nothing until there is genuinely something newer than what you are already using.',
+    ],
+  },
+  {
     triplet: '1.18.1',
     kind: 'ITERATION',
     date: '2026-08-04',

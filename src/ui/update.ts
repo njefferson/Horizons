@@ -185,6 +185,22 @@ export function mountUpdatePrompt(session: Session): void {
 
   if (!('serviceWorker' in navigator)) return;
 
+  /**
+   * Did anything control this page when we started?
+   *
+   * §7h.3 says a newcomer is never told, and `updateIsReady` gates on exactly
+   * that — but `controllerchange` below never consults it, so the gate was not
+   * on the path that needed it. `clients.claim()` in the worker's `activate`
+   * hands a FIRST-EVER visitor its first controller, which fires
+   * `controllerchange` like any other swap. A brand-new arrival was therefore
+   * told a new version was ready, thirty seconds into their first visit.
+   *
+   * Found by `tools/update-walk.mjs` on a genuinely fresh profile. The unit
+   * test asserting §7h.3 passed throughout, because the defect was never in the
+   * function it tested.
+   */
+  let hadController = navigator.serviceWorker.controller != null;
+
   navigator.serviceWorker.register('./sw.js').then(reg => {
     registration = reg;
     if (updateIsReady(reg, navigator.serviceWorker.controller)) show();
@@ -207,6 +223,9 @@ export function mountUpdatePrompt(session: Session): void {
   // OFFER, never to reload underneath somebody who is typing.
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (asked) { reloadOnce(); return; }
+    // A FIRST claim is not an update. Record it and say nothing (§7h.3); every
+    // swap after this one is a genuine replacement and is worth offering.
+    if (!hadController) { hadController = true; return; }
     show();
   });
 }

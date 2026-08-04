@@ -41,13 +41,36 @@ function parseHeaders(root) {
   return out;
 }
 
-export function serve(root, port = 0) {
+/**
+ * Serve `root`, with a mutable `overrides` map the caller can change MID-RUN.
+ *
+ * Why a live override rather than writing a temp tree: Doctrine §7h says to test
+ * a stale app "with a REAL second worker, not a mocked registration — serve a
+ * genuinely different `sw.js` and let the browser's own update machinery run; a
+ * mock proves the mock works." The browser only starts that machinery when the
+ * bytes at the SAME URL change, so something has to answer `/sw.js` differently
+ * on the second request. Overriding here does it without touching `public/`,
+ * which keeps the walk unable to leave a modified worker behind on a failure.
+ *
+ * `overrides` is a `Map` of request path -> string body. It is read per request,
+ * so `overrides.set('/sw.js', …)` takes effect on the next fetch.
+ */
+export function serve(root, port = 0, overrides = new Map()) {
   const extraHeaders = parseHeaders(root);
   const server = createServer(async (req, res) => {
     try {
       const url = new URL(req.url ?? '/', 'http://localhost');
       let path = decodeURIComponent(url.pathname);
       if (path.endsWith('/')) path += 'index.html';
+      const override = overrides.get(path);
+      if (override !== undefined) {
+        res.writeHead(200, {
+          'content-type': TYPES[extname(path)] ?? 'application/octet-stream',
+          ...extraHeaders,
+        });
+        res.end(override);
+        return;
+      }
       // normalize + prefix check: a static server must not serve its parent.
       const file = normalize(join(root, path));
       if (!file.startsWith(normalize(root))) { res.writeHead(403).end(); return; }
@@ -60,7 +83,11 @@ export function serve(root, port = 0) {
   });
   return new Promise((resolve) => {
     server.listen(port, '127.0.0.1', () => {
-      resolve({ server, port: server.address().port, url: `http://127.0.0.1:${server.address().port}/` });
+      resolve({
+        server, overrides,
+        port: server.address().port,
+        url: `http://127.0.0.1:${server.address().port}/`,
+      });
     });
   });
 }

@@ -153,12 +153,43 @@ on-device pass. Failing the candidate he is holding, for a defect it did not
 introduce and does not touch, would be the wrong trade. It is written down with
 the numbers instead, which is what the next session needs to act on it.
 
-## What this does NOT do
+## The real second worker, and the defect it found (1.18.2)
 
-It does not test the promotion path with a real second worker. §7h says to prove
-it by serving a genuinely different `sw.js` and letting the browser's own update
-machinery run, because a mocked registration only proves the mock works. This
-release asserts the worker's *source* and the decision function's *logic*; the
-end-to-end swap is still unproven here and is recorded as such rather than
-implied. fauxplane's `checkUpdateStrip` drives a real second worker and is the
-implementation to copy.
+1.18.1 shipped with this section reading *"it does not test the promotion path
+with a real second worker"*. `tools/update-walk.mjs` now does, and §7h was right
+to insist.
+
+It serves a genuinely different `sw.js` — the real file with a different cache
+name — from the walk's own server via a live override, then lets Chromium's own
+update machinery run. Nothing is simulated. It asserts the four claims that are
+the whole of §7h.1 and .2: the new worker reaches `waiting` and stops there, it
+does not become the controller on its own, the reader is told in words they can
+see, and the reader's press is what promotes it all the way to a page running
+the new build.
+
+**On its first run it failed, and the failure was real.** A brand-new visitor
+was being told a new version was ready, thirty seconds into their first-ever
+visit — a straight §7h.3 violation, shipped to production in 1.18.1.
+
+**Why every check we had missed it.** §7h.3's gate lives at the top of
+`updateIsReady`, and `test/update.test.ts` asserts it there — correctly, and it
+passed throughout. But `controllerchange` never calls `updateIsReady`. The
+worker's `activate` calls `clients.claim()`, which hands a first-ever visitor
+its first controller and fires `controllerchange` exactly like any other swap,
+and the handler called `show()`. **The gate was not on the path that needed it.**
+A unit test on a decision function cannot see the code path that never asks the
+decision function. Fixed by recording whether anything controlled the page at
+mount and treating the first claim as what it is.
+
+**And one failure was the instrument, which is worth separating.** The walk's
+first attempt waited with a `waitForFunction` whose predicate returned a Promise
+— always truthy on the first poll, so the wait returned immediately and the
+assertion fired before the worker had installed. It read as a product failure
+and was a harness one, and a swallowed `.catch` hid the difference. Polled from
+Node instead (LESSONS §24: a failing test can mean the expectation was wrong;
+§32: ask what the plant actually moved).
+
+**Both assertions are proved by planting.** Putting `skipWaiting()` back into
+`install` fails claims 1 and 2 — the original defect, caught end to end rather
+than by reading source. Reverting the newcomer fix fails claim 5. It runs in the
+spine as *"A real second worker waits for the reader"*.

@@ -17,6 +17,7 @@
     "build": "esbuild src/ui/entry.ts --bundle --format=esm --target=es2022 --outfile=public/app.js --sourcemap --log-level=warning",
     "serve": "node tools/serve.mjs",
     "smoke": "node --experimental-strip-types tools/smoke.mjs",
+    "update:walk": "node --experimental-strip-types tools/update-walk.mjs",
     "changelog": "node --experimental-strip-types tools/changelog.mjs",
     "changelog:check": "node --experimental-strip-types tools/changelog.mjs --check",
     "a11y": "node tools/a11y.mjs",

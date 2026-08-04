@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.18.2 — ITERATION
+
+*2026-08-04*
+
+- **Opening Quietkeep for the first time no longer greets you with “a newer version is ready”.** It was announcing your first install as an update, thirty seconds after you arrived. It now says nothing until there is genuinely something newer than what you are already using.
+
 ## 1.18.1 — ITERATION
 
 *2026-08-04*

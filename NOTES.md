@@ -501,11 +501,16 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**Nothing is staged and waiting. 1.18.1 was PROMOTED on 2026-08-04** — Noah's
-*"Promote to main and continue"*. `staging` and `main` are both at `859a0c1`.
+**1.18.2 is on `staging` and has not been promoted.**
 
-- **https://quietkeep.pages.dev** — production, now **1.18.1**
-- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.2**
+- **https://quietkeep.pages.dev** — production, **1.18.1**
+
+**What it fixes, and it is live in production right now:** opening Quietkeep for
+the first time greeted a brand-new visitor with *"a newer version is ready"* —
+announcing their first install as an update, thirty seconds after arriving. A
+straight §7h.3 violation, shipped in 1.18.1 and found by the real-second-worker
+walk that 1.18.1 recorded as owed.
 
 The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
 (staging: **https://staging.quietkeep-sync.pages.dev**).
@@ -531,6 +536,37 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — 1.18.2 (ITERATION) staged: the real second worker, and the
+  defect it found.** §7h says to prove the promotion path with a REAL second
+  worker rather than a mocked registration, "because a mock proves the mock
+  works". 1.18.1 shipped with that recorded as owed.
+  [`tools/update-walk.mjs`](tools/update-walk.mjs) now does it: it serves a
+  genuinely different `sw.js` from the walk's own server and lets Chromium's own
+  update machinery run, asserting that the new worker waits and STOPS there,
+  that it does not take over on its own, that the reader is told in words, and
+  that their press is what promotes it to a page running the new build.
+  · **It failed on its first run, and the failure was real and in production.** A
+  brand-new visitor was told *"a newer version is ready"* thirty seconds into
+  their first-ever visit — §7h.3, violated, shipped in 1.18.1.
+  · **Why everything we had missed it, which is the lesson.** §7h.3's gate lives
+  at the top of `updateIsReady` and `test/update.test.ts` asserts it there —
+  correctly, and it passed throughout. But `controllerchange` never calls
+  `updateIsReady`. `clients.claim()` in the worker's `activate` hands a
+  first-ever visitor its first controller and fires `controllerchange` like any
+  other swap, and the handler called `show()`. **The gate was not on the path
+  that needed it**, and a unit test on a decision function cannot see the code
+  path that never asks the decision function.
+  · **One of the two failures was the instrument, and they are told apart.** The
+  walk first waited with a `waitForFunction` whose predicate returned a Promise —
+  always truthy on the first poll, so it returned immediately and asserted before
+  the worker had installed. It read as a product failure and was a harness one;
+  a swallowed `.catch` hid the difference (LESSONS §24, §32).
+  · **Both proved by planting:** putting `skipWaiting()` back into `install`
+  fails claims 1 and 2 — the original defect caught end-to-end rather than by
+  reading source — and reverting the newcomer fix fails claim 5. Wired into the
+  spine as *"A real second worker waits for the reader"*, so it is a gate and not
+  a thing somebody ran once.
 
 - **2026-08-04 — `main` is at `1.18.1` (`859a0c1`), promoted on Noah's "Promote
   to main and continue".** Production now lets the reader decide when the app
