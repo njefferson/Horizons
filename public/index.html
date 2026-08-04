@@ -322,6 +322,11 @@
     <h2 id="nextup-heading" class="section" tabindex="-1">Next up</h2>
     <p id="nextup-title" class="nextup-title"></p>
     <p id="nextup-why" class="nextup-why"></p>
+    <!-- WHERE it sits (V2 stage 1). Reuses .nextup-why's measured colour pair —
+         .nextup-place adds layout only, so the contrast registry's existing row
+         covers it and no unmeasured pair ships (LESSONS 28 kept the honest way:
+         same ink, same paper, one more line). -->
+    <p id="nextup-place" class="nextup-why nextup-place" hidden></p>
     <div class="nextup-actions">
       <button id="nextup-done" type="button" aria-label="Done with what is next up">Done</button>
       <button id="nextup-skip" type="button" class="ghost">Not this</button>

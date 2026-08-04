@@ -519,12 +519,22 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**Nothing is staged and waiting. 1.19.0 was PROMOTED on 2026-08-04** — Noah's
-*"Promote to main"*, carrying 1.18.4 with it. `staging` and `main` are both at
-`4b01ba6`.
+**1.20.0 is on `staging` and has not been promoted** — V2 stage 1, "It says
+where."
 
-- **https://quietkeep.pages.dev** — production, now **1.19.0**
-- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.20.0**
+- **https://quietkeep.pages.dev** — production, **1.19.0**
+
+**What to look at:** everything offered now carries a place line — "in Errands
+· under Home" — on the suggestion, the rows behind it, and the upkeep chips.
+And filing hands you a receipt: "Filed under Errands — it comes round
+Thursday", or, honestly, "no return date yet". That second sentence is the
+hollow-return finding surfaced to the one person who can fix it — the control
+to date a place is stage 3.
+
+**The stage-1 question (V2 plan):** does grounds-on-the-card move the "right
+things" feeling, and does "it left and I don't know where" end at file time?
+Your words after a few days — plus Block-register entries — gate stage 2.
 
 **What to try, and it is the thing you said was missing.** On any triage card
 there is now **Put it somewhere**. It offers every place you have, and a field to
@@ -584,6 +594,29 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-04 — 1.20.0 (CAPABILITY) staged: V2 stage 1, "It says where."**
+  · **The offer answers *where from* for the first time.** `NextUpItem` gains
+  computed `place` — `lineageOf` walks `ancestors` (its first production
+  consumer) two hops: the parent, then the first live CONTAINER above it.
+  "in Errands · under Home". A loose item stays silent — bareness is not
+  announced — and a trashed parent confers no location. Rendered on the head
+  card (`#nextup-place`), the behind rows, and the upkeep chips.
+  · **Filing hands over a receipt, both branches honest.** "Filed under
+  Errands — it comes round in 4 days." when the place carries a HUMAN clock;
+  "Filed under Errands — no return date yet." when it does not — which, per
+  the hollow-return finding, is every place minted at file time until stage 3
+  ships the dating control. `placeReturnDays` reads only human clocks: the
+  gate's cure is pinned by test as NOT a return date, so the receipt can never
+  promise a return no surface will deliver.
+  · **No new colour pair ships** — every new span reuses a registered text
+  class; modifier classes are layout-only (B-40). No new events, no fold
+  fields, no vocabulary change; `events:check`/`emitters:check` unchanged.
+  · **Proved by planting:** letting a trashed parent confer a location, and
+  letting the gate cure count as a return date, each turn exactly one test
+  red. 971 tests pass.
+  · **The stage-1 question is in the staged block above**; Noah's words gate
+  stage 2 (the judgement line and grounds panel).
 
 - **2026-08-04 — THE V2 PLAN IS APPROVED, and the deep pass that produced it
   found a defect in 1.19.0 that outranks everything else in it.**

@@ -23,6 +23,7 @@
 // PURE, and `now` is an argument.
 
 import { isAppClock, type NodeState, type State } from './fold.ts';
+import { ancestors, CONTAINER_KINDS } from './tree.ts';
 import { pressureOf } from './pressure.ts';
 import { replanIds } from './replan.ts';
 import { NOT_ACTIONABLE } from './kinds.ts';
@@ -39,6 +40,39 @@ export interface NextUpItem {
   pressure: number | null;
   /** Plain words for the reason, already resolved against the reader's zone. */
   words: string;
+  /** WHERE it sits, in words — "in Errands · under Home" — or null for a loose
+   *  item, which stays silent rather than announcing its loneliness. V2 stage 1
+   *  ("It says where"): the offer had answered *why now* since item 18 and had
+   *  never once answered *where from*, which is half of Noah's stated day-ender
+   *  — "I'd see the task leave and not know where/if it went, and had no
+   *  feeling that I was seeing the right things." Computed, never stored. */
+  place: string | null;
+}
+
+/**
+ * "in Errands · under Home" — the item's parent, and the first live CONTAINER
+ * above that parent, and nothing further. Two hops is a location; the full
+ * ancestry is an org chart, and an org chart on a card built for one glance is
+ * how the card stops being glanceable (law 8's bounded-surface instinct,
+ * applied to a sentence).
+ *
+ * Walks `ancestors`, which is cycle-guarded and skips nothing on its own — the
+ * dead-parent case (trashed/merged) is handled here because a location under a
+ * place that was let go is not a location anyone can visit.
+ */
+export function lineageOf(state: State, n: NodeState): string | null {
+  const parts: string[] = [];
+  for (const a of ancestors(state, n.id)) {
+    if (a.trashed || a.mergedInto) break;
+    if (parts.length === 0) {
+      parts.push(`in ${a.title || '(untitled)'}`);
+    } else if (CONTAINER_KINDS.has(a.kind)) {
+      parts.push(`under ${a.title || '(untitled)'}`);
+      break;
+    }
+    if (parts.length === 2) break;
+  }
+  return parts.length ? parts.join(' · ') : null;
 }
 
 // NOT_ACTIONABLE comes from `kinds.ts` — its one declared home, whose header
@@ -157,7 +191,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     // comes first for every kind. A resume card carrying an arrived due date was
     // previously misfiled as tier 2 purely because its branch ran first.
     if (arrived && hasHardDate(n)) {
-      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here' });
+      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n) });
       continue;
     }
     if (n.kind === 'resume-card') {
@@ -182,18 +216,19 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
         // YOUR five words when there are five words. Nothing this app composes
         // beats what you wrote at the moment you put it down.
         words: n.resumeCue ? `you were about to: ${n.resumeCue}` : 'where you left off',
+        place: lineageOf(state, n),
       });
       continue;
     }
     if (p !== null && p >= 0) {
-      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again' });
+      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again', place: lineageOf(state, n) });
       continue;
     }
     if (arrived) {
       // "Back with you today" was a falsehood for any clock older than today —
       // and gate cure clocks never move, so that was the NORMAL case, not an
       // edge one (Doctrine §5: no copy the data does not support).
-      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting' });
+      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting', place: lineageOf(state, n) });
       continue;
     }
     // Not yet asking for anything. Correct outcome: it stays quiet.
@@ -261,7 +296,7 @@ export function upkeepChips(state: State, nowIso: string, zone: string, minPress
     .filter((x): x is { node: NodeState; pressure: number } =>
       x.pressure !== null && Number.isFinite(x.pressure) && x.pressure >= minPressure)
     .sort((a, b) => b.pressure - a.pressure || (a.node.id < b.node.id ? -1 : 1))
-    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again' }));
+    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again', place: lineageOf(state, x.node) }));
 }
 
 /**
