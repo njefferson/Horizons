@@ -213,7 +213,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
         off.type = 'button';
         off.className = 'ghost';
         off.textContent = 'Take them off';
-        off.setAttribute('aria-label', `Take ${who} off the list`);
+        off.setAttribute('aria-label', `Take them off the list — ${who}`);
         off.addEventListener('click', () => {
           void run(ctx => removeStakeholderEvents(ctx, n.id, p.id),
             'Off the list. The record keeps that they were on it.');
@@ -649,8 +649,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
           const split = document.createElement('button');
           split.type = 'button';
           split.className = 'ghost';
+          // Leads with the visible words so saying what is written on it works
+          // (SC 2.5.3); the title still disambiguates one row from the next (§4).
           split.textContent = 'Split it back out';
-          split.setAttribute('aria-label', `Split ${f.title || '(untitled)'} back out`);
+          split.setAttribute('aria-label', `Split it back out — ${f.title || '(untitled)'}`);
           split.addEventListener('click', () => {
             void run(ctx => unmergeEvents(ctx, f.id), 'Split back out — its own thing again.');
           });

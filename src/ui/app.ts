@@ -211,9 +211,14 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
         const go = document.createElement('button');
         go.type = 'button';
         go.className = 'card-focus ghost';
-        go.textContent = node.kind === 'resume-card' ? 'Pick it back up' : 'Work on this';
-        go.setAttribute('aria-label',
-          `${node.kind === 'resume-card' ? 'Pick back up' : 'Work on'} ${node.title || '(untitled)'}`);
+        // The label DISAMBIGUATES (§4 — many cards, each with this button, and
+        // one name answering for all of them is a coin toss by voice), and it
+        // must still CONTAIN the visible words (SC 2.5.3), so it leads with
+        // them. It used to read "Work on {title}" against a button showing
+        // "Work on this": saying what is written on it matched nothing.
+        const words = node.kind === 'resume-card' ? 'Pick it back up' : 'Work on this';
+        go.textContent = words;
+        go.setAttribute('aria-label', `${words} — ${node.title || '(untitled)'}`);
         go.addEventListener('click', () => onFocus(node));
         actions.append(go);
       }

@@ -501,16 +501,17 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.18.3 is on `staging` and has not been promoted.**
+**1.18.4 is on `staging` and has not been promoted.**
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.3**
-- **https://quietkeep.pages.dev** — production, **1.18.2**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.4**
+- **https://quietkeep.pages.dev** — production, **1.18.3**
 
-**What it adds, and it is aimed squarely at the dogfood gate:** the report now
-says **what has come round again** — how many things are asking, and how long
-they have been waiting, in the app's own five phrases. The old line counted
-clocks that EXIST (`review 1275`), which is a different number and can never
-explain a day that ended early.
+**What it fixes:** several controls would not answer to the words written on
+them if you drive the app by voice. The ⓘ button announced a sentence while
+showing a single letter, *Work on this* answered only to the item's title, and
+the two ways out of the ⓘ panel were both called *Close* — as were three `Set`
+buttons, two `Link`, two `Done` and two `Copy it`. All found by a new gate on
+their first run; hub LESSONS §29 had been prose in this repo until now.
 
 The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
 (staging: **https://staging.quietkeep-sync.pages.dev**).
@@ -536,6 +537,34 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — 1.18.4 (ITERATION) staged: the label-in-name gate, and the five
+  defects it found on its first run.** Hub LESSONS §29 has been the rule since
+  2026-08-03 and was **prose in this repo** — the exact thing §29 itself is about.
+  `auditNames` in `tools/a11y.mjs` now runs on every state in both themes.
+  · **The ⓘ button was the §29 case exactly**, live in production:
+  `aria-label="About Quietkeep, storage, and what's new"` on a button showing the
+  letter `i`. A substring 2.5.3 check passes that because "about" contains an i —
+  for a reason with nothing to do with the criterion, since nobody can *say* "i".
+  Fixed with the markup icons already use: `aria-hidden` glyph, name in a
+  `.visually-hidden` sentence, so there is no visible text for 2.5.3 to be about.
+  · **"Work on this" answered only to the item's title** — the button showed
+  *Work on this* and announced *"Work on a held thought"*. Labels now LEAD with
+  the visible words and keep the title after a dash: 2.5.3 satisfied, §4's
+  disambiguation kept. Same shape on *Split it back out* and *Take them off*.
+  · **Both ways out of the ⓘ panel answered to "Close"**, plus three `Set`, two
+  `Link`, two `Done` and two `Copy it`. All given distinct names.
+  · **The duplicate half is REPORTED, not gated, on purpose.** Most collisions it
+  finds are two of Noah's OWN items sharing a title. The app cannot make a
+  person's titles unique and his store holds 1,405 actions, so gating it would go
+  red on his data rather than on a defect — **a check that fails on the user's
+  content is not measuring the app.** Four content-derived collisions remain
+  visible as notes; every app-authored one was fixed.
+  · **Two instrument bugs found before the gate was believed** (§33, §37): a
+  `<select>`'s option list was being read as "the words on the control", and
+  `textContent` ran a card's title into its status as "a held thoughtnot sorted
+  yet". Both fixed first, so the 272 failures on the first run became 5 real
+  defects and a lot of noise I had authored.
 
 - **2026-08-04 — 1.18.3 (ITERATION) staged: the number that could explain a day
   ending.** The first real usage data arrived today and the report could not

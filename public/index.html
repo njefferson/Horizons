@@ -22,9 +22,15 @@
   <h1 class="wordmark">Quietkeep</h1>
   <!-- Always available, never a badge or a nag. The label is for screen readers
        and the tooltip; the glyph is what is seen. -->
+  <!-- The glyph is decorative and the NAME is a sentence (hub LESSONS §29).
+       This was `aria-label="About…"` on a visible "i", which passes a substring
+       SC 2.5.3 check for a reason unrelated to the criterion — "about" contains
+       the letter i. Voice control needs a phrase somebody can say, and "i" is
+       not one. Marking the glyph aria-hidden leaves no visible text for 2.5.3
+       to be about, and the visually-hidden span is what gets announced. -->
   <button id="open-about" type="button" class="ghost info"
-          aria-label="About Quietkeep, storage, and what's new"
-          title="About Quietkeep">i</button>
+          title="About Quietkeep"><span aria-hidden="true">i</span><span
+          class="visually-hidden">About Quietkeep, storage, and what&rsquo;s new</span></button>
 </header>
 
 <!-- A newer version is ready. A LINE, never a modal: it must not stand between
@@ -317,7 +323,7 @@
     <p id="nextup-title" class="nextup-title"></p>
     <p id="nextup-why" class="nextup-why"></p>
     <div class="nextup-actions">
-      <button id="nextup-done" type="button">Done</button>
+      <button id="nextup-done" type="button" aria-label="Done with what is next up">Done</button>
       <button id="nextup-skip" type="button" class="ghost">Not this</button>
     </div>
     <p id="nextup-count" class="nextup-count"></p>
@@ -572,7 +578,7 @@
     <label class="detail-label" for="detail-date">Give it a date</label>
     <div class="detail-row">
       <input id="detail-date" type="date">
-      <button id="detail-date-set" type="button">Set</button>
+      <button id="detail-date-set" type="button" aria-label="Set the date">Set</button>
       <button id="detail-date-clear" type="button" class="ghost">No date</button>
     </div>
   </div>
@@ -585,7 +591,7 @@
     <label class="detail-label" for="detail-start">Not before</label>
     <div class="detail-row">
       <input id="detail-start" type="date" aria-describedby="detail-start-hint">
-      <button id="detail-start-set" type="button">Set</button>
+      <button id="detail-start-set" type="button" aria-label="Set the start">Set</button>
       <button id="detail-start-clear" type="button" class="ghost">Clear</button>
     </div>
     <p id="detail-start-hint" class="detail-hint">
@@ -693,7 +699,7 @@
     <div class="detail-row" id="detail-suspense-row" hidden>
       <label class="detail-inline" for="detail-suspense">Answer owed by</label>
       <input id="detail-suspense" type="date">
-      <button id="detail-suspense-set" type="button">Set</button>
+      <button id="detail-suspense-set" type="button" aria-label="Set the check-back">Set</button>
     </div>
     <p id="detail-parent-hint" class="detail-hint">
       Bigger things hold smaller ones. Nothing is filed away out of reach &mdash;
@@ -758,7 +764,7 @@
         <option value="stakeholder">they care about it</option>
         <option value="mentioned">they came up</option>
       </select>
-      <button id="detail-person-set" type="button">Link</button>
+      <button id="detail-person-set" type="button" aria-label="Link a person">Link</button>
     </div>
     <datalist id="detail-people"></datalist>
     <p id="detail-person-hint" class="detail-hint">
@@ -837,7 +843,7 @@
       <input id="detail-lead" type="number" min="1" max="365" value="1"
              inputmode="numeric" aria-describedby="detail-feeds-hint">
       <label class="detail-inline" for="detail-lead">days</label>
-      <button id="detail-feeds-set" type="button">Link</button>
+      <button id="detail-feeds-set" type="button" aria-label="Link what this feeds">Link</button>
     </div>
     <p id="detail-feeds-hint" class="detail-hint">
       If this has to happen before something else, say so and Quietkeep works out
@@ -882,7 +888,7 @@
   <div class="detail-group">
     <span class="detail-label" id="detail-state-label">Where it lives</span>
     <div class="detail-row" role="group" aria-labelledby="detail-state-label">
-      <button id="detail-done" type="button">Done</button>
+      <button id="detail-done" type="button" aria-label="Done with this one">Done</button>
       <button id="detail-undone" type="button" class="ghost">Not done after all</button>
       <button id="detail-menu" type="button" class="ghost">Put on the Menu</button>
       <button id="detail-promote" type="button" class="ghost">Bring back from the Menu</button>
@@ -946,7 +952,12 @@
        thumb is, whatever you have scrolled past. -->
   <div class="about-bar">
     <h2 id="about-title">Quietkeep <span id="version" class="version"></span></h2>
-    <button id="about-dismiss" type="button" class="about-x" aria-label="Close">&times;</button>
+    <!-- Two ways out of this panel is Doctrine §4, and both being called
+         "Close" is §4's other rule broken: "activate Close" with two answers is
+         a coin toss for anyone driving by voice. The names differ; the job does
+         not. (The × is decorative — see the note on #open-about.) -->
+    <button id="about-dismiss" type="button" class="about-x"
+            aria-label="Close this panel">&times;</button>
   </div>
 
   <!-- THE SCROLL CONTAINER. The panel used to scroll as a whole with a
@@ -1433,7 +1444,7 @@
     so nothing has to be kept up to date for it to be right.
   </p>
   <div class="about-actions">
-    <button id="report-copy" type="button">Copy it</button>
+    <button id="report-copy" type="button" aria-label="Copy it — the weekly look">Copy it</button>
     <button id="report-markdown" type="button" class="ghost">Save as Markdown</button>
     <button id="report-csv" type="button" class="ghost">Save as a spreadsheet</button>
     <button id="report-print" type="button" class="ghost">Print it</button>
@@ -1630,7 +1641,7 @@
   </p>
   <div class="about-actions">
     <button id="diagnostic-show" type="button" class="ghost">Show me the report</button>
-    <button id="diagnostic-copy" type="button" class="ghost" hidden>Copy it</button>
+    <button id="diagnostic-copy" type="button" class="ghost" aria-label="Copy it — the diagnostic report" hidden>Copy it</button>
     <button id="diagnostic-save" type="button" class="ghost" hidden>Save it as a file</button>
   </div>
   <p id="diagnostic-note" class="about-p" hidden></p>

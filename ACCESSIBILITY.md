@@ -1117,3 +1117,45 @@ release-engineering one — which is why it is recorded here.
   end-to-end with a real second worker. §7h asks for the real thing, because a
   mocked registration only proves the mock works. Recorded in
   [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md).
+
+### B-39 · Saying what is written on a control (SC 2.5.3), and one name per control (1.18.4)
+
+Hub LESSONS §29 has been the rule since 2026-08-03 and was **prose in this
+repo**. It is a gate now — `auditNames` in `tools/a11y.mjs`, run on every state
+in both themes — and it found five live defects on its first execution, one of
+them in production.
+
+- **The ⓘ button was the §29 case exactly.** `aria-label="About Quietkeep,
+  storage, and what's new"` on a button showing the single letter `i`. A
+  substring SC 2.5.3 check passes that, because "about" contains an i — for a
+  reason with nothing to do with the criterion. Someone driving by voice cannot
+  say "i". **The fix is the markup icons already use:** the glyph is
+  `aria-hidden`, the name lives in a `.visually-hidden` sentence, and there is
+  no visible text for 2.5.3 to be about.
+- **"Work on this" answered only to the item's title.** The card button showed
+  *Work on this* and announced *"Work on a held thought"* — so saying the words
+  on the button matched nothing. The label now LEADS with the visible words and
+  keeps the title after a dash, which satisfies 2.5.3 and still disambiguates one
+  card from the next (§4). Same shape fixed on *Split it back out* and *Take them
+  off*.
+- **Both ways out of the ⓘ panel answered to "Close"** — §4's other half. Two
+  ways out is required (§4); two ways out with one name is a coin toss by voice.
+  Also fixed: three `Set` buttons in the detail sheet, two `Link` buttons, two
+  `Done` buttons, and two `Copy it` buttons.
+
+**The duplicate-name half is REPORTED, not gated, and that is deliberate.** Most
+collisions it finds are two of the reader's OWN items sharing a title — a card in
+a list and the same card in search. The app cannot make a person's titles unique,
+and a real store here holds 1,405 actions, so gating it would go red on data
+rather than on a defect. **A check that fails on the user's content is not
+measuring the app.** It stays visible because the app-authored collisions are
+real, and every one of those was fixed on the run that found them.
+
+**Two instrument bugs found while building it, recorded because the check was
+wrong before it was right.** A `<select>`'s option list was being read as "the
+words on the control", failing every select in the app for text no one sees on
+it. And `textContent` concatenates across element boundaries, so a card's title
+and status ran together as "a held thoughtnot sorted yet" — which reported a
+duplicate under a name no reader would recognise. Both fixed before the gate was
+believed (§37: ask whether the pixels are the ones it thinks; §33: a check that
+cannot see a thing reports the wrong diagnosis).

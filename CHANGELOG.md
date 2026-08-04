@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.18.4 — ITERATION
+
+*2026-08-04*
+
+- **If you drive this app by voice, several controls would not answer to what is written on them.** The ⓘ button announced itself as a sentence while showing a single letter; “Work on this” answered only to the thing’s title; the two ways out of the ⓘ panel were both called “Close”, as were three different “Set” buttons. Saying what you can see now works, and no two controls on a screen answer to one name.
+
 ## 1.18.3 — ITERATION
 
 *2026-08-04*

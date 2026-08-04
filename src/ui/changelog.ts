@@ -29,6 +29,14 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.18.4',
+    kind: 'ITERATION',
+    date: '2026-08-04',
+    notes: [
+      '**If you drive this app by voice, several controls would not answer to what is written on them.** The ⓘ button announced itself as a sentence while showing a single letter; “Work on this” answered only to the thing’s title; the two ways out of the ⓘ panel were both called “Close”, as were three different “Set” buttons. Saying what you can see now works, and no two controls on a screen answer to one name.',
+    ],
+  },
+  {
     triplet: '1.18.3',
     kind: 'ITERATION',
     date: '2026-08-04',

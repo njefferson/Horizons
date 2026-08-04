@@ -139,6 +139,9 @@ export function mountTriage(
     bar.append(el('span', 'donow-label', `Now: ${title}`));
     const done = el('button', 'donow-done', 'Done');
     done.type = 'button';
+    // Distinct from Next up's Done, which sits on the same screen (§4). Leads
+    // with the visible word so saying it still works (SC 2.5.3).
+    done.setAttribute('aria-label', 'Done with what you are on now');
     done.addEventListener('click', () => { DONOW.replaceChildren(); markDone(node); });
     const start = el('button', 'ghost', `Start ${timerWordsLower(timerMinutesOf(session.state()))}`);
     start.dataset.startTimer = 'yes';
@@ -200,6 +203,7 @@ export function mountTriage(
     // the good case, and it should not require stopping a timer first.
     const doneBtn = el('button', 'donow-done', 'Done');
     doneBtn.type = 'button';
+    doneBtn.setAttribute('aria-label', 'Done with what you are on now');
     // "Stop" and not "Give up". Leaving is an ordinary move with no cost.
     const stopBtn = el('button', 'ghost', 'Stop');
     stopBtn.type = 'button';
