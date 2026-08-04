@@ -501,11 +501,12 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.19.0 is on `staging` and has not been promoted.** It carries **1.18.4** with
-it — both promote together.
+**Nothing is staged and waiting. 1.19.0 was PROMOTED on 2026-08-04** — Noah's
+*"Promote to main"*, carrying 1.18.4 with it. `staging` and `main` are both at
+`4b01ba6`.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.19.0**
-- **https://quietkeep.pages.dev** — production, **1.18.3**
+- **https://quietkeep.pages.dev** — production, now **1.19.0**
+- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
 
 **What to try, and it is the thing you said was missing.** On any triage card
 there is now **Put it somewhere**. It offers every place you have, and a field to
@@ -545,6 +546,15 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — `main` is at `1.19.0` (`4b01ba6`), promoted on Noah's "Promote
+  to main", carrying 1.18.4 with it.** Production can now answer WHERE. Promoted
+  onto **Spine 264**, watched green on that exact commit with all 26 steps read
+  individually (V-10) — including *A real second worker waits for the reader*,
+  *The closed event list matches the vocabulary* (which guards the new `filed`
+  route), and *Rendered accessibility*. Pushed with `git push origin staging:main`
+  (§7c); receipt `6bfdd30..4b01ba6`, confirmed by `git ls-remote` rather than by
+  the push output.
 
 - **2026-08-04 — NOAH SAID WHAT ENDS THE DAY, AND IT IS NOT WHAT I INFERRED.**
   Read this before building anything else.
