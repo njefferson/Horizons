@@ -22,6 +22,7 @@ import type { AppEvent, ClarifyRoute, ClockKind, Heat, MenuCategory, NodeKind } 
 import type { NodeState } from '../fold.ts';
 import type { StampContext } from './session.ts';
 import { endOfLocalDay } from '../time.ts';
+import { createParentEvents } from './detail-intents.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -58,6 +59,13 @@ const DEMAND_KINDS: readonly ClockKind[] = ['due', 'start', 'suspense', 'park'];
  */
 export const demandClocksOf = (n: NodeState | undefined): ClockKind[] =>
   n ? DEMAND_KINDS.filter(k => Boolean(n.clocks[k])) : [];
+
+/** EVERY clock a node carries, `review` included. Filing needs this and not
+ *  `demandClocksOf`: the capture cure sets a review clock, which is not a demand
+ *  kind, so a filed item would otherwise keep its own same-day return on top of
+ *  the place's. */
+export const clocksOf = (n: NodeState | undefined): ClockKind[] =>
+  n ? (Object.keys(n.clocks) as ClockKind[]) : [];
 
 /**
  * A route's full batch. Every branch terminates legally on its own — and even a
@@ -159,7 +167,93 @@ export function undoRouteEvents(
       return [reopen, base(ctx, 'menu.item.removed', node, { from: 'read' as MenuCategory })];
     case 'trash':
       return [reopen, base(ctx, 'node.untrashed', node, {})];
+    case 'filed':
+      // Taking back a FILE has to undo the parenting too. Without this the item
+      // returns to the inbox still sitting in the place it was just taken out
+      // of — "Undo" that leaves the thing where it was is a lie. Unparenting
+      // removes coverage (d), which the gate cures with a clock, exactly as the
+      // other reopens do.
+      return [reopen, base(ctx, 'node.unparented', node, {})];
     default:
       return [reopen];
   }
+}
+
+/**
+ * Put it in a PLACE — the answer to "where", which triage has never had.
+ *
+ * Noah, 2026-08-04, on what actually ends a working day: *"I imported [a huge
+ * backlog] to work through and put in the right places, but keep finding that
+ * the places were not there, yet. That's the problem. I'd see the task leave and
+ * not know where/if it went."*
+ *
+ * Every route above answers WHEN — a clock, or the Menu, or gone. None of them
+ * answers WHERE, and `routeEvents` takes no parent at all. So an imported
+ * backlog could be sorted by urgency and never filed, and the confirmation could
+ * only ever say "Sent to Next action", which is a category rather than somewhere
+ * a person can go and look.
+ *
+ * **The place is made HERE when it does not exist**, which is law 4: levels push
+ * down and the user never climbs. Making him leave triage to create a project
+ * and come back is the climb the law forbids, and across 1,173 imported items it
+ * is the whole difficulty.
+ *
+ * LAW 1 holds without special pleading. A brand-new place has no clock, so it is
+ * newly silent and the gate CURES it with one (`cureFor`) in the same
+ * transaction — the same mechanism the detail sheet's inline create has always
+ * relied on. The item is then covered by clause (d), riding its parent's clock,
+ * which is the honest arrangement: **the place comes back, and its contents come
+ * back with it.** That is what makes a filed thing findable again rather than
+ * merely gone.
+ *
+ * No clock is set on the ITEM. Filing is not scheduling, and inventing a date
+ * here would be the app deciding something the reader did not say.
+ */
+export function fileUnderEvents(
+  ctx: StampContext, node: string, parent: string,
+  clocksToClear: readonly ClockKind[] = [], priorParent?: string | null,
+): AppEvent[] {
+  if (!parent || parent === node) return [];
+  return [
+    base(ctx, 'clarify.routed', node, { route: 'filed' as ClarifyRoute }),
+    // Parent FIRST, then clear — once the item is under a clocked place it is
+    // covered by clause (d), so stripping its own clocks needs no cure. The
+    // other order would make the gate write a junk same-day clock between the
+    // two, which is the trap the someday/reference branch documents above.
+    base(ctx, 'node.parented', node, { parent, ...(priorParent ? { priorParent } : {}) }),
+    // A FILED thing must stop asking on its own — EVERY clock, not just the
+    // demand ones. The capture cure sets a `review` clock, which `demandClocksOf`
+    // deliberately excludes, so clearing only demand kinds left the item riding
+    // BOTH its own same-day review and the place's: filed, and still pestering
+    // you tomorrow. Filing says where; the place's clock says when. One answer
+    // each, and `clocksOf` is what the callers pass.
+    ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
+  ];
+}
+
+/**
+ * File it under a place that DOES NOT EXIST YET — the case that was missing.
+ *
+ * This is the whole point of the feature and it is one commit, not two: the
+ * place is created, the item is parented to it, and the item leaves the inbox,
+ * all in the same transaction the gate sees. Making the place in one step and
+ * filing in another would leave a window where a brand-new empty place is
+ * sitting there unexplained, and would give the reader two undos for one
+ * decision.
+ *
+ * `createParentEvents` is reused rather than reimplemented — it is the same
+ * lawful create the detail sheet has always used, and a second copy of "how a
+ * place is born" is how two of them drift.
+ */
+export function fileUnderNewEvents(
+  ctx: StampContext, node: string, title: string,
+  clocksToClear: readonly ClockKind[] = [], priorParent?: string | null,
+): AppEvent[] {
+  const made = createParentEvents(ctx, node, title, priorParent);
+  if (made.length === 0) return [];
+  return [
+    ...made,
+    base(ctx, 'clarify.routed', node, { route: 'filed' as ClarifyRoute }),
+    ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
+  ];
 }

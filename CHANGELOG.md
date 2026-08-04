@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.19.0 — CAPABILITY
+
+*2026-08-04*
+
+- **Triage can now answer “where”, and make the place if it is not there yet.** Every choice it offered was about *when* — today, tomorrow, someday, gone. So a backlog could be sorted by urgency and never actually filed, and the only thing it could tell you afterwards was a category. There is a **Put it somewhere** choice now: pick a place, or name one on the spot and it is made for you.
+- What you file stops asking on its own. The place carries the clock, so the place comes back and brings its contents with it — and *Undo* takes it back out of the place, not just off the list.
+
 ## 1.18.4 — ITERATION
 
 *2026-08-04*

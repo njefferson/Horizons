@@ -1793,3 +1793,26 @@ dialog, dialog * { overflow-wrap: anywhere; }
   user-select: all;              /* one tap selects the whole key, not a word of it */
   color: var(--ink);
 }
+
+/* Where it goes (1.19.0). The naming field sits with the place buttons, and it
+   carries the same 44px floor everything touchable does — the a11y gate caught
+   it at 185x21 on the run that built it, which is the gate doing its job on a
+   surface that joined its list in the same commit (hub LESSONS §28). */
+.place-new {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: stretch;
+  margin-block: 0.25rem;
+}
+.place-new input {
+  flex: 1 1 12rem;
+  min-width: 0;
+  min-height: var(--target);
+  padding: 0.5rem 0.75rem;
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--rail);
+  border-radius: 0.5rem;
+}

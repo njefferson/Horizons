@@ -63,7 +63,11 @@ export type NodeKind = (typeof NODE_KINDS)[number];
 export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person', 'journal', 'anchor'] as const satisfies readonly NodeKind[];
 
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
-export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash';
+// `filed` is WHERE, and the only route that answers it. The other six say
+// when — a clock, the Menu, or gone — and an imported backlog sorted by
+// urgency and never filed is what that costs (Noah, 2026-08-04). Additive to
+// a closed vocabulary, so every log already written stays readable (law 9).
+export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash' | 'filed';
 // `sample` is the demonstration set (src/sample.ts). Named rather than folded
 // into `quick`, because a capture that says it came from a keystroke when it came
 // from a button labelled "sample work" is a small lie in the one place the app

@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.19.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-04',
+    notes: [
+      '**Triage can now answer “where”, and make the place if it is not there yet.** Every choice it offered was about *when* — today, tomorrow, someday, gone. So a backlog could be sorted by urgency and never actually filed, and the only thing it could tell you afterwards was a category. There is a **Put it somewhere** choice now: pick a place, or name one on the spot and it is made for you.',
+      'What you file stops asking on its own. The place carries the clock, so the place comes back and brings its contents with it — and *Undo* takes it back out of the place, not just off the list.',
+    ],
+  },
+  {
     triplet: '1.18.4',
     kind: 'ITERATION',
     date: '2026-08-04',

@@ -13,7 +13,11 @@
 
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
-import { demandClocksOf, heatEvents, routeEvents, undoRouteEvents } from './triage-intents.ts';
+import {
+  clocksOf, demandClocksOf, fileUnderEvents, fileUnderNewEvents, heatEvents, routeEvents,
+  undoRouteEvents,
+} from './triage-intents.ts';
+import { CONTAINER_KINDS } from '../tree.ts';
 import { timerMinutesOf, timerWords, timerWordsLower } from '../timer.ts';
 import { doneEvents } from './work.ts';
 import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
@@ -311,6 +315,79 @@ export function mountTriage(
     }));
   };
 
+  /**
+   * WHERE, which triage has never been able to answer.
+   *
+   * Noah, 2026-08-04: *"I imported [a backlog] to work through and put in the
+   * right places, but keep finding that the places were not there, yet. That's
+   * the problem."* The six routes above all answer WHEN. This one answers where,
+   * and it MAKES the place when it is not there — law 4, levels push down and
+   * the user never climbs. Sending him off to create a project and come back is
+   * the climb, and across a 1,173-item import it is the whole difficulty.
+   *
+   * The picker replaces the routes rather than opening over them: one decision
+   * is on screen at a time, and Back is the first control wired (§14).
+   */
+  const renderPlaces = (nodeId: string, text: string, kind: string, heat: Heat | null): void => {
+    const st = session.state();
+    const places = [...st.nodes.values()]
+      .filter(n => !n.trashed && !n.mergedInto && CONTAINER_KINDS.has(n.kind) && n.id !== nodeId)
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+
+    PROMPT.textContent = 'Where does it go?';
+    CARD.textContent = text;
+
+    const back = el('button', 'route ghost');
+    back.type = 'button';
+    back.append(el('span', 'route-label', 'Back'), el('span', 'route-hint', 'keep deciding when instead'));
+    back.addEventListener('click', () => renderClarify(nodeId, text, kind, heat));
+
+    const fileInto = (make: (c: Parameters<Session['commit']>[0] extends (ctx: infer C) => unknown ? C : never) => AppEvent[], where: string): void => {
+      clearUndo();
+      void commit(make as Parameters<Session['commit']>[0], `Sent to ${where}.`).then(ok => {
+        if (ok) showUndo(nodeId, 'filed', kind as NodeKind, where);
+        restoreFocus();
+      });
+    };
+
+    const rows: HTMLElement[] = [back];
+
+    // Naming a place that does not exist is the FIRST thing offered, because it
+    // is the case that was missing and the one an import runs into constantly.
+    const form = el('div', 'place-new');
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.id = 'triage-place-new';
+    input.placeholder = 'Name a new place';
+    const label = el('label', 'visually-hidden', 'Name a new place to put this in');
+    label.setAttribute('for', 'triage-place-new');
+    const make = el('button', 'route');
+    make.type = 'button';
+    make.append(el('span', 'route-label', 'Make it'), el('span', 'route-hint', 'a new place, and put this in it'));
+    make.addEventListener('click', () => {
+      const title = input.value.trim();
+      if (!title) { input.focus(); return; }
+      fileInto(c => fileUnderNewEvents(c, nodeId, title, clocksOf(session.state().nodes.get(nodeId))), title);
+    });
+    form.append(label, input, make);
+    rows.push(form);
+
+    for (const p of places) {
+      const b = el('button', 'route');
+      b.type = 'button';
+      const name = p.title || '(untitled)';
+      b.append(el('span', 'route-label', name), el('span', 'route-hint', p.kind));
+      // Distinct spoken names (§4) that still lead with the visible words (SC 2.5.3).
+      b.setAttribute('aria-label', `${name} — put it in this ${p.kind}`);
+      b.addEventListener('click', () => {
+        fileInto(c => fileUnderEvents(c, nodeId, p.id, clocksOf(session.state().nodes.get(nodeId))), name);
+      });
+      rows.push(b);
+    }
+
+    ACTIONS.replaceChildren(...rows);
+  };
+
   const renderClarify = (nodeId: string, text: string, kind: string, heat: Heat | null): void => {
     PROMPT.textContent = heat ? `Clarify (${heat}):` : 'Clarify:';
     showing = nodeId;
@@ -339,6 +416,16 @@ export function mountTriage(
       });
       return b;
     }));
+
+    // WHERE, offered beside the six WHENs. Last in the row because the common
+    // case is still "when", and first-class rather than buried because for an
+    // imported backlog it is the only question that matters.
+    const put = el('button', 'route');
+    put.type = 'button';
+    put.append(el('span', 'route-label', 'Put it somewhere'),
+      el('span', 'route-hint', 'into a place — make one if it is not there'));
+    put.addEventListener('click', () => renderPlaces(nodeId, text, kind, heat));
+    ACTIONS.append(put);
   };
 
   function refresh(): void {

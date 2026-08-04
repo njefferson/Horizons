@@ -243,6 +243,9 @@ Status · Date · Decision · Why · Consequences · What would overturn it
 - **[0071](0071-the-diagnostic-report.md)**
   - Decision: A text diagnostic that carries SHAPE and never content, proved by two differently-worded stores producing identical reports
   - Status: Accepted
+- **[0073](0073-triage-answers-where.md)**
+  - Decision: Triage gains a `filed` route and makes the place when it is not there — every other route answered *when*, so an imported backlog could be sorted end to end and never filed
+  - Status: Accepted
 - **[0072](0072-an-update-waits-for-the-reader.md)**
   - Decision: The new worker waits and only the reader's decision releases it — `skipWaiting()` on install was creating the half-updated shell its own comment claimed to prevent
   - Status: Accepted

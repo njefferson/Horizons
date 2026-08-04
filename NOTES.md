@@ -501,17 +501,25 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.18.4 is on `staging` and has not been promoted.**
+**1.19.0 is on `staging` and has not been promoted.** It carries **1.18.4** with
+it — both promote together.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.4**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.19.0**
 - **https://quietkeep.pages.dev** — production, **1.18.3**
 
-**What it fixes:** several controls would not answer to the words written on
-them if you drive the app by voice. The ⓘ button announced a sentence while
-showing a single letter, *Work on this* answered only to the item's title, and
-the two ways out of the ⓘ panel were both called *Close* — as were three `Set`
-buttons, two `Link`, two `Done` and two `Copy it`. All found by a new gate on
-their first run; hub LESSONS §29 had been prose in this repo until now.
+**What to try, and it is the thing you said was missing.** On any triage card
+there is now **Put it somewhere**. It offers every place you have, and a field to
+NAME ONE THAT DOES NOT EXIST — typing a name makes the place and files the item
+in it, without leaving triage. What you file stops asking on its own: the place
+carries the clock and brings its contents back with it. *Undo* takes it back out
+of the place, not just off the list.
+
+**Also in this candidate (1.18.4):** several controls would not answer to the
+words written on them if you drive the app by voice. The ⓘ button announced a
+sentence while showing a single letter, *Work on this* answered only to the
+item's title, and the two ways out of the ⓘ panel were both called *Close* — as
+were three `Set` buttons, two `Link`, two `Done` and two `Copy it`. All found by
+a new gate on its first run; hub LESSONS §29 had been prose in this repo.
 
 The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
 (staging: **https://staging.quietkeep-sync.pages.dev**).
@@ -569,6 +577,43 @@ handed over (Doctrine §7).
   is not there.** Not more measurement. `pressureBands` stays — it is honest and
   it costs nothing — but it is not the instrument that explains his day, and this
   entry supersedes the three places I said it was.
+
+- **2026-08-04 — 1.19.0 (CAPABILITY) staged: triage answers WHERE, and makes the
+  place.** The answer to what Noah said actually ends a working day. Full
+  reasoning in [ADR-0073](docs/adr/0073-triage-answers-where.md).
+  · **What was missing.** `routeEvents` took no parent: all six routes set a
+  clock, put the node on the Menu, or trashed it. So a 1,173-item import could be
+  sorted by urgency from end to end and never once be FILED, and the only thing
+  the app could say afterwards was `Sent to Next action` — a category, not
+  somewhere a person can go and look. Parenting existed, in the detail sheet, one
+  opened sheet per item, which is the climb law 4 forbids.
+  · **What it does now.** A seventh route, `filed`, additive to the closed
+  vocabulary (law 9). **Put it somewhere** offers every existing place plus a
+  field to name one that does not exist — typing a name creates the place and
+  files the item in ONE commit, from triage, without climbing.
+  · **Law 1 holds without special pleading.** A new place has no clock, so it is
+  newly silent and the gate CURES it in the same transaction; the item is then
+  covered by clause (d). That is the honest arrangement rather than a loophole:
+  **the place comes back and its contents come back with it**, which is what
+  makes a filed thing findable instead of merely gone.
+  · **The clock detail that would have made the whole feature useless.** Filing
+  first cleared `demandClocksOf` — and the gate's capture cure sets a **`review`**
+  clock, which that helper deliberately excludes. A filed item would have kept its
+  own same-day return on top of the place's: filed, and still pestering you
+  tomorrow. Caught by a test, fixed with `clocksOf`. Filing says where; the
+  place's clock says when.
+  · **Undo was a lie and is not now.** `undoRouteEvents` had a `default` branch
+  emitting only `clarify.reopened`, so a filed item would have returned to the
+  inbox **still sitting in the place it was just taken out of**. It unparents.
+  · **Proved by planting:** removing the unparent, and removing the clock clear,
+  each turn exactly one test red and only that one.
+  · **The new surface joined the a11y gate in the same commit** (hub LESSONS §28)
+  — and that gate immediately failed the new text field at **185x21** against the
+  44px floor. The rule working, on the run that built it.
+  · **Still owed:** nothing yet shows a place's CONTENTS on the runway when its
+  review comes round. Filing puts things somewhere and the place returns; what it
+  returns *with* is the next question, and one to ask Noah after he has used this
+  rather than to guess at.
 
 - **2026-08-04 — 1.18.4 (ITERATION) staged: the label-in-name gate, and the five
   defects it found on its first run.** Hub LESSONS §29 has been the rule since

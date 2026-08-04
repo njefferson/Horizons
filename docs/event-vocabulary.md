@@ -209,7 +209,9 @@ merely *lapsed* — that is a different case entirely, and it is `replan.raised`
   - Payload: `heat: hot | cold`
   - Silent risk: no
 - **`clarify.routed`**
-  - Payload: `route: do-now | next-action | waiting-for | someday | reference | trash`
+  - Payload: `route: do-now | next-action | waiting-for | someday | reference | trash | filed`
+  - `filed` is the only route that answers WHERE rather than when: it accompanies
+    a `node.parented` and takes its coverage from the parent's clock (law 1(d)).
   - Silent risk: **yes — gated**
 - **`clarify.reopened`**
   - Payload: `from: <the route being taken back>`

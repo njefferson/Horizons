@@ -200,6 +200,12 @@ const REGISTRY = {
   'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route'],
   'clarify': ['.triage-gauge', '.triage-prompt', '.triage-card',
     '.route', '.route-label', '.route-hint'],
+  // WHERE it goes (1.19.0). A new surface joins this list in the SAME commit it
+  // is built, or it ships unmeasured — hub LESSONS §28, which cost a release
+  // elsewhere. The place picker carries a text field, so it is also the state
+  // that exercises the contrast registry's input handling.
+  'place picker': ['.triage-gauge', '.triage-prompt', '.triage-card',
+    '.route', '.route-label', '.route-hint'],
   // What a just-routed "Do now" offers. The timer is an offering, not a gate,
   // so this state exists before any stopwatch is running — and it carries the
   // Done the flow previously had no way to express at all.
@@ -902,6 +908,21 @@ try {
     await auditNames(page, 'clarify', theme);
     await auditTargets(page, 'clarify', theme);
     await auditFocusRings(page, 'clarify', theme, ['#triage-actions .route']);
+
+    // State 3b-ii: WHERE does it go. The last route in the row opens the place
+    // picker; Back returns, so the walk leaves the surface as it found it.
+    await page.evaluate(() => {
+      const rs = [...document.querySelectorAll('#triage-actions .route')];
+      rs[rs.length - 1]?.click();
+    });
+    await page.waitForSelector('#triage-place-new');
+    await auditContrast(page, 'place picker', theme);
+    await auditAxe(page, 'place picker', theme);
+    await auditNames(page, 'place picker', theme);
+    await auditTargets(page, 'place picker', theme);
+    await auditFocusRings(page, 'place picker', theme, ['#triage-actions .route']);
+    await page.evaluate(() => document.querySelector('#triage-actions .route')?.click()); // Back
+    await page.waitForSelector('#triage-actions .route .route-hint');
 
     // State 3c: route it, which both clears the inbox — so focus must return to
     // capture rather than fall to <body> (A-5/F-05) — and gives Work mode

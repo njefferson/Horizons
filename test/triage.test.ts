@@ -14,7 +14,9 @@ import { fold, emptyState, type State } from '../src/fold.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { localDayKey, calendarDaysBetween } from '../src/time.ts';
 import { unclarified, needsHeat, nextToClarify, inboxGauge } from '../src/triage.ts';
-import { routeEvents, heatEvents } from '../src/ui/triage-intents.ts';
+import {
+  routeEvents, heatEvents, fileUnderEvents, fileUnderNewEvents, undoRouteEvents, clocksOf,
+} from '../src/ui/triage-intents.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
 
@@ -200,4 +202,64 @@ test('capture does not alias the log event payload array (audit)', () => {
   const s = fold([raw('capture.recorded', 'N', { text: 'x', source: 'quick', sourceTags: payloadTags })]);
   payloadTags.push('__mutated_via_log__');   // mutate the "immutable" log event
   assert.deepEqual(s.nodes.get('N')!.sourceTags, ['boss'], 'live state did not share the log payload array');
+});
+
+// --- filing: the route that answers WHERE (1.19.0) ---------------------------
+//
+// Noah, 2026-08-04: "I imported [a backlog] to work through and put in the right
+// places, but keep finding that the places were not there, yet. That's the
+// problem." Every other route answers when; this one answers where, and it is
+// the first route whose coverage comes from clause (d) rather than a clock of
+// its own.
+
+test('filing under a NEW place leaves nothing silent — the gate clocks the place', () => {
+  // The place is born with no clock, so it is newly silent and the gate cures
+  // it in the same transaction. The item then rides clause (d). If either half
+  // failed, this is where it shows.
+  let s = capture(emptyState(), 'N', 'a thing');
+  s = write(s, fileUnderNewEvents(ctx(), 'N', 'the roof job', clocksOf(s.nodes.get('N'))));
+  assert.equal(silentNodes(s).length, 0, 'neither the item nor the new place is silent');
+  const item = s.nodes.get('N')!;
+  assert.ok(item.parent, 'the item is in a place');
+  const place = s.nodes.get(item.parent!)!;
+  assert.equal(place.title, 'the roof job', 'and the place is the one that was named');
+  assert.ok(Object.keys(place.clocks).length > 0,
+    'the PLACE carries the clock — the item rides it (law 1(d)), so the place comes back and its contents with it');
+  assert.equal(Object.keys(item.clocks).length, 0,
+    'and no clock was invented for the item: filing is not scheduling');
+});
+
+test('filing under an EXISTING place records the route and the parent', () => {
+  let s = capture(emptyState(), 'N', 'a thing');
+  s = write(s, fileUnderNewEvents(ctx(), 'N', 'the roof job', clocksOf(s.nodes.get('N'))));
+  const placeId = s.nodes.get('N')!.parent!;
+  // A second item, filed into the place that now exists.
+  s = capture(s, 'M', 'another thing');
+  s = write(s, fileUnderEvents(ctx(), 'M', placeId, clocksOf(s.nodes.get('M'))));
+  assert.equal(silentNodes(s).length, 0);
+  assert.equal(s.nodes.get('M')!.parent, placeId, 'it landed in the named place');
+  assert.equal(s.nodes.get('M')!.route, 'filed', 'and it has left the inbox');
+});
+
+test('UNDOING a file takes it out of the place, not just out of the route', () => {
+  // The defect this pins: `undoRouteEvents` had a `default` branch emitting only
+  // `clarify.reopened`, so a filed item would return to the inbox STILL SITTING
+  // in the place it was just taken out of. An Undo that leaves the thing where
+  // it was is a lie.
+  let s = capture(emptyState(), 'N', 'a thing');
+  s = write(s, fileUnderNewEvents(ctx(), 'N', 'the roof job', clocksOf(s.nodes.get('N'))));
+  const placeId = s.nodes.get('N')!.parent!;
+  s = capture(s, 'M', 'another thing');
+  s = write(s, fileUnderEvents(ctx(), 'M', placeId, clocksOf(s.nodes.get('M'))));
+  const kind = s.nodes.get('M')!.kind;
+  s = write(s, undoRouteEvents(ctx(), 'M', 'filed', kind));
+  assert.equal(s.nodes.get('M')!.route, null, 'back in the inbox');
+  assert.equal(s.nodes.get('M')!.parent, null, 'and back OUT of the place');
+  assert.equal(silentNodes(s).length, 0, 'and the gate re-covered it on the way');
+});
+
+test('filing refuses the two shapes that would corrupt the tree', () => {
+  const c = ctx();
+  assert.deepEqual(fileUnderEvents(c, 'N', 'N'), [], 'nothing may be its own place');
+  assert.deepEqual(fileUnderEvents(c, 'N', ''), [], 'nor filed into nowhere');
 });
