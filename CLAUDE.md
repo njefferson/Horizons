@@ -30,9 +30,8 @@ Epigraph: *"It holds the rest, so you can rest."*
 
 ## Rules specific to this app
 - **NOTHING PERSONAL ABOUT THE OWNER EVER LANDS IN THIS REPO — a FAIL state**
-  (Noah, 2026-08-04, after a session did exactly this). No diagnosis, health
-  fact, or identity disclosure attached to him, in any file, commit message, or
-  PR body. The product's framing ("for neurodivergent users") and research
+  (his instruction, 2026-08-04). No diagnosis, health fact, or identity
+  disclosure attached to him, in any file, commit message, or PR body. The product's framing ("for neurodivergent users") and research
   about users as a population are fine; a sentence linking HIM to any of it is
   not. A HARD gate per Doctrine §9b, twice over: the Spine checks the hub out
   and runs the canonical `privacy-check.mjs` (a pattern widened in the hub
