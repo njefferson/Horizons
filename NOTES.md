@@ -517,11 +517,10 @@ diagnostic from the production sync host read `quietkeep-sync-1.18.0`, which is
 the first time production has ever been read in this project. Nothing is
 outstanding for him on the release itself.
 
-**What IS outstanding, in his hands and not a session's:** the newest whole copy
-was **Thu 30 Jul** with work since, on a store holding 3,338 events. Sync across
-stores is redundancy, not a backup — it carries a bad delete as faithfully as a
-good one, and [`docs/data-constitution.md`](docs/data-constitution.md) makes
-export the durability story.
+**Nothing is outstanding for him.** The app's own "WHAT IS WRONG" section tells
+its reader what needs attention, on his screen, in his words — a session
+repeating those lines back to him adds nothing and is not a repo to-do. See
+hub LESSONS §36.
 
 This block exists because `handoff-check.mjs` failed the repo for not having
 one, and it was right: `NOTES.md` had mentioned the hostname in prose for weeks
