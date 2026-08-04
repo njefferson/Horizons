@@ -501,26 +501,19 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.18.1 is on `staging` and has not been promoted.** It is deployed and openable
-right now:
+**Nothing is staged and waiting. 1.18.1 was PROMOTED on 2026-08-04** — Noah's
+*"Promote to main and continue"*. `staging` and `main` are both at `859a0c1`.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.1**
-- **https://quietkeep.pages.dev** — production, **1.18.0**
+- **https://quietkeep.pages.dev** — production, now **1.18.1**
+- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
 
-The Sync edition deploys alongside it at
-**https://staging.quietkeep-sync.pages.dev** (production:
-**https://quietkeep-sync.pages.dev**).
+The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
+(staging: **https://staging.quietkeep-sync.pages.dev**).
 
-**What to look at first, and it is the whole release:** when a newer version
-arrives it now WAITS. You get a line saying so, and nothing changes until you
-press **Install it now**. Press *Not now* and the app you are using stays exactly
-as it is.
-
-**The one thing that will look wrong and is not.** Going FROM 1.18.0 to this
-release, the update still lands on its own, because 1.18.0's code is what is
-doing the landing and it cannot be patched from here. On this build and every one
-after it, the asking is real. That is stated in the patch notes too rather than
-left to be discovered.
+**The one thing that will look wrong and is not.** Coming FROM 1.18.0, this one
+update still lands without asking, because 1.18.0's code is what does the landing
+and could not be patched from here. From this build onward the asking is real.
+It is in the patch notes too, so a reader is not left to work it out.
 
 **That paste has been made and [V-15](docs/verifications.md) is CLOSED.** Noah's
 diagnostic from the production sync host read `quietkeep-sync-1.18.0`, which is
@@ -538,6 +531,29 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — `main` is at `1.18.1` (`859a0c1`), promoted on Noah's "Promote
+  to main and continue".** Production now lets the reader decide when the app
+  changes. Promoted onto **Spine 251**, watched green on that exact commit with
+  all 25 steps read individually (V-10) — typecheck, tests, the headless walk,
+  rendered accessibility, two editions, no-localStorage. Then **Deploy 248**,
+  whose Cloudflare steps RAN rather than skipping: six seconds each, which is
+  what tells a real upload from a gracefully-skipped one that also exits 0. Its
+  log says, in its own words: `Deployed to PRODUCTION: https://quietkeep.pages.dev`.
+  Sync went out in the same run. Pushed with `git push origin staging:main`
+  (§7c); receipt `daef1b3..859a0c1`, confirmed by `git ls-remote`.
+  · **What production gained:** the §7h fix — a new version waits and says so,
+  and nothing installs until the reader presses **Install it now**; the §7h.3
+  newcomer gate; the diagnostic's cache/controller/waiting state and its
+  **address**; and `Stores seen in the log` in place of `Devices`.
+  · **The 1.18.0 → 1.18.1 hop still lands without asking**, because 1.18.0's code
+  is what does the landing and could not be patched from here. Every update after
+  this one asks. Said in the patch notes rather than left to be discovered.
+  · **Still owed and unchanged by this promote:** the promotion path has never
+  been driven end-to-end with a real second worker (§7h asks for exactly that);
+  the ⓘ panel's budget is measured at 1280px where it reads 8,782px and is
+  11,661px at 390px on an iPad-first project; and `#group-extras` is 5,695px of
+  accumulated prose, which is the surface §4 wants folded.
 
 - **2026-08-04 — 1.18.1 (ITERATION) staged: an update waits for the reader.**
   Doctrine §7h.1, and the last of the four §7h failures the hub gate found. Two
