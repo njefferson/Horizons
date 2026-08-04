@@ -519,6 +519,45 @@ handed over (Doctrine §7).
 
 ### Log
 
+- **2026-08-04 — THE FIRST REAL USAGE DATA THIS REPO HAS EVER HELD.** Noah sent
+  a §7f diagnostic from his actual instance: the **sync edition, 1.18.0,
+  installed to the home screen, storage persisted, paired, three devices in the
+  log**. Not a test tab — the thing he uses. The correction of 2026-08-03 said
+  the dogfood gate has always been running and this repo held none of the data
+  about what ends his day. It holds some now, and it is worth reading carefully
+  before anyone builds anything.
+  · **The shape, in his numbers.** Held as work: **1432**. Events in the log:
+  **3338**. Let go: **19**. By kind: **action 1405**, **project 44**, upkeep 1,
+  resume-card 1 — and **zero** of outcome, area, goal, waiting-for, aspiration,
+  bother, pebble, journal, person, anchor. On the Menu: **0**. In the Not Now
+  ledger: **0**. Clocks in use: **review 1275**.
+  · **What that says, stated as a reading and not a diagnosis.** Two nouns out of
+  fourteen are in use. Nothing is on the Menu and nothing has been deferred to Not
+  Now, so neither surface is carrying any of the load. **1405 actions have gone in
+  and 19 things have been let go** — the store accumulates and almost nothing
+  leaves it. And **89% of everything he holds sits on one clock type**. This is a
+  flat, growing list, which is the shape the ten laws were written against.
+  · **The number that would explain a day ending is NOT in this report, and that
+  is the finding to act on.** "Clocks in use: review 1275" counts clocks that
+  EXIST, not clocks that are DUE. A day that ends early is a day whose surface
+  opened with more on it than a person can face, and this report cannot say what
+  that surface showed. **The diagnostic should carry what is due today, and how
+  far the oldest due item has run** — §7f's own rule is that when a session
+  cannot see something, the check goes where the device can run it. That is the
+  single highest-value addition to the diagnostic and it outranks the cosmetic
+  gaps logged with it.
+  · **What is wrong on his device right now, per the app's own top line:** the
+  newest whole copy is **Thu 30 Jul** and there is work since. Sync across three
+  devices is redundancy, not a backup — it propagates a bad delete as faithfully
+  as a good one, and [`docs/data-constitution.md`](docs/data-constitution.md)
+  makes export the durability story. Five days of real work stands on that.
+  · **This report does NOT close [V-15](docs/verifications.md)'s production
+  half**, and the reason is the gap logged an hour earlier: **it does not name
+  its origin.** Its cache reads `quietkeep-sync-1.18.0`, and since the promote
+  BOTH `quietkeep-sync.pages.dev` and `staging.quietkeep-sync.pages.dev` serve
+  1.18.0, so the string cannot say which. The missing `location.origin` line cost
+  the exact verification it was logged for, one hour after being logged.
+
 - **2026-08-04 — `main` is at `1.18.0` (`1dd696a`), promoted on Noah's "Promote
   and continue".** The CAPABILITY release: **the diagnostic report**. Pressing
   the build number at the bottom of the screen opens the whole app state as

@@ -1065,6 +1065,16 @@ an instrument that could answer it. The staging half is already proven above. Th
 mechanism works; only the production instance is unmeasured, and the promote is
 what measures it.
 
+**The missing origin line has now cost a verification, one hour after it was
+logged.** On 2026-08-04, after the promote, Noah sent a diagnostic from his real
+instance reading `Service worker cache: quietkeep-sync-1.18.0`. Since the promote
+BOTH `quietkeep-sync.pages.dev` and `staging.quietkeep-sync.pages.dev` serve
+1.18.0, so that string cannot say which one he was standing on — and before the
+promote only staging did, which is what makes the question live rather than
+pedantic. **The production half stays open on a one-line omission**, in a report
+that otherwise carries everything needed to close it. Promote the origin line
+from cosmetic to blocking.
+
 **Three things the diagnostic should gain, all found by reading the first report
 against this row:**
 
