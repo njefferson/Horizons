@@ -501,16 +501,11 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.18.2 is on `staging` and has not been promoted.**
+**Nothing is staged and waiting. 1.18.2 was PROMOTED on 2026-08-04** — Noah's
+*"Promote to main"*. `staging` and `main` are both at `db5552a`.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.2**
-- **https://quietkeep.pages.dev** — production, **1.18.1**
-
-**What it fixes, and it is live in production right now:** opening Quietkeep for
-the first time greeted a brand-new visitor with *"a newer version is ready"* —
-announcing their first install as an update, thirty seconds after arriving. A
-straight §7h.3 violation, shipped in 1.18.1 and found by the real-second-worker
-walk that 1.18.1 recorded as owed.
+- **https://quietkeep.pages.dev** — production, now **1.18.2**
+- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
 
 The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
 (staging: **https://staging.quietkeep-sync.pages.dev**).
@@ -536,6 +531,29 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — `main` is at `1.18.2` (`db5552a`), promoted on Noah's "Promote
+  to main".** Production no longer greets a first-time visitor with *"a newer
+  version is ready"*. Promoted onto **Spine 256**, watched green on that exact
+  commit with all **26** steps read individually (V-10) — including the new *"A
+  real second worker waits for the reader"*. Then **Deploy 253**, whose
+  Cloudflare steps RAN rather than skipping (six seconds each), its log reading
+  `Deployed to PRODUCTION: https://quietkeep.pages.dev`. Pushed with
+  `git push origin staging:main` (§7c); receipt `3dc1b2c..db5552a`, confirmed by
+  `git ls-remote`.
+  · **Carried in the same promote:** the §7h.3 fix, the real-second-worker walk
+  now wired into the spine, the corrected panel measurements, the as-opened
+  phone assertion, and `.doctrine-sync` adopted at hub `d593e21`.
+  · **A number worth keeping, on how much of this discipline is mechanical.**
+  The hub's LESSONS classify their own enforcement, so it can be counted: **14
+  GATE (28%), 32 CHECKLIST (64%), 4 JUDGEMENT (8%)**. Two thirds is still a
+  session remembering, which is what fails late in a long session — and today
+  proved it both ways. The §7h.3 defect and the lesson-number collisions were
+  caught by gates; the diagnostic goose chase, the backup nagging and an
+  over-strict reading of the staging rule were caught by **Noah**, and all three
+  were CHECKLIST or JUDGEMENT class. Doctrine §14 says he is never the test
+  bench; today he was, three times. **The lever is converting CHECKLIST into
+  GATE**, and that ratio is the measure of it.
 
 - **2026-08-04 — 1.18.2 (ITERATION) staged: the real second worker, and the
   defect it found.** §7h says to prove the promotion path with a REAL second
