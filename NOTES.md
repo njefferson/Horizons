@@ -494,19 +494,23 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.18.0 is on `staging` and has not been promoted.** It is deployed and
-openable right now:
+**Nothing is staged and waiting. 1.18.0 was PROMOTED on 2026-08-04** — Noah's
+*"Promote and continue"*. `staging` and `main` are both at `1dd696a` and
+production now serves the diagnostic.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.0**
-- **https://quietkeep.pages.dev** — production, currently **1.17.4**
+- **https://quietkeep.pages.dev** — production, now **1.18.0**
+- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
 
 The Sync edition deploys alongside it at
-**https://staging.quietkeep-sync.pages.dev** (production:
-**https://quietkeep-sync.pages.dev**).
+**https://quietkeep-sync.pages.dev** (staging:
+**https://staging.quietkeep-sync.pages.dev**).
 
-**What to look at first:** the build number at the bottom of the screen is a
-control now — press it and it opens the diagnostic report. Read it, and if
-anything is wrong, copy it and send that instead of a screenshot (§7f).
+**One thing outstanding for Noah, and it is one paste.** Production carries the
+diagnostic for the first time, which is the only thing that was ever blocking
+[V-15](docs/verifications.md)'s production half. Open
+**https://quietkeep.pages.dev**, press the build number at the bottom of the
+screen, and send the report. If its `Service worker cache:` line reads
+`quietkeep-1.18.0`, V-15 closes completely after five promotes of standing open.
 
 This block exists because `handoff-check.mjs` failed the repo for not having
 one, and it was right: `NOTES.md` had mentioned the hostname in prose for weeks
@@ -514,6 +518,38 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — `main` is at `1.18.0` (`1dd696a`), promoted on Noah's "Promote
+  and continue".** The CAPABILITY release: **the diagnostic report**. Pressing
+  the build number at the bottom of the screen opens the whole app state as
+  selectable text, with copy and share — so a fault is reported by pasting what
+  the app knows rather than by photographing a screen (Doctrine §7f).
+  · **Evidence, and what each piece does and does not prove.** Promoted onto
+  **Spine 238**, watched green on `1dd696a` with all 22 steps opened and read
+  individually rather than inferred from the run's conclusion (V-10) — typecheck,
+  tests, the headless walk, rendered accessibility, network posture, two
+  editions, banned vocabulary, the closed event list, the write-gate bypass
+  check, and no-localStorage. Then **Deploy 235**, whose Cloudflare steps RAN
+  rather than skipping — six seconds each, which is what distinguishes a real
+  upload from a gracefully-skipped one that also exits 0. Its log says, in its
+  own words: `Deployed to PRODUCTION: https://quietkeep.pages.dev`. The Sync
+  edition went out in the same run, to `https://5343d35f.quietkeep-sync.pages.dev`.
+  · **Promoted with `git push origin staging:main`** — Doctrine §7c, which
+  promotes without a checkout and so cannot strand commits on the wrong branch.
+  Receipt read: `a281597..1dd696a`. Confirmed by `git ls-remote`, not by the push
+  output.
+  · **What this release changes beyond the feature.** Production carries an
+  instrument for the first time, which unblocks [V-15](docs/verifications.md)'s
+  production half — open since 0.9.0, and blocked every time on the fact that no
+  released build could answer it. One diagnostic from `quietkeep.pages.dev` now
+  closes it, and every promote after this one is confirmable the same way.
+  · **Carried in the same promote:** the SC 2.5.3 fix to the build stamp's spoken
+  name, the verb-agreement fix, and the docs work of 2026-08-03 — the V-15
+  narrowing, the dogfood-gate correction, and the §2 paste-block rule.
+  · **Still owed, and now the top of the list:** the §7h `skipWaiting()` defect.
+  Production is an offline-first app that does not let its reader decide when to
+  take an update, so this promote reaches devices by taking over under whatever
+  page is open. That is the next thing to fix.
 
 - **2026-08-03 (Noah, correcting the record)** — **THE DOGFOOD GATE HAS ALWAYS
   BEEN RUNNING.** His words: *"The dogfood gate has always been running. Your app
@@ -587,12 +623,18 @@ handed over (Doctrine §7).
   · The cache names are correct — `quietkeep-1.17.4` on `main`,
   `quietkeep-1.18.0` on `staging`. Re-run with
   `node ../noahjefferson/pwa-check.mjs --repo .`
-  · **`.doctrine-sync` is absent and was deliberately NOT adopted here.** The
-  gate is red on purpose: adopting asserts this repo has read the hub's doctrine
-  and knows what it owes, and turning that green as a side errand — while the
-  §7h debt above was sitting unmeasured — is the false-confidence failure the
-  gate exists to prevent. `DOCTRINE.md` was read in full this session; `LESSONS.md`
-  was not. Adopt after the §7h audit, not before.
+  · **`.doctrine-sync` — I first reported it absent, and that was a misreading.**
+  The marker exists and was added in `9644761`, pointing at hub `972f966`; I ran
+  the gate against the harness `claude/*` branch, which is a copy of `main`, and
+  the marker lives on `staging`. Reading the right tree makes the gate useful
+  instead of blank: the hub has moved to `3713da6` and the drift is **DOCTRINE §2,
+  §7f and §7h, LESSONS 30–35, and `handoff-check.mjs`**. That is the list this
+  repo is actually behind on, and it is why §7h went unmeasured here.
+  · **Still deliberately NOT adopted.** Adopting asserts the drift was read and
+  what this repo owes is known. §2, §7f and §7h were read in full this session
+  and LESSONS 34 and 35 with them; **30 and 33 were not**, and the §7h debt is
+  open rather than closed. Moving the marker now would assert a reconciliation
+  that has not happened. Adopt when the `skipWaiting()` fix lands, not before.
 
 - **2026-08-03 (Noah: "Pages.dev has been allowed now" → "hand off to another
   session")** — **the grant did not reach this session, and that is the finding.**
