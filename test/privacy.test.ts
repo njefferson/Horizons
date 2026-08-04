@@ -3,22 +3,25 @@
 // Noah, 2026-08-04, verbatim: "Make sure you never record anything in the repo
 // that is personal or embarrassing for me. That is a FAIL state."
 //
-// Said the same day a session — recording design conversation faithfully —
-// wrote two lines into this public repo that linked him personally to a
-// neurotype. The repo's product framing ("a planner for neurodivergent users")
-// is public and fine; research about users as a population
-// (docs/nd-collisions.md) is fine; **a sentence that attaches a diagnosis,
-// health fact, or identity disclosure to the OWNER is not**, and the
-// difference is exactly the anchor these patterns require: the person, linked
-// by a verb, to the term. A rule that lives only in prose loses to whoever is
-// in a hurry (hub Doctrine §16.8) — and it already did, once, before it was a
-// day old. This test is the teeth. The hub's privacy-check.mjs carries the
-// same patterns for every sibling repo.
+// The line that decides every case: his design statements are repo material;
+// who he is, is not. The product's framing ("a planner for neurodivergent
+// users") is public and fine; research about users as a population
+// (docs/nd-collisions.md) is fine; a sentence whose predicate is a diagnosis,
+// health fact, or identity disclosure and whose subject is the OWNER is not.
+// The patterns anchor on exactly that structure — the person, linked by a verb,
+// to the term — because the same nouns appear legitimately a hundred times in
+// this repo's honest product prose. A rule that lives only in prose loses to
+// whoever is in a hurry (hub Doctrine §16.8); this test is the teeth. The hub's
+// privacy-check.mjs carries the same patterns for every sibling repo.
 //
 // The patterns are deliberately NARROW: a false positive teaches sessions to
 // route around the gate, and the product's own vocabulary must never trip it.
-// Widening them is cheap when a new class appears; the class that already
-// happened is covered exactly.
+//
+// THIS FILE MAY NOT EXEMPT ITSELF. An earlier version skipped itself whole, on
+// the reasoning that a pattern is not a disclosure — true of the patterns and
+// false of the prose and fixtures around them, which then went unscanned. Only
+// the sentinel region below is skipped, its probes are synthetic rather than
+// quoted, and the region itself may carry neither a name nor a date.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -28,36 +31,78 @@ import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
+// privacy-gate:patterns-begin
 const DISCLOSURE = [
-  // The person, linked by a verb, to a neurotype/diagnosis term.
+  // The person, linked by a verb, to a neurotype or diagnosis term.
   /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?(?:audhd|adhd|autistic|neurodivergent|diagnosed)\b/i,
   // The term used as the owner's epithet.
   /\b(?:audhd|adhd|autistic|neurodivergent)\s+(?:owner|maker|author)\b/i,
-  // The confirmation shape the actual violation took.
+  // A confirmation shape.
   /\bconfirmed\b[^\n]{0,50}\b(?:he|she|they)\s+(?:is|are)\s+neurodivergent\b/i,
-  // Health/medical statements about the person.
-  // `diagnosis|diagnosed` and NOT `diagnos\\w+` — the app's own §7f feature is
-  // the "diagnostic report", and its name appears beside Noah's constantly
-  // ("Noah's diagnostic", "Noah sent a diagnostic"). The first draft of this
-  // pattern failed the repo on the feature's name, found on this gate's very
-  // first run against the real tree.
+  // Health or medical statements about the person.
+  // `diagnosis|diagnosed` and NOT `diagnos\w+` — the app's own §7f feature is
+  // the "diagnostic report", whose name appears beside the owner's constantly.
+  // The first draft of this pattern failed the repo on the feature's name,
+  // found on this gate's very first run against the real tree.
   /\b(?:noah|the owner)\b[^\n]{0,30}\b(?:medication|therapy|diagnosis|diagnosed)\b/i,
 ];
+
+// SYNTHETIC probes, not quotations. Every subject here is a bare pronoun or a
+// bracketed placeholder, so each one exercises a pattern while asserting
+// nothing about any real person. Deliberate: an earlier version of this file
+// carried the sentences a session had actually written, labelled as such, and
+// so reproduced the disclosure in the repo the gate was written to protect.
+const PROBES = [
+  'they are autistic',
+  'an autistic maker',
+  'confirmed in a note that they are neurodivergent',
+  'the owner [placeholder] diagnosis',
+];
+// privacy-gate:patterns-end
+
+// What the skipped region may never contain, once its regex literals are set
+// aside. A pattern's source legitimately names the owner token — that IS the
+// anchor it matches on — so the guard reads the region's prose and probes,
+// which are the only places a real sentence could hide.
+const REGION_FORBIDDEN: Array<[RegExp, string]> = [
+  [/\bnoah\b/i, 'the owner’s name outside a pattern'],
+  [/\b20\d\d-\d\d-\d\d\b/, 'a date'],
+];
+
+// A line that opens with `/` but not `//` is a regex literal, not prose.
+const isPatternSource = (line: string): boolean => /^\s*\/(?!\/)/.test(line);
+
+const BEGIN = 'privacy-gate:patterns-begin';
+const END = 'privacy-gate:patterns-end';
+
+function split(text: string): { body: string; region: string } {
+  const body: string[] = [];
+  const region: string[] = [];
+  let inside = false;
+  for (const line of text.split('\n')) {
+    if (line.includes(BEGIN)) { inside = true; body.push(''); continue; }
+    if (line.includes(END)) { inside = false; body.push(''); continue; }
+    if (inside) {
+      if (!isPatternSource(line)) region.push(line);
+      body.push('');
+    } else { body.push(line); }
+  }
+  return { body: body.join('\n'), region: region.join('\n') };
+}
 
 const tracked = (): string[] =>
   execFileSync('git', ['-C', ROOT, 'ls-files'], { encoding: 'utf8' })
     .split('\n')
     .filter(f => /\.(md|ts|mjs|js|html|txt)$/.test(f));
 
-[personal information removed]
+// Meta-prose names the TERM first and the person second; a real disclosure
+// leads with the person, which is what the patterns anchor on.
+test('FAIL STATE — no tracked file attaches a diagnosis or health fact to the owner', () => {
   const hits: string[] = [];
   for (const f of tracked()) {
-    // This file carries the patterns themselves; scanning it would match its
-    // own regex source, which is a pattern and not a disclosure.
-    if (f === 'test/privacy.test.ts') continue;
-    const text = readFileSync(join(ROOT, f), 'utf8');
+    const { body } = split(readFileSync(join(ROOT, f), 'utf8'));
     for (const p of DISCLOSURE) {
-      const m = p.exec(text);
+      const m = p.exec(body);
       if (m) hits.push(`${f}: "${m[0]}"`);
     }
   }
@@ -65,18 +110,29 @@ const tracked = (): string[] =>
     'personal disclosure(s) about the owner found in tracked files — remove the sentence, not the gate');
 });
 
-test('the gate BITES — each pattern catches the class it exists for', () => {
-  // Made to fail once before being trusted (Doctrine §6): the exact strings a
-  // session actually wrote, plus the epithet shape, must all trip.
-  const violations = [
-[personal information removed]
-[personal information removed]
-[personal information removed]
-[personal information removed]
-  ];
-  for (const v of violations) {
-    assert.ok(DISCLOSURE.some(p => p.test(v)), `pattern set misses: "${v}"`);
+test('the skipped region carries no name and no date, in any file', () => {
+  const hits: string[] = [];
+  for (const f of tracked()) {
+    const { region } = split(readFileSync(join(ROOT, f), 'utf8'));
+    if (!region.trim()) continue;
+    for (const [p, what] of REGION_FORBIDDEN) {
+      if (p.test(region)) hits.push(`${f}: sentinel-skipped region contains ${what}`);
+    }
   }
+  assert.deepEqual(hits, [],
+    'the one region the gate does not read must stay incapable of holding a disclosure');
+});
+
+test('the gate BITES — each pattern catches the class it exists for', () => {
+  // Made to fail once before being trusted (Doctrine §6).
+  for (const v of PROBES) {
+    assert.ok(DISCLOSURE.some(p => p.test(v)), `pattern set misses a probe`);
+  }
+  // Every pattern must be exercised by at least one probe, or a pattern could
+  // rot unnoticed behind the others.
+  DISCLOSURE.forEach((pattern, i) => {
+    assert.ok(PROBES.some(v => pattern.test(v)), `pattern ${i} has no probe`);
+  });
   // And the product's own public vocabulary must NEVER trip — a gate that
   // fails the app's honest framing teaches sessions to route around it.
   const legitimate = [
