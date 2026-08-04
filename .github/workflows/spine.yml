@@ -32,6 +32,21 @@ jobs:
       - name: Workflow files parse
         run: npm run workflows:check
 
+      # Doctrine §9b — the FAIL state: nothing personal about the owner lands
+      # in this repo. The canonical patterns live in the hub and are widened
+      # there, so this step checks the hub out fresh and runs THAT copy —
+      # test/privacy.test.ts mirrors the patterns for offline `npm test`, but
+      # this is the gate that cannot lag. The path is untracked, so the scan
+      # (`git ls-files`) never reads the hub's own files as this repo's.
+      - name: Check out the hub's canonical gates
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: njefferson/noahjefferson
+          path: .hub-gates
+          persist-credentials: false
+      - name: The owner's person is not repo material (Doctrine 9b)
+        run: node .hub-gates/privacy-check.mjs --repo .
+
       - run: npm run typecheck
       - run: npm run test:only
 
