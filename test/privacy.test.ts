@@ -103,7 +103,10 @@ test('FAIL STATE — no tracked file attaches a diagnosis or health fact to the 
     const { body } = split(readFileSync(join(ROOT, f), 'utf8'));
     for (const p of DISCLOSURE) {
       const m = p.exec(body);
-      if (m) hits.push(`${f}: "${m[0]}"`);
+      // LOCATION ONLY, never the matched text — an assertion message lands in
+      // a CI log, and on a public repo that log is public. Quoting the find
+      // republishes it on every failure.
+      if (m) hits.push(`${f}:${body.slice(0, m.index).split('\n').length}`);
     }
   }
   assert.deepEqual(hits, [],
