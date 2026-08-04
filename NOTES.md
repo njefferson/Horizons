@@ -531,12 +531,22 @@ handed over (Doctrine §7).
   resume-card 1 — and **zero** of outcome, area, goal, waiting-for, aspiration,
   bother, pebble, journal, person, anchor. On the Menu: **0**. In the Not Now
   ledger: **0**. Clocks in use: **review 1275**.
-  · **What that says, stated as a reading and not a diagnosis.** Two nouns out of
-  fourteen are in use. Nothing is on the Menu and nothing has been deferred to Not
-  Now, so neither surface is carrying any of the load. **1405 actions have gone in
-  and 19 things have been let go** — the store accumulates and almost nothing
-  leaves it. And **89% of everything he holds sits on one clock type**. This is a
-  flat, growing list, which is the shape the ten laws were written against.
+  · **My first reading of this was WRONG and Noah corrected it.** I wrote that
+  "1405 actions have gone in and 19 things have been let go — the store
+  accumulates and almost nothing leaves it," which frames the numbers as a
+  USAGE pattern. They are not. **The store is overwhelmingly the OmniFocus
+  import**: `src/taskpaper.ts:328` records his export as carrying **1,173 dated
+  items**, against 1,405 actions and 1,275 review clocks now held. That arrived
+  in one motion. "19 let go" measured against an imported 1,173 says nothing
+  about his habits — it says he was handed a wall he did not build in this app,
+  and reading it as accumulation invents a behaviour from an import artifact.
+  · **What can still be said, with the import accounted for.** Two nouns out of
+  fourteen are in use, and nothing is on the Menu or in the Not Now ledger — so
+  neither surface is carrying any load, which is a fact about the app's shape
+  rather than about him. The import is a legitimate stress test at real scale
+  (it is why it was built) and it means **this store is a scale fixture as much
+  as a diary**. Any future reading of these counts must say which it is treating
+  them as.
   · **The number that would explain a day ending is NOT in this report, and that
   is the finding to act on.** "Clocks in use: review 1275" counts clocks that
   EXIST, not clocks that are DUE. A day that ends early is a day whose surface

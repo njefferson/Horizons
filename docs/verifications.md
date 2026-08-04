@@ -1075,6 +1075,24 @@ pedantic. **The production half stays open on a one-line omission**, in a report
 that otherwise carries everything needed to close it. Promote the origin line
 from cosmetic to blocking.
 
+**"Devices seen in the log" answers a different question than it appears to, and
+that is the same defect class as the missing `maxTouchPoints`.** A device id is
+minted once per STORE and kept in IndexedDB (`src/ui/session.ts:83`), and
+IndexedDB is per-origin — so the default edition and the sync edition each get
+their own id **on the same iPad**, staging and production each get their own, and
+clearing website data mints a fresh one on the same hardware. `state.devices` is
+just the set of `e.device` over the log (`src/fold.ts:522`). The line says
+"devices" and a reader hears hardware.
+
+Recorded because a reasonable reading of it was wrong in both directions: Noah
+read three ids as including the OmniFocus import, which cannot be — that import
+runs through `session.commit` and stamps the importing store's own id
+(`src/taskpaper.ts:235`, called at `src/ui/about.ts:1482`) — while the count
+genuinely can exceed the number of machines, for reasons the wording hides. A
+Quietkeep export imported from another instance DOES bring its id, since events
+keep their origin device; a TaskPaper import does not. **Say "stores" and name
+them**, or the number invites exactly this.
+
 **Three things the diagnostic should gain, all found by reading the first report
 against this row:**
 
