@@ -333,8 +333,24 @@ decided by a session.**
 
 ### Open
 
-- **Q-11 · Is "not seeing the right things" a RANKING problem or a TRUST
-  problem?** Noah, 2026-08-04: *"had no feeling that I was seeing the right
+- **Q-13 · Roles are IDENTITIES that cross multiple areas — how are they
+  modelled?** Noah, 2026-08-04, answering the roles-vs-areas question directly:
+  *"Roles are identities for me, that cross multiple areas."* That settles
+  V2 decision 9 in the direction the vocabulary genuinely grows — **and rules
+  out the cheap answer**: this data model's tree is single-parent, so a thing
+  that crosses areas structurally CANNOT be a container. A role is a
+  cross-cutting LINK (the shape the feeds relation already has), which means
+  role support is a vocabulary addition (a `role` kind plus a link event),
+  not a fourth door on stage 4's chooser.
+  - **Deliberately deferred, with the shape named.** Building role machinery
+    now, before a single area or goal exists in his store, repeats the
+    eleven-empty-nouns mistake the azimuth check just caught. Stage 4's
+    evidence (does he make containers at all at two-tap cost?) gates this.
+  - **What is NOT deferred:** the mechanism roles will ride is already
+    settled — a role node carries its own review clock like any horizon, and
+    "when do I review my roles?" is answered by the same
+    mountain-comes-to-you return as everything else. When roles land, they
+    inherit that for free. Noah, 2026-08-04: *"had no feeling that I was seeing the right
   things."* The two readings need opposite work and the wrong guess wastes a
   release — which is exactly what happened when an earlier session inferred
   "volume" and built `pressureBands` on it.
@@ -594,6 +610,23 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-04 — Noah answered the two open design questions from the V2
+  planning session.** Verbatim: *"1. Roles are identities for me, that cross
+  multiple areas. 2. You are right — it has to follow the principles of
+  ND-first planning."*
+  · **Roles → Q-13** (above): identities crossing areas cannot be containers
+  in a single-parent tree; they are a cross-cutting link, a real vocabulary
+  addition, deferred behind stage-4 evidence with the shape named so it is
+  not re-derived. Stage 4's chooser stays three doors (project / area / goal).
+  · **Cadences → settled as offered-not-asked.** His #2 endorses the ND-first
+  reading of the horizon-cadence question: return dates are OFFERED defaults —
+  one-tap, adjustable, silently skippable, "not yet" writes nothing — never a
+  per-horizon interrogation at creation time. This is the PDA-aware fork
+  chosen deliberately (demand avoidance includes self-imposed demands; a
+  question you must answer to proceed is a demand in costume — see
+  docs/nd-collisions.md entry 8). Stage 3's dating control is confirmed as
+  designed: this week / next week / not yet.
 
 - **2026-08-04 — 1.20.0 (CAPABILITY) staged: V2 stage 1, "It says where."**
   · **The offer answers *where from* for the first time.** `NextUpItem` gains
