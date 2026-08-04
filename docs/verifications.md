@@ -972,11 +972,60 @@ one remove — generating a correct file is not the same as a reminder arriving.
 ---
 
 ## V-15 · A promote is confirmed by the deploy run, never by reading production
-**Status: HALF CLOSED, 2026-08-03 — `staging` is now VERIFIED from Noah's own
-device; production is still unread**
-· raised 2026-07-29 with the 0.9.0 promote
-· re-tested 2026-08-03 in a fresh container and still denied to sessions; the
-  cause is narrowed and the route around it turned out to already exist
+**Status: VERIFIED and CLOSED, 2026-08-04. Production has been read. The
+statement in this row's title is no longer true, and that is the point.**
+· raised 2026-07-29 with the 0.9.0 promote, and caveated every promote since
+· closed by the §7f diagnostic running on Noah's own device, not by a session
+
+**PRODUCTION, READ. The bytes, and where each came from.** After 1.18.0 was
+promoted on 2026-08-04, Noah sent a diagnostic from the instance installed on his
+home screen and confirmed in his own words that its URL is the plain one — the
+production sync host, `quietkeep-sync.pages.dev`, not staging. It reported:
+
+    Build: 1.18.0
+    Edition: sync
+    Service worker cache: quietkeep-sync-1.18.0
+
+**Why that string is evidence and not an echo**, which is the whole question this
+row has been asking for six releases:
+
+- `src/ui/about.ts:1647` reads it from **live Cache Storage** —
+  `globalThis.caches?.keys()` — not from a compiled-in constant. A version stamp
+  would prove nothing here; §7f and §7h both say so.
+- Cache Storage is **per-origin**, so the cache read is the one belonging to the
+  host he named.
+- The cache is created by the service worker the browser **fetched over the
+  network**, and its name is the `CACHE` constant inside that fetched `sw.js`.
+- That constant carries the release triplet and is bumped with it, and the sync
+  edition's name is DERIVED from it rather than set separately —
+  `tools/editions.mjs:132` rewrites `quietkeep-(\d+\.\d+\.\d+)` to
+  `quietkeep-sync-$1`. So `quietkeep-sync-1.18.0` cannot be produced by anything
+  except a deployed `sw.js` built from the 1.18.0 commit.
+- Before the promote the production sync host served 1.17.4, so a
+  `quietkeep-sync-1.18.0` cache could not have existed on that origin at all.
+
+**Therefore: the deployed `sw.js` on production carries the released triplet.**
+That is the exact claim this row was created to say nobody could make.
+
+**What has NOT changed, and must not be read as changed.** A session still
+cannot fetch `pages.dev` — every host is refused `403` at CONNECT, measured
+again on 2026-08-03 in a fresh container, and that stands as its own record
+below. **Production was not read by a session. It was read by Noah's device and
+reported as text**, which is Doctrine §7f working exactly as written: the check
+went where the device could run it, and the answer came back better than the
+fetch would have been, because it came from the real device on the real network.
+
+**What this changes for every promote after this one.** The caveat that has been
+attached to all six promotes in this repo — *the evidence is the deploy run's own
+green step, which is weaker than a fetch* — is retired. The confirmation is now
+one paste, and it is stronger than the fetch a session ever wanted.
+
+**The honest cost, recorded because this file is for that.** This row could have
+closed an hour earlier. The report carried everything needed except the name of
+the origin it came from, so the question had to go back to Noah, who answered it
+in two words. The missing `location.origin` line is logged below and is now the
+first thing to add to the diagnostic — a report that cannot say where it came
+from cannot close a verification on its own.
 
 **What closed the staging half, and it took no new code.** Noah sent the §7f
 diagnostic from his device on 2026-08-03. It reported:
@@ -992,19 +1041,19 @@ inside that fetched `sw.js`. So a real device, on the real network path, has now
 demonstrated that the deployed `sw.js` carries the released triplet — which is
 exactly the assertion this row said no session could make.
 
-**Stated precisely, because the distinction is the whole point of this file:**
+**Stated precisely, because the distinction is the whole point of this file.**
+At the time, only this much was proven: the origin serving build 1.18.0 served a
+`sw.js` whose `CACHE` was `quietkeep-1.18.0`, matching `staging`'s commit, at the
+moment the worker installed on his device. That the origin was
+`staging.quietkeep.pages.dev` was **inferred, not read** — 1.18.0 existed only on
+`staging`, so the inference was sound, and it was still an inference. Production
+was untouched: it served 1.17.4, which ships no diagnostic at all, so no report
+could be taken from it by anyone.
 
-- **Proven:** the origin serving build 1.18.0 served a `sw.js` whose `CACHE` is
-  `quietkeep-1.18.0`, matching `staging`'s commit, at the moment the worker
-  installed on his device.
-- **Inferred, not read:** that the origin was `staging.quietkeep.pages.dev`. The
-  report does not name the host it was loaded from. 1.18.0 exists only on
-  `staging`, so the inference is sound — but it is an inference, and the report
-  should name its origin so the next one does not need one. That is a defect in
-  the diagnostic, logged as such.
-- **Still unproven:** production. `quietkeep.pages.dev` serves 1.17.4, which
-  ships no diagnostic at all, so no report can be taken from it by anyone. The
-  production half of V-15 is open and is blocked on the promote — see below.
+**Both of those are now settled by the production reading above**, and the
+sequence is kept rather than tidied because it is the argument for the fix: the
+staging report was one line short of self-sufficient, and so was the production
+one.
 
 **Why this is worth more than the fetch the session wanted.** Doctrine §7f says
 to put the check where the device can run it. The instrument that answered this

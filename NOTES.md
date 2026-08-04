@@ -445,16 +445,23 @@ decided by a session.**
   **`CLOUDFLARE_API_KEY`** (the workflow accepts either that or `CLOUDFLARE_API_TOKEN` and
   logs which name it found). `main` → `quietkeep.pages.dev`, `staging` →
   `staging.quietkeep.pages.dev`. Both have deployed successfully from CI.
-- **No session has ever read production, and the 2026-08-03 attempt narrowed why.**
-  This remains true after re-testing in a fresh container following Noah's
-  `*.pages.dev` grant: every `pages.dev` host is still refused 403 at CONNECT,
-  including `noahjefferson.pages.dev`, while GitHub and the package registries
-  answer normally. The grant is not reaching sessions at all — it is not the
-  "policy binds at container start" theory, which a container thirty-nine seconds
-  old has now falsified. Full evidence with timestamps and per-host status codes
-  in [V-15](docs/verifications.md). **Do not spend another session re-testing
-  this**; the route to closing V-15 is now a probe in the §7f diagnostic that
-  runs on Noah's device, not a fetch from a session.
+- **PRODUCTION HAS BEEN READ — [V-15](docs/verifications.md) is CLOSED,
+  2026-08-04.** Noah's §7f diagnostic, taken on the instance installed on his
+  home screen and confirmed by him to be the plain production sync host, reported
+  `Service worker cache: quietkeep-sync-1.18.0` — read from live Cache Storage,
+  per-origin, created by the `sw.js` the browser fetched, whose name is derived
+  from the release triplet by `tools/editions.mjs:132`. The deployed `sw.js` on
+  production carries the released triplet. **The caveat attached to all six
+  promotes in this repo is retired**, and every promote after this is confirmed
+  by one paste rather than by a green deploy step.
+- **A session still cannot read production, and that is a different fact.** Every
+  `pages.dev` host is refused 403 at CONNECT — re-tested 2026-08-03 in a fresh
+  container after Noah's `*.pages.dev` grant, including `noahjefferson.pages.dev`,
+  while GitHub and the package registries answer normally. The grant is not
+  reaching sessions at all; the "policy binds at container start" theory was
+  falsified by a container thirty-nine seconds old. **Do not spend another session
+  re-testing this.** It no longer blocks anything: the app carries the instrument
+  now, and Doctrine §7f is the route — put the check where the device runs it.
 - **`main` was promoted to troubleshoot, and it worked** (Noah, 2026-07-28: *"Promote to
   main to troubleshoot"*). Nothing would load on his iPad at the time, so the §7 pass could
   not happen first. The promote gave the Pages project its **first production deployment**,
@@ -505,12 +512,16 @@ The Sync edition deploys alongside it at
 **https://quietkeep-sync.pages.dev** (staging:
 **https://staging.quietkeep-sync.pages.dev**).
 
-**One thing outstanding for Noah, and it is one paste.** Production carries the
-diagnostic for the first time, which is the only thing that was ever blocking
-[V-15](docs/verifications.md)'s production half. Open
-**https://quietkeep.pages.dev**, press the build number at the bottom of the
-screen, and send the report. If its `Service worker cache:` line reads
-`quietkeep-1.18.0`, V-15 closes completely after five promotes of standing open.
+**That paste has been made and [V-15](docs/verifications.md) is CLOSED.** Noah's
+diagnostic from the production sync host read `quietkeep-sync-1.18.0`, which is
+the first time production has ever been read in this project. Nothing is
+outstanding for him on the release itself.
+
+**What IS outstanding, in his hands and not a session's:** the newest whole copy
+was **Thu 30 Jul** with work since, on a store holding 3,338 events. Sync across
+stores is redundancy, not a backup — it carries a bad delete as faithfully as a
+good one, and [`docs/data-constitution.md`](docs/data-constitution.md) makes
+export the durability story.
 
 This block exists because `handoff-check.mjs` failed the repo for not having
 one, and it was right: `NOTES.md` had mentioned the hostname in prose for weeks
