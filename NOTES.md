@@ -333,7 +333,25 @@ decided by a session.**
 
 ### Open
 
-*(Nothing open.)*
+- **Q-11 · Is "not seeing the right things" a RANKING problem or a TRUST
+  problem?** Noah, 2026-08-04: *"had no feeling that I was seeing the right
+  things."* The two readings need opposite work and the wrong guess wastes a
+  release — which is exactly what happened when an earlier session inferred
+  "volume" and built `pressureBands` on it.
+  - **If ranking:** the wrong items are surfacing, and the fix is in what
+    `nextUp` considers (see the azimuth finding below — everything it ranks on
+    is temporal).
+  - **If trust:** the right items are surfacing and nothing gives him grounds to
+    believe it. The fix is a law-4 analogue of the coverage gauge: a visible
+    proof of judgement, the way the gauge is a visible proof of integrity.
+  - Status: **asked, not answered.** Do not build past this on a guess.
+- **Q-12 · `Not this` records nothing, deliberately. Is that trade still right?**
+  Declining a suggestion writes no event, so the app can never keep score — which
+  is correct for this audience and is why the rule exists. It also means the app
+  can never learn what matters to him, which is one of the two candidate causes
+[personal information removed]
+  shame-avoidance this protects is real rather than theoretical; the question is
+  whether "records nothing" is the only way to get it.
 
 ### Closed
 
@@ -546,6 +564,49 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — AZIMUTH CHECK, at Noah's request. Three findings, recorded
+  because they outrank anything currently on the roadmap.** He asked whether this
+  app is what it needs to be, or is fulfilling thesis statements. His own
+  diagnostic answers a good deal of it.
+  · **1. ELEVEN OF FOURTEEN NODE KINDS ARE EMPTY.** After a 1,173-item import and
+  real use: action 1405, project 44, upkeep 1, resume-card 1, and **zero** of
+  outcome, area, goal, waiting-for, aspiration, bother, pebble, journal, person,
+  anchor. Eleven kinds with machinery, tests, ADRs and UI, holding nothing. Some
+  are legitimately not-yet-reached; eleven of fourteen is not a gap but a signal
+  that a good deal was built because the model said the noun should exist, not
+  because use demanded it. **Every unused surface is paid for forever** by the
+  a11y gate, the smoke walk and every future session.
+  · **2. EVERYTHING RANKS ON *WHEN*. NOTHING RANKS ON WHAT MATTERS.** `nextUp`
+  ranks hard-date → resume-card → pressure: date is time, pressure is time,
+  resume is recency. Triage's routes had the same bias one level up — all six
+  answered *when*, which is what 1.19.0's `filed` route corrected. So Next up
+  picks by pressure across a flat pile of 1,405 items, and *"no feeling that I
+  was seeing the right things"* is not a mood — it is that **nothing about
+  importance is in the ranking function.**
+  · **Law 4 is the correction and is unbuilt.** *"Higher horizons project lineage
+  and health downward; the runway is the only workspace."* Nothing implements the
+  projection — containers hold things, they do not inform what surfaces. It is
+  the app's most distinctive claim and its least-realised one.
+  · **3. THE PROOF ASYMMETRY, which is the sharpest way to say all of it.** Law 2
+  gives the reader a visible proof that nothing is LOST — the gauge, on screen,
+  tappable, "everything returns · 0 silent". **There is no equivalent proof that
+  what he is being shown is RIGHT.** The app can demonstrate its integrity and
+  cannot demonstrate its judgement. The single highest-value thing to build is
+  the law-4 analogue of the coverage gauge — but only after Q-11 says whether the
+  problem is ranking or trust.
+  · **And the paradigm reading, which is why this matters beyond a feature list.**
+  GTD and everything downstream assumes the bottleneck is capture and
+  organisation, because for the cognition those were designed around, retrieval
+  and initiation are close to free. Quietkeep has built that half better than most
+  commercial products — the write gate, the append-only log, the coverage proof,
+  the decay primitive. **It is also the half that already exists elsewhere.** The
+  half that would make this unlike any other planner is retrieval, initiation and
+  trust, and that half is thin. The import proved it: capture was solved
+  instantly, and what broke was *where did it go* and *is this the right thing*.
+  · **Law 10 (AI never blocks) has no implementation at all.** No AI module
+  exists. That is fine as a standing constraint on future work, and it should be
+  labelled a constraint rather than counted as a law the app fulfils.
 
 - **2026-08-04 — `main` is at `1.19.0` (`4b01ba6`), promoted on Noah's "Promote
   to main", carrying 1.18.4 with it.** Production can now answer WHERE. Promoted
