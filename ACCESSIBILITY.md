@@ -1159,3 +1159,26 @@ and status ran together as "a held thoughtnot sorted yet" — which reported a
 duplicate under a name no reader would recognise. Both fixed before the gate was
 believed (§37: ask whether the pixels are the ones it thinks; §33: a check that
 cannot see a thing reports the wrong diagnosis).
+
+### B-40 · The place line says where, in ink already measured (1.20.0)
+
+V2 stage 1. The offer's head card, the rows behind it, and the upkeep chips
+gain a lineage line — "in Errands · under Home" — and the filing flow gains a
+visible receipt ("Filed under Errands — no return date yet.").
+
+- **No new colour pair ships.** Every new span reuses a text class the
+  contrast registry already measures on the same surface (`.nextup-why`,
+  `.behind-why`, `.chip-why`); the modifier classes (`.nextup-place`,
+  `.behind-place`, `.chip-place`) change layout only. Same ink, same paper,
+  one more line — so the registry's existing rows cover it, and the
+  same-commit rule (hub LESSONS §28) is satisfied by construction rather than
+  by a new registry entry that could drift.
+- **The receipt reuses the `.triage-undo-where` bar**, already registered and
+  already live-region-paired (`#triage-live`), so screen readers hear the same
+  sentence the bar shows.
+- **Silence is the accessible default for bareness.** A loose item shows no
+  place line at all — `hidden`, not empty text — so a screen reader is not fed
+  an empty paragraph, and "in nothing" is never rendered or announced.
+- **Voice held by test:** the receipt's no-date branch is pinned to never
+  carry "overdue", "late", "still", "haven't", "you should", or "behind" —
+  the reproach vocabulary a factual sentence drifts toward one word at a time.

@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.20.0 — CAPABILITY
+
+*2026-08-04*
+
+- **Everything offered now says where it sits.** The suggestion, the list behind it, and the upkeep chips carry a place line — “in Errands · under Home” — so what surfaces is never just a task out of nowhere.
+- **Filing gives you a receipt.** “Filed under Errands — it comes round Thursday”, or, honestly, “no return date yet.” That second one matters: a place made on the spot has no return date until you give it one, and the receipt is where you find that out — the control to set it is the next release.
+
 ## 1.19.0 — CAPABILITY
 
 *2026-08-04*
