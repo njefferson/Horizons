@@ -612,6 +612,39 @@ and the register classifies each one.
 
 ### Log
 
+- **2026-08-04 — 1.20.0 PROMOTED to `main` on Noah's word.** `main` had carried
+  a revert of the 1.20.0 code since `c6e7182`, because it had reached `main`
+  once without his word; `staging` reapplied it at `002e195`. The promote is a
+  merge of `staging` `d6e36be` into `main`, and the check that matters is that
+  `main`'s tree came out IDENTICAL to the staging tree that was verified —
+  asserted with `git diff --quiet`, not assumed from a clean merge. 974 tests,
+  typecheck, privacy and no-grid gates green locally before the push; Spine
+  green on the pushed head. Cache name still carries `quietkeep-1.20.0`.
+
+- **2026-08-04 — The privacy gate was not reading the two files that held the
+  material.** `privacy-check.mjs` and `test/privacy.test.ts` exempted
+  themselves from their own scan, on the reasoning that a pattern is not a
+  disclosure. True of the patterns, false of every other line: their header
+  prose went unscanned, and this repo's test fixtures were the sentences the
+  gate exists to exclude, reproduced verbatim in a PUBLIC repo and labelled as
+  authentic. The gate had been reporting green over them for a day — green
+  meant NOT LOOKED AT, and a session reported that green to Noah as
+  verification. What changed: no file is exempt; only a sentinel-marked region
+  of pattern source is skipped; that region is itself held to a second rule
+  (no proper name, no date) with its own test, so the one place the patterns
+  do not read cannot hold a sentence about a person; regex literals inside the
+  region are set aside before that guard runs. Fixtures are now SYNTHETIC —
+  bare pronouns and bracketed placeholders — and a new test requires every
+  pattern to be exercised by at least one probe. Seen red on three local
+  plants, each discarded uncommitted. Landed on `staging`, `main` and the hub.
+  **Still outstanding and Noah's call: the same sentences remain in git
+  HISTORY on both repos, in several commits and two commit messages.** A
+  pattern-based rewrite is written and unrun; it force-pushes `main` and
+  `staging`, so it waits for his explicit word. Force-pushing does not purge
+  GitHub's copies — old commits stay reachable by SHA until GitHub collects
+  them, which is why making the repos private is the only step that closes it
+  immediately.
+
 - **2026-08-04 — The privacy FAIL state is doctrine now, and a HARD CI gate.**
   Noah, hours after stating the rule for this repo: *"Personal/embarrassing
   info in the repo should be a HARD gate for ALL apps."* Said twice in one
