@@ -538,6 +538,38 @@ handed over (Doctrine §7).
 
 ### Log
 
+- **2026-08-04 — NOAH SAID WHAT ENDS THE DAY, AND IT IS NOT WHAT I INFERRED.**
+  Read this before building anything else.
+  · His words: *"I have a huge backlog, and I imported it to work through and put
+  in the right places, but keep finding that the places were not there, yet.
+  That's the problem. I'd see the task leave and not know where/if it went, and
+  had no feeling that I was seeing the right things."*
+  · **What I had inferred, and it was wrong.** I read the first diagnostic as
+  volume — a surface opening with 1,275 things asking — and built `pressureBands`
+  (1.18.3) on that. The data was there and I misread it: **area 0, goal 0,
+  outcome 0, waiting-for 0** against 1,405 actions. I called that "two nouns out
+  of fourteen in use", an observation about usage. **It is the problem itself.**
+  The places do not exist, so nothing can be filed into them. "On the Menu: 0"
+  and "In the Not Now ledger: 0" said the same thing and I connected neither.
+  · **The structural gap, read from the code rather than guessed.**
+  `routeEvents` (`src/ui/triage-intents.ts:76`) takes **no parent**. All six
+  routes set a CLOCK (`do-now`, `next-action`, `waiting-for`) or put the node on
+  the MENU (`someday`, `reference`), or trash it. **Triage answers *when*, and
+  never *where*.** Nothing on that surface can say "this belongs under that
+  project", and the project cannot be created in the flow — parenting lives in
+  the detail sheet (`#detail-parent-create`), which is a separate trip per item.
+  For a 1,173-item import that is the whole difficulty.
+  · **What is NOT the defect, checked rather than assumed:** the confirmation is
+  not missing. `showUndo` renders a visible `Sent to {route}.` bar with an Undo.
+  I first concluded it was invisible because `#triage-live` is `visually-hidden`,
+  and that was wrong — the live region is the screen-reader channel and the bar
+  is the visible one. What "Sent to Next action" cannot do is name a **place he
+  can go and look at**, because the route is a category and not a location.
+  · **So the work is: file into a place from triage, and make the place when it
+  is not there.** Not more measurement. `pressureBands` stays — it is honest and
+  it costs nothing — but it is not the instrument that explains his day, and this
+  entry supersedes the three places I said it was.
+
 - **2026-08-04 — 1.18.4 (ITERATION) staged: the label-in-name gate, and the five
   defects it found on its first run.** Hub LESSONS §29 has been the rule since
   2026-08-03 and was **prose in this repo** — the exact thing §29 itself is about.
