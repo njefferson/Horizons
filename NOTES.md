@@ -581,8 +581,22 @@ handed over (Doctrine §7).
   panel's 9,000px budget is now binding two releases running. 1.18.0 sat at
   8,813; this release's first draft reached **8,985 — fifteen pixels of
   headroom** — and the notes were shortened for the second release in a row.
-  Collapsed older releases are not the cause and bounding them would not help.
-  Nobody has measured what the baseline is made of. ADR-0072 says so.
+  · **Then it was measured, and it is not the changelog.** The `.note-older`
+  `<details>` holding all 81 earlier releases is **44px** collapsed — the obvious
+  culprit contributes nothing. At a 390px viewport the panel is 11,661px, and
+  **`#group-extras` alone is 5,695px**: about thirty explanatory paragraphs, a
+  form, and action rows, accumulated a paragraph at a time. That is the surface
+  §4 wants folded, and no amount of terser release notes will touch it.
+  · **The budget is also measured on the friendliest viewport, which is worse.**
+  `tools/smoke.mjs` creates its context with no `viewport`, so Playwright's
+  default **1280x720** applies. The same panel that reads 8,782px there is
+  **11,661px at 390px wide** — prose that fits one line on a desktop wraps to
+  three on a phone. This is an iPad-first project (Doctrine §2) and §4 names the
+  narrow-phone case explicitly. **Not fixed here on purpose:** adding a narrow
+  viewport turns that assertion red by ~2,600px, and failing a candidate Noah is
+  holding, for a defect it neither introduced nor touches, is the wrong trade.
+  Numbers are in [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md) so
+  the next session can act instead of re-deriving.
 
 - **2026-08-04 — THE FIRST REAL USAGE DATA THIS REPO HAS EVER HELD.** Noah sent
   a §7f diagnostic from his actual instance: the **sync edition, 1.18.0,

@@ -118,16 +118,40 @@ them rather than to the reader:
 - Shortened to three notes for this release, which is the second time the fix has
   been "write less" rather than "make the surface bounded".
 
-**Older releases are NOT the cause and bounding them would not help.** They
-render inside a collapsed `<details>`, which contributes no height. The pressure
-is that the LATEST release renders expanded, so every release pays for its own
-notes on top of a baseline near the ceiling — and the baseline is what nobody has
-measured.
+**Older releases are NOT the cause and bounding them would not help.** Measured
+rather than assumed: the `.note-older` `<details>` holding all 81 earlier
+releases is **44px** collapsed. It contributes nothing. Anyone reaching for the
+changelog as the obvious culprit — which is the obvious reach — would spend the
+afternoon in the wrong file.
 
-**So the next session that touches this panel should measure what the 8.8k is
-made of before writing another short changelog.** §4 asks for a surface that
-folds or paginates, and this one only folds its history. Writing terser notes is
-a workaround with a known expiry, and the expiry is one release away.
+**It was measured, and the answer is prose.** With every group expanded at a
+390px viewport, the panel is 11,661px and breaks down as:
+
+- **`#group-extras` — 5,695px, very nearly half the panel.** Not notes: roughly
+  thirty `<p class="about-p">` and `about-caveat` paragraphs, an `anchor-form`,
+  and action rows. Explanatory text that has accumulated a paragraph at a time.
+- `#group-data` — 1,871px
+- `#group-about` — 1,270px
+- `install-steps` — 845px
+- `#group-help` — 490px
+
+So the surface to fold is `group-extras`, and the fix §4 asks for is pagination
+or progressive disclosure inside it — not shorter changelogs, which is what the
+last two releases actually did.
+
+**And the gate is measuring the friendliest case, which is the sharper finding.**
+`tools/smoke.mjs` builds its context with no `viewport`, so Playwright's default
+**1280x720** applies and the panel measures 8,782px — comfortably under 9,000. At
+**390px wide the same panel is 11,661px**, because prose that fits on one line at
+desktop width wraps to three on a phone. The budget is passing on the widest
+viewport this app will ever see, on an **iPad-first project** (Doctrine §2),
+while §4 requires the narrow-phone case explicitly and by name.
+
+**Deliberately NOT fixed here.** Adding a narrow viewport to that assertion turns
+it red immediately — by roughly 2,600px — and 1.18.1 is a §7h fix awaiting Noah's
+on-device pass. Failing the candidate he is holding, for a defect it did not
+introduce and does not touch, would be the wrong trade. It is written down with
+the numbers instead, which is what the next session needs to act on it.
 
 ## What this does NOT do
 
