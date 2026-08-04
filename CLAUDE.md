@@ -29,6 +29,13 @@ Epigraph: *"It holds the rest, so you can rest."*
    checked and what merely looks checked. Consult before assuming a platform fact.
 
 ## Rules specific to this app
+- **NOTHING PERSONAL ABOUT THE OWNER EVER LANDS IN THIS REPO — a FAIL state**
+  (Noah, 2026-08-04, after a session did exactly this). No diagnosis, health
+  fact, or identity disclosure attached to him, in any file, commit message, or
+  PR body. The product's framing ("for neurodivergent users") and research
+  about users as a population are fine; a sentence linking HIM to any of it is
+  not. Gated by `test/privacy.test.ts` (CI) and the hub's `privacy-check.mjs`.
+  Design statements he makes stay recordable; who he is does not.
 - **The ten product laws in `NOTES.md` are invariants.** Violating one is a
   defect, not a trade-off. Two carry teeth in code: *no silent nodes* (every node
   is on a surface, under a clock, on the Menu, or parented to something under a

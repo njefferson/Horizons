@@ -365,9 +365,10 @@ decided by a session.**
   Declining a suggestion writes no event, so the app can never keep score — which
   is correct for this audience and is why the rule exists. It also means the app
   can never learn what matters to him, which is one of the two candidate causes
-[personal information removed]
-  shame-avoidance this protects is real rather than theoretical; the question is
-  whether "records nothing" is the only way to get it.
+  of Q-11. The shame-avoidance this protects is a standing design commitment of
+  this app (see [`docs/nd-collisions.md`](docs/nd-collisions.md)), not a
+  theoretical one; the question is whether "records nothing" is the only way to
+  get it.
 
 ### Closed
 
@@ -690,9 +691,8 @@ and the register classifies each one.
   named research, what conventional systems do wrong, what this app already
   does (cited to its own ADRs), and a build/later/refuse routing. Noah asked
   for it by name. Its refusals are as load-bearing as its builds.
-  · **Noah's statements recorded verbatim this session, because sessions keep
-[personal information removed]
-  app is primarily for himself. *"Next up is literally all of those things,
+  · **Noah's design statements recorded verbatim this session, because sessions
+  keep paying for not writing them down:** *"Next up is literally all of those things,
   though — I need to know when to see which one."* On recurring work: *"I
   don't see where a recurring 'clean the bathroom sink' would go?"* — which
   produced the two-kinds-of-mattering frame (standards return by pressure,
@@ -701,9 +701,8 @@ and the register classifies each one.
   putting enough energy and effort into each?"* — answered structurally:
   horizon visits are sink-class work on the existing decay primitive; the
   mountain comes down on a clock. On Eisenhower: *"guilt and shame in three
-  quadrants."* And: *"I do not want to overextend myself, but if I make a
-  great product, I don't want to die with it"* — a sustainability thread,
-  recorded, deliberately not built now.
+  quadrants."* And a sustainability direction: the product should be able to
+  outlive its maker — recorded as a thread, deliberately not built now.
 
 - **2026-08-04 — AZIMUTH CHECK, at Noah's request. Three findings, recorded
   because they outrank anything currently on the roadmap.** He asked whether this
