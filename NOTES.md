@@ -563,7 +563,81 @@ one, and it was right: `NOTES.md` had mentioned the hostname in prose for weeks
 but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
+### The Block register
+
+*(Opened 2026-08-04 with the V2 plan. Noah, verbatim: "Until we reach the full
+product, I cannot do a stability test at all — I am still finding hard blocks
+vs things to adjust." This register is that split, made a record. One line per
+ended day: the date, what ended it, whether it was a hard block or an
+adjustment, and the release that answers it. It is always about the APP, never
+about him — "what ended the day", never "what you didn't do". ADR-0019 already
+knew this: the note about why a day ended is worth more than the thirty days.)*
+
+- *(no entries yet — the first one arrives with his next report)*
+
+**Proposed, awaiting Noah's word (decision 6 of the V2 plan):** the dogfood
+gate keeps its definition and its counter untouched, and is RESTYLED as the
+*full-product gate* — not runnable until he says "full product exists", with
+this register as the primary instrument until then. This reconciles his
+2026-08-03 correction ("the gate has always been running") with his 2026-08-04
+statement (no stability test is possible yet): the resets are measurements,
+and the register classifies each one.
+
 ### Log
+
+- **2026-08-04 — THE V2 PLAN IS APPROVED, and the deep pass that produced it
+  found a defect in 1.19.0 that outranks everything else in it.**
+  · **The hollow return, verified by hand and by three agents independently.**
+  A place minted at file time is cured with `source: 'gate:node.created'`
+  (`src/gate.ts:636-639`), which `isAppClock` (`src/fold.ts:59-69`) excludes
+  from `soonestDemand` (`src/held.ts:93`) and from `arrivedClock`
+  (`src/nextup.ts:101`) — so **a place made by filing never comes round on any
+  surface**. And `fileUnderEvents` clears EVERY clock on the filed item, so a
+  filed item can never satisfy `arrived` — **invisible to every `nextUp`
+  tier**. 1.19.0's own docblock — "the place comes back, and its contents come
+  back with it" — is true at the coverage layer (law 1 holds; nothing is
+  silent) and **false at the return layer**. Nothing is lost; nothing returns.
+  The filed backlog is safe and invisible, which is the exact complaint the
+  feature was built to end, one layer down. Stages 1–3 of the V2 plan make the
+  shipped promise true.
+  · **The paradigm, one breath:** what you declared governs what returns —
+  every filed thing names where it went and when it comes back, the place
+  comes back carrying it, and everything shown says why it is here, under a
+  rule short enough to read. Never a score, never a grade, never a memory of
+  a skip.
+  · **Mechanics:** zero new event kinds, zero new fold fields, zero
+  migrations. The one new write is a human-sourced `clock.set { review }` on
+  a container — legal, gated and folded TODAY; verified that it flows into
+  held's soon/ready with no code change, raises no replan card
+  (`NO_REPLAN_CARD`), and cannot enter `nextUp` (`NOT_ACTIONABLE`). The whole
+  return mechanism already exists; nothing writes the clock yet.
+  · **Staged 0–7, each gated on Noah's on-device pass and his words**, with
+  nine decision points that are his alone — including Q-11 asked WITH evidence
+  after stages 1–3 rather than answered by guess, Q-12 untouched by default,
+  the noun cull, and where a `'place'` offer reason would sit if it ever
+  graduates (only if Q-11 says *ranking*). Full plan in the session plan file;
+  durable parts land in this repo as the stages ship. Rotation-by-arithmetic
+  was designed, adversarially killed (a second temporal primitive — law 5),
+  and is recorded as rejected rather than resurfacing next quarter.
+  · **The collision catalogue is committed** —
+  [`docs/nd-collisions.md`](docs/nd-collisions.md), 23 entries, each with the
+  named research, what conventional systems do wrong, what this app already
+  does (cited to its own ADRs), and a build/later/refuse routing. Noah asked
+  for it by name. Its refusals are as load-bearing as its builds.
+  · **Noah's statements recorded verbatim this session, because sessions keep
+[personal information removed]
+  app is primarily for himself. *"Next up is literally all of those things,
+  though — I need to know when to see which one."* On recurring work: *"I
+  don't see where a recurring 'clean the bathroom sink' would go?"* — which
+  produced the two-kinds-of-mattering frame (standards return by pressure,
+  correctly; directed work returns by declaration, currently missing). On
+  horizons: *"When do I review my goals? My roles? When do I visit whether I'm
+  putting enough energy and effort into each?"* — answered structurally:
+  horizon visits are sink-class work on the existing decay primitive; the
+  mountain comes down on a clock. On Eisenhower: *"guilt and shame in three
+  quadrants."* And: *"I do not want to overextend myself, but if I make a
+  great product, I don't want to die with it"* — a sustainability thread,
+  recorded, deliberately not built now.
 
 - **2026-08-04 — AZIMUTH CHECK, at Noah's request. Three findings, recorded
   because they outrank anything currently on the roadmap.** He asked whether this
@@ -584,10 +658,15 @@ handed over (Doctrine §7).
   picks by pressure across a flat pile of 1,405 items, and *"no feeling that I
   was seeing the right things"* is not a mood — it is that **nothing about
   importance is in the ranking function.**
-  · **Law 4 is the correction and is unbuilt.** *"Higher horizons project lineage
-  and health downward; the runway is the only workspace."* Nothing implements the
-  projection — containers hold things, they do not inform what surfaces. It is
-  the app's most distinctive claim and its least-realised one.
+  · **Law 4 is the correction and is HALF-built** *(corrected 2026-08-04 by the
+  V2 deep pass — the first version of this entry said "unbuilt", which
+  overstated)*. ADR-0013's four Review exceptions ARE implemented in
+  `src/review.ts` — stalled, orphaned, unfed-goal, quiet-area, capped at 3.
+  What is genuinely unbuilt is the **projection into surfacing**: Review is a
+  separate read-only panel, and nothing it computes feeds `nextUp` or any
+  runway surface. Containers hold things; they still do not inform what a
+  reader is shown. The distinctive claim stands as the least-realised one, for
+  the ranking half only.
   · **3. THE PROOF ASYMMETRY, which is the sharpest way to say all of it.** Law 2
   gives the reader a visible proof that nothing is LOST — the gauge, on screen,
   tappable, "everything returns · 0 silent". **There is no equivalent proof that
