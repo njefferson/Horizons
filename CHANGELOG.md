@@ -14,6 +14,12 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.18.3 — ITERATION
+
+*2026-08-04*
+
+- **The report now says what has actually come round again** — how many things are asking, and how long they have been waiting, in the same gentle words the app already uses. It used to count the clocks that exist, which is a different number and never the one that explains a day that ended early.
+
 ## 1.18.2 — ITERATION
 
 *2026-08-04*

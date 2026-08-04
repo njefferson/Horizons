@@ -61,6 +61,7 @@ import { journalSeal } from './journal.ts';
 import { menuCount } from './menu.ts';
 import { notNowLedger } from './requests.ts';
 import { loadNow } from './load.ts';
+import { isReadyAgain, pressureOf, pressureWords } from './pressure.ts';
 import { recordDayWords } from './time.ts';
 
 /** What the UI has to go and find out. Every one of these is a fact about the
@@ -229,6 +230,55 @@ export function clockCounts(state: State): Record<string, number> {
  * this report deliberately does not contain, because a reader about to send a
  * file deserves to know what is in it before they do.
  */
+/** The five bands `pressureWords` speaks, in the order insistence rises. Named
+ *  here so the report cannot invent a sixth or reorder them by accident. */
+const BANDS = ['settled', 'coming round', 'ready again', 'been a while', 'been a good while'] as const;
+
+/**
+ * What the surfaces OPENED WITH — the count of things that have come round
+ * again, and how long they have been waiting, in the app's own words.
+ *
+ * WHY THIS IS IN THE REPORT, and it is the most important thing here.
+ *
+ * The v1 definition of done is the dogfood gate: thirty consecutive working
+ * days run from the app's views. It has been running the whole time and the app
+ * has been losing (LESSONS §40 — an absent record of success is not an absent
+ * attempt). This repo held no data about WHY, because sessions asked for
+ * promotes and on-device passes instead of asking what ended the day.
+ *
+ * The first real report, 2026-08-04, showed 1,432 held and `review 1275` under
+ * "clocks in use" — and that number cannot answer the question, because clocks
+ * IN USE counts clocks that EXIST, not ones that are asking. A day that ends
+ * early is a day whose surface opened with more on it than a person can face,
+ * and nothing in this app could say what that surface showed.
+ *
+ * **No cliff, and no new vocabulary.** This counts `isReadyAgain` and buckets by
+ * `pressureWords`, which are the same primitive and the same five phrases the
+ * UI already speaks — deliberately gentle at the top end, because past a point
+ * an exact number is not something a person can act on and naming it precisely
+ * reads as an accusation (ADR-0010). There is no "overdue" here and there will
+ * not be one.
+ */
+export function pressureBands(
+  state: State, nowIso: string, zone: string,
+): { bands: Record<string, number>; readyAgain: number; withClock: number; withoutClock: number } {
+  const bands: Record<string, number> = Object.fromEntries(BANDS.map(b => [b, 0]));
+  let readyAgain = 0, withClock = 0, withoutClock = 0;
+  for (const n of heldNodes(state)) {
+    const p = pressureOf(n, nowIso, zone);
+    // `null` is not a failure and not a zero: an item with no cadence ranks by
+    // its own clock instead, and counting it as comfortable would overstate how
+    // settled the store is (LESSONS §23 — "the source gave me null" is not the
+    // same fact as "this is unknowable").
+    if (p === null || !Number.isFinite(p)) { withoutClock += 1; continue; }
+    withClock += 1;
+    if (isReadyAgain(p)) readyAgain += 1;
+    const w = pressureWords(p);
+    if (bands[w] !== undefined) bands[w] += 1;
+  }
+  return { bands, readyAgain, withClock, withoutClock };
+}
+
 export function diagnosticReport(
   state: State, log: readonly AppEvent[], r: DeviceReading, nowIso: string,
 ): string {
@@ -298,6 +348,20 @@ export function diagnosticReport(
   L.push(`  Clocks in use: ${Object.keys(clocks).length === 0
     ? 'none'
     : Object.entries(clocks).sort().map(([k, v]) => `${k} ${v}`).join(' · ')}`);
+  L.push('');
+
+  // The line above counts clocks that EXIST. This one counts what is ASKING,
+  // which is a different number and the one that explains a day ending early.
+  const pb = pressureBands(state, nowIso, r.zone);
+  L.push('WHAT HAS COME ROUND AGAIN');
+  L.push(`  Ready again now: ${pb.readyAgain} of ${pb.withClock} that carry a clock`);
+  if (pb.withoutClock > 0) {
+    L.push(`  Held without a clock: ${pb.withoutClock} (they rank by their own, not by pressure)`);
+  }
+  if (pb.withClock > 0) {
+    L.push('  How long they have been waiting, in the words the app uses:');
+    for (const b of BANDS) L.push(`    ${b}: ${pb.bands[b]}`);
+  }
   L.push('');
 
   L.push('THE RECORD');

@@ -501,11 +501,16 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**Nothing is staged and waiting. 1.18.2 was PROMOTED on 2026-08-04** — Noah's
-*"Promote to main"*. `staging` and `main` are both at `db5552a`.
+**1.18.3 is on `staging` and has not been promoted.**
 
-- **https://quietkeep.pages.dev** — production, now **1.18.2**
-- **https://staging.quietkeep.pages.dev** — the same commit, nothing newer staged
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.18.3**
+- **https://quietkeep.pages.dev** — production, **1.18.2**
+
+**What it adds, and it is aimed squarely at the dogfood gate:** the report now
+says **what has come round again** — how many things are asking, and how long
+they have been waiting, in the app's own five phrases. The old line counted
+clocks that EXIST (`review 1275`), which is a different number and can never
+explain a day that ended early.
 
 The Sync edition deploys alongside it at **https://quietkeep-sync.pages.dev**
 (staging: **https://staging.quietkeep-sync.pages.dev**).
@@ -531,6 +536,31 @@ but never as a URL a person can tap. A staged candidate nobody can reach is not
 handed over (Doctrine §7).
 
 ### Log
+
+- **2026-08-04 — 1.18.3 (ITERATION) staged: the number that could explain a day
+  ending.** The first real usage data arrived today and the report could not
+  answer the only question that matters. It said `Clocks in use: review 1275` —
+  which counts clocks that EXIST, not clocks that are ASKING. A day that ends
+  early is a day whose surface opened with more on it than a person can face,
+  and nothing in this app could say what that surface showed.
+  · **`pressureBands` now reports what has come round again**, using the existing
+  primitive rather than inventing anything: `isReadyAgain` for the count and
+  `pressureWords` for the five bands the UI already speaks — *settled, coming
+  round, ready again, been a while, been a good while*. **No new vocabulary, no
+  cliff, and no "overdue"**, which is banned in schema, variable names and copy
+  alike because for this audience that word is a shame surface and shame
+  produces the avoidance that made the thing late (ADR-0010).
+  · **Two things that are easy to get wrong, both pinned by tests and both
+  proved by planting.** An item NEVER DONE is *ready again*, not the loudest
+  band — `pressureOf` returns 0 for `lastDone == null` deliberately, and a store
+  of fresh upkeeps reporting as a wall of "been a good while" would be exactly
+  the shame surface the primitive exists to refuse. And an item with **no
+  cadence is counted apart**, never folded into *settled*: "the source gave me
+  null" is not "this is fine" (LESSONS §23), and folding them would understate
+  how much is asking by however many there are.
+  · The privacy property is untouched and still load-bearing: the new section
+  emits only counts and the app's own fixed phrases, so the two-stores-different-
+  words identical-output test covers it by construction.
 
 - **2026-08-04 — `main` is at `1.18.2` (`db5552a`), promoted on Noah's "Promote
   to main".** Production no longer greets a first-time visitor with *"a newer

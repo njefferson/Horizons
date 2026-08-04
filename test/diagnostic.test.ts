@@ -13,7 +13,7 @@ import assert from 'node:assert/strict';
 
 import { admit, gateOptionsFor, silentNodes } from '../src/gate.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
-import { diagnosticReport, findings, kindCounts, clockCounts, type DeviceReading } from '../src/diagnostic.ts';
+import { diagnosticReport, findings, kindCounts, clockCounts, pressureBands, type DeviceReading } from '../src/diagnostic.ts';
 import { lastCopy } from '../src/copies.ts';
 import { NODE_KINDS } from '../src/events.ts';
 import type { AppEvent } from '../src/events.ts';
@@ -290,4 +290,65 @@ test('diag-words: it carries no score, no verdict and no shame vocabulary (law 5
   const text = diagnosticReport(state, log, wellDevice({ persisted: false }), NOW);
   assert.doesNotMatch(text, /\b(overdue|streak|behind|healthy|score|grade|%)/i,
     'a diagnostic describes; it does not mark the reader out of ten');
+});
+
+// --- what has come round again (1.18.3) -------------------------------------
+//
+// The number that could explain a day ending early. "Clocks in use" counts
+// clocks that EXIST; this counts the ones that are ASKING, which is a different
+// number and the one the dogfood gate needs (LESSONS §40 — the gate has been
+// running the whole time and the app has been losing, and this repo held no
+// data about why).
+
+test('an item never done is READY AGAIN, not the loudest thing in the app', () => {
+  // pressureOf returns 0 for lastDone == null, deliberately: an item you have
+  // not got to yet has not accumulated insistence. If that ever became
+  // Infinity, a store full of fresh upkeeps would report as a wall of "been a
+  // good while", which is the shame surface ADR-0010 exists to refuse.
+  const s = write(emptyState(), [
+    ev('node.created', 'U', { nodeKind: 'upkeep', title: 'x' }),
+    ev('upkeep.interval.set', 'U', { intervalDays: 10, comfortWindowDays: 3 }),
+  ]);
+  const pb = pressureBands(s, NOW, TZ);
+  assert.equal(pb.readyAgain, 1, 'never done counts as ready again');
+  assert.equal(pb.bands['ready again'], 1);
+  assert.equal(pb.bands['been a good while'], 0, 'and NOT as the loudest band');
+});
+
+test('an item with no cadence is counted apart, never as comfortable', () => {
+  // LESSONS §23: "the source gave me null" is not "this is unknowable", and it
+  // is certainly not "this is fine". Folding no-clock items into `settled`
+  // would understate how much is asking by however many of them there are.
+  const s = write(emptyState(), [
+    ev('node.created', 'A', { nodeKind: 'action', title: 'x' }),
+  ]);
+  const pb = pressureBands(s, NOW, TZ);
+  assert.equal(pb.withoutClock, 1);
+  assert.equal(pb.withClock, 0);
+  assert.equal(pb.bands.settled, 0, 'no clock is not the same fact as comfortable');
+});
+
+test('every clocked item lands in exactly one band', () => {
+  const s = write(emptyState(), [
+    ev('node.created', 'U', { nodeKind: 'upkeep', title: 'x' }),
+    ev('upkeep.interval.set', 'U', { intervalDays: 10, comfortWindowDays: 3 }),
+    ev('node.created', 'V', { nodeKind: 'upkeep', title: 'y' }),
+    ev('upkeep.interval.set', 'V', { intervalDays: 4, comfortWindowDays: 2 }),
+  ]);
+  const pb = pressureBands(s, NOW, TZ);
+  const summed = Object.values(pb.bands).reduce((a, b) => a + b, 0);
+  assert.equal(summed, pb.withClock, 'the bands account for every clocked item, once');
+});
+
+test('the report says what has come round again, in the app\'s own words', () => {
+  const s = write(emptyState(), [
+    ev('node.created', 'U', { nodeKind: 'upkeep', title: 'x' }),
+    ev('upkeep.interval.set', 'U', { intervalDays: 10, comfortWindowDays: 3 }),
+  ]);
+  const text = diagnosticReport(s, [], wellDevice(), NOW);
+  assert.match(text, /WHAT HAS COME ROUND AGAIN/);
+  assert.match(text, /Ready again now: 1 of 1 that carry a clock/);
+  // The banned word, in the one place a report would be most tempted to use it.
+  assert.doesNotMatch(text, /overdue/i, 'there is no "overdue" in this app');
+  assert.doesNotMatch(text, /\blate\b/i, 'nor "late"');
 });
