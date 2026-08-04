@@ -14,8 +14,8 @@
 import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
 import {
-  clocksOf, demandClocksOf, fileReceiptWords, fileUnderEvents, fileUnderNewEvents,
-  heatEvents, placeReturnDays, routeEvents, undoRouteEvents,
+  clocksOf, demandClocksOf, fileUnderEvents, fileUnderNewEvents, heatEvents, routeEvents,
+  undoRouteEvents,
 } from './triage-intents.ts';
 import { CONTAINER_KINDS } from '../tree.ts';
 import { timerMinutesOf, timerWords, timerWordsLower } from '../timer.ts';
@@ -274,13 +274,10 @@ export function mountTriage(
    * here, so undo reverses THAT card even after the surface has advanced to the
    * next one.
    */
-  const showUndo = (
-    node: string, route: ClarifyRoute, fromKind: NodeKind, where: string,
-    words?: string,
-  ): void => {
+  const showUndo = (node: string, route: ClarifyRoute, fromKind: NodeKind, where: string): void => {
     if (!undoRegion) return;
     const bar = el('p', 'triage-undo-bar');
-    bar.append(el('span', 'triage-undo-where', words ?? `Sent to ${where}.`));
+    bar.append(el('span', 'triage-undo-where', `Sent to ${where}.`));
     const btn = el('button', 'linklike triage-undo-btn', 'Undo');
     btn.type = 'button';
     btn.addEventListener('click', () => {
@@ -345,21 +342,10 @@ export function mountTriage(
     back.append(el('span', 'route-label', 'Back'), el('span', 'route-hint', 'keep deciding when instead'));
     back.addEventListener('click', () => renderClarify(nodeId, text, kind, heat));
 
-    // The receipt (V2 stage 1). Computable BEFORE the commit in both paths: an
-    // existing place's clocks are already in state, and a place minted by the
-    // file itself has, by construction, no human clock yet — so its receipt is
-    // always the honest no-date branch. That branch is the hollow-return
-    // finding surfaced to the one person who can date the place.
-    const fileInto = (
-      make: (c: Parameters<Session['commit']>[0] extends (ctx: infer C) => unknown ? C : never) => AppEvent[],
-      where: string,
-      place: import('../fold.ts').NodeState | null,
-    ): void => {
+    const fileInto = (make: (c: Parameters<Session['commit']>[0] extends (ctx: infer C) => unknown ? C : never) => AppEvent[], where: string): void => {
       clearUndo();
-      const receipt = fileReceiptWords(
-        where, placeReturnDays(place, new Date().toISOString(), session.zone));
-      void commit(make as Parameters<Session['commit']>[0], receipt).then(ok => {
-        if (ok) showUndo(nodeId, 'filed', kind as NodeKind, where, receipt);
+      void commit(make as Parameters<Session['commit']>[0], `Sent to ${where}.`).then(ok => {
+        if (ok) showUndo(nodeId, 'filed', kind as NodeKind, where);
         restoreFocus();
       });
     };
@@ -381,7 +367,7 @@ export function mountTriage(
     make.addEventListener('click', () => {
       const title = input.value.trim();
       if (!title) { input.focus(); return; }
-      fileInto(c => fileUnderNewEvents(c, nodeId, title, clocksOf(session.state().nodes.get(nodeId))), title, null);
+      fileInto(c => fileUnderNewEvents(c, nodeId, title, clocksOf(session.state().nodes.get(nodeId))), title);
     });
     form.append(label, input, make);
     rows.push(form);
@@ -394,7 +380,7 @@ export function mountTriage(
       // Distinct spoken names (§4) that still lead with the visible words (SC 2.5.3).
       b.setAttribute('aria-label', `${name} — put it in this ${p.kind}`);
       b.addEventListener('click', () => {
-        fileInto(c => fileUnderEvents(c, nodeId, p.id, clocksOf(session.state().nodes.get(nodeId))), name, p);
+        fileInto(c => fileUnderEvents(c, nodeId, p.id, clocksOf(session.state().nodes.get(nodeId))), name);
       });
       rows.push(b);
     }

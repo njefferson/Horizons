@@ -21,9 +21,8 @@
 import type { AppEvent, ClarifyRoute, ClockKind, Heat, MenuCategory, NodeKind } from '../events.ts';
 import type { NodeState } from '../fold.ts';
 import type { StampContext } from './session.ts';
-import { calendarDaysBetween, endOfLocalDay, isValidIso } from '../time.ts';
+import { endOfLocalDay } from '../time.ts';
 import { createParentEvents } from './detail-intents.ts';
-import { isAppClock } from '../fold.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
   id: ctx.id(), vault: ctx.vault, at: ctx.at, device: ctx.device, seq: ctx.seq(),
@@ -257,42 +256,4 @@ export function fileUnderNewEvents(
     base(ctx, 'clarify.routed', node, { route: 'filed' as ClarifyRoute }),
     ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
   ];
-}
-
-/**
- * When does this place come round — by the reader's own clocks, never the
- * gate's. `null` is the honest answer for a place nobody has dated, and V2
- * stage 1 SAYS it rather than papering over it: the hollow-return finding
- * (NOTES, 2026-08-04) is that a place minted at file time carries only a
- * `gate:node.created` cure, which no return path reads — so until stage 3
- * gives dating a control, "no return date yet" is the true state of every
- * filed-made place, and the receipt is where the one person who can fix that
- * finds out.
- */
-export function placeReturnDays(
-  place: NodeState | null | undefined, nowIso: string, zone: string,
-): number | null {
-  if (!place) return null;
-  let best: number | null = null;
-  for (const c of Object.values(place.clocks)) {
-    if (!c || c.kind === 'park' || isAppClock(c) || !isValidIso(c.at)) continue;
-    const d = calendarDaysBetween(nowIso, c.at, zone);
-    if (best === null || d < best) best = d;
-  }
-  return best;
-}
-
-/**
- * The filed receipt — the sentence that ends "I'd see the task leave and not
- * know where/if it went." It always names the place, and it always answers
- * the second half honestly: WHEN the place comes round, or that no one has
- * said yet. Factual both ways; neither branch may ever grow a reproach
- * ("still", "you haven't") — the no-date branch is information for the one
- * person who can date the place, not a nag (V2 decision 3 owns its fate).
- */
-export function fileReceiptWords(name: string, returnDays: number | null): string {
-  if (returnDays === null) return `Filed under ${name} — no return date yet.`;
-  if (returnDays <= 0) return `Filed under ${name} — it comes round today.`;
-  if (returnDays === 1) return `Filed under ${name} — it comes round tomorrow.`;
-  return `Filed under ${name} — it comes round in ${returnDays} days.`;
 }

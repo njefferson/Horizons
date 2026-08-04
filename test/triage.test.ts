@@ -16,7 +16,6 @@ import { localDayKey, calendarDaysBetween } from '../src/time.ts';
 import { unclarified, needsHeat, nextToClarify, inboxGauge } from '../src/triage.ts';
 import {
   routeEvents, heatEvents, fileUnderEvents, fileUnderNewEvents, undoRouteEvents, clocksOf,
-  fileReceiptWords, placeReturnDays,
 } from '../src/ui/triage-intents.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
@@ -263,40 +262,4 @@ test('filing refuses the two shapes that would corrupt the tree', () => {
   const c = ctx();
   assert.deepEqual(fileUnderEvents(c, 'N', 'N'), [], 'nothing may be its own place');
   assert.deepEqual(fileUnderEvents(c, 'N', ''), [], 'nor filed into nowhere');
-});
-
-// --- the filed receipt (V2 stage 1) ------------------------------------------
-
-test('the receipt answers WHEN honestly, both branches, and never reproaches', () => {
-  assert.equal(fileReceiptWords('Errands', null), 'Filed under Errands — no return date yet.');
-  assert.equal(fileReceiptWords('Errands', 0), 'Filed under Errands — it comes round today.');
-  assert.equal(fileReceiptWords('Errands', 1), 'Filed under Errands — it comes round tomorrow.');
-  assert.equal(fileReceiptWords('Errands', 4), 'Filed under Errands — it comes round in 4 days.');
-  for (const w of [fileReceiptWords('X', null), fileReceiptWords('X', 3)]) {
-    for (const bad of ['overdue', 'late', 'still', "haven't", 'you should', 'behind']) {
-      assert.doesNotMatch(w, new RegExp(bad, 'i'), `receipt says "${bad}"`);
-    }
-  }
-});
-
-test('placeReturnDays reads only HUMAN clocks — a gate cure is not a return date', () => {
-  // The hollow-return finding, pinned: a place minted at file time carries only
-  // a gate:node.created cure, and the receipt must not present that as a
-  // return. If this test ever fails by the cure counting, the receipt has
-  // started promising returns that no surface will deliver.
-  let s = capture(emptyState(), 'N', 'a thing');
-  s = write(s, fileUnderNewEvents(ctx(), 'N', 'Errands', clocksOf(s.nodes.get('N'))));
-  const place = s.nodes.get(s.nodes.get('N')!.parent!)!;
-  assert.ok(Object.keys(place.clocks).length > 0, 'fixture: the place IS clocked (the gate cured it)');
-  assert.equal(placeReturnDays(place, at, 'America/Denver'), null,
-    'and the cure is not a return date — the honest branch fires');
-  // A clock the READER set is a return date.
-  const c = ctx();
-  s = write(s, [{
-    id: c.id(), vault: 'personal', at, device: 'd0', seq: c.seq(),
-    kind: 'clock.set', node: place.id,
-    payload: { clockKind: 'review', at: '2026-07-30T23:59:59.000Z', source: 'place:return' },
-  } as AppEvent]);
-  const dated = s.nodes.get(place.id)!;
-  assert.equal(placeReturnDays(dated, at, 'America/Denver'), 2, 'two calendar days out');
 });

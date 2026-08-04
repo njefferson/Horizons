@@ -1816,11 +1816,3 @@ dialog, dialog * { overflow-wrap: anywhere; }
   border: 1px solid var(--rail);
   border-radius: 0.5rem;
 }
-
-/* WHERE it sits (V2 stage 1, "It says where"). Layout only — every place line
-   reuses an already-registered text class (.nextup-why, .behind-why, .chip-why)
-   so its colour pair is the one the contrast gate already measures on this
-   surface. A new hue here would be a new unmeasured pair; same ink is the
-   honest route. */
-.nextup-place { margin-block: 0 0.25rem; }
-.behind-place, .chip-place { display: block; }
