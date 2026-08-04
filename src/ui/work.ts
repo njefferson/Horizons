@@ -72,6 +72,9 @@ export function mountWork(
   const REGION = region, HEADING = heading, TITLE = title, WHY = why, COUNT = count,
     BEHIND = behind, LIVE = live, UPKEEP = upkeepRegion, CHIPS = chips,
     GAUGE = gauge, COVERAGE = coverage;
+  // Soft, like LOADNOTE below: a missing place line costs one line of lineage,
+  // never the work surface.
+  const PLACE = q('#nextup-place');
   // NOT in the hard guard above, deliberately: a missing load note costs one
   // sentence, and taking Next up down with it would cost the app's whole
   // purpose. Same containment every optional element on this surface gets.
@@ -198,6 +201,13 @@ export function mountWork(
       const p = up.head.pressure;
       const extra = up.head.reason === 'pressure' ? pressureWords(p) : up.head.words;
       WHY.textContent = extra;
+      // WHERE, right under why (V2 stage 1). Silence for a loose item — "in
+      // nothing" is not a location, and announcing bareness would make the flat
+      // majority of a fresh store read as incomplete.
+      if (PLACE) {
+        PLACE.textContent = up.head.place ?? '';
+        PLACE.hidden = !up.head.place;
+      }
       // NO NUMBER (1.11.0). "8 things are asking" is a count of pending work on
       // the landing surface, which is the nearest thing this app has to the
       // backlog headline law 8 names outright — and the coverage gauge already
@@ -219,6 +229,7 @@ export function mountWork(
         id: item.node.id,
         title: item.node.title || '(untitled)',
         why: item.reason === 'pressure' ? pressureWords(item.pressure) : item.words,
+        place: item.place,
         wish: false,
       }));
       // The wish rides last and says what it is. It owes nothing (law 6), so it
@@ -228,6 +239,9 @@ export function mountWork(
           id: offer.wish.id,
           title: offer.wish.title || '(untitled)',
           why: `something you wanted · ${MENU_WORDS[offer.wish.onMenu as MenuCategory] ?? 'on the Menu'}`,
+          // The wish line already says everything a wish owes anyone (law 6);
+          // a location would dress it as filed work.
+          place: null as string | null,
           wish: true,
         });
       }
@@ -237,6 +251,7 @@ export function mountWork(
         b.type = 'button';
         b.append(el('span', 'behind-title', row.title));
         b.append(el('span', 'behind-why', row.why));
+        if (row.place) b.append(el('span', 'behind-why behind-place', row.place));
         if (openDetail) b.addEventListener('click', () => {
           const node = session.state().nodes.get(row.id);
           if (node) openDetail(node);
@@ -260,6 +275,7 @@ export function mountWork(
       if (undated > 0) {
         REGION.hidden = false;
         TITLE.textContent = 'Nothing is asking today.';
+        if (PLACE) { PLACE.textContent = ''; PLACE.hidden = true; }
         WHY.textContent = undated === 1
           ? 'One thing is here without a date. It is waiting on you to decide, not the other way round.'
           : `${undated} things are here without a date. They are waiting on you to decide, not the other way round.`;
@@ -280,6 +296,7 @@ export function mountWork(
       b.type = 'button';
       b.append(el('span', 'chip-title', item.node.title || '(untitled)'));
       b.append(el('span', 'chip-why', pressureWords(item.pressure)));
+      if (item.place) b.append(el('span', 'chip-why chip-place', item.place));
       b.addEventListener('click', () => {
         const node = item.node.id;
         void session.commit(ctx => doneEvents(ctx, node))
