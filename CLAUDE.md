@@ -34,8 +34,11 @@ Epigraph: *"It holds the rest, so you can rest."*
   fact, or identity disclosure attached to him, in any file, commit message, or
   PR body. The product's framing ("for neurodivergent users") and research
   about users as a population are fine; a sentence linking HIM to any of it is
-  not. Gated by `test/privacy.test.ts` (CI) and the hub's `privacy-check.mjs`.
-  Design statements he makes stay recordable; who he is does not.
+  not. A HARD gate per Doctrine §9b, twice over: the Spine checks the hub out
+  and runs the canonical `privacy-check.mjs` (a pattern widened in the hub
+  binds here on the next push, with no copy to drift), and
+  `test/privacy.test.ts` mirrors the patterns so plain `npm test` fails
+  offline too. Design statements he makes stay recordable; who he is does not.
 - **The ten product laws in `NOTES.md` are invariants.** Violating one is a
   defect, not a trade-off. Two carry teeth in code: *no silent nodes* (every node
   is on a surface, under a clock, on the Menu, or parented to something under a

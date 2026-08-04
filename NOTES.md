@@ -612,6 +612,23 @@ and the register classifies each one.
 
 ### Log
 
+- **2026-08-04 — The privacy FAIL state is doctrine now, and a HARD CI gate.**
+  Noah, hours after stating the rule for this repo: *"Personal/embarrassing
+  info in the repo should be a HARD gate for ALL apps."* Said twice in one
+  day, so the session that heard the repeat wrote it into the doctrine —
+  §9b, in the hub. What changed mechanically: the hub's own CI now runs
+  `privacy-check.mjs` on every push, and this repo's Spine checks the hub out
+  fresh and runs the CANONICAL copy — so a pattern widened in the hub binds
+  here on the next push, with `test/privacy.test.ts` still failing plain
+  `npm test` offline. Both commands were seen red on a locally planted
+  violation before being trusted, and the plant was discarded uncommitted — a
+  pushed plant would BE the violation, since git history is out of the gate's
+  reach. The gate's first hub run also failed on its own documentation
+  (LESSONS §52's meta-prose read like a disclosure to the pattern); the
+  convention that resolves it — name the term first, the person second — is
+  now in §9b. Every other sibling owes the same CI step; doctrine-sync
+  routes the debt.
+
 - **2026-08-04 — docs/horizon-models.md: what exists for working at different
   horizons, surveyed against the laws.** Noah asked: *"What models exist for
   different horizons? I know of the Army's Lines of Effort… those kinds of
