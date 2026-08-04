@@ -2319,6 +2319,37 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('.note-older').count(), 1,
     'older releases are one tap away, not removed');
 
+  // AND THE PANEL A READER ACTUALLY MEETS, ON A PHONE.
+  //
+  // Everything above measures the panel with every group forced OPEN, which is
+  // a worth-having worst case and is NOT the reading experience: it opens with
+  // all groups folded. Conflating the two sent two releases' notes to be
+  // shortened for a budget nobody was near (ADR-0072 carries the correction).
+  //
+  // The width matters and not the way it first appears. The content column caps
+  // at 600px, so every viewport from 600 to 1280 measures identically — the
+  // iPad included, in both orientations, which is why the assertion above is
+  // exact for the reference platform rather than flattering. Below 600px prose
+  // reflows taller, and that is the only case the numbers above do not cover.
+  // So this one is measured where it is genuinely different.
+  const phone = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  const ppage = await phone.newPage();
+  await ppage.goto(url, { waitUntil: 'load' });
+  await ppage.waitForSelector('body[data-ready=true]');
+  await ppage.click('#tour-skip').catch(() => {});
+  await ppage.click('#open-about');
+  await ppage.waitForSelector('#about-body');
+  await ppage.waitForTimeout(250);
+  const phonePanelH = await ppage.evaluate(() => document.querySelector('#about-body').scrollHeight);
+  is(phonePanelH < 3600, true,
+    `on a 390px phone the panel a reader MEETS is ${phonePanelH}px (${(phonePanelH / 844).toFixed(1)} screens), folded`);
+  // The way out is reachable there too, which is the reason a height budget
+  // exists at all (§4 — a control is hard to reach mostly because the container
+  // got long while nobody was looking).
+  is(await ppage.evaluate(() => document.querySelector('#about-close')?.checkVisibility() === true), true,
+    'and its way out is on screen without expanding anything');
+  await phone.close();
+
   // --- the §7e baseline, and §7f's report (1.18.0, ADR-0071) ---------------
   //
   // Doctrine §7e ends "Make it a gate", in those words, because prose in that

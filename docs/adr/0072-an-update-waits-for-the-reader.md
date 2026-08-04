@@ -139,19 +139,36 @@ So the surface to fold is `group-extras`, and the fix §4 asks for is pagination
 or progressive disclosure inside it — not shorter changelogs, which is what the
 last two releases actually did.
 
-**And the gate is measuring the friendliest case, which is the sharper finding.**
-`tools/smoke.mjs` builds its context with no `viewport`, so Playwright's default
-**1280x720** applies and the panel measures 8,782px — comfortably under 9,000. At
-**390px wide the same panel is 11,661px**, because prose that fits on one line at
-desktop width wraps to three on a phone. The budget is passing on the widest
-viewport this app will ever see, on an **iPad-first project** (Doctrine §2),
-while §4 requires the narrow-phone case explicitly and by name.
+**CORRECTION, 2026-08-04 — the two alarming things above are both overstated,
+and measuring properly is what showed it.** Kept rather than rewritten, because
+the wrong version was acted on twice.
 
-**Deliberately NOT fixed here.** Adding a narrow viewport to that assertion turns
-it red immediately — by roughly 2,600px — and 1.18.1 is a §7h fix awaiting Noah's
-on-device pass. Failing the candidate he is holding, for a defect it did not
-introduce and does not touch, would be the wrong trade. It is written down with
-the numbers instead, which is what the next session needs to act on it.
+**First: the panel a reader actually gets is fine.** It opens with every group
+FOLDED, and the gate expands them all before measuring. As opened it is:
+
+- 1,796px at any width ≥600px — **1.5 screens** on an iPad, 2.5 on a desktop
+- 2,321px at 390px — **2.8 screens** on a phone
+- 2,489px at 360px
+
+The 8,551px figure requires a reader to open every group by hand. That is a
+worth-having worst case and it is not the reading experience, and the two were
+being conflated — including by me, in the paragraph above.
+
+**Second: the gate is NOT measuring the friendliest viewport.** The content
+column caps at **600px**, so every width from 600 to 1280 measures identically —
+1,796px folded, 8,551px expanded. **That includes the iPad in both orientations**
+(820px portrait, 1180px landscape). For the reference platform the gate's number
+is exact, and "passing on the widest viewport this app will ever see, on an
+iPad-first project" was simply wrong.
+
+**What IS real, and is narrower than claimed:** phones below the 600px cap,
+where prose reflows taller — 9,706px at 480px, 11,265px at 390px, 12,288px at
+360px, all over the 9,000 budget in the fully-expanded state. Nobody has ever
+been shown that state without opening five groups themselves.
+
+**So the panel is not one release from breaking, and the notes did not need
+shortening twice.** What is genuinely owed is smaller: an assertion of the
+AS-OPENED panel at a phone width, which is the thing a reader meets.
 
 ## The real second worker, and the defect it found (1.18.2)
 

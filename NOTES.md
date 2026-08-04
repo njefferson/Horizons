@@ -633,22 +633,25 @@ handed over (Doctrine §7).
   panel's 9,000px budget is now binding two releases running. 1.18.0 sat at
   8,813; this release's first draft reached **8,985 — fifteen pixels of
   headroom** — and the notes were shortened for the second release in a row.
-  · **Then it was measured, and it is not the changelog.** The `.note-older`
-  `<details>` holding all 81 earlier releases is **44px** collapsed — the obvious
-  culprit contributes nothing. At a 390px viewport the panel is 11,661px, and
-  **`#group-extras` alone is 5,695px**: about thirty explanatory paragraphs, a
-  form, and action rows, accumulated a paragraph at a time. That is the surface
-  §4 wants folded, and no amount of terser release notes will touch it.
-  · **The budget is also measured on the friendliest viewport, which is worse.**
-  `tools/smoke.mjs` creates its context with no `viewport`, so Playwright's
-  default **1280x720** applies. The same panel that reads 8,782px there is
-  **11,661px at 390px wide** — prose that fits one line on a desktop wraps to
-  three on a phone. This is an iPad-first project (Doctrine §2) and §4 names the
-  narrow-phone case explicitly. **Not fixed here on purpose:** adding a narrow
-  viewport turns that assertion red by ~2,600px, and failing a candidate Noah is
-  holding, for a defect it neither introduced nor touches, is the wrong trade.
-  Numbers are in [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md) so
-  the next session can act instead of re-deriving.
+  · **CORRECTED 2026-08-04 — that alarm was overstated, twice over.** Measuring
+  it properly is what showed it, and the wrong version was acted on twice, so it
+  is corrected here rather than tidied away.
+  · **The panel a reader actually meets is fine.** It opens with every group
+  FOLDED and the gate expands them all before measuring. As opened it is
+  **1,796px — 1.5 screens on an iPad**, 2,321px (2.8 screens) at 390px. The
+  8,551px figure needs a reader to open every group by hand. Those two states
+  were being conflated.
+  · **And the gate is NOT measuring the friendliest viewport.** The content
+  column caps at **600px**, so every width from 600 to 1280 measures identically
+  — **the iPad included, in both orientations**. For the reference platform the
+  gate's number is exact. What is real is narrower: phones below 600px, where
+  the fully-expanded panel reflows to 9,706px at 480px and 12,288px at 360px.
+  · **So the notes did not need shortening twice, and the panel is not one
+  release from breaking.** What was genuinely owed was one assertion of the
+  AS-OPENED panel at a phone width, which the walk now carries. `#group-extras`
+  is still the largest block at 5,695px expanded, and folding it further is a
+  design question rather than an urgent defect. Numbers in
+  [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md).
 
 - **2026-08-04 — THE FIRST REAL USAGE DATA THIS REPO HAS EVER HELD.** Noah sent
   a §7f diagnostic from his actual instance: the **sync edition, 1.18.0,
