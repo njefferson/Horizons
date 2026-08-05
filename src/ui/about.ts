@@ -38,6 +38,7 @@ import { deliverCopy, deliverDiagnostic, deliverGeneratedSet } from './export-co
 import { eventWords, isCure } from '../log-words.ts';
 import { localDayKey, recordDayWords } from '../time.ts';
 import { TODAY_MODULE, todayIsOn } from '../composed.ts';
+import { CLOCK_MODULE, clockIsOn } from '../clock.ts';
 import { enableModuleEvents, disableModuleEvents } from './detail-intents.ts';
 import { editionOf, siblingOrigin, PLAIN_INVITE_WORDS, SYNC_INVITE_WORDS } from './sibling.ts';
 import { mountSecurity } from './security.ts';
@@ -476,6 +477,44 @@ export async function mountAbout(
       }
       paintComms();
     })();
+  });
+
+  // --- the header clock, opt-in (1.22.0) ------------------------------------
+  //
+  // The comms-sweep and Composed-Today shape exactly: two mutually-exclusive
+  // buttons painted from FOLDED STATE rather than a cached flag, and off until
+  // asked for. Chrome that arrives switched on has made a decision about
+  // somebody's screen that it was not asked to make — and a clock is the most
+  // charged piece of chrome there is, because half the point of this app is
+  // that a day is not a countdown.
+  //
+  // `onChange` is what actually paints it: the toggle lives inside a modal and
+  // the clock lives in the header behind it, so without the repaint you would
+  // close the panel and find nothing had happened.
+  const clockNote = document.querySelector<HTMLElement>('#clock-note');
+  const paintClock = (): void => {
+    const on = clockIsOn(session.state());
+    const onBtn = document.querySelector<HTMLButtonElement>('#clock-on');
+    const offBtn = document.querySelector<HTMLButtonElement>('#clock-off');
+    if (onBtn) onBtn.hidden = on;
+    if (offBtn) offBtn.hidden = !on;
+  };
+  paintClock();
+  document.querySelector<HTMLButtonElement>('#clock-on')?.addEventListener('click', () => {
+    void session.commit(ctx => enableModuleEvents(ctx, CLOCK_MODULE))
+      .then(() => {
+        if (clockNote) clockNote.textContent = 'On. It is at the top of every screen — the time, what is left of today, and how many things carry today’s date.';
+      })
+      .catch((err: Error) => { if (clockNote) clockNote.textContent = `That did not work. (${err.message})`; })
+      .finally(() => { paintClock(); try { onChange?.(); } catch { /* next pass */ } });
+  });
+  document.querySelector<HTMLButtonElement>('#clock-off')?.addEventListener('click', () => {
+    void session.commit(ctx => disableModuleEvents(ctx, CLOCK_MODULE))
+      .then(() => {
+        if (clockNote) clockNote.textContent = 'Off. The header is back to the wordmark.';
+      })
+      .catch((err: Error) => { if (clockNote) clockNote.textContent = `That did not work. (${err.message})`; })
+      .finally(() => { paintClock(); try { onChange?.(); } catch { /* next pass */ } });
   });
 
   // --- the status report ----------------------------------------------------

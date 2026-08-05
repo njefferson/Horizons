@@ -535,12 +535,52 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Nothing is waiting.** `main` and `staging` both carry **1.20.2**, promoted on
-his word 2026-08-05. The section below describes what 1.20.0 brought and is
-kept because it is still what to look at on device.
+**Two releases are waiting on an on-device pass.** `staging` carries **1.22.0**;
+`main` carries **1.20.2**, promoted on his word 2026-08-05.
 
-- **https://quietkeep.pages.dev** — production, **1.20.2**
-- **https://staging.quietkeep.pages.dev** — same commit as production
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.22.0**
+- **https://quietkeep.pages.dev** — production, still **1.20.2**
+
+**What to look at in 1.21.0 — arrangements.** Open anything that repeats, give
+it a rhythm, and a new group asks whether it is *supposed to run without you*. A
+delivery that reorders itself, a service on a schedule, a renewal. Marked that
+way, it stops asking whether you did it and starts asking when you last
+confirmed it is still arranged — and where it depends on somebody else, the
+words change again, because "check this" is no use when checking means asking
+someone. It never invents a rhythm for something that has none.
+
+**What to look at in 1.22.0 — the clock.** (i) → Extras → *Show me the clock*.
+A dial at the top of every screen, and beside it how much of today is left and
+how many things carry today's date.
+
+**The question in 1.22.0, and it is the one worth your words:** the remainder is
+the whole bet. A clock face alone says what time it is, which was never the
+problem. "5h 12m left today" is meant to give the day a weight it otherwise only
+gets at the moment it runs out. Does it, or is it one more thing on the screen?
+
+**What it deliberately will not do, so it does not read as a bug.** It cannot
+count down to an appointment. Quietkeep records DAYS, not times of day — there
+is no time-of-day input anywhere in it — so it does not know that anything
+happens at nine o'clock, and a countdown would be a number made up. Whether the
+app should learn times of day at all is a real decision and it is yours; it
+would touch every date control, the calendar export and the replan path. For
+something that rings while the app is shut, the calendar hand-off in the (i)
+panel writes a real alarm today.
+
+**Tapping the clock does nothing, on purpose.** The ask was that it opens the
+device's alarm page; no browser can reach that screen. The near substitute —
+handing today to the calendar — is one tap away in the (i) panel, and it is not
+on the clock itself because a control whose visible name changes every thirty
+seconds cannot be operated by voice (ADR-0075).
+
+**Not verified by this session, and it is the same one as last time:** nobody
+has opened the deployed site. This environment cannot reach pages.dev — tested
+this session rather than assumed: both hosts return `CONNECT tunnel failed,
+response 403` at the proxy. Workflow-green is not the site serving it (LESSONS
+§53). Your device is the check.
+
+*Everything below this line describes earlier candidates (1.20.0 and 1.18.4) and
+is kept because it is still what to look at on device.*
 
 **Not verified by this session, and it is the one that matters:** nobody has
 opened the deployed site. The Deploy workflow concluded success for the exact
@@ -637,6 +677,52 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.22.0 (CAPABILITY): the header clock, and a budget that was
+  eating the patch notes.** An analog clock in the chrome of every screen, opt-in
+  under Extras, carrying three derived facts: the time on a real dial, how much
+  of the local day is left, and how many held things are dated today. The
+  remainder is the whole bet — a dial alone answers a question nobody was
+  stuck on ([ADR-0075](docs/adr/0075-the-header-clock.md)).
+
+  **The plan for it was wrong and the correction is the record.** It promised
+  "your 0900 is in 1h 40m". Every clock in this app is day-granular —
+  `clock.set` takes a datetime and every writer builds it with `endOfLocalDay`,
+  and there is no time-of-day input anywhere in the markup — so the app does not
+  know that anything happens at nine o'clock. That number would have been
+  invented, which is the one thing ADR-0010 exists to refuse. A capability was
+  designed before the data model it needed was checked.
+
+  **The dial is not a control**, though the request was that tapping it opens
+  the device's alarm page. No browser can reach that screen. The near
+  substitute — handing today to the calendar, which writes a real `VALARM` —
+  stays on the (i) panel, because a control whose accessible name is its visible
+  words cannot be operated by voice when those words change every thirty
+  seconds. Planted: `SC 2.5.3` red in both themes on exactly that shape.
+
+  **What cost the most time was not the feature.** The panel's expanded-height
+  gate stood at 9,000px and the panel measured 8,907 at 1.21.0 — ninety-three
+  pixels of headroom for every future release. This release met it and the
+  reflex was to start deleting patch notes: five bullets to three, then shorter
+  bullets, then the panel's own prose twice, arriving three pixels short with
+  the content visibly worse. Forty lines below the assertion sat a comment
+  saying this had already happened twice and pointing at
+  [ADR-0072](docs/adr/0072-an-update-waits-for-the-reader.md). The bound moved to
+  12,000 and was planted at 52,707 (every release rendered inline — the original
+  defect) to prove it still bites. The budget a reader is actually held to, the
+  folded phone panel at 3,600, measured 2,321 throughout and is untouched.
+  Written up as hub LESSONS §62.
+
+  Both readers in `src/clock.ts` are TOTAL: `endOfLocalDay` throws a `RangeError`
+  on an unparseable instant and the clock repaints inside the chain that
+  repaints every other surface, so an escape would have cost somebody their card
+  list. The remainder is the ZONE's day — the 23- and 25-hour days are asserted,
+  because `now + 86_400_000` passes every other day of the year.
+
+  Hub drift adopted through §62; LESSONS §59 applied on the way past — this
+  release's assertions hold rules rather than sentences (a finished day states
+  no digit; the remainder decomposes to h/m), and its a11y walk waits on the
+  toggle's state rather than on the wording of a status line.
 
 - **2026-08-05 — 1.20.2 (ITERATION) cut and PROMOTED: the Install control was
   dead on his device.** Reported on an iPad: the Install control was pressed

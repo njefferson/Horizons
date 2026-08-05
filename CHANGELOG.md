@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.22.0 — CAPABILITY
+
+*2026-08-05*
+
+- **A clock you can switch on, at the top of every screen.** A real clock face, and beside it how much of today is left — “5h 12m left today”. The remainder is the point: a day you can watch going is a day you can work with, and a day that only announces itself when it has run out is not. Turn it on in this panel, under Extras.
+- It also says how many things carry today’s date. A number, not a list — the header is not another place to be given work. It is off unless you ask for it, and nothing about it is counted or kept.
+- **What it will not do:** count down to an appointment. Quietkeep records days, not times of day, so it does not know that anything happens at nine o’clock, and it will not make a number up. For something that rings while the app is shut, send today to your calendar — that file carries a real alarm and your device does the rest.
+- *Still missing, and unchanged:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.
+
 ## 1.21.0 — CAPABILITY
 
 *2026-08-05*

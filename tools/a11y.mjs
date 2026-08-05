@@ -179,6 +179,17 @@ const REGISTRY = {
   // by design, which is the registry rule working correctly.
   'arrangement group': ['#detail-arrangement-label', '#detail-arrangement-hint',
     '#detail-arrangement-set', '#detail-arrangement-stop', '#detail-arrangement-depends'],
+  // The header clock, opt-in (1.22.0). Two states, because the switch and the
+  // thing it switches on are never on screen together — the toggle is in a
+  // modal and the clock is in the header behind it.
+  'clock opt-in': ['#clock-on', '.about-caveat'],
+  // The clock itself, after the panel has been closed. `.clock-face` is an SVG
+  // and the sampler reads an element's `color`, so this measures the dial only
+  // because the strokes are `currentColor` — see the note in app.css. `.clock-rim`
+  // is NOT here: it is --line, a graphical object at 3:1 (WCAG 1.4.11), and this
+  // sampler would judge it against 4.5:1 and fail a correct colour. It is held
+  // by the `line/bg` pair in tools/brand.mjs instead.
+  'clock on': ['.clock-face', '.clock-words'],
   // The update strip's stuck state (1.20.2). #update-reload is deliberately
   // ABSENT: the state hides it, and a registry entry matching nothing visible
   // fails by design — listing it here would demand the control be shown, which
@@ -1637,6 +1648,46 @@ try {
     await page.waitForFunction(() => /^Off\./.test(
       document.querySelector('#today-note')?.textContent ?? ''));
     await page.click('#about-close');
+
+    // The header clock (1.22.0): audit the switch, turn it on, close the panel
+    // and measure the thing itself — the two are never on screen together. Then
+    // switch it off, so every state after this one sees the ordinary header.
+    //
+    // It goes through the panel rather than being seeded, because the point of
+    // the state is the rendered chrome and the only way anybody gets it is this
+    // one. A clock nobody can reach is measured but not shipped.
+    await page.click('#open-about');
+    await expandGroups();
+    await page.waitForSelector('#clock-on:not([hidden])');
+    await auditContrast(page, 'clock opt-in', theme);
+    await auditNames(page, 'clock opt-in', theme);
+    await auditTargets(page, 'clock opt-in', theme);
+    await auditFocusRings(page, 'clock opt-in', theme, ['#clock-on']);
+    await page.click('#clock-on');
+    // Waited on the STATE, not on the sentence (hub LESSONS §59). The
+    // neighbouring toggles wait for /^On\./ in their own note, which makes a
+    // reword of a status line hang a walk for a reason that is not a defect.
+    // The pair of buttons swapping IS the thing that happened.
+    await page.waitForSelector('#clock-off:not([hidden])');
+    await page.click('#about-close');
+    await page.waitForSelector('#clock:not([hidden])');
+    // The words must actually be there before they are measured. An empty
+    // paragraph has no client rect, so the registry would report "matches
+    // nothing visible" — which is the gate working, and would be a confusing
+    // way to find out the paint had not run yet.
+    await page.waitForFunction(() =>
+      (document.querySelector('#clock-words')?.textContent ?? '').length > 0);
+    await auditContrast(page, 'clock on', theme);
+    await auditAxe(page, 'clock on', theme);
+    await auditNames(page, 'clock on', theme);
+    await auditTargets(page, 'clock on', theme);
+    await page.click('#open-about');
+    await expandGroups();
+    await page.waitForSelector('#about[open]');
+    await page.click('#clock-off');
+    await page.waitForSelector('#clock-on:not([hidden])');
+    await page.click('#about-close');
+    await page.waitForSelector('#clock', { state: 'hidden' });
 
     // Stage a trashed thing for the trash view (1.5.0): capture, find it,
     // let it go through its own sheet — the app's real path, no seeding.

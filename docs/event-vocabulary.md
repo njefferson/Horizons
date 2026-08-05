@@ -490,7 +490,9 @@ feature can be late; the data cannot be backfilled.
   - Silent risk: no
   - Folds into `State.modules` as of 1.6.0 (a set; enabled adds, disabled
     removes — order-dependent like `dependency.released`, covered by the same
-    discipline). First customer: `today` (Composed Today, ADR-0051).
+    discipline). First customer: `today` (Composed Today, ADR-0051); second is
+    `clock` (the header clock, ADR-0075). Both are opt-in chrome, and neither
+    needed a noun of its own — which is the point of this kind existing.
 - **`consent.granted`**
   - Payload: `scope, whatLeaves: string, rung`
   - Silent risk: no

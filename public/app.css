@@ -111,6 +111,63 @@ body {
   letter-spacing: -0.01em;
 }
 
+/* --- the header clock (1.22.0) --------------------------------------------
+ *
+ * CHROME, NOT A CONTROL. No hit target, no hover, nothing to press: it states
+ * three facts and that is all it does. The dial is aria-hidden and the words
+ * beside it are the accessible version of the same thing.
+ *
+ * NO NEW COLOUR PAIR ENTERS THE GATE (B-08), because every colour here is an
+ * existing token on the existing page background: the hands and the pin are
+ * --ink, the rim is --line (a graphical object at 3:1, WCAG 1.4.11), and the
+ * words are --ink-soft. Those three pairs are already held in `tools/brand.mjs`.
+ * The RENDERED result is measured all the same — `.clock-face` and
+ * `.clock-words` are registered in `tools/a11y.mjs` in both themes, so a later
+ * hand recolouring the dial cannot do it unmeasured.
+ *
+ * The hands are `currentColor` on purpose. The contrast sampler resolves an
+ * element's `color`, not its `stroke`, so a hard-coded stroke would be drawn in
+ * one colour and measured in another — a gate reporting a number about a colour
+ * that is not on the screen. Tying them together makes the measurement honest.
+ *
+ * Nothing here animates. The hands move once a minute by being redrawn, so
+ * there is no transition for prefers-reduced-motion to suppress, and no sweep —
+ * a sweeping hand is motion nobody asked for in a surface that is always on
+ * screen. There is no spiral anywhere near it (ADR-0025).
+ */
+.clock {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.clock-face {
+  /* In em, so the dial grows with the reader's text setting instead of staying
+     put while everything around it gets bigger (B-04). */
+  width: 2.25em;
+  height: 2.25em;
+  flex: none;
+  color: var(--ink);
+}
+
+.clock-rim { fill: none; stroke: var(--line); stroke-width: 1.5; }
+.clock-hand { stroke: currentColor; stroke-linecap: round; }
+.clock-hour { stroke-width: 2.4; }
+.clock-minute { stroke-width: 1.6; }
+.clock-pin { fill: currentColor; }
+
+.clock-words {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.875rem;
+  line-height: 1.35;
+  /* Bounded, so three short sentences wrap under themselves rather than pushing
+     the (i) off the bar. The bar already wraps; this keeps the clock from being
+     the reason it has to. */
+  max-width: 13rem;
+}
+
 /* --- capture -------------------------------------------------------------- */
 
 #capture-form {

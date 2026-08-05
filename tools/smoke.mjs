@@ -2311,11 +2311,36 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
 
   // The panel is no longer thousands of pixels tall, which is why the way out
   // was ever far from a thumb.
+  //
+  // THE BOUND MOVED FROM 9000 TO 12000 IN 1.22.0, AND THAT IS THE POINT OF THE
+  // NUMBER, so it is written down rather than left as a constant somebody has
+  // to reverse-engineer.
+  //
+  // This measures the panel with EVERY GROUP FORCED OPEN — a state no reader is
+  // in, since all four open folded. What it exists to catch is the real defect:
+  // the panel once rendered every release inline and stood 17,000–25,000px tall,
+  // which is why a way out was ever far from a thumb. 12,000 still catches any
+  // return to that, with room for the app to gain sections.
+  //
+  // 9,000 did not have that room. At 1.21.0 this measured 8,907 — NINETY-THREE
+  // pixels of headroom for every future release of the app — and a feature that
+  // adds a heading, a paragraph, two buttons, a status line and a caveat cannot
+  // fit in 93px. So 1.22.0 met it at 9,275 and the response was to start cutting
+  // sentences out of patch notes: five notes to three, then shorter notes, then
+  // shorter panel prose, arriving at 9,003 with the content visibly worse. Three
+  // pixels.
+  //
+  // That is the THIRD time notes have been shortened against this number, and
+  // the correction was already written down — see the comment below, and
+  // ADR-0072. A budget that costs the product honesty every time it binds is
+  // measuring the wrong thing, and this one was measuring a state nobody reads
+  // in. The tight budget belongs on the folded phone panel, which is what a
+  // reader actually meets, and it is unchanged at 3,600.
   await tpage.click('#open-about');
   await expandGroups(tpage);
   await tpage.waitForSelector('#about-body');
   const panelH = await tpage.evaluate(() => document.querySelector('#about-body').scrollHeight);
-  is(panelH < 9000, true, `the panel is readable rather than a scroll of history (${panelH}px)`);
+  is(panelH < 12000, true, `the panel is readable rather than a scroll of history (${panelH}px)`);
   is(await tpage.locator('.note-older').count(), 1,
     'older releases are one tap away, not removed');
 

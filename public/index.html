@@ -20,6 +20,19 @@
 
 <header class="bar">
   <h1 class="wordmark">Quietkeep</h1>
+  <!-- The clock (1.22.0), off unless it is switched on in Extras. The DIAL is
+       decorative — a screen reader gets the sentence in #clock-words, not a
+       description of hands — so the svg is aria-hidden and carries no label.
+       Nothing here is a control: it is chrome that states three facts. -->
+  <div id="clock" class="clock" hidden>
+    <svg id="clock-face" class="clock-face" viewBox="0 0 40 40" aria-hidden="true" focusable="false">
+      <circle class="clock-rim" cx="20" cy="20" r="18"/>
+      <line id="clock-hour" class="clock-hand clock-hour" x1="20" y1="20" x2="20" y2="11"/>
+      <line id="clock-minute" class="clock-hand clock-minute" x1="20" y1="20" x2="20" y2="6"/>
+      <circle class="clock-pin" cx="20" cy="20" r="1.4"/>
+    </svg>
+    <p id="clock-words" class="clock-words"></p>
+  </div>
   <!-- Always available, never a badge or a nag. The label is for screen readers
        and the tooltip; the glyph is what is seen. -->
   <!-- The glyph is decorative and the NAME is a sentence (hub LESSONS §29).
@@ -1369,6 +1382,24 @@
   <p class="about-p about-caveat">
     It is off unless you ask for it, it counts nothing, and skipping one is not
     a failure. Quietkeep cannot see your messages and never will.
+  </p>
+
+  <h3 class="about-section">A clock in the header</h3>
+  <p class="about-p">
+    A clock face at the top of every screen, with how much of today is left
+    beside it and how many things are dated today. The remainder is the point:
+    a day is easier to work with when you can see it going.
+  </p>
+  <div class="about-actions">
+    <button id="clock-on" type="button" class="ghost">Show me the clock</button>
+    <button id="clock-off" type="button" class="ghost">Hide the clock</button>
+  </div>
+  <p id="clock-note" class="storage-note" role="status" aria-live="polite"></p>
+  <p class="about-p about-caveat">
+    It cannot tell you when an appointment is &mdash; Quietkeep records days,
+    not times of day &mdash; and it will never invent one. For something that
+    rings while the app is shut, use &ldquo;Reminders that reach you&rdquo;
+    below: that file carries a real alarm and your device does the rest.
   </p>
 
   <!-- Composed Today, opt-in (1.6.0, ADR-0051). required to be optional — off by default, the comms-sweep precedent. -->
