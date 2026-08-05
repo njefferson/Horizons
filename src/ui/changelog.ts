@@ -29,6 +29,15 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.20.1',
+    kind: 'ITERATION',
+    date: '2026-08-05',
+    notes: [
+      '**These notes are written for you, not about how the app gets made.** Two older entries had drifted into talking about who reported a fault and when, which tells you nothing about what you can now see or do. They say what changed instead.',
+      '*Still missing, and named here because it was promised in the last release:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it. Until there is, that place will not come back on its own.',
+    ],
+  },
+  {
     triplet: '1.20.0',
     kind: 'CAPABILITY',
     date: '2026-08-04',

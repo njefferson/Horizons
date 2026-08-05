@@ -14,6 +14,13 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.20.1 — ITERATION
+
+*2026-08-05*
+
+- **These notes are written for you, not about how the app gets made.** Two older entries had drifted into talking about who reported a fault and when, which tells you nothing about what you can now see or do. They say what changed instead.
+- *Still missing, and named here because it was promised in the last release:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it. Until there is, that place will not come back on its own.
+
 ## 1.20.0 — CAPABILITY
 
 *2026-08-04*
