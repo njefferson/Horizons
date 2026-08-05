@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.21.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-05',
+    notes: [
+      '**Some things are supposed to happen without you — and nothing tells you when one of them quietly stops.** A delivery that reorders itself, a service on a schedule, a renewal: the work was done once, when you set it up. If it lapses, there is no reminder and no error. The first sign is running out. Anything that repeats can now be marked as running itself, and instead of asking whether you did it, it asks when you last confirmed it is still arranged.',
+      '**Where it depends on somebody else, it says so.** Some of these you cannot check from here — an approval, an authorisation, a supplier who will not write to tell you they have stopped. Marking that changes the words, because "check this" is no use when checking means asking someone.',
+      'It never invents a schedule. Something with no rhythm of its own stays quiet rather than being given one.',
+      '*Still missing, and unchanged from the last release:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.',
+    ],
+  },
+  {
     triplet: '1.20.2',
     kind: 'ITERATION',
     date: '2026-08-05',

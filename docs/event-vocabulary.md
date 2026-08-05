@@ -77,6 +77,21 @@ flexible; the types are fixed.
   content: plaintext in exports exactly as titles are; renders on the detail
   sheet only; an empty value is the honest "removed". Written by the sheet and
   by the importer; read by `noteOf` in fold.ts — the one reader.
+- `arrangement` — marks an upkeep as something that runs WITHOUT you: a supply
+  that reorders itself, a service on a schedule, a renewal (1.21.0, ADR-0074).
+  A field and not a kind, for ADR-0042's reason — it decays, completes and
+  renders exactly like the upkeep it is. What changes is the question:
+  `lastDone` reads as *last confirmed still arranged* rather than *last done*,
+  because an arrangement's failure mode is silence and the only useful thing to
+  hold is when you last checked it had not stopped. `false` is the honest
+  "no longer runs itself"; the field is never removed, so the log keeps the
+  decision. Written by `src/ui/arrangement-intents.ts`; read by
+  `isArrangement` in `src/arrangement.ts`.
+- `arrangement-depends` — the arrangement's continuation depends on somebody
+  else, so confirming it means asking them rather than looking (1.21.0).
+  Orthogonal to `arrangement`: plenty of arrangements run on a machine you own.
+  It changes the words, because "check this" is useless advice when checking is
+  not something you can do from here.
 
 ---
 

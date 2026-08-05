@@ -19,6 +19,10 @@ import { noteOf, type NodeState } from '../fold.ts';
 import { DEMAND_FREE_KINDS } from '../events.ts';
 import { everyDaysWords, localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
+import { isArrangement, dependsOnOthers, arrangementWords, confirmedDaysAgo } from '../arrangement.ts';
+import {
+  markArrangementEvents, unmarkArrangementEvents, setDependsEvents, clearDependsEvents,
+} from './arrangement-intents.ts';
 import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
@@ -344,6 +348,14 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // own words — the sheet is where "it feels lost" gets its answer.
     if (n.route && n.route !== 'trash') bits.push(`sorted as ${String(n.route).replace(/-/g, ' ')}`);
     if (standingDecline(n)) bits.push('in the Not Now ledger');
+    if (isArrangement(n)) {
+      // The words say CONFIRMED rather than done, because that is the whole
+      // difference between an arrangement and the upkeep it is built on.
+      const d = confirmedDaysAgo(n, new Date(now()).toISOString(), session.zone);
+      bits.push(dependsOnOthers(n) ? 'runs itself, via someone else' : 'runs itself');
+      bits.push(d === null ? 'never confirmed'
+        : d === 0 ? 'confirmed today' : d === 1 ? 'confirmed yesterday' : `confirmed ${d} days ago`);
+    }
     const words = pressureWords(p);
     if (words) bits.push(words);
     const clock = n.clocks.due ?? n.clocks.review ?? n.clocks.start;
@@ -588,6 +600,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     grp('#detail-date-group', temporal);
     grp('#detail-start-group', temporal);
     grp('#detail-repeat-group', temporal);
+    // Only meaningful once something repeats: an arrangement IS an upkeep, and
+    // saying "it runs itself" about a thing with no rhythm would be a marker
+    // with nothing behind it.
+    grp('#detail-arrangement-group', temporal && n.kind === 'upkeep');
     // The estimate is about DOING the thing: meaningless on a wish, a person,
     // or something let go — and junk rows would pollute the one dataset that
     // can never be backfilled (audit).
@@ -876,6 +892,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   });
   btn('#detail-repeat-stop')?.addEventListener('click', () => {
     void run(ctx => stopRepeatEvents(ctx, current!.id), 'It no longer repeats.');
+  });
+  btn('#detail-arrangement-set')?.addEventListener('click', () => {
+    void run(ctx => markArrangementEvents(ctx, current!.id),
+      'Kept as something that runs itself.');
+  });
+  btn('#detail-arrangement-stop')?.addEventListener('click', () => {
+    void run(ctx => unmarkArrangementEvents(ctx, current!.id),
+      'Back to something you do yourself.');
+  });
+  btn('#detail-arrangement-depends')?.addEventListener('click', () => {
+    const on = current ? dependsOnOthers(current) : false;
+    void run(ctx => (on ? clearDependsEvents : setDependsEvents)(ctx, current!.id),
+      on ? 'You can check this one yourself.' : 'Confirming it means asking whoever runs it.');
   });
   btn('#detail-done')?.addEventListener('click', () => {
     void run(ctx => doneEvents(ctx, current!.id), 'Done.');

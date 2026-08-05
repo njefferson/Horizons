@@ -671,6 +671,25 @@
     </p>
   </div>
 
+  <!-- Arrangements (1.21.0, ADR-0074). Only meaningful on something that
+       repeats, so the group is shown for an upkeep and hidden otherwise. It
+       does not create anything: it says of a rhythm you already set that the
+       thing runs WITHOUT you, which changes the question from "did I do it"
+       to "is it still arranged". -->
+  <div class="detail-group" id="detail-arrangement-group" hidden>
+    <span class="detail-label" id="detail-arrangement-label">Does it run without you?</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-arrangement-label">
+      <button id="detail-arrangement-set" type="button">It runs itself</button>
+      <button id="detail-arrangement-stop" type="button" class="ghost">I do it myself</button>
+      <button id="detail-arrangement-depends" type="button" class="ghost">Someone else runs it</button>
+    </div>
+    <p id="detail-arrangement-hint" class="detail-hint">
+      Something already set up to happen on its own. Nothing tells you when one
+      of these quietly stops, so this keeps the question rather than the task:
+      when did you last confirm it is still arranged?
+    </p>
+  </div>
+
   <!-- Containment (law 4: levels push down). The app had a parent field and no
        way to set one, so everything was flat and Review's stalled half could
        never fire. The picker offers only legal parents — never itself, never

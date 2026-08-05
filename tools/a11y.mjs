@@ -173,6 +173,12 @@ const REGISTRY = {
     // where somebody meets it, on the screen they reach after a cleared browser.
     '.restore-note', '#restore-go',
   ],
+  // The arrangement controls (1.21.0, ADR-0074). Their own state because the
+  // group is hidden unless the sheet is showing something that REPEATS — an
+  // entry folded into 'detail sheet' would match nothing visible there and fail
+  // by design, which is the registry rule working correctly.
+  'arrangement group': ['#detail-arrangement-label', '#detail-arrangement-hint',
+    '#detail-arrangement-set', '#detail-arrangement-stop', '#detail-arrangement-depends'],
   // The update strip's stuck state (1.20.2). #update-reload is deliberately
   // ABSENT: the state hides it, and a registry entry matching nothing visible
   // fails by design — listing it here would demand the control be shown, which
@@ -1048,6 +1054,19 @@ try {
     await auditNames(page, 'detail sheet', theme);
     await auditTargets(page, 'detail sheet', theme);
     await auditFocusRings(page, 'detail sheet', theme, ['#detail-date-set', '#detail-close', '#detail-feeds']);
+
+    // State 3e-a: the arrangement controls. Reached the way a person reaches
+    // them — give the thing a rhythm, which makes it an upkeep, and the group
+    // that asks whether it runs without you appears.
+    await page.fill('#detail-every', '30');
+    await page.fill('#detail-slack', '7');
+    await page.click('#detail-repeat-set');
+    await page.waitForSelector('#detail-arrangement-group:not([hidden])');
+    await auditContrast(page, 'arrangement group', theme);
+    await auditAxe(page, 'arrangement group', theme);
+    await auditNames(page, 'arrangement group', theme);
+    await auditTargets(page, 'arrangement group', theme);
+    await auditFocusRings(page, 'arrangement group', theme, ['#detail-arrangement-set']);
 
     // 1.4.0: the per-node history, open. The item on this sheet was captured,
     // so its record holds a cure — the quiet indented line is guaranteed
