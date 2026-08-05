@@ -14,6 +14,14 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.20.2 — ITERATION
+
+*2026-08-05*
+
+- **When an update will not go on, the app now says so instead of looking broken.** Some devices will not let a new version take over while the app is still open. Pressing *Install it now* used to reload into the same version — nothing visibly changed, so the only thing left to try was pressing it again. It now tells you what is actually happening and that closing the app completely and opening it again will finish the job.
+- The new version is downloaded before any of this, so closing the app costs nothing and needs no connection.
+- *Still true, and worth knowing:* this improvement can only reach you after one more update, and on those devices that update still needs the app closed fully. After that the message is there when it is needed.
+
 ## 1.20.1 — ITERATION
 
 *2026-08-05*
