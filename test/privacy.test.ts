@@ -31,35 +31,64 @@ import { join } from 'node:path';
 
 const ROOT = new URL('..', import.meta.url).pathname;
 
-// privacy-gate:patterns-begin
 // A VERBATIM MIRROR of the hub's privacy-patterns.mjs. It exists so this
 // repo's `npm test` fails with no hub present; it is held identical by
 // GATE hub:privacy-mirror-check.mjs, which the Spine runs. Do not edit these
 // lines here — change the hub, then copy the block across.
+// privacy-gate:patterns-begin
 const DISCLOSURE = [
   /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?(?:audhd|adhd|autistic|neurodivergent)\b/i,
   // `diagnosed` only counts as a disclosure when something is diagnosed WITH
   // something. Bare "diagnosed" is ordinary engineering English about a FAULT,
   // and this pattern used to swallow it: a release note reading "they are
   // still not diagnosed, only absent" — about console warnings — failed the
-  // gate and blocked FOUR consecutive deploys before anyone noticed.
+  // gate and blocked FOUR consecutive deploys before anyone noticed, because
+  // "they are ... diagnosed" matched. Four releases sat on a branch, reported
+  // as shipped, while the owner's device stayed on the last one that deployed.
+  //
+  // Requiring "with" keeps every real disclosure ("he was diagnosed with X")
+  // and releases the technical sense outright. A gate that fires on ordinary
+  // prose is a gate people learn to route around, which is the one failure a
+  // privacy check cannot afford.
   /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?diagnosed\s+with\b/i,
   /\b(?:audhd|adhd|autistic|neurodivergent)\s+(?:owner|maker|author)\b/i,
   /\bconfirmed\b[^\n]{0,50}\b(?:he|she|they)\s+(?:is|are)\s+neurodivergent\b/i,
   /\b(?:noah|the owner)\b[^\n]{0,30}\b(?:medication|therapy|diagnosis|diagnosed)\b/i,
 ];
 
-// SYNTHETIC probes, not quotations. Every subject here is a bare pronoun or a
-// bracketed placeholder, so each one exercises a pattern while asserting
-// nothing about any real person. Deliberate: an earlier version of this file
-// carried the sentences a session had actually written, labelled as such, and
-// so reproduced the disclosure in the repo the gate was written to protect.
+const ATTRIBUTION = [
+  // Name or role, then a colon, then an opening quote: the classic attribution,
+  // and the shape every one of the 787 sites took.
+  /\b(?:noah(?![.\w])|the owner)\b[^:\n]{0,40}:\s*[*_]{0,2}["“]/i,
+  // NARROWED ON ITS FIRST RUN. A proximity rule — a quote mark within 80
+  // characters of the word "owner" — fired on fifteen pieces of ordinary prose
+  // in this repo alone: a doctrine sentence about whose decision the hub is, a
+  // security heading about what only the owner can do, a UI string in a check.
+  // Every one a false positive, and this file already records why that is the
+  // one thing a privacy gate cannot afford: a gate that fires on honest prose
+  // is a gate people learn to route around. The precise shapes below catch what
+  // actually happened and leave prose alone.
+  // Reported speech, but ONLY when a quotation follows. "The owner asks what the
+  // numbers look like" is ordinary guidance prose and fired on the first run;
+  // "the owner said: <quote>" is the thing.
+  /\b(?:noah|the owner)\b\s+(?:said|says|reported|complained|wrote|told|put it|called it)\b[^\n]{0,60}["“]/i,
+  // His words, his message, his screenshot — attribution without a quote mark.
+  // The name token excludes handles and domains, which are his own product copy
+  // and were caught by the first draft of this rule.
+  /\b(?:noah(?![.\w])|the owner)(?:'s|\u2019s)\s+(?:words|quote|message|complaint|wording|phrasing|screenshot|exact)\b/i,
+];
+// SYNTHETIC probes, not quotations. Every subject is a bare pronoun or a
+// bracketed placeholder, so each exercises a pattern while asserting nothing
+// about any real person — and none is a sentence anybody actually said.
 const PROBES = [
   'they are autistic',
   'they were diagnosed with [placeholder]',
   'an autistic maker',
   'confirmed in a note that they are neurodivergent',
   'the owner [placeholder] diagnosis',
+  'the owner: "[placeholder]"',
+  'the owner said something like "[placeholder]"',
+  "the owner's words",
 ];
 // privacy-gate:patterns-end
 
@@ -104,7 +133,7 @@ test('FAIL STATE — no tracked file attaches a diagnosis or health fact to the 
   const hits: string[] = [];
   for (const f of tracked()) {
     const { body } = split(readFileSync(join(ROOT, f), 'utf8'));
-    for (const p of DISCLOSURE) {
+    for (const p of [...DISCLOSURE, ...ATTRIBUTION]) {
       const m = p.exec(body);
       // LOCATION ONLY, never the matched text — an assertion message lands in
       // a CI log, and on a public repo that log is public. Quoting the find
@@ -132,11 +161,11 @@ test('the skipped region carries no name and no date, in any file', () => {
 test('the gate BITES — each pattern catches the class it exists for', () => {
   // Made to fail once before being trusted (Doctrine §6).
   for (const v of PROBES) {
-    assert.ok(DISCLOSURE.some(p => p.test(v)), `pattern set misses a probe`);
+    assert.ok([...DISCLOSURE, ...ATTRIBUTION].some(p => p.test(v)), `pattern set misses a probe`);
   }
   // Every pattern must be exercised by at least one probe, or a pattern could
   // rot unnoticed behind the others.
-  DISCLOSURE.forEach((pattern, i) => {
+  [...DISCLOSURE, ...ATTRIBUTION].forEach((pattern, i) => {
     assert.ok(PROBES.some(v => pattern.test(v)), `pattern ${i} has no probe`);
   });
   // And the product's own public vocabulary must NEVER trip — a gate that
@@ -155,6 +184,6 @@ test('the gate BITES — each pattern catches the class it exists for', () => {
     'the cache was diagnosed as stale, not missing',
   ];
   for (const l of legitimate) {
-    assert.ok(!DISCLOSURE.some(p => p.test(l)), `false positive on: "${l}"`);
+    assert.ok(![...DISCLOSURE, ...ATTRIBUTION].some(p => p.test(l)), `false positive on: "${l}"`);
   }
 });
