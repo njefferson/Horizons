@@ -47,6 +47,13 @@ jobs:
       - name: The owner's person is not repo material (Doctrine 9b)
         run: node .hub-gates/privacy-check.mjs --repo .
 
+      # test/privacy.test.ts mirrors the hub's patterns so `npm test` fails
+      # offline. A mirror that drifts is not a smaller gate, it is a different
+      # one — a stale over-broad copy already blocked four consecutive deploys
+      # in a sibling repo (LESSONS §53).
+      - name: The offline pattern mirror has not drifted from the hub
+        run: node .hub-gates/privacy-mirror-check.mjs --repo .
+
       - run: npm run typecheck
       - run: npm run test:only
 

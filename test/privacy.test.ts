@@ -32,18 +32,20 @@ import { join } from 'node:path';
 const ROOT = new URL('..', import.meta.url).pathname;
 
 // privacy-gate:patterns-begin
+// A VERBATIM MIRROR of the hub's privacy-patterns.mjs. It exists so this
+// repo's `npm test` fails with no hub present; it is held identical by
+// GATE hub:privacy-mirror-check.mjs, which the Spine runs. Do not edit these
+// lines here — change the hub, then copy the block across.
 const DISCLOSURE = [
-  // The person, linked by a verb, to a neurotype or diagnosis term.
-  /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?(?:audhd|adhd|autistic|neurodivergent|diagnosed)\b/i,
-  // The term used as the owner's epithet.
+  /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?(?:audhd|adhd|autistic|neurodivergent)\b/i,
+  // `diagnosed` only counts as a disclosure when something is diagnosed WITH
+  // something. Bare "diagnosed" is ordinary engineering English about a FAULT,
+  // and this pattern used to swallow it: a release note reading "they are
+  // still not diagnosed, only absent" — about console warnings — failed the
+  // gate and blocked FOUR consecutive deploys before anyone noticed.
+  /\b(?:noah|the owner|he|she|they)\s+(?:is|was|are|were|being|remains)\s+(?:\w+\s+){0,2}?diagnosed\s+with\b/i,
   /\b(?:audhd|adhd|autistic|neurodivergent)\s+(?:owner|maker|author)\b/i,
-  // A confirmation shape.
   /\bconfirmed\b[^\n]{0,50}\b(?:he|she|they)\s+(?:is|are)\s+neurodivergent\b/i,
-  // Health or medical statements about the person.
-  // `diagnosis|diagnosed` and NOT `diagnos\w+` — the app's own §7f feature is
-  // the "diagnostic report", whose name appears beside the owner's constantly.
-  // The first draft of this pattern failed the repo on the feature's name,
-  // found on this gate's very first run against the real tree.
   /\b(?:noah|the owner)\b[^\n]{0,30}\b(?:medication|therapy|diagnosis|diagnosed)\b/i,
 ];
 
@@ -54,6 +56,7 @@ const DISCLOSURE = [
 // so reproduced the disclosure in the repo the gate was written to protect.
 const PROBES = [
   'they are autistic',
+  'they were diagnosed with [placeholder]',
   'an autistic maker',
   'confirmed in a note that they are neurodivergent',
   'the owner [placeholder] diagnosis',
@@ -143,6 +146,13 @@ test('the gate BITES — each pattern catches the class it exists for', () => {
     'For autistic and AuDHD people, special interests are the deepest reservoir',
     'how neurodivergent users typically collide with planning systems',
     'ADHD/autistic/AuDHD executive-function research',
+    // THE REGRESSION THAT COST FOUR DEPLOYS. A sibling's release note said this
+    // about console warnings; the pattern matched "they are ... diagnosed" and
+    // failed a HARD CI gate, so four releases never left the branch while every
+    // push was reported as shipped. `diagnosed` is ordinary engineering English
+    // about a FAULT. If this line ever fails again, the pattern has re-widened.
+    'they are still not diagnosed, only absent',
+    'the cache was diagnosed as stale, not missing',
   ];
   for (const l of legitimate) {
     assert.ok(!DISCLOSURE.some(p => p.test(l)), `false positive on: "${l}"`);
