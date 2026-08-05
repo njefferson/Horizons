@@ -953,7 +953,7 @@
   <!-- A close that is ALWAYS reachable. This panel carries every release's
        patch notes, so it grew past ten thousand pixels tall and the only way
        out was at the bottom of all of them — you had to scroll the whole
-       history to shut it (Noah, on device). Sticky, so it stays where your
+       history to shut it (found on device). Sticky, so it stays where your
        thumb is, whatever you have scrolled past. -->
   <div class="about-bar">
     <h2 id="about-title">Quietkeep <span id="version" class="version"></span></h2>
@@ -966,9 +966,9 @@
   </div>
 
   <!-- THE SCROLL CONTAINER. The panel used to scroll as a whole with a
-       `position: sticky` header riding along, and on Noah's iPad the header
+       `position: sticky` header riding along, and on a real iPad the header
        went with it — so both ways out ended up at the extremes of a panel
-       thousands of pixels tall (Noah, on device, twice).
+       thousands of pixels tall (found on device, twice).
 
        Now the dialog is a flex column that does not scroll at all: the bar is
        a fixed-size row and THIS is the only thing that moves. It needs no
@@ -997,7 +997,7 @@
   <!-- LEAD WITH UNDERSTANDING, not diagnostics. This panel used to open on the
        storage stats, so the first thing a returning person saw was a table of
        megabytes, and the explanation of what the app even is sat dead last under
-       ten tool sections (Noah). What it is, how you use it, and how to keep it
+       ten tool sections, as required. What it is, how you use it, and how to keep it
        come first now; the tools are grouped below. -->
   <h3 class="about-section">What Quietkeep is</h3>
   <p class="about-p" data-edition="default">
@@ -1086,7 +1086,7 @@
   </p>
 
   <!-- The folding groups (1.7.2, ADR-0055). The panel carries everything, and
-       everything at once was too much to stand in front of (Noah, on device):
+       everything at once was too much to stand in front of (found on device):
        accent rules separated small things while nothing separated the big ones.
        Each group folds behind its own header now — closed by default, opened
        state remembered per device (a view preference, never an event). The
@@ -1132,7 +1132,7 @@
     <summary>Is my writing private? Where does it live?</summary>
     <!-- Two truths, one per edition — the runtime shows the one that is true
          of THIS build. The default's answer shown in Quietkeep Sync was a lie
-         ("there is no server") and Noah caught it on device (1.7.2). -->
+         ("there is no server") and it was caught on device (1.7.2). -->
     <p class="about-p" data-edition="default">Everything stays on this device. No
       account, no sign-in, and no server holding your writing, because there is no
       server. Nothing about you is collected.</p>
@@ -1352,8 +1352,7 @@
     a failure. Quietkeep cannot see your messages and never will.
   </p>
 
-  <!-- Composed Today, opt-in (1.6.0, ADR-0051). Noah: "Can you make it
-       optional?" — off by default, the comms-sweep precedent. -->
+  <!-- Composed Today, opt-in (1.6.0, ADR-0051). required to be optional — off by default, the comms-sweep precedent. -->
   <h3 class="about-section">Composing your day, by hand</h3>
   <p class="about-p">
     If you turn this on, anything you hold can be chosen for today from its own
@@ -1508,7 +1507,7 @@
        BELOW the button, not above it. This dialog is thousands of pixels tall,
        so the button is reached by scrolling — and the confirmation was
        rendering off-screen above the reader's eyes. It always worked; nobody
-       could see it (Noah, on device). -->
+       could see it (found on device). -->
   <p id="calendar-note" class="storage-note" role="status" aria-live="polite"></p>
   <p class="about-p">
     Only days <em>you</em> set go to a calendar. Quietkeep puts its own dates on
@@ -1517,7 +1516,7 @@
   </p>
   <!-- This caveat is about the SENT COPY and must sit with the calendar's own
        story. It once rendered below the badge block, where its "It" read as
-       the icon number (Noah, on device, 1.7.1). -->
+       the icon number (found on device, 1.7.1). -->
   <p class="about-p about-caveat">
     It is a snapshot of this moment. If you change a date here afterwards, the
     calendar will not follow &mdash; send a fresh copy when it matters.

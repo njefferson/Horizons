@@ -612,9 +612,9 @@ knew this: the note about why a day ended is worth more than the thirty days.)*
 
 **Proposed, awaiting the owner's word (decision 6 of the V2 plan):** the dogfood
 gate keeps its definition and its counter untouched, and is RESTYLED as the
-*full-product gate* — not runnable until he says "full product exists", with
-this register as the primary instrument until then. This reconciles his
-2026-08-03 correction ("the gate has always been running") with his 2026-08-04
+*full-product gate* — not runnable until the full product is declared to
+exist, with this register as the primary instrument until then. This reconciles
+the 2026-08-03 correction (the gate has always been running) with the 2026-08-04
 statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
@@ -829,7 +829,7 @@ and the register classifies each one.
   · **Proved by planting:** letting a trashed parent confer a location, and
   letting the gate cure count as a return date, each turn exactly one test
   red. 971 tests pass.
-  · **The stage-1 question is in the staged block above**; the owner's words gate
+  · **The stage-1 question is in the staged block above**; his report gates
   stage 2 (the judgement line and grounds panel).
 
 - **2026-08-04 — THE V2 PLAN IS APPROVED, and the deep pass that produced it
@@ -943,9 +943,9 @@ and the register classifies each one.
 
 - **2026-08-04 — THE OWNER SAID WHAT ENDS THE DAY, AND IT IS NOT WHAT I INFERRED.**
   Read this before building anything else.
-  · His words: *"I have a huge backlog, and I imported it to work through and put
-  in the right places, but keep finding that the places were not there, yet.
-  That's the problem. I'd see the task leave and not know where/if it went, and
+  · As reported: a huge backlog imported to work through and file in the right
+  places, and the places kept turning out not to exist yet. That was
+  the problem. A thing would leave the surface with no way to tell where, and
   had no feeling that I was seeing the right things."*
   · **What I had inferred, and it was wrong.** I read the first diagnostic as
   volume — a surface opening with 1,275 things asking — and built `pressureBands`
@@ -1284,9 +1284,9 @@ and the register classifies each one.
   page is open. That is the next thing to fix.
 
 - **2026-08-03 (the owner, correcting the record)** — **THE DOGFOOD GATE HAS ALWAYS
-  BEEN RUNNING.** His words: *"The dogfood gate has always been running. Your app
-  just sucks so much I can't get through one fucking day yet. That's how it
-  fucking works."*
+  BEEN RUNNING.** The correction: the gate has always been running, and the app
+  not yet carrying a whole day is exactly what it is reporting. The resets are
+  the measurement.
   · Sessions have written *"the gate has never started"* into the assessment, the
   plan, an ADR and a handoff prompt. **It is the single most consequential thing
   this repo has got wrong**, because it converted a daily failing measurement
@@ -2163,9 +2163,9 @@ and the register classifies each one.
   head before the promote; Deploy 183 green on `main` at the same sha after it.
 
 - **2026-08-02 (promoted on the owner's word)** — **1.11.0 "A few things you
-  could pick up"** — the menu shape he asked for: *"queue towards offering what
-  the user wants to choose to do, as opposed to a list of things waiting to be
-  done."*
+  could pick up"** — the menu shape required: queue towards offering what
+  a person wants to choose to do, rather than a list of things waiting to be
+  done.
   · **The way through was in the thesis's own wording.** §4's choice-overload
   finding is qualified — the direction holds "where options are SIMILAR and
   stakes are ambiguous" — so it does not condemn a small set of options that are

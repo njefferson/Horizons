@@ -54,6 +54,7 @@ jobs:
       - name: The offline pattern mirror has not drifted from the hub
         run: node .hub-gates/privacy-mirror-check.mjs --repo .
 
+
       - run: npm run typecheck
       - run: npm run test:only
 
