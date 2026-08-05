@@ -536,11 +536,20 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**1.20.0 is on `staging` and has not been promoted** — V2 stage 1, "It says
-where."
+**Nothing is waiting.** `main` and `staging` both carry **1.20.1**, promoted on
+his word 2026-08-05. The section below describes what 1.20.0 brought and is
+kept because it is still what to look at on device.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.20.0**
-- **https://quietkeep.pages.dev** — production, **1.19.0**
+- **https://quietkeep.pages.dev** — production, **1.20.1**
+- **https://staging.quietkeep.pages.dev** — same commit as production
+
+**Not verified by this session, and it is the one that matters:** nobody has
+opened the deployed site. The Deploy workflow concluded success for the exact
+promoted SHA, its steps RAN rather than skipped, and its log printed
+`Deployed to PRODUCTION: https://quietkeep.pages.dev` — but this environment
+cannot reach pages.dev (tested this session, not assumed: the proxy returns
+403, V-15 still holds). Workflow-green is not the site serving it (LESSONS
+§53). His device is the check.
 
 **What to look at:** everything offered now carries a place line — "in Errands
 · under Home" — on the suggestion, the rows behind it, and the upkeep chips.
@@ -611,6 +620,27 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.20.1 (ITERATION) cut and PROMOTED to `main` on Noah's word.**
+  Doctrine §7d.1 landed in the hub — release notes drift into development diary,
+  and a rule at the top of a file is read once. Two of this app's shipped notes
+  had done it: one told the reader what the OWNER had said about the app feeling
+  unfinished, one apologised to whoever reported a fault twice. Neither says what
+  a reader can now see or do. Rewritten from `src/ui/changelog.ts`, the single
+  source the (i) panel renders from. Seven other first/second-person matches were
+  checked and deliberately kept — UI control names like "Clear what I am holding",
+  and the reader's own voice in "what am I waiting on Sam for". The rule is about
+  whose story the note tells, not about banning a pronoun.
+  **Cut as a release rather than pushed quietly** because the service-worker
+  cache name carries the triplet: without `quietkeep-1.20.0` → `quietkeep-1.20.1`
+  every reader holding a cached shell keeps the old notes and never learns
+  otherwise. The release also names what is still missing, per §7d — a place made
+  on the spot still has no return date, and the control to set it from the
+  receipt still does not exist, promised in 1.20.0 and not yet delivered.
+  Promote was a merge of `staging` into `main` with the resulting tree asserted
+  IDENTICAL to the verified staging tree, not inferred from a clean merge.
+  974 tests, typecheck, changelog/triplet, privacy, mirror and no-grid gates all
+  green; Spine and Deploy green on `704249b` for both branches.
 
 - **2026-08-04 — HISTORY REWRITTEN on Noah's word. Every SHA before `7407c0b`
   is gone; an older clone will not fast-forward.** The personal material was
