@@ -72,6 +72,20 @@ export class DexieLogStore implements LogStore {
     return last ? last.seq + 1 : 0;
   }
 
+  /**
+   * Through the `node` index declared in v1 — no schema change, and no walk of
+   * the log. The rows for one node number in the dozens at most, so sorting
+   * them here costs nothing and gets the answer right where `.first()` on the
+   * index would not: index order is insertion order, and a shard folded in from
+   * another device can deliver an EARLIER event later. `compareEvents` is the
+   * same ordering the fold uses, so genesis means the same thing everywhere.
+   */
+  async firstEventFor(node: string): Promise<AppEvent | null> {
+    const rows = await this.#db.events.where('node').equals(node).toArray();
+    if (rows.length === 0) return null;
+    return rows.sort(compareEvents)[0] ?? null;
+  }
+
   async putSnapshot(s: Snapshot): Promise<void> {
     await this.#db.transaction('rw', this.#db.snapshots, async () => {
       // One snapshot is enough; the log is the history, not the snapshots.

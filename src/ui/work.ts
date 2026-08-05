@@ -75,6 +75,7 @@ export function mountWork(
   // Soft, like LOADNOTE below: a missing place line costs one line of lineage,
   // never the work surface.
   const PLACE = q('#nextup-place');
+  const APPROACH = q('#nextup-approach');
   // NOT in the hard guard above, deliberately: a missing load note costs one
   // sentence, and taking Next up down with it would cost the app's whole
   // purpose. Same containment every optional element on this surface gets.
@@ -208,6 +209,19 @@ export function mountWork(
         PLACE.textContent = up.head.place ?? '';
         PLACE.hidden = !up.head.place;
       }
+      // WHAT IT HOLDS UP, under where it sits (1.23.0). The head only: the
+      // behind-rows already carry a why and a place, and a third line on each
+      // turns the rest-of-offer from a glance into a paragraph — which is the
+      // bounded-surface instinct law 8 applies to lists, applied to a card.
+      //
+      // Silent when null, the same rule PLACE follows, and null is the ORDINARY
+      // case: it needs a declared downstream and a lead estimate, both set on
+      // the detail sheet. An item with neither says nothing rather than being
+      // given a schedule it never had.
+      if (APPROACH) {
+        APPROACH.textContent = up.head.approach ?? '';
+        APPROACH.hidden = !up.head.approach;
+      }
       // NO NUMBER (1.11.0). "8 things are asking" is a count of pending work on
       // the landing surface, which is the nearest thing this app has to the
       // backlog headline law 8 names outright — and the coverage gauge already
@@ -276,6 +290,10 @@ export function mountWork(
         REGION.hidden = false;
         TITLE.textContent = 'Nothing is asking today.';
         if (PLACE) { PLACE.textContent = ''; PLACE.hidden = true; }
+        // Cleared beside PLACE, for its reason: this branch reuses the same
+        // elements with a different sentence, so a line left over from the last
+        // head would attach a previous item's downstream to "Nothing is asking".
+        if (APPROACH) { APPROACH.textContent = ''; APPROACH.hidden = true; }
         WHY.textContent = undated === 1
           ? 'One thing is here without a date. It is waiting on you to decide, not the other way round.'
           : `${undated} things are here without a date. They are waiting on you to decide, not the other way round.`;

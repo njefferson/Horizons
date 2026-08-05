@@ -233,7 +233,12 @@ const REGISTRY = {
   // named explicitly rather than left to axe alone.
   'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route'],
   'clarify': ['.triage-gauge', '.triage-prompt', '.triage-card',
-    '.route', '.route-label', '.route-hint'],
+    '.route', '.route-label', '.route-hint',
+    // When it was written (1.23.0). Reuses .sort-where's measured pair, so no
+    // unmeasured colour ships — but it is registered rather than assumed,
+    // because it is the quietest text on the surface and the first thing a
+    // recolour would take below the floor.
+    '#triage-where'],
   // WHERE it goes (1.19.0). A new surface joins this list in the SAME commit it
   // is built, or it ships unmeasured — hub LESSONS §28, which cost a release
   // elsewhere. The place picker carries a text field, so it is also the state
@@ -962,6 +967,13 @@ try {
 
     await page.click('#triage-actions .route');   // Hot — advances to clarify
     await page.waitForSelector('#triage-actions .route .route-hint');
+    // WHEN IT WAS WRITTEN (1.23.0) fills in AFTER the card, from the log, on
+    // purpose — so the walk waits for it rather than measuring an element that
+    // is correctly still hidden. A registry entry matching nothing visible
+    // fails by design, and that failure would be the gate reporting a race
+    // rather than a defect (hub LESSONS §61: a check whose steps assume the
+    // page holds still).
+    await page.waitForSelector('#triage-where:not([hidden])');
     await auditContrast(page, 'clarify', theme);
     await auditAxe(page, 'clarify', theme);
     await auditNames(page, 'clarify', theme);

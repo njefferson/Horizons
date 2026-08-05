@@ -187,6 +187,12 @@
     <button id="triage-card" type="button" class="triage-card"
             aria-describedby="triage-card-hint"></button>
     <span id="triage-card-hint" class="visually-hidden">Opens this item to edit it</span>
+    <!-- WHEN IT WAS WRITTEN (1.23.0). OUTSIDE the card button, mirroring
+         #sort-where — inside, it would join the button's accessible name, so
+         every card would announce its own history before its title for no
+         benefit. Filled asynchronously from the log and hidden until it
+         arrives, so the card never waits on a store read. -->
+    <p id="triage-where" class="sort-where" hidden></p>
     <div id="triage-actions" class="triage-actions"></div>
     <p id="triage-live" role="status" aria-live="polite" class="visually-hidden"></p>
   </section>
@@ -340,6 +346,13 @@
          covers it and no unmeasured pair ships (LESSONS 28 kept the honest way:
          same ink, same paper, one more line). -->
     <p id="nextup-place" class="nextup-why nextup-place" hidden></p>
+    <!-- WHAT IT HOLDS UP (1.23.0). The third question the offer can answer, and
+         the one nobody can work out on demand: "it feeds 'Roster' — start it
+         within 3 days". Silent unless the item has both a declared downstream
+         and a lead estimate, because a term derived from a guess is the thing
+         ADR-0010 refuses. Same ink and same paper as the two lines above it, so
+         the contrast registry's existing row covers it. -->
+    <p id="nextup-approach" class="nextup-why nextup-place" hidden></p>
     <div class="nextup-actions">
       <button id="nextup-done" type="button" aria-label="Done with what is next up">Done</button>
       <button id="nextup-skip" type="button" class="ghost">Not this</button>

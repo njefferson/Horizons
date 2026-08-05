@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.23.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-05',
+    notes: [
+      '**Sorting things out now tells you when you wrote each one.** “Written yesterday evening”, “Written Monday morning”, “Written on 14 Jul”. What a note meant when you scribbled it fades in hours, and by the time it reaches you here it can read like somebody else wrote it — this is the missing half of the message. It never says how old anything is and never counts the days.',
+      '**Next up now says what a thing holds up.** If you have told Quietkeep that one thing feeds another — and roughly how long it takes — the card says so: “it feeds ‘Roster’ — start it within 4 days”. That arithmetic has always been there and you had to go looking for it, which is no use for the thing it is meant to help with. It is on the card now.',
+      'Where the dates do not fit, it says that plainly instead: “to make that date it needed starting 2 days ago.” That is a fact about the dates, not about you, and it is fixable by moving either end.',
+      '*Still missing, and unchanged:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.',
+    ],
+  },
+  {
     triplet: '1.22.0',
     kind: 'CAPABILITY',
     date: '2026-08-05',

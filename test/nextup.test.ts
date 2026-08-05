@@ -417,3 +417,101 @@ test('upkeep chips carry place too — the sink says it belongs to Home', () => 
   assert.ok(chip, 'the upkeep is a chip');
   assert.equal(chip!.place, 'in Home');
 });
+
+// --- what it holds up (1.23.0) ------------------------------------------------
+//
+// The offer answers why now and where from. This is the third question, and the
+// one nobody can work out on demand: what breaks downstream if this does not get
+// done, and when it therefore has to start.
+//
+// The words themselves belong to `dependencyWords` and are tested in
+// test/dependencies.test.ts. What is asserted here is the WIRING and the
+// SILENCE — that the sentence reaches every projection that builds an item, and
+// that a missing term produces nothing rather than a number.
+
+test('the approach line reaches the offer when both terms are declared', () => {
+  const s = st(
+    ev('node.created', 'ROSTER', { nodeKind: 'action', title: 'Roster' }),
+    // Ten days out, so the arithmetic has room to be visibly wrong if it breaks.
+    ev('clock.set', 'ROSTER', { clockKind: 'suspense', at: '2026-08-08T18:00:00.000Z', source: 'test' }),
+    ev('node.created', 'A', { nodeKind: 'action', title: 'draft it' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: NOW, source: 'test' }),
+    ev('dependency.declared', 'A', { feeds: 'ROSTER', leadEstimateDays: 3 }),
+  );
+  const item = nextUpQueue(s, NOW, TZ).find(i => i.node.id === 'A');
+  assert.ok(item, 'the item is offered');
+  // THE RULE, NOT THE SENTENCE (hub LESSONS 59): it names what is fed and gives
+  // a start window in days. Pinning the exact phrasing would go red on a reword
+  // that was never wrong, and stay green on a number computed from nothing.
+  assert.ok(item!.approach, 'it says what it holds up');
+  assert.match(item!.approach!, /Roster/, 'it names the thing downstream');
+  assert.match(item!.approach!, /\b7\b/, '10 days out less a 3-day lead is a 7-day window');
+});
+
+test('a missing term is SILENCE, never a number derived from a guess', () => {
+  // No lead estimate. The commitment is real and the app still does not know how
+  // long the work takes — inventing that is the one thing ADR-0010 refuses, and
+  // saying nothing about timing is the honest answer.
+  const noLead = st(
+    ev('node.created', 'ROSTER', { nodeKind: 'action', title: 'Roster' }),
+    ev('clock.set', 'ROSTER', { clockKind: 'suspense', at: '2026-08-08T18:00:00.000Z', source: 'test' }),
+    ev('node.created', 'A', { nodeKind: 'action', title: 'draft it' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: NOW, source: 'test' }),
+    ev('dependency.declared', 'A', { feeds: 'ROSTER', leadEstimateDays: 0 }),
+  );
+  const a = nextUpQueue(noLead, NOW, TZ).find(i => i.node.id === 'A')!;
+  assert.doesNotMatch(a.approach ?? '', /start it within/, 'no lead, no start window');
+
+  // No downstream at all — the ordinary case for almost everything in a store.
+  const bare = st(
+    ev('node.created', 'B', { nodeKind: 'action', title: 'just a thing' }),
+    ev('clock.set', 'B', { clockKind: 'due', at: NOW, source: 'test' }),
+  );
+  const b = nextUpQueue(bare, NOW, TZ).find(i => i.node.id === 'B')!;
+  assert.equal(b.approach, null, 'nothing declared, nothing said');
+});
+
+test('a commitment already met stops constraining — the line goes quiet', () => {
+  // The downstream thing is done. A commitment you are no longer under cannot
+  // set a start date, and leaving it in would manufacture urgency out of
+  // finished work.
+  const s = st(
+    ev('node.created', 'ROSTER', { nodeKind: 'action', title: 'Roster' }),
+    ev('clock.set', 'ROSTER', { clockKind: 'suspense', at: '2026-08-08T18:00:00.000Z', source: 'test' }),
+    ev('node.created', 'A', { nodeKind: 'action', title: 'draft it' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: NOW, source: 'test' }),
+    ev('dependency.declared', 'A', { feeds: 'ROSTER', leadEstimateDays: 3 }),
+    ev('done.marked', 'ROSTER', { at: NOW }),
+  );
+  const item = nextUpQueue(s, NOW, TZ).find(i => i.node.id === 'A')!;
+  assert.equal(item.approach, null);
+});
+
+test('upkeep chips carry the approach too — one writer, every projection', () => {
+  // The defect this guards: five push sites, and one of them quietly not asking.
+  const s = st(
+    ev('node.created', 'ROSTER', { nodeKind: 'action', title: 'Roster' }),
+    ev('clock.set', 'ROSTER', { clockKind: 'suspense', at: '2026-08-08T18:00:00.000Z', source: 'test' }),
+    ...upkeep('U', 7, 2, '2026-07-01T18:00:00.000Z'),
+    ev('dependency.declared', 'U', { feeds: 'ROSTER', leadEstimateDays: 3 }),
+  );
+  const chip = upkeepChips(s, NOW, TZ).find(c => c.node.id === 'U');
+  assert.ok(chip, 'the upkeep is a chip');
+  assert.match(chip!.approach ?? '', /Roster/);
+});
+
+test('the approach never reaches for the vocabulary this app refuses', () => {
+  // A date that does not fit is the case most likely to grow a scolding word.
+  const s = st(
+    ev('node.created', 'ROSTER', { nodeKind: 'action', title: 'Roster' }),
+    ev('clock.set', 'ROSTER', { clockKind: 'suspense', at: '2026-07-30T18:00:00.000Z', source: 'test' }),
+    ev('node.created', 'A', { nodeKind: 'action', title: 'draft it' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: NOW, source: 'test' }),
+    ev('dependency.declared', 'A', { feeds: 'ROSTER', leadEstimateDays: 10 }),
+  );
+  const item = nextUpQueue(s, NOW, TZ).find(i => i.node.id === 'A')!;
+  assert.ok(item.approach, 'the dates do not fit, and that is information');
+  for (const bad of ['overdue', 'late', 'behind', 'failed', 'should have', 'urgent', 'must']) {
+    assert.doesNotMatch(item.approach!, new RegExp(`\\b${bad}\\b`, 'i'), `it says "${bad}"`);
+  }
+});

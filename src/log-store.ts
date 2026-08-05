@@ -33,6 +33,24 @@ export interface LogStore {
    * proof of completeness is the mistake `src/exchange.ts` exists to prevent.
    */
   nextSeq(device: DeviceId): Promise<number>;
+  /**
+   * The FIRST event this node ever had, or null — its genesis, and therefore
+   * when it was written down (1.23.0).
+   *
+   * A single-node question asked of the LOG rather than of folded state, and
+   * that is the whole design decision. The obvious alternative was a
+   * `capturedAt` field on `NodeState`, and it is wrong here: `snapshot.ts`
+   * serialises nodes whole, so every node already inside a snapshot would come
+   * back without the new field and never regain it — the fold never revisits
+   * its genesis event again. The nodes that would be permanently blank are
+   * exactly the old backlog this exists to describe.
+   *
+   * The Dexie implementation reads the `node` index declared in v1, so this is
+   * one indexed lookup rather than a walk of the log. That matters: the caller
+   * is a triage card, and `all()` on a large store is the kind of cost that
+   * ends up on the path to somebody's first capture (ADR-0001).
+   */
+  firstEventFor(node: string): Promise<AppEvent | null>;
   putSnapshot(s: Snapshot): Promise<void>;
   latestSnapshot(): Promise<Snapshot | null>;
   /** Import seeds a FRESH store — this wipes before seeding (ADR-0006). */
@@ -90,6 +108,14 @@ export class MemoryLogStore implements LogStore {
     let max = -1;
     for (const e of this.#events) if (e.device === device && e.seq > max) max = e.seq;
     return max + 1;
+  }
+
+  /** By filter — there is no index to use in memory, and the test stores are
+   *  small. `compareEvents` order is what makes "first" mean the earliest
+   *  instant rather than whichever row happened to be appended first, which is
+   *  not the same thing once a shard has been folded in. */
+  async firstEventFor(node: string): Promise<AppEvent | null> {
+    return (await this.all()).find(e => e.node === node) ?? null;
   }
 
   async putSnapshot(s: Snapshot): Promise<void> { this.#snapshot = s; }

@@ -18,6 +18,7 @@ import {
   heatEvents, placeReturnDays, routeEvents, undoRouteEvents,
 } from './triage-intents.ts';
 import { CONTAINER_KINDS } from '../tree.ts';
+import { captureContextWords } from '../capture-context.ts';
 import { timerMinutesOf, timerWords, timerWordsLower } from '../timer.ts';
 import { doneEvents } from './work.ts';
 import type { AppEvent, ClarifyRoute, Heat, NodeKind } from '../events.ts';
@@ -71,6 +72,46 @@ export function mountTriage(
   // the whole section, and the way to take that route back must not vanish with
   // it. Optional, so older markup without it simply has no undo.
   const undoRegion = document.querySelector<HTMLElement>('#triage-undo');
+
+  /**
+   * WHEN IT WAS WRITTEN (1.23.0) — the one thing triage has never been able to
+   * tell you about a card.
+   *
+   * `docs/nd-collisions.md` entry 17: the context that made a fragment
+   * meaningful lives in working memory and is gone within hours, so "call about
+   * the thing" arrives here as a stranger's note and gets routed blind, or
+   * trashed, or kept out of a vague sense it might have mattered. Capture is
+   * right to ask nothing at write time; the log already knows the answer and
+   * nobody has ever been shown it.
+   *
+   * IT NEVER BLOCKS, and that is the whole shape of this code. The card renders
+   * from state, synchronously, exactly as it always has; this fills in
+   * afterwards or not at all. Nothing on the path to a first capture waits on a
+   * store read (ADR-0001), and a store that is slow or broken costs a line of
+   * grey text rather than the item somebody was deciding about.
+   *
+   * The `showing` guard is the other half: a lookup resolving after the card
+   * has moved on would attach one item's history to another item's title, which
+   * is worse than saying nothing at all.
+   */
+  const contextLine = document.querySelector<HTMLElement>('#triage-where');
+  const paintContext = (nodeId: string | null): void => {
+    if (!contextLine) return;
+    // Cleared FIRST, every time. Left alone, the previous card's line survives
+    // the moment between renders and belongs to whatever is on screen now.
+    contextLine.textContent = '';
+    contextLine.hidden = true;
+    if (!nodeId) return;
+    void session.store.firstEventFor(nodeId)
+      .then((first) => {
+        if (!first || showing !== nodeId || !contextLine) return;
+        const words = captureContextWords(first.at, session.zone, new Date().toISOString());
+        if (!words) return;
+        contextLine.textContent = words;
+        contextLine.hidden = false;
+      })
+      .catch(() => { /* a line of context, never the card */ });
+  };
 
   // The one running do-now timer, if any. It lives in DONOW (a stable region
   // outside the card carousel) so refresh() advancing the card never touches it.
@@ -306,6 +347,7 @@ export function mountTriage(
     PROMPT.textContent = 'Hot or cold?';
     showing = nodeId;
     CARD.textContent = text;
+    paintContext(nodeId);
     ACTIONS.replaceChildren(...(['hot', 'cold'] as Heat[]).map(h => {
       const b = el('button', 'route', h === 'hot' ? 'Hot' : 'Cold');
       b.type = 'button';
@@ -406,6 +448,7 @@ export function mountTriage(
     PROMPT.textContent = heat ? `Clarify (${heat}):` : 'Clarify:';
     showing = nodeId;
     CARD.textContent = text;
+    paintContext(nodeId);
     ACTIONS.replaceChildren(...ROUTES.map(({ route, label, hint }) => {
       const b = el('button', 'route');
       b.type = 'button';
@@ -467,6 +510,7 @@ export function mountTriage(
       REGION.hidden = true;
       showing = null;
       CARD.textContent = '';
+      paintContext(null);
       ACTIONS.replaceChildren();
     }
   }

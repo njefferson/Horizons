@@ -535,11 +535,26 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Two releases are waiting on an on-device pass.** `staging` carries **1.22.0**;
-`main` carries **1.20.2**, promoted on his word 2026-08-05.
+**Three releases are waiting on an on-device pass**, and that stack is worth
+saying out loud rather than letting it grow quietly. `staging` carries
+**1.23.0**; `main` carries **1.20.2**, promoted on his word 2026-08-05.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.22.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.23.0**
 - **https://quietkeep.pages.dev** — production, still **1.20.2**
+
+**What to look at in 1.23.0 — the cards say what you cannot reconstruct.** Two
+lines, from the two collisions the research asks about twice. Sorting things out
+now says when each item was written — *"Written yesterday evening"*, *"Written
+on 14 Jul"* — because what a note meant fades in hours and by triage it reads
+like somebody else wrote it. And Next up says what a thing holds up: *"it feeds
+'Roster' — start it within 4 days"*.
+
+**The second one is conditional, and that is the honest caveat.** It needs an
+item to have both a declared downstream and a rough duration, which are two
+controls on the detail sheet (*What does this hold up?* and *takes N days*). If
+those have never been used it stays silent — correctly, since a start date
+derived from a missing term is invented. So it may be invisible on your store
+until you link something.
 
 **What to look at in 1.21.0 — arrangements.** Open anything that repeats, give
 it a rhythm, and a new group asks whether it is *supposed to run without you*. A
@@ -677,6 +692,44 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.23.0 (CAPABILITY): assembled context reaches the two cards
+  where the decision is made.** ADR-0012 named the idea and delivered half of
+  it. The collision catalogue asks for the other half twice — entry 17, because
+  the meaning of a captured fragment drops within hours and arrives at triage as
+  a stranger's note; entry 4, because the future carries no weight until it is
+  now. The same move answers both: state the fact nobody can reconstruct, on the
+  card where they are deciding.
+  ([ADR-0076](docs/adr/0076-assembled-context-on-the-cards.md).)
+
+  **The approach half was already written.** `dependencyWords` has produced *"it
+  feeds 'Roster' — start it within 4 days"* since build-plan item 27, in the
+  right voice, and reached the detail sheet and the replan card — you had to
+  already suspect something to go and look at it, which is the opposite of what
+  temporal myopia needs. Wiring it to the offer is one helper beside
+  `lineageOf`, so all five push sites ask the same question of the same
+  function.
+
+  **A design that inspection killed before it was written.** The capture time
+  wanted to be a `capturedAt` field on the node. `snapshot.ts` serialises nodes
+  whole and the fold never revisits a node's genesis event, so every item
+  already inside a snapshot would restore without the field and never regain one
+  — and those are exactly the old items this exists to describe. A field that
+  works only for things captured after the upgrade is worse than none, because
+  it looks like it works. It reads the log through the `node` index instead: one
+  indexed lookup, no schema change, and genesis means the earliest event in
+  `compareEvents` order rather than the first row stored, because a shard from
+  another device delivers older events later.
+
+  **It never blocks.** The card renders from state as it always has; the line
+  fills in after, or not at all, and a lookup resolving after the card has moved
+  on is discarded. Nothing on the path to a first capture waits on a store read.
+
+  Four plants seen RED and green after: a default lead estimate inventing a
+  start date, the words stating an age, genesis read by insertion order, and the
+  offer's projection carrying the sentence while the surface never showed it.
+  The a11y walk waits for the async line rather than measuring an element that
+  is correctly still hidden (hub LESSONS §61).
 
 - **2026-08-05 — 1.22.0 (CAPABILITY): the header clock, and a budget that was
   eating the patch notes.** An analog clock in the chrome of every screen, opt-in

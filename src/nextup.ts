@@ -28,6 +28,7 @@ import { pressureOf } from './pressure.ts';
 import { replanIds } from './replan.ts';
 import { NOT_ACTIONABLE } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { dependencyView, dependencyWords } from './dependencies.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
  *  channel of B-01, and the honest answer to "why am I being shown this?". */
@@ -47,6 +48,26 @@ export interface NextUpItem {
    *  day: a thing leaves, there is no telling where or whether it went, and no
    *  feeling of being shown the right things. Computed, never stored. */
   place: string | null;
+  /**
+   * WHAT IT HOLDS UP, and what that implies about when it must start — "it
+   * feeds 'Roster' — start it within 3 days" — or null, which is the ordinary
+   * case and stays silent. 1.23.0.
+   *
+   * The offer has answered *why now* since item 18 and *where from* since V2
+   * stage 1. Neither answers the one a person with temporal myopia cannot work
+   * out on demand: what happens downstream if this does not get done.
+   * `docs/nd-collisions.md` entry 4 — the future carries no weight until it is
+   * now, so a commitment three weeks out is weightless until it is an
+   * emergency, with nothing in between. This is the gradient the decay
+   * primitive gives everything else, applied to the thing a date is FOR.
+   *
+   * The words come from `dependencyWords`, which the detail sheet and the
+   * replan card have used since item 27. ONE writer of this sentence, so three
+   * surfaces cannot describe the same arithmetic three ways — and it returns
+   * null whenever a term is missing rather than deriving a number from a guess
+   * (ADR-0010). Computed, never stored.
+   */
+  approach: string | null;
 }
 
 /**
@@ -74,6 +95,22 @@ export function lineageOf(state: State, n: NodeState): string | null {
   }
   return parts.length ? parts.join(' · ') : null;
 }
+
+/**
+ * The approach sentence for one item, or null (1.23.0).
+ *
+ * A thin sibling of `lineageOf`: every projection that builds a `NextUpItem`
+ * calls it once, so no push site can quietly ship an item whose approach was
+ * computed a different way — the defect `place` avoided by having exactly one
+ * writer.
+ *
+ * CHEAP WHEN THERE IS NOTHING TO SAY, which is the normal case: `dependencyView`
+ * walks `n.feeds`, and that array is empty on every node until somebody declares
+ * a dependency on the detail sheet. So the ordinary store pays one empty loop
+ * per candidate, next to the ancestor walk `lineageOf` already does.
+ */
+export const approachOf = (state: State, n: NodeState, nowIso: string, zone: string): string | null =>
+  dependencyWords(dependencyView(state, n, nowIso, zone));
 
 // NOT_ACTIONABLE comes from `kinds.ts` — its one declared home, whose header
 // says "One neutral home, imported by both" and whose docblock names THIS file
@@ -191,7 +228,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     // comes first for every kind. A resume card carrying an arrived due date was
     // previously misfiled as tier 2 purely because its branch ran first.
     if (arrived && hasHardDate(n)) {
-      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n) });
+      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
       continue;
     }
     if (n.kind === 'resume-card') {
@@ -217,18 +254,19 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
         // beats what you wrote at the moment you put it down.
         words: n.resumeCue ? `you were about to: ${n.resumeCue}` : 'where you left off',
         place: lineageOf(state, n),
+        approach: approachOf(state, n, nowIso, zone),
       });
       continue;
     }
     if (p !== null && p >= 0) {
-      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again', place: lineageOf(state, n) });
+      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
       continue;
     }
     if (arrived) {
       // "Back with you today" was a falsehood for any clock older than today —
       // and gate cure clocks never move, so that was the NORMAL case, not an
       // edge one (Doctrine §5: no copy the data does not support).
-      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting', place: lineageOf(state, n) });
+      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
       continue;
     }
     // Not yet asking for anything. Correct outcome: it stays quiet.
@@ -296,7 +334,7 @@ export function upkeepChips(state: State, nowIso: string, zone: string, minPress
     .filter((x): x is { node: NodeState; pressure: number } =>
       x.pressure !== null && Number.isFinite(x.pressure) && x.pressure >= minPressure)
     .sort((a, b) => b.pressure - a.pressure || (a.node.id < b.node.id ? -1 : 1))
-    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again', place: lineageOf(state, x.node) }));
+    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again', place: lineageOf(state, x.node), approach: approachOf(state, x.node, nowIso, zone) }));
 }
 
 /**

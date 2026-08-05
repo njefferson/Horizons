@@ -369,6 +369,24 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.evaluate(() => document.activeElement?.id), 'triage-prompt',
     'focus is kept on the surface after a triage tap, never dropped to <body>');
 
+  // WHEN IT WAS WRITTEN (1.23.0). Fills in from the log AFTER the card, so it is
+  // waited for rather than read straight away — and it must be waited for on
+  // the CLARIFY card specifically, because that is the surface a backlog is
+  // worked through one card at a time.
+  //
+  // The words are asserted by shape, not by sentence (hub LESSONS §59), and the
+  // assertion that matters is the negative one: no age, ever. This line lands
+  // where somebody already feels behind, and "3 weeks old" is the same fact
+  // wearing an accusation.
+  await tpage.waitForSelector('#triage-where:not([hidden])');
+  const writtenWords = (await tpage.locator('#triage-where').textContent()) || '';
+  is(/^Written /.test(writtenWords), true,
+    `the card says when it was written ("${writtenWords}")`);
+  is(/\b(ago|old|still|overdue)\b/i.test(writtenWords), false,
+    'and never how long ago, in any form');
+  is(/\d+\s*(day|week|month|year)s?\b/i.test(writtenWords), false,
+    'and never counts');
+
   console.log('\nTriage — the six routes, each terminating on its own');
   // The clarify buttons are label+hint; match by their visible label. Route in
   // the capture order the queue presents (oldest first).
@@ -1628,7 +1646,47 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('#detail-feeds option').allTextContents()
     .then(o => o.includes('brief the boss')), false,
     'and stops offering a link that already exists');
+  // Give it a date of TODAY before closing, so it is offerable at all. Routing
+  // it as a Next action clocked it for TOMORROW, which is correct and means the
+  // offer will not carry it today — the approach line would then be measured on
+  // a surface that structurally cannot show it, which is the "walk passes where
+  // the defect cannot occur" trap. Its own date does not enter the arithmetic:
+  // that is the DOWNSTREAM date minus the lead, and both are already set.
+  const localToday = await tpage.evaluate(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }));
+  await tpage.fill('#detail-date', localToday);
+  await tpage.click('#detail-date-set');
+  await tpage.waitForTimeout(200);
   await tpage.click('#detail-close');
+
+  // AND THE SAME SENTENCE ON THE OFFER (1.23.0), which is the surface where the
+  // decision is actually made. The arithmetic has been right since item 27 and
+  // reached only the detail sheet and the replan card — you had to already
+  // suspect something to go and look at it, which is the opposite of what
+  // temporal myopia needs (docs/nd-collisions.md entry 4).
+  //
+  // Reached by cycling the offer with the app's own "Not this", which records
+  // nothing, rather than by seeding a head. Bounded, and the walk FAILS if the
+  // item never comes up — a check that quietly passes when it found nothing is
+  // not a check.
+  let offerApproach = null;
+  for (let i = 0; i < 15 && offerApproach === null; i++) {
+    const title = await tpage.locator('#nextup-title').textContent();
+    if ((title || '').includes('draft the brief')) {
+      offerApproach = await tpage.evaluate(() => {
+        const el = document.querySelector('#nextup-approach');
+        return el && !el.hidden ? el.textContent : '';
+      });
+      break;
+    }
+    if (await tpage.locator('#nextup-skip').isHidden()) break;
+    await tpage.click('#nextup-skip');
+    await tpage.waitForTimeout(120);
+  }
+  is(offerApproach !== null, true, 'the offer can be cycled to the item that feeds something');
+  is(/start it within 4 days/.test(offerApproach || ''), true,
+    `the offer says what it holds up and when it must start ("${offerApproach}")`);
+  is(/brief the boss/.test(offerApproach || ''), true, 'and names the thing downstream');
 
   // --- Containment and Review (law 4, and the exceptions surface) ----------
   // The app had a parent field from the first fold and NOTHING could set one, so
