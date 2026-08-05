@@ -77,9 +77,22 @@ const ATTRIBUTION = [
   // and were caught by the first draft of this rule.
   /\b(?:noah(?![.\w])|the owner)(?:'s|\u2019s)\s+(?:words|quote|message|complaint|wording|phrasing|screenshot|exact)\b/i,
 ];
-// SYNTHETIC probes, not quotations. Every subject is a bare pronoun or a
-// bracketed placeholder, so each exercises a pattern while asserting nothing
-// about any real person — and none is a sentence anybody actually said.
+const HIS_LIFE = [
+  // Anchored on him: a life noun tied to the owner by a possessive. "his
+  // prescriptions", "the owner's supervisor", "his wife". The app's own
+  // fixtures say "dentist" and "appointment" freely and are untouched, because
+  // nothing there belongs to anybody.
+  /\b(?:noah(?![.\w])|the owner|his)(?:'s|\u2019s)?\s+(?:\w+\s+){0,2}?(?:prescription|prescriptions|pharmacy|refill|refills|medication|medications|dose|dosage|inhaler|appointment|appointments|doctor|dentist|optician|optometrist|surgery|clinic|therapist|supervisor|employer|workplace|payroll|wife|husband|partner|spouse|kids|children|daughter|son|truck|car|vehicle|mortgage|landlord)\b/i,
+  // Health and care specifics a planner has no reason to contain at all. Short
+  // and explicit on purpose: each earns its place by having no product meaning.
+  /\b(?:cpap|bipap|sleep apnoea|sleep apnea|blood pressure|insulin|antidepressant|adhd meds|stimulant medication)\b/i,
+  // A first-person account of a real day. The repo's own prose is written in
+  // the repo's voice about the software; "I noticed in the shower", "I realise
+  // I need to", "I remember I have to" is somebody's morning, not a design note.
+  /\bI\s+(?:noticed|realis|realiz|remember|forgot|need to|have to|keep forgetting)\w*\b[^\n]{0,40}\b(?:shower|sink|driving|drive|car|work|appointment|doctor|order|refill)\b/i,
+];
+// SYNTHETIC probes — bare pronouns and bracketed placeholders, never a sentence
+// anybody said or a circumstance anybody is in.
 const PROBES = [
   'they are autistic',
   'they were diagnosed with [placeholder]',
@@ -89,6 +102,9 @@ const PROBES = [
   'the owner: "[placeholder]"',
   'the owner said something like "[placeholder]"',
   "the owner's words",
+  'his prescriptions',
+  'a cpap machine',
+  'I noticed in the shower that I need to order something',
 ];
 // privacy-gate:patterns-end
 
@@ -133,7 +149,7 @@ test('FAIL STATE — no tracked file attaches a diagnosis or health fact to the 
   const hits: string[] = [];
   for (const f of tracked()) {
     const { body } = split(readFileSync(join(ROOT, f), 'utf8'));
-    for (const p of [...DISCLOSURE, ...ATTRIBUTION]) {
+    for (const p of [...DISCLOSURE, ...ATTRIBUTION, ...HIS_LIFE]) {
       const m = p.exec(body);
       // LOCATION ONLY, never the matched text — an assertion message lands in
       // a CI log, and on a public repo that log is public. Quoting the find
@@ -161,11 +177,11 @@ test('the skipped region carries no name and no date, in any file', () => {
 test('the gate BITES — each pattern catches the class it exists for', () => {
   // Made to fail once before being trusted (Doctrine §6).
   for (const v of PROBES) {
-    assert.ok([...DISCLOSURE, ...ATTRIBUTION].some(p => p.test(v)), `pattern set misses a probe`);
+    assert.ok([...DISCLOSURE, ...ATTRIBUTION, ...HIS_LIFE].some(p => p.test(v)), `pattern set misses a probe`);
   }
   // Every pattern must be exercised by at least one probe, or a pattern could
   // rot unnoticed behind the others.
-  [...DISCLOSURE, ...ATTRIBUTION].forEach((pattern, i) => {
+  [...DISCLOSURE, ...ATTRIBUTION, ...HIS_LIFE].forEach((pattern, i) => {
     assert.ok(PROBES.some(v => pattern.test(v)), `pattern ${i} has no probe`);
   });
   // And the product's own public vocabulary must NEVER trip — a gate that
@@ -184,6 +200,6 @@ test('the gate BITES — each pattern catches the class it exists for', () => {
     'the cache was diagnosed as stale, not missing',
   ];
   for (const l of legitimate) {
-    assert.ok(![...DISCLOSURE, ...ATTRIBUTION].some(p => p.test(l)), `false positive on: "${l}"`);
+    assert.ok(![...DISCLOSURE, ...ATTRIBUTION, ...HIS_LIFE].some(p => p.test(l)), `false positive on: "${l}"`);
   }
 });

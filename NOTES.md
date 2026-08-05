@@ -602,13 +602,31 @@ handed over (Doctrine §7).
 
 *(Opened 2026-08-04 with the V2 plan. Stated then: no stability test is
 possible until the full product exists, because what is still being found is a
-mix of hard blocks and things to adjust. This register is that split, made a record. One line per
-ended day: the date, what ended it, whether it was a hard block or an
-adjustment, and the release that answers it. It is always about the APP, never
-about him — "what ended the day", never "what you didn't do". ADR-0019 already
-knew this: the note about why a day ended is worth more than the thirty days.)*
+mix of hard blocks and things to adjust. This register is that split, made a
+record.)*
 
-- *(no entries yet — the first one arrives with his next report)*
+**REDEFINED 2026-08-05, before it ever held an entry, because as written it was
+a trap.** The original definition asked for "one line per ended day: the date,
+what ended it" — which invites somebody's actual day into a public file. It was
+about to receive one: a morning's worth of medication, a medical device,
+appointments, a workplace matter and a family's weekend, offered to shape the
+product and very nearly written down here as evidence. He stopped it. The
+instrument was correct about needing evidence and wrong about what evidence is.
+
+**What an entry records, and it is never an instance.** The SHAPE of what
+blocked a day, the CLASS it belongs to, whether it was a hard block or an
+adjustment, and the release that answers it. *"A standing arrangement whose
+failure mode is silence has no noun — hard block — answered in 1.21.0."* That
+line is worth more than the thirty days ADR-0019 talks about, and it contains
+nothing about anybody.
+
+**Where the instance lives: with him, not here.** A session may READ what he
+describes and design from its shape. It may not write the particulars down —
+not in this register, not in an ADR, not in a commit message, not as a test
+fixture, and not as an "illustrative example", which is the form it would creep
+back in as. Enforced by the HIS_LIFE class in GATE hub:privacy-check.mjs.
+
+- *(no entries yet)*
 
 **Proposed, awaiting the owner's word (decision 6 of the V2 plan):** the dogfood
 gate keeps its definition and its counter untouched, and is RESTYLED as the
