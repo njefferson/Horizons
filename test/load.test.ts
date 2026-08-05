@@ -13,6 +13,7 @@ import { heldGroups } from '../src/held.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { HEAVY_AT, loadNow, loadWords, offerCapFor, pebbleWords } from '../src/load.ts';
 import { OFFER_CAP, offerNow } from '../src/offer.ts';
+import { raisePebbleEvents } from '../src/ui/load-intents.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import type { AppEvent } from '../src/events.ts';
 
@@ -234,4 +235,62 @@ test('the wish still rides along on a heavy day', () => {
   const o = offerNow(s, NOW, TZ);
   assert.equal(o.work.length, 1, 'less work');
   assert.ok(o.wish, 'and the thing you wanted is still there');
+});
+
+// --- saying a piece of work is heavy (1.24.0) ---------------------------------
+//
+// docs/nd-collisions.md entry 2, the wall of awful: what stands between somebody
+// and a ten-minute chore is the history rather than the chore. The routing is to
+// let a person SAY it, and route that through the machinery that already
+// narrows the offer.
+//
+// `pebble.raised` has carried `affects` since 1.15.0, `raisePebbleEvents` has
+// accepted it since the day it was written, `pebbleWords` already reads the
+// names out of it — and NO SURFACE EVER SET IT. Eight releases of a complete,
+// unreachable field, and no test covered the emitter at all.
+
+test('the emitter carries `affects` through the gate and onto the row', () => {
+  const ctx = {
+    id: () => 'PB', vault: 'personal', at: '2026-08-02T12:00:00.000Z',
+    device: 'd0', seq: () => 900, zone: TZ,
+  };
+  const events = raisePebbleEvents(ctx, 'PB', 'the wall of it', 'rock', ['w1']);
+  const raised = events.find(e => e.kind === 'pebble.raised');
+  assert.deepEqual((raised!.payload as { affects: string[] }).affects, ['w1'],
+    'the emitter passes it, which nothing has ever asked it to do');
+
+  const s = write(withWork(), events);
+  assert.match(pebbleWords(s, s.nodes.get('PB')!), /ring the plumber/,
+    'and the row names the work it is about');
+});
+
+test('the payload is a COPY — the caller cannot rewrite history later', () => {
+  // The same defect `capture.recorded` already fixed for `sourceTags`: storing
+  // the caller's array by reference holes copy-on-write, so a later mutation
+  // of a live list would rewrite an event that has already been written down.
+  const ctx = {
+    id: () => 'PB', vault: 'personal', at: '2026-08-02T12:00:00.000Z',
+    device: 'd0', seq: () => 901, zone: TZ,
+  };
+  const mine = ['w1'];
+  const events = raisePebbleEvents(ctx, 'PB', 'the wall of it', 'rock', mine);
+  mine.push('w2');
+  const raised = events.find(e => e.kind === 'pebble.raised');
+  assert.deepEqual((raised!.payload as { affects: string[] }).affects, ['w1'],
+    'what was written stays written');
+});
+
+test('a weight said about work is STILL not a demand, and still not a score', () => {
+  // The whole risk of attaching weight to a task: it starts to read as a status
+  // on the task. It may not. A pebble is demand-free by construction — the gate
+  // refuses a clock on one — and nothing about the work changes.
+  const s = write(withWork(), raisePebbleEvents(
+    { id: () => 'PB', vault: 'personal', at: '2026-08-02T12:00:00.000Z', device: 'd0', seq: () => 902, zone: TZ },
+    'PB', 'the wall of it', 'boulder', ['w1'],
+  ));
+  const work = s.nodes.get('w1')!;
+  assert.equal(work.trashed, false, 'the work is untouched');
+  assert.equal(work.lastDone, null, 'and certainly not completed');
+  assert.doesNotMatch(pebbleWords(s, s.nodes.get('PB')!), /blocked|stuck|because|why/i,
+    'co-occurrence only, never causation (law 7)');
 });

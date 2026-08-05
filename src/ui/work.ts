@@ -24,6 +24,8 @@ import type { MenuCategory } from '../events.ts';
 import { undatedCount } from '../held.ts';
 import { pressureWords } from '../pressure.ts';
 import { calendarDaysBetween } from '../time.ts';
+import { biteEvents } from './work-intents.ts';
+import { ulid } from '../ids.ts';
 import { treeRows } from '../tree-view.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
@@ -50,6 +52,10 @@ export function mountWork(
   /** Opens the detail sheet (1.6.0 — the dead lists became doors). Optional,
    *  like clarify's: rows render regardless, doors need the sheet. */
   openDetail?: (n: NodeState) => void,
+  /** Opens the load entry with this item attached (1.24.0). Optional and
+   *  late-bound, because the load surface mounts after this one — the offer
+   *  renders either way, and a missing load entry costs one control. */
+  attachLoad?: (nodeId: string, title: string) => void,
 ): WorkUI {
   const q = <T extends HTMLElement>(sel: string): T | null => document.querySelector<T>(sel);
   const region = q('#nextup');
@@ -80,12 +86,24 @@ export function mountWork(
   // sentence, and taking Next up down with it would cost the app's whole
   // purpose. Same containment every optional element on this surface gets.
   const LOADNOTE = document.querySelector<HTMLElement>('#nextup-load');
+  // The two things you can do when you cannot start (1.24.0). Soft-bound like
+  // LOADNOTE and PLACE: a missing control costs that control, never the offer.
+  const BITE = q('#nextup-bite');
+  const BITE_FORM = q<HTMLFormElement>('#nextup-bite-form');
+  const BITE_INPUT = q<HTMLInputElement>('#nextup-bite-input');
+  const BITE_DONE = q<HTMLButtonElement>('#nextup-bite-done');
+  const HEAVY = q<HTMLButtonElement>('#nextup-heavy');
 
   // "Not this" lives HERE, in memory, and nowhere else. It is deliberately not
   // persisted: a skip that survived a reload would be a record of a decision the
   // app promised not to keep.
   let cycle = 0;
   let current: NextUpItem | null = null;
+  /** The first step named under the head, if there is one. Read from state on
+   *  every render — never remembered across one, because the head can change
+   *  under it and a bite belonging to yesterday's card is the worst thing this
+   *  surface could show. */
+  let bite: NodeState | null = null;
   // One write at a time. Without this a double-tap wrote done.marked twice for
   // the same node — the log recording an action the user took once, twice.
   // Capture solves the same double-tap by clearing its input synchronously
@@ -119,6 +137,59 @@ export function mountWork(
     else document.querySelector<HTMLElement>('#capture')?.focus();
   };
 
+  /**
+   * The first step under the head, if one has been named (1.24.0).
+   *
+   * READ FROM STATE EVERY RENDER, never remembered. The head changes on a skip,
+   * a completion, a clock arriving — and a bite left over from the previous
+   * card would be this surface telling somebody the first step of a thing they
+   * are no longer looking at.
+   *
+   * The FIRST live, unfinished child, not a list. If somebody names two, the
+   * card shows the one they named first and the rest are in the sheet: a card
+   * that grows a list of sub-steps has become the pile in miniature, on the one
+   * surface whose promise is that it has already chosen.
+   */
+  const paintBite = (head: NodeState | null): void => {
+    bite = null;
+    if (head) {
+      const st = session.state();
+      for (const n of st.nodes.values()) {
+        if (n.parent !== head.id) continue;
+        if (n.trashed || n.mergedInto || n.lastDone) continue;
+        bite = n;
+        break;
+      }
+    }
+    if (BITE) {
+      BITE.textContent = bite ? `First step: ${bite.title || '(untitled)'}` : '';
+      BITE.hidden = !bite;
+    }
+    if (BITE_DONE) BITE_DONE.hidden = !bite;
+    // The form goes away once there is a step, and comes back when it is done.
+    // Two open invitations to name a first step is a second decision on a
+    // surface built to hold one.
+    if (BITE_FORM) BITE_FORM.hidden = Boolean(bite) || head === null;
+    if (HEAVY) HEAVY.hidden = head === null;
+  };
+
+  const markBiteDone = async (): Promise<void> => {
+    if (!bite || busy) return;
+    busy = true;
+    const node = bite.id;
+    const label = bite.title;
+    try {
+      await session.commit(ctx => doneEvents(ctx, node));
+      say(`Done: ${label}.`);
+    } catch (err) {
+      say(`Couldn’t record that — ${(err as Error).message}`, true);
+    } finally {
+      busy = false;
+    }
+    try { onChange(); refresh(); } catch { /* the next load renders it */ }
+    restoreFocus();
+  };
+
   const markDone = async (): Promise<void> => {
     if (!current || busy) return;
     busy = true;
@@ -149,7 +220,41 @@ export function mountWork(
   };
 
   doneBtn.addEventListener('click', () => void markDone());
+  BITE_DONE?.addEventListener('click', () => void markBiteDone());
   skipBtn.addEventListener('click', skip);
+
+  // NAME A FIRST STEP (1.24.0, docs/nd-collisions.md entry 1). The whole act is
+  // one field and a submit, on the card, because the moment this helps is the
+  // moment leaving the surface to do it is more than somebody can spend.
+  BITE_FORM?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (!current || busy || !BITE_INPUT) return;
+    const text = BITE_INPUT.value;
+    // Said out loud rather than committing nothing quietly — capture's rule.
+    if (!text.trim()) { say('It needs to say something.', true); BITE_INPUT.focus(); return; }
+    busy = true;
+    const parent = current.node.id;
+    void session.commit(ctx => biteEvents(ctx, ulid(Date.parse(ctx.at)), parent, text))
+      .then(() => {
+        // Cleared only after the write has LANDED (ADR-0008), like capture: an
+        // input that empties before the commit resolves can lose what you typed.
+        BITE_INPUT.value = '';
+        say('Put under it. It takes no date of its own.');
+      })
+      .catch((err: Error) => { say(`Couldn’t do that — ${err.message}`, true); })
+      .finally(() => {
+        busy = false;
+        try { onChange(); refresh(); } catch { /* the next load renders it */ }
+      });
+  });
+
+  // SAY IT IS HEAVY (entry 2). Not a second form — it opens the one under the
+  // capture line with this item attached, so the weight is recorded exactly as
+  // it always has been and finally says what it is about.
+  HEAVY?.addEventListener('click', () => {
+    if (!current || !attachLoad) return;
+    attachLoad(current.node.id, current.node.title || '(untitled)');
+  });
 
   GAUGE.addEventListener('click', () => {
     const open = COVERAGE.hidden;
@@ -222,6 +327,7 @@ export function mountWork(
         APPROACH.textContent = up.head.approach ?? '';
         APPROACH.hidden = !up.head.approach;
       }
+      paintBite(up.head.node);
       // NO NUMBER (1.11.0). "8 things are asking" is a count of pending work on
       // the landing surface, which is the nearest thing this app has to the
       // backlog headline law 8 names outright — and the coverage gauge already
@@ -294,6 +400,7 @@ export function mountWork(
         // elements with a different sentence, so a line left over from the last
         // head would attach a previous item's downstream to "Nothing is asking".
         if (APPROACH) { APPROACH.textContent = ''; APPROACH.hidden = true; }
+        paintBite(null);
         WHY.textContent = undated === 1
           ? 'One thing is here without a date. It is waiting on you to decide, not the other way round.'
           : `${undated} things are here without a date. They are waiting on you to decide, not the other way round.`;

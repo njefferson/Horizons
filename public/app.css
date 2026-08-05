@@ -558,9 +558,14 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 }
 .search-input::placeholder { color: var(--ink-soft); opacity: 1; }
 /* The 1.3.0 inputs: same registered pair as every other placeholder — the UA
-   default gray measured 4.08:1 on the sheet and failed the gate. */
+   default gray measured 4.08:1 on the sheet and failed the gate.
+   #nextup-bite-input joined them in 1.24.0, having shipped straight into the
+   identical trap: a new input with no placeholder rule inherits that same UA
+   grey, and it measured 4.08:1 light and 3.78:1 dark. Third time. Any new
+   placeholder in this app belongs on this list on the day it is written. */
 #detail-parent-filter::placeholder,
 #detail-merge-filter::placeholder,
+#nextup-bite-input::placeholder,
 #sort-query::placeholder { color: var(--ink-soft); opacity: 1; }
 .search-summary { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.9375rem; }
 .search-results {
@@ -760,6 +765,26 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 .nextup-why { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
 .nextup-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; }
 .nextup-actions button { min-height: var(--target); }
+
+/* --- the two things you can do when you cannot start (1.24.0) --------------
+ *
+ * NO NEW COLOUR PAIR (B-08). The named first step is --ink on the page
+ * background, the same pair the card's own title uses, because it is the
+ * concrete thing to actually do and is not a hint about something else; the
+ * form's hint uses .detail-hint, already measured everywhere else it appears.
+ *
+ * The step reads slightly indented, so it is visibly UNDER the card's title
+ * rather than a second title competing with it.
+ */
+.nextup-bite {
+  margin: 0 0 0.75rem;
+  padding-inline-start: 0.75rem;
+  border-inline-start: 2px solid var(--line);
+  font-size: 0.9375rem;
+  overflow-wrap: anywhere;
+}
+
+.nextup-bite-form { margin-block: 0.75rem 0; }
 .nextup-count { margin: 0.75rem 0 0; color: var(--ink-soft); font-size: 0.9375rem; }
 .nextup-behind {
   list-style: none;

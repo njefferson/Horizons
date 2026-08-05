@@ -535,12 +535,30 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Three releases are waiting on an on-device pass**, and that stack is worth
-saying out loud rather than letting it grow quietly. `staging` carries
-**1.23.0**; `main` carries **1.20.2**, promoted on his word 2026-08-05.
+**One release is waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0 were
+promoted together on his word 2026-08-05 — Deploy on `main` ran every step and
+printed `Deployed to PRODUCTION: https://quietkeep.pages.dev`, and Spine was
+green for the same SHA. `staging` now carries **1.24.0** alone.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.23.0**
-- **https://quietkeep.pages.dev** — production, still **1.20.2**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.24.0**
+- **https://quietkeep.pages.dev** — production, **1.23.0**
+
+**What to look at in 1.24.0 — the two things you can do when you cannot start.**
+Under Next up there is now a line asking for a smaller first bit. Type a first
+physical action into it — "open the file and write one line" — and the card
+holds it, with its own Done. Finishing it brings the invitation back for the
+next bit. **That step never takes a date of its own**: it rides along with the
+thing it belongs to, so naming a smaller start does not hand you one more thing
+that is now late.
+
+Beside it, **"This one is heavy"** opens the weights box with that item already
+attached, so what you write down says what it is about. The app asks less of you
+while you are carrying it, exactly as it has since 1.15.0 — the only new part is
+that the weight can finally name the work.
+
+**Nothing here is inferred.** No count of how long you have held something, no
+count of how often you skipped it. "Not this" still records nothing and always
+will. A thing is heavy because you said so.
 
 **What to look at in 1.23.0 — the cards say what you cannot reconstruct.** Two
 lines, from the two collisions the research asks about twice. Sorting things out
@@ -692,6 +710,43 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.21.0, 1.22.0 and 1.23.0 PROMOTED together.** A clean
+  fast-forward: `main` was an ancestor of `staging` with nothing on the other
+  side, so nothing was merged or resolved. Deploy on `main` ran all eighteen
+  steps and printed `Deployed to PRODUCTION`, and Spine was green for the same
+  SHA with the Doctrine §9b privacy step confirmed RAN rather than skipped.
+
+- **2026-08-05 — 1.24.0 (CAPABILITY): the two things you can do when you cannot
+  start.** The catalogue's first two entries, shipped together because they are
+  one moment from two directions — the thing is too big, or it is too heavy.
+  Both acts sit on the offer, because the moment they help is the moment leaving
+  the surface to do them is more than anybody can spend
+  ([ADR-0077](docs/adr/0077-when-you-cannot-start.md)).
+
+  **The bite is ONE event, and that is the whole design.** `node.created` takes
+  a parent, so it is born already under the offered item. Split into a create
+  and a parenting, the gate evaluates the gap between them — where the node is
+  on no surface, under no clock and under no parent — and cures it with a
+  same-day review clock. A first step that quietly acquired a date is a demand
+  somebody made of themselves while trying to get unstuck, and law 3 would bring
+  it back as a replan card whether or not it was ever the right step. The test
+  proves it from the other side: a bare create in the same state comes back
+  carrying a clock.
+
+  **`affects` had been complete and unreachable for eight releases.** The field
+  has been in `pebble.raised` since 1.15.0, `raisePebbleEvents` has accepted it
+  since the day it was written, `pebbleWords` already reads names out of it —
+  and no surface had ever set one. No test covered the emitter at all. "This one
+  is heavy" is its first writer.
+
+  **Two things the gates caught that review had not.** The new input shipped
+  straight into the UA placeholder grey — 4.08:1 light, 3.78:1 dark — which is
+  the third time this app has hit that exact trap, and `app.css` now says so on
+  the line that fixes it. And the smoke block left the load entry open, which
+  the later load section then closed on itself by clicking the summary to open
+  it; its failure read as a broken load surface and was really this block's
+  litter. Leave the surface as you found it.
 
 - **2026-08-05 — 1.23.0 (CAPABILITY): assembled context reaches the two cards
   where the decision is made.** ADR-0012 named the idea and delivered half of

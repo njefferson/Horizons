@@ -573,7 +573,7 @@ export async function main(edition?: Edition): Promise<void> {
   let focus: FocusUI = { refresh() {}, start() {} };
   let reentry: { refresh(): void } = { refresh() {} };
   let bother: { refresh(): void } = { refresh() {} };
-  let load: LoadUI = { refresh() {} };
+  let load: LoadUI = { refresh() {}, attachTo() {} };
   let clock: ClockUI = { refresh() {} };
 
   // ONE render closure, used everywhere. Two call sites used to invoke
@@ -651,7 +651,10 @@ export async function main(edition?: Edition): Promise<void> {
   // Work mode: Next up, Upkeep chips, the coverage list behind the gauge, and
   // (1.6.0) the tree behind its control — its rows and the behind-list's are
   // doors to the sheet now, so it takes openDetail like clarify does.
-  try { work = mountWork(session, now, rerenderLists, n => detail.open(n)); } catch { /* a surface */ }
+  // `load` is read at CALL time, not captured now: the load surface mounts
+  // below this one, and binding it eagerly would hand work.ts the no-op stub.
+  try { work = mountWork(session, now, rerenderLists, n => detail.open(n),
+    (id, title) => load.attachTo(id, title)); } catch { /* a surface */ }
 
   // Focus: one thing, and a way to be interrupted without losing it. Mounted
   // after work so its own refresh can run inside `rerenderLists` — an interrupt

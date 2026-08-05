@@ -353,9 +353,41 @@
          ADR-0010 refuses. Same ink and same paper as the two lines above it, so
          the contrast registry's existing row covers it. -->
     <p id="nextup-approach" class="nextup-why nextup-place" hidden></p>
+    <!-- THE FIRST STEP, once you have named one (1.24.0). It is an ordinary
+         action under the offered item, riding its parent's clock — never a date
+         you did not choose. Its Done is named apart from the card's, because
+         two controls answering to one name is a §4 failure. -->
+    <p id="nextup-bite" class="nextup-bite" hidden></p>
     <div class="nextup-actions">
       <button id="nextup-done" type="button" aria-label="Done with what is next up">Done</button>
+      <button id="nextup-bite-done" type="button" aria-label="Done with the first step" hidden>Done with the first step</button>
       <button id="nextup-skip" type="button" class="ghost">Not this</button>
+    </div>
+    <!-- WHEN IT IS TOO BIG TO BEGIN (1.24.0, docs/nd-collisions.md entry 1).
+         The same inline shape as the focus surface's interrupt line: one field,
+         a submit beside it, and you never leave where you are. Naming a first
+         physical action is the act, so the act lives where the stuckness is. -->
+    <form id="nextup-bite-form" class="nextup-bite-form" autocomplete="off">
+      <label class="visually-hidden" for="nextup-bite-input">A smaller first step</label>
+      <div class="detail-row">
+        <input id="nextup-bite-input" type="text" enterkeyhint="done" autocomplete="off"
+               autocapitalize="sentences" spellcheck="true"
+               placeholder="Start smaller — what is the first bit?"
+               aria-describedby="nextup-bite-hint">
+        <button type="submit">Put it under this</button>
+      </div>
+      <p id="nextup-bite-hint" class="detail-hint">
+        A first physical action, kept under this one. It takes no date of its own
+        and never comes back at you on its own &mdash; it is here to be small
+        enough to begin.
+      </p>
+    </form>
+    <!-- WHEN IT IS TOO HEAVY (1.24.0, entry 2). Not a second form: it opens the
+         one under the capture line with this item already attached, so the
+         weight is recorded exactly as it always has been and finally says what
+         it is about. -->
+    <div class="nextup-actions">
+      <button id="nextup-heavy" type="button" class="ghost">This one is heavy</button>
     </div>
     <p id="nextup-count" class="nextup-count"></p>
     <!-- Why the offer is shorter, said as CO-OCCURRENCE and never as cause

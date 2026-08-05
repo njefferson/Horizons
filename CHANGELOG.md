@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.24.0 — CAPABILITY
+
+*2026-08-05*
+
+- **When the one thing on screen is too big to begin, you can now break a bit off it without going anywhere.** Type a first physical action into the line under Next up — “open the file and write one line” — and the card holds it. It has its own Done, and finishing it brings the invitation back for the next bit.
+- **That first step never takes a date of its own and never comes back at you on its own.** It rides along with the thing it belongs to. Naming a smaller start should not hand you one more thing that is now late.
+- **And when a thing is not too big but too heavy, you can say so from the same place.** “This one is heavy” opens the weights box with that item already attached, so what you write down says what it is about — and the app asks less of you while you are carrying it, as it always has.
+- It never guesses that something is heavy. Nothing here is inferred from how long you have had it or how often you have skipped it; weight exists because you said so.
+- *Still missing, and unchanged:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.
+
 ## 1.23.0 — CAPABILITY
 
 *2026-08-05*

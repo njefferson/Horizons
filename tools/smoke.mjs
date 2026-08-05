@@ -715,6 +715,96 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(logLenAfter, logLenBefore, `skipping appended NOTHING to the log (${logLenBefore} events before and after)`);
   is(afterSkip !== offered, true, `and it moved on ("${offered}" -> "${afterSkip}")`);
 
+  // --- the two things you can do when you cannot start (1.24.0) -------------
+  //
+  // docs/nd-collisions.md entries 1 and 2: the same moment from two directions,
+  // the thing is too big or it is too heavy. Both acts are placed on the offer,
+  // because the moment they help is the moment leaving the surface to do them is
+  // more than somebody can spend.
+  console.log('\nWhen you cannot start — a smaller bite, and saying it is heavy');
+  const biteParent = await tpage.locator('#nextup-title').textContent();
+  await tpage.fill('#nextup-bite-input', 'open the file and write one line');
+  await tpage.click('#nextup-bite-form button[type=submit]');
+  await tpage.waitForSelector('#nextup-bite:not([hidden])');
+  const biteLine = await tpage.locator('#nextup-bite').textContent();
+  is(/open the file and write one line/.test(biteLine || ''), true,
+    `the card holds the first step ("${biteLine}")`);
+  is(await tpage.locator('#nextup-title').textContent(), biteParent,
+    'and the offer still holds the same thing — the head does not change under you');
+
+  // THE PROPERTY THE WHOLE DESIGN RESTS ON. A first step that quietly acquired
+  // a date would be a demand somebody made of themselves while trying to get
+  // unstuck, and law 3 would bring it back as a replan card whether or not it
+  // was ever the right step. It rides its parent's clock (write-gate clause d).
+  const biteNode = await tpage.evaluate(async (parentTitle) => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const all = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    const created = all.find(e => e.kind === 'node.created'
+      && e.payload?.title === 'open the file and write one line');
+    if (!created) return null;
+    const clocks = all.filter(e => e.kind === 'clock.set' && e.node === created.node);
+    return { parented: Boolean(created.payload?.parent), clocks: clocks.length, parentTitle };
+  }, biteParent);
+  is(biteNode?.parented, true, 'the bite is born already under its parent — one event, no gap to be cured in');
+  is(biteNode?.clocks, 0, 'and NO clock was ever set on it, by anyone, including the gate');
+
+  // Its Done is named apart from the card's. Two controls answering to one name
+  // is a §4 failure, and this card now carries two completions.
+  const doneNames = await tpage.evaluate(() => [
+    document.querySelector('#nextup-done')?.getAttribute('aria-label'),
+    document.querySelector('#nextup-bite-done')?.getAttribute('aria-label'),
+  ]);
+  is(doneNames[0] !== doneNames[1], true,
+    `the two Dones answer to different names (${doneNames.join(' / ')})`);
+  await tpage.click('#nextup-bite-done');
+  await tpage.waitForSelector('#nextup-bite', { state: 'hidden' });
+  is(await tpage.locator('#nextup-bite-form').isVisible(), true,
+    'and finishing the step brings the invitation back');
+
+  // TOO HEAVY. Not a second form — it opens the one under the capture line with
+  // this item attached, so `affects` finally gets a writer after eight releases
+  // of being a complete and unreachable field.
+  const heavyAbout = await tpage.locator('#nextup-title').textContent();
+  await tpage.click('#nextup-heavy');
+  await tpage.waitForSelector('#load-entry[open]');
+  await tpage.fill('#pebble-text', 'the whole history of it');
+  await tpage.selectOption('#pebble-weight', 'rock');
+  await tpage.click('#pebble-form button[type=submit]');
+  await tpage.waitForSelector('#pebble-list li');
+  const pebbleRow = await tpage.locator('#pebble-list li').first().textContent();
+  is(new RegExp((heavyAbout || '').slice(0, 12).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).test(pebbleRow || ''), true,
+    `the weight says what it is about ("${pebbleRow}")`);
+  is(/blocked|stuck|because|failing/i.test(pebbleRow || ''), false,
+    'and claims nothing about it — co-occurrence, never causation (law 7)');
+  // The attachment is SPENT. A sticky one would file the next unrelated weight
+  // against a task somebody has stopped thinking about, and `affects` is a list
+  // a person reads — so a wrong entry is a false sentence about their week.
+  await tpage.fill('#pebble-text', 'something else entirely');
+  await tpage.click('#pebble-form button[type=submit]');
+  await tpage.waitForTimeout(200);
+  const secondRow = await tpage.evaluate(() =>
+    [...document.querySelectorAll('#pebble-list li')]
+      .map(li => li.textContent).find(t => (t || '').includes('something else entirely')) || '');
+  is(/·\s*on /.test(secondRow), false,
+    `the next weight is attached to nothing ("${secondRow}")`);
+
+  // LEAVE THE SURFACE AS THIS SECTION FOUND IT. Both weights come off and the
+  // entry closes again. Two reasons, and the second is the one that bit: real
+  // weight narrows the offer (ADR-0065), so leaving it on would silently change
+  // what every later section is offered; and the load section further down
+  // opens this <details> by clicking its summary, which TOGGLES — so an entry
+  // left open is an entry that section then closes on itself. Its failure looks
+  // like a broken load surface and is really this block's litter.
+  for (const t of ['the whole history of it', 'something else entirely']) {
+    await tpage.locator('#pebble-list li', { hasText: t }).locator('button').click();
+    await tpage.waitForTimeout(120);
+  }
+  await tpage.evaluate(() => { document.querySelector('#load-entry')?.removeAttribute('open'); });
+  await tpage.waitForTimeout(120);
+
   console.log('\nWork mode — Done records, and the item stops being offered');
   // RELATIVE to what is already there. An absolute 1 was measuring how many
   // times the whole walk happens to complete something, not whether this button

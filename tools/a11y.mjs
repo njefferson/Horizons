@@ -252,7 +252,17 @@ const REGISTRY = {
   // Work mode. The "why" lines and the behind-list are the lowest-contrast text
   // on these surfaces, so they are named rather than left to axe alone.
   'next up': ['#nextup-heading', '.nextup-title', '.nextup-why', '.nextup-count',
-    '#nextup-done', '#nextup-skip', '#gauge', '.card-done', '#tree-open'],
+    '#nextup-done', '#nextup-skip', '#gauge', '.card-done', '#tree-open',
+    // When you cannot start (1.24.0). The invitation and the heavy control are
+    // on the card whenever there is a head, so they belong in this state; the
+    // named step and its Done are not, and get their own below — a registry
+    // entry matching nothing visible fails by design.
+    '#nextup-bite-input', { sel: '#nextup-bite-input', pseudo: '::placeholder' },
+    '#nextup-bite-form button[type=submit]', '#nextup-bite-hint', '#nextup-heavy'],
+  // A first step has been named. Its own state, because the invitation is
+  // replaced by the step once one exists — two open invitations to name a first
+  // step is a second decision on a surface built to hold one.
+  'first step named': ['#nextup-bite', '#nextup-bite-done', '#nextup-done', '.nextup-title'],
   'coverage open': ['#gauge', '.coverage-title', '.coverage-when', '.coverage-open'],
   // The tree, open (1.6.0, ADR-0013/item 39): rows are doors, depth is
   // indentation, and the branch remainder is a real button.
@@ -1031,6 +1041,21 @@ try {
     await auditNames(page, 'next up', theme);
     await auditTargets(page, 'next up', theme);
     await auditFocusRings(page, 'next up', theme, ['#nextup-done', '#nextup-skip', '#gauge', '#cards .card-done']);
+
+    // State 3d0: a first step has been named (1.24.0). Reached the way anybody
+    // reaches it — type into the invitation on the card — and then UNDONE, so
+    // every state after this one meets the ordinary offer. The card now carries
+    // two completion controls, so the §4 name check earns its keep here.
+    await page.fill('#nextup-bite-input', 'open the file and write one line');
+    await page.click('#nextup-bite-form button[type=submit]');
+    await page.waitForSelector('#nextup-bite:not([hidden])');
+    await auditContrast(page, 'first step named', theme);
+    await auditAxe(page, 'first step named', theme);
+    await auditNames(page, 'first step named', theme);
+    await auditTargets(page, 'first step named', theme);
+    await auditFocusRings(page, 'first step named', theme, ['#nextup-bite-done']);
+    await page.click('#nextup-bite-done');
+    await page.waitForSelector('#nextup-bite', { state: 'hidden' });
 
     // State 3d1a: saying what is on you (1.15.0). HERE, immediately after 'next
     // up', because the line beside a narrowed offer renders only when the offer
