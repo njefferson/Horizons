@@ -612,6 +612,29 @@ and the register classifies each one.
 
 ### Log
 
+- **2026-08-04 — HISTORY REWRITTEN on Noah's word. Every SHA before `7407c0b`
+  is gone; an older clone will not fast-forward.** The personal material was
+  never only in the tree: it was in `NOTES.md` across four commits, in
+  `test/privacy.test.ts` across ten (as fixtures), and in one commit MESSAGE,
+  which no later commit can clean. Scrubbed by PATTERN rather than by quoting
+  the sentences, so nothing sensitive was typed into a script, a file, or a
+  log; matching lines became a redaction marker and every other byte of every
+  other file is unchanged. The check that matters: the working tree at the new
+  head is IDENTICAL to the pre-rewrite tree (`git diff --quiet`), 974 tests
+  pass, and a FRESH CLONE pulled back from GitHub scans clean across all 235
+  commits and 1659 blobs. Spine and Deploy green on `main` and `staging`.
+  **The hub was NOT rewritten and did not need to be** — its apparent hits
+  were the gate's own documentation matching its own pattern, meta-prose about
+  the rule rather than anything about him. That was reported as exposure twice
+  before anyone read what had matched.
+  **Still open and still his:** a force-push does not delete the old commits
+  from GitHub — they stay reachable by full SHA until GitHub collects them, so
+  making the repo private, or asking GitHub Support to purge, is the only
+  thing that closes that. Also left deliberately: a sustainability remark of
+  his, removed from the tree at the old `ce6448f` but still in history. It is a
+  design statement, no pattern catches it, and widening scope was not his
+  instruction.
+
 - **2026-08-04 — 1.20.0 PROMOTED to `main` on Noah's word.** `main` had carried
   a revert of the 1.20.0 code since `c6e7182`, because it had reached `main`
   once without his word; `staging` reapplied it at `002e195`. The promote is a
