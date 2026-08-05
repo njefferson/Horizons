@@ -21,7 +21,7 @@
 //   npm run a11y        (exits non-zero on any failure)
 
 import { chromium } from 'playwright-core';
-import { existsSync, writeFileSync, rmSync } from 'node:fs';
+import { existsSync, writeFileSync, rmSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
@@ -126,6 +126,18 @@ const DIALOG_COMMON = [
   '#import-file', 'label[for="import-file"]',
   '.note-triplet', '.note-kind', '.note-list li', '.about-p', '.about-p a',
 ];
+// The stuck-update paragraph, taken from the SOURCE rather than copied here.
+// A copy would drift, and the whole point of auditing this state is that the
+// real words are long enough to change how the strip lays out. If the constant
+// is renamed, this throws rather than silently auditing a shorter string —
+// a gate that quietly measures the wrong text is worse than one that stops.
+const UPDATE_STUCK_WORDS = (() => {
+  const src = readFileSync(new URL('../src/ui/update.ts', import.meta.url), 'utf8');
+  const m = /export const UPDATE_STUCK_WORDS\s*=\s*\n?\s*'((?:[^'\\]|\\.)*)'/.exec(src);
+  if (!m) throw new Error('a11y: UPDATE_STUCK_WORDS not found in src/ui/update.ts — the stuck state cannot be audited');
+  return m[1].replace(/\\'/g, "'");
+})();
+
 const REGISTRY = {
   // The walkthrough (src/ui/tour.ts) is the first surface a new person meets now,
   // so it is audited as its own state. #tour-back is hidden on the first step, so
@@ -161,6 +173,11 @@ const REGISTRY = {
     // where somebody meets it, on the screen they reach after a cleared browser.
     '.restore-note', '#restore-go',
   ],
+  // The update strip's stuck state (1.20.2). #update-reload is deliberately
+  // ABSENT: the state hides it, and a registry entry matching nothing visible
+  // fails by design — listing it here would demand the control be shown, which
+  // is the opposite of what this state is.
+  'update stuck': ['#update-words', '#update-save', '#update-dismiss'],
   // Sort mode (1.3.0): the picker — sentences and counts, never lists — and
   // the one-card conveyor. The count and the entry line are the quiet tokens;
   // the route hints are the lowest-contrast text, named like triage's own.
@@ -863,6 +880,31 @@ try {
     await auditTargets(page, 'empty store', theme);
     await auditFocusRings(page, 'empty store', theme,
       ['#capture', '#capture-form button[type=submit]', 'button.info', '.skip', '#restore-go']);
+
+    // State 2u: the update strip's SECOND state — the one shown when the swap
+    // does not take (1.20.2). The state above audits the strip's ordinary words;
+    // this is a different paragraph, four times longer, with #update-reload
+    // REMOVED because pressing it again cannot help. A state the gate never
+    // opens is a state nothing measures (LESSONS §28), and this one shipped
+    // unmeasured — it is reached only on the update day, on a device that
+    // refuses the swap, which is the least likely surface to be looked at and
+    // the worst one to get wrong.
+    //
+    // Driven exactly as mountUpdatePrompt drives it, so the gate reads the DOM
+    // the reader gets rather than a mock of it.
+    await page.evaluate((words) => {
+      document.querySelector('#update-words').textContent = words;
+      document.querySelector('#update-reload').hidden = true;
+    }, UPDATE_STUCK_WORDS);
+    await auditContrast(page, 'update stuck', theme);
+    await auditAxe(page, 'update stuck', theme);
+    await auditNames(page, 'update stuck', theme);
+    await auditTargets(page, 'update stuck', theme);
+    // Put the strip back so every later state sees what it saw before.
+    await page.evaluate(() => {
+      document.querySelector('#update-words').textContent = 'A newer version is ready.';
+      document.querySelector('#update-reload').hidden = false;
+    });
 
     // State 3: with a card on the surface.
     await page.fill('#capture', 'a held thought');
