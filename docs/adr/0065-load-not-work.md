@@ -26,13 +26,13 @@ clock on one for a year. `pebble.raised{magnitude, affects}`,
 declared and typed, and `Capacity` even named its four values. **Only the
 consumer was missing.**
 
-**This was carried as an open question for Noah, wrongly, several times.** It was
+**This was carried as an open question for the owner, wrongly, several times.** It was
 recorded in a plan file as blocked on "what does a pebble actually depress?",
 repeated in a readiness sweep, said in chat twice, and finally shipped into the
 vocabulary in 1.14.2 as a claim that the decision "has never been answered" — one
 release after establishing that an ADR's Consequences section is a build list
 rather than prose. The framing appears nowhere in this repo except in that text.
-Noah's correction is the reason this ADR exists, and the correction stands in the
+The owner's correction is the reason this ADR exists, and the correction stands in the
 vocabulary beside the entry so the wrong version does not quietly disappear.
 
 ## Decision

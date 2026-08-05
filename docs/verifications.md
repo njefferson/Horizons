@@ -3,7 +3,7 @@
 The standing answer to *"did we ever actually check that?"*
 
 Doctrine §6: a claim without evidence is a guess, and it gets labelled as one.
-**VERIFIED** and **NEEDS NOAH'S HANDS** are kept apart on purpose. A row does not
+**VERIFIED** and **NEEDS THE OWNER'S HANDS** are kept apart on purpose. A row does not
 move to VERIFIED because it seems likely — only because something proved it, and
 the proof is named in the row.
 
@@ -16,7 +16,7 @@ a dated resolution beneath it.
 - **`PARTIAL`** — Part of the question is settled; the rest is not. The unsettled part is stated.
 - **`UNVERIFIED`** — Not checked, or checked by a method too weak to count. **Not** the same as "probably fine".
 - **`INCONCLUSIVE`** — A check was attempted and returned nothing usable. The attempt is recorded so it isn't repeated blindly.
-- **`NEEDS NOAH'S HANDS`** — Cannot be checked from a session by any means. Requires real hardware or a real account.
+- **`NEEDS THE OWNER'S HANDS`** — Cannot be checked from a session by any means. Requires real hardware or a real account.
 - **`NOT RUN`** — Deliberately deferred, with the reason and the trigger for running it.
 - **`WITHDRAWN`** — No longer relevant — scope changed. The row stays so the consideration is on record.
 - **`WORKING`** — An observed behaviour is now correct; recorded when the cause is understood well enough to name but the row is about a fixed symptom, not a standing invariant.
@@ -31,7 +31,7 @@ named explicitly rather than averaged into one label.
 ## V-00 · iPadOS storage behaviour — **the reference platform**
 **Status: STEP 1 ANSWERED on device, 2026-07-28** · step 2 waits for tomorrow
 
-### Measured on Noah's iPad, from the deployed app
+### Measured on a real iPad, from the deployed app
 
 - **Storage API** — available
 - ****Persistent right now**** — **yes**
@@ -45,7 +45,7 @@ named explicitly rather than averaged into one label.
 sequence the brief claimed was required. This does not prove the requirement (nobody tried
 it *without* notifications), only that the documented path works.
 
-**And the promise held on real hardware.** Noah force-quit the app and reopened it; the
+**And the promise held on real hardware.** The owner force-quit the app and reopened it; the
 captured item was still there. That is the app's one claim, tested the only way that counts.
 
 **Two things worth reading off this that were not the question:**
@@ -77,7 +77,7 @@ one of them has been measured.
 **Status: superseded by the readings above** · requires a real device
 
 > **Promoted 2026-07-27.** This was V-07, filed as a nice-to-know whose failure "costs
-> nothing". That is no longer true. Noah's decision that this is a **personal-iPad app**
+> nothing". That is no longer true. The owner's decision that this is a **personal-iPad app**
 > makes iPadOS the *only* platform in scope, so these two behaviours now govern the
 > single environment the app is built for. The original row is preserved below as V-07;
 > this is the one that matters.
@@ -92,7 +92,7 @@ Two claims from the brief, both needing confirmation on the current iOS/iPadOS r
 > nothing to put on an iPad. There is now: the shell ships a **Storage panel** that
 > reads `persist()`, `persisted()` and `estimate()` and records the first grant with
 > its timestamp, so step 2 answers itself by opening the panel again the next day.
-> Noah runs it at **staging.quietkeep.pages.dev** once Phase 1 is deployed.
+> the owner runs it at **staging.quietkeep.pages.dev** once Phase 1 is deployed.
 
 **What to check, in order:**
 1. Install to the Home Screen from Safari. Does `navigator.storage.persist()` resolve
@@ -171,12 +171,12 @@ documentation rather than secondary reporting. → [ADR-0007](adr/0007-notificat
 **Status: PARTIAL** · adopted 2026-07-28 → [ADR-0024](adr/0024-name-quietkeep.md)
 
 PARTIAL, not VERIFIED, and the audit was right to catch the earlier label: every check a
-session or Noah's device could run has run and come back clean — the App Store search and
+session or a real device could run has run and come back clean — the App Store search and
 `quietkeep.pages.dev`, 2026-07-28 — but the USPTO knockout is deliberately **not run** (see
 below), and by this file's own status table a question with a leg deferred-with-a-reason is
 PARTIAL, not VERIFIED. The name is safe to build on; it is not certified.
 
-Every check a session could run has run, and **both checks that only Noah's device could
+Every check a session could run has run, and **both checks that only a real device could
 run came back from him** — the App Store search and `quietkeep.pages.dev`, on 2026-07-28.
 
 **The USPTO knockout was not run, and that is a decision rather than a gap.** Trademark
@@ -206,11 +206,11 @@ being free, this row reopens.**
   - Result: `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name.
 - **5**
   - Check: **App Store**
-  - Instrument: **Noah's own device, 2026-07-28**
+  - Instrument: **a real device, 2026-07-28**
   - Result: *"there is nothing on the App Store that I see near it."* **Answered.**
 - **6**
   - Check: **`quietkeep.pages.dev`**
-  - Instrument: **Noah's own device, 2026-07-28**
+  - Instrument: **a real device, 2026-07-28**
   - Result: *"Quietkeep.pages.dev is clean."* **Answered** — Q-04 closed, and the subdomain is the one the deploy targets.
 - **—**
   - Check: USPTO classes 9 and 42
@@ -223,7 +223,7 @@ compound is not that word, and confusion-in-commerce does not reach a free app l
 against being sold.
 
 > **Both handed-over checks came back.** These are the first in the naming sequence that
-> Noah ran and reported, rather than ones a session asserted were impossible. The rule in
+> the owner ran and reported, rather than ones a session asserted were impossible. The rule in
 > Doctrine §6 — hand over a manual step only after proving it impossible from this side —
 > is what made them real checks instead of a shrug. The pattern to keep: prove the block,
 > name the exact thing to look at, and the answer comes back in seconds.
@@ -241,7 +241,7 @@ being run last, or not at all.
    gauge) and *Alignment* (the alignment tree).
 3. **Unscoped `"<name>" software company app brand`.** Killed *Perennial*, *Parallax*.
 4. **npm and GitHub** — authoritative and reachable from a session.
-5. **App Store / USPTO** — Noah's device; blocked from here, proven in V-05.
+5. **App Store / USPTO** — a real device; blocked from here, proven in V-05.
 
 ### The Wynts round — what was run, and why it was not enough
 
@@ -263,7 +263,7 @@ being run last, or not at all.
   - Instrument: `grep`
   - Result: no internal collision
 
-**Still owed, on Noah's device:** the App Store search from a real device, and a USPTO
+**Still owed, on a real device:** the App Store search from a real device, and a USPTO
 knockout in classes 9 and 42 if wanted. Blocked from a session — proven in V-05, not
 assumed. Until those run this row stays **PARTIAL**, not VERIFIED.
 
@@ -277,7 +277,7 @@ a half-remembered name landing on a neighbour. Recorded in ADR-0022.
 Perennial was reported here as "un-killed" on the strength of two searches that **asked
 the wrong question**. It is in fact held by **three** software companies — Perennial Labs
 (DeFi, and serving `perennial.pages.dev`), Perennial Systems (web dev/fintech), and
-Perennial Software (security). Noah found the subdomain occupant himself, on his phone,
+Perennial Software (security). Found on device the subdomain occupant himself, on his phone,
 in seconds.
 
 The two failing queries were scoped to the app's own category
@@ -290,7 +290,7 @@ shape already documented below in V-09. A single properly-scoped query —
 > weak probe wearing a thorough one's clothes.
 
 **Standing rule for every future candidate:** the unscoped *name + software* query runs
-**first**, before any category query and before the name is shown to Noah at all.
+**first**, before any category query and before the name is shown to the owner at all.
 
 ### What a session can and cannot do here — proven 2026-07-28, not assumed
 
@@ -309,7 +309,7 @@ inconclusive `pages.dev` probe. **Recorded because Doctrine §6 permits handing 
 manual step only after proving it impossible from this side — which had been asserted
 before it was tested.**
 
-**Per candidate, owed on Noah's device — but only after the session's own checks pass:**
+**Per candidate, owed on a real device — but only after the session's own checks pass:**
 1. **App Store / Play direct search** — the check most likely to matter. A same-category
    clash is the realistic failure; *Hyperfocus 2* is exactly what this catches.
 2. **`<name>.pages.dev`** — ten seconds, and it settles Q-04.
@@ -317,7 +317,7 @@ before it was tested.**
    protects against confusion **in commerce**; this app is free, noncommercial, and
    licensed against being sold. A live mark on unrelated goods does not reach it.
 
-**Nothing reaches Noah until the session has run the unscoped name+software query and
+**Nothing reaches the owner until the session has run the unscoped name+software query and
 reported what it found.** Handing over a check that a search could have answered is what
 went wrong with Perennial.
 
@@ -336,7 +336,7 @@ recorded.
 
 **The worse error was what got built on top of it.** This row was used to argue that
 "horizons" was *decorative* in the astro app and that the planner had the better claim to
-the word. That assumption was never checked. Noah corrected it: **recording your actual
+the word. That assumption was never checked. The owner corrected it: **recording your actual
 horizon, and using it to compute what is genuinely visible from where you stand, is that
 app's core differentiating feature** — something he says no other astro app does. Its
 claim is literal; the planner's was figurative.
@@ -372,14 +372,14 @@ Originally: whether the owner's government machine permits installing a PWA and
 granting persistent storage under managed Edge policy. It was recorded as gating the
 work half.
 
-**Withdrawn because the app is not for that machine.** Noah, 2026-07-27: *"Not intended
+**Withdrawn because the app is not for that machine.** Stated 2026-07-27: not intended
 or designed for GFE. Personal iPad only is my personal intent."* There is nothing to
 check, because there is no supported configuration to check it in.
 
 **Kept rather than deleted**, so that a future reader finds the question already
 considered and closed instead of raising it again as an oversight.
 
-> **One thing deliberately not claimed.** Noah expects managed-device storage policy
+> **One thing deliberately not claimed.** The owner expects managed-device storage policy
 > would block the app anyway if someone tried. That is a reasonable expectation and it
 > is **unverified** — no session can test it and no one has. It is recorded here as his
 > expectation and **nothing in the design relies on it as a control**. The scope
@@ -525,7 +525,7 @@ Cloudflare secrets not configured — skipping deploy.
 > **Same error as V-11, one hour later.** There, a cached index was read as the current
 > state of the repo. Here, an unset variable was read as the absence of a credential. Both
 > times an instrument's silence got reported as a fact about the world, and both times it
-> was used to tell Noah something about his own setup that was not true.
+> was used to tell the owner something about his own setup that was not true.
 
 **Settled:** the stored value is a **scoped API token** under the name
 `CLOUDFLARE_API_KEY`. Deploy run 9 authenticated with `Bearer` and shipped, so the
@@ -541,16 +541,16 @@ CI published successfully and Safari could not reach the result — then could.
 
 - **`staging.quietkeep.pages.dev`**
   - What it is: branch alias of a **preview** deployment
-  - Result on Noah's iPad: "connection was lost"
+  - Result on a real iPad: "connection was lost"
 - **`2020c8fe.quietkeep.pages.dev`**
   - What it is: hash URL of the **same preview** deployment
-  - Result on Noah's iPad: same
+  - Result on a real iPad: same
 - **`quietkeep.pages.dev`**
   - What it is: **production**, after the promote
-  - Result on Noah's iPad: **loads, and the app runs**
+  - Result on a real iPad: **loads, and the app runs**
 
 **One variable changed: the project gained its first production deployment.** Same device,
-same network throughout — confirmed by Noah, and it was never mine to assume otherwise.
+same network throughout — confirmed by the owner, and it was never mine to assume otherwise.
 
 That makes a coherent explanation available without inventing anything. **Both failing URLs
 were preview deployments** — the hash URL and its branch alias are two names for one
@@ -608,7 +608,7 @@ never silent — only the *label's day* was wrong. That judgement held: the fix
 landed as the first step of Phase 3, with its own suite, one release later.
 
 > **A correction, and it matters more than the finding.** This row previously read that the
-> likelier cause was the device being on LTE rather than Wi-Fi. **Noah was on LTE for every
+> likelier cause was the device being on LTE rather than Wi-Fi. **The owner was on LTE for every
 > one of those tests.** I inferred a network change from a status-bar icon in a screenshot,
 > promoted the inference to "likelier cause", and wrote it into a permanent record as
 > reasoning. It was a guess about someone else's setup, presented as an analysis — the same
@@ -637,7 +637,7 @@ so wrong.
 ## V-11 · Reading this repo's metadata from a session — **you cannot**
 **Status: PROVEN** · 2026-07-28
 
-**What happened.** Two sessions running told Noah the `indexed` topic still needed fixing.
+**What happened.** Two sessions running reported the `indexed` topic still needed fixing.
 He had already fixed it, before the first of those reports. The report was not a guess — it
 was quoted from an API response, which is what made it convincing and what made it wrong.
 
@@ -657,7 +657,7 @@ response was a snapshot of a moment hours earlier, presented with no indication 
 [V-05](#v-05--pagesdev-is-unreachable-from-a-session--and-that-is-now-proven) and V-04.
 
 **Therefore:** a session **cannot** verify this repo's description, website, topics, or
-social preview. Doctrine §10 says list the values and ask Noah to confirm each. **His
+social preview. Doctrine §10 says list the values and ask the owner to confirm each. **His
 confirmation is the verification.** There is no second opinion available, and the thing
 being treated as one was a cache.
 
@@ -709,8 +709,8 @@ recorded here rather than papered over with a claim of instant, total erasure.
 
 ---
 
-## V-20 · Does clearing the browser's website data take a Home Screen app's store? — **NEEDS NOAH'S HANDS**
-· raised 2026-08-02 by Noah: *"Right now, if I clear Safari cookies etc, do I lose everything?"*
+## V-20 · Does clearing the browser's website data take a Home Screen app's store? — **NEEDS THE OWNER'S HANDS**
+· raised 2026-08-02, asking whether clearing Safari's website data loses everything
 
 **What is already settled, from the spec rather than from a device.** Persistent
 storage means the browser will not clear the store **on its own** to make room.
@@ -722,7 +722,7 @@ and the app's copy is worded from that definition, which needs no measurement.
 Settings → Safari → *Clear History and Website Data* actually reaches a Home
 Screen web app's IndexedDB for the same origin. [V-00](#v-00--ipados-storage-behaviour--the-reference-platform)
 measured the persistence grant, ~38 GB of quota and a force-quit survival on
-Noah's iPad; it never went near this path, and this repo does not put a platform
+a real iPad; it never went near this path, and this repo does not put a platform
 fact on screen it has not run.
 
 **The run, and it verifies the feature at the same time.** It is safe precisely
@@ -817,7 +817,7 @@ and its permissions include Cloudflare Pages and not Workers.
 - The two permissions to add are **Account → Workers KV Storage → Edit** and
   **Account → Workers Scripts → Edit**. Nothing needs renaming and no new secret
   is needed. This is a dashboard action; the session token cannot perform it
-  (Doctrine §10 applies — it is listed for Noah, not done unilaterally).
+  (Doctrine §10 applies — it is listed for the owner, not done unilaterally).
 
 **The trap this row exists to close.** `RELAY_HOST` briefly held a *guess* at the
 workers.dev URL, and every gate passed: the format check, the CSP generation, the
@@ -883,7 +883,7 @@ infrastructure, unwired, exactly like `seal.ts`, `relay.ts` and `sync.ts`.
 ## V-16 · Can an iPad web app scan a QR code at all? — **NOT VERIFIED, and it decides the pairing design**
 · raised 2026-07-30 with the sync stage 4 decision
 
-Noah chose the QR route for pairing, and the *showing* half is easy — an encoder
+The choice was the QR route for pairing, and the *showing* half is easy — an encoder
 for one fixed size is about two hundred lines and no dependency. **The scanning
 half is the part that may not exist.**
 
@@ -910,7 +910,7 @@ fragment is never transmitted to a server by any browser, so the key stays on th
 device even though it travelled inside a URL. Then only the ENCODER ships, there is
 no camera code, no `getUserMedia`, and no decoder.
 
-**What only Noah can settle, and it is the real risk:** whether iOS opens that link
+**What only the owner can settle, and it is the real risk:** whether iOS opens that link
 in the **installed PWA** or in Safari. If Safari, the key lands in a different
 origin storage context than the installed app, and pairing would appear to succeed
 and then quietly not work — the exact silent-wrong-state this project refuses. It
@@ -922,7 +922,7 @@ must be checked on the device before the flow is built, not after.
     app, and see which one comes to the front
   - What it does NOT prove either way: anything about the key itself
 
-**On Noah's mutual-scan idea.** The instinct is right and it is worth keeping: a
+**On the owner's mutual-scan idea.** The instinct is right and it is worth keeping: a
 one-way scan proves the target saw *a* code, not that both devices ended up holding
 the same key, so a mis-scan surfaces later as an exchange that silently moves
 nothing. The cheap form of the same check is not a second scan (which hits the same
@@ -952,7 +952,7 @@ upstream of that claim:
   - By what: unit
   - What it does NOT prove: that it resolves to **09:00 local** rather than 09:00 UTC, or midnight, or not at all
 
-**The device reading needed**, on Noah's iPad, which is the reference platform:
+**The device reading needed**, on a real iPad, which is the reference platform:
 1. Export from Quietkeep, open the `.ics`, add it to the calendar.
 2. Confirm the event lands on the **right day** — not a day either side.
 3. **Close Quietkeep entirely** and confirm a notification arrives at 09:00 local.
@@ -975,10 +975,10 @@ one remove — generating a correct file is not the same as a reminder arriving.
 **Status: VERIFIED and CLOSED, 2026-08-04. Production has been read. The
 statement in this row's title is no longer true, and that is the point.**
 · raised 2026-07-29 with the 0.9.0 promote, and caveated every promote since
-· closed by the §7f diagnostic running on Noah's own device, not by a session
+· closed by the §7f diagnostic running on a real device, not by a session
 
 **PRODUCTION, READ. The bytes, and where each came from.** After 1.18.0 was
-promoted on 2026-08-04, Noah sent a diagnostic from the instance installed on his
+promoted on 2026-08-04, the owner sent a diagnostic from the instance installed on his
 home screen and confirmed in his own words that its URL is the plain one — the
 production sync host, `quietkeep-sync.pages.dev`, not staging. It reported:
 
@@ -1010,7 +1010,7 @@ That is the exact claim this row was created to say nobody could make.
 **What has NOT changed, and must not be read as changed.** A session still
 cannot fetch `pages.dev` — every host is refused `403` at CONNECT, measured
 again on 2026-08-03 in a fresh container, and that stands as its own record
-below. **Production was not read by a session. It was read by Noah's device and
+below. **Production was not read by a session. It was read by a real device and
 reported as text**, which is Doctrine §7f working exactly as written: the check
 went where the device could run it, and the answer came back better than the
 fetch would have been, because it came from the real device on the real network.
@@ -1022,12 +1022,12 @@ one paste, and it is stronger than the fetch a session ever wanted.
 
 **The honest cost, recorded because this file is for that.** This row could have
 closed an hour earlier. The report carried everything needed except the name of
-the origin it came from, so the question had to go back to Noah, who answered it
+the origin it came from, so the question had to go back to the owner, who answered it
 in two words. The missing `location.origin` line is logged below and is now the
 first thing to add to the diagnostic — a report that cannot say where it came
 from cannot close a verification on its own.
 
-**What closed the staging half, and it took no new code.** Noah sent the §7f
+**What closed the staging half, and it took no new code.** The owner sent the §7f
 diagnostic from his device on 2026-08-03. It reported:
 
     Build: 1.18.0
@@ -1083,7 +1083,7 @@ host). So the chain a session can actually observe ends one step short:
 
 Production is 1.17.4 and **1.17.4 has no diagnostic** — the surface shipped in
 1.18.0, which is still on `staging`. There is no control to press on
-`quietkeep.pages.dev` and no report to take from it. A session asked Noah for one
+`quietkeep.pages.dev` and no report to take from it. A session asked the owner for one
 anyway on 2026-08-03; he answered *"there's no way to get data from main since it
 doesn't have that ability"*, and he was right. Checked afterwards rather than
 before: `origin/main` carries no diagnostic source at all, and its only
@@ -1095,7 +1095,7 @@ diagnostic landed in 1.18.0) were already written down **in this very file** by
 the session that asked. Verifying the step would have cost one `git ls-tree`.
 
 **The consequence is better than the mistake.** The production half of this row
-is not waiting on Noah to go and look — it is **blocked on the promote**, and it
+is not waiting on the owner to go and look — it is **blocked on the promote**, and it
 unblocks itself the moment 1.18.0 reaches production. So:
 
 - **Do not ask for a production diagnostic before 1.18.0 is promoted.** There is
@@ -1115,7 +1115,7 @@ mechanism works; only the production instance is unmeasured, and the promote is
 what measures it.
 
 **The missing origin line has now cost a verification, one hour after it was
-logged.** On 2026-08-04, after the promote, Noah sent a diagnostic from his real
+logged.** On 2026-08-04, after the promote, the owner sent a diagnostic from his real
 instance reading `Service worker cache: quietkeep-sync-1.18.0`. Since the promote
 BOTH `quietkeep-sync.pages.dev` and `staging.quietkeep-sync.pages.dev` serve
 1.18.0, so that string cannot say which one he was standing on — and before the
@@ -1133,7 +1133,7 @@ clearing website data mints a fresh one on the same hardware. `state.devices` is
 just the set of `e.device` over the log (`src/fold.ts:522`). The line says
 "devices" and a reader hears hardware.
 
-Recorded because a reasonable reading of it was wrong in both directions: Noah
+Recorded because a reasonable reading of it was wrong in both directions: the owner
 read three ids as including the OmniFocus import, which cannot be — that import
 runs through `session.commit` and stamps the importing store's own id
 (`src/taskpaper.ts:235`, called at `src/ui/about.ts:1482`) — while the count
@@ -1154,7 +1154,7 @@ against this row:**
 - **Say whether a worker is waiting**, per §7h.4 — `registration.waiting != null`
   and whether one controls the page.
 
-**Re-tested 2026-08-03, after Noah said "pages.dev has been allowed now" —
+**Re-tested 2026-08-03, after It was said "pages.dev has been allowed now" —
 STILL DENIED from this session, and the distinction matters.** Both hosts were
 tried and both were refused at the gateway, logged by the proxy itself:
 
@@ -1189,7 +1189,7 @@ once each, at the gateway, logged by the proxy by name:
 - `noahjefferson.pages.dev:443` — 403 to CONNECT, `19:45:58.519Z`
 
 The hub's own site is in that list. Whatever the grant did, it did not put the
-`pages.dev` space on this session's allowlist for any project Noah owns.
+`pages.dev` space on this session's allowlist for any project the owner owns.
 
 **And the network is emphatically not the problem** — Doctrine §15b requires
 this be measured per host and stated with codes rather than asserted, so it

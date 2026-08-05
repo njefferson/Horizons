@@ -16,7 +16,7 @@
 //
 // Doctrine §7f then made it a rule for every app: **ask for the diagnostic,
 // never for a screenshot.** A photograph of a screen loses every reason string
-// and cannot show internal state at all — and Noah reports from an iPad, where
+// and cannot show internal state at all — and reports come from an iPad, where
 // every outstanding verification in this repo has to be run.
 //
 // ## THE RULE THIS MODULE IS BUILT AROUND: shape, never content

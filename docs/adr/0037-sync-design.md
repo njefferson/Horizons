@@ -1,9 +1,9 @@
 # ADR-0037 · Quietkeep Sync — a relay that cannot read, gated so it cannot be turned on by accident
 
-**Status:** Accepted (design) · **Date:** 2026-07-29 · Noah's decision
-· **All three open items answered by Noah, 2026-07-29 — see "Noah's answers".**
+**Status:** Accepted (design) · **Date:** 2026-07-29 · the owner's decision
+· **All three open items answered 2026-07-29 — see the answers recorded below.**
 
-## Noah's answers, 2026-07-29
+## the answers given, 2026-07-29
 
 1. **The doctrine wording — "make it right."** Done, and it went further than a
    wording tweak: [Doctrine §1](https://github.com/njefferson/noahjefferson/blob/main/DOCTRINE.md)
@@ -134,7 +134,7 @@ new record and not an enhancement.
 
 ## Consequences
 
-- **Three things need Noah's word before this ships**, and none is an
+- **Three things need the owner's word before this ships**, and none is an
   implementation detail:
   1. **The doctrine text.** "No accounts, no telemetry, no server-side user data"
      stays exactly true of Quietkeep and becomes partly false of Quietkeep Sync.
@@ -174,7 +174,7 @@ nothing in them is reachable from a surface and the default build is unchanged:
   that records them advances, and a chunk that will not open is left in place
   rather than written off, because a newer format means the other device is ahead.
 
-### The fourth thing that needs Noah's word
+### The fourth thing that needs the owner's word
 
 **How the key reaches the second device.** The crypto is transfer-agnostic, which
 is why everything else could be built without settling it. The options, honestly:
@@ -194,7 +194,7 @@ is why everything else could be built without settling it. The options, honestly
   needs a QR encoder in the bundle — the first dependency this app would take on
   for a feature rather than for correctness.
 
-**Settled 2026-07-30 (Noah): the QR scan, and the pairing file stays alongside
+**Settled 2026-07-30 (the owner): the QR scan, and the pairing file stays alongside
 it.** The target device's camera reads the code on the source device — *"Each could
 even scan the QR code of the other for double verification if it matters."*
 
@@ -236,7 +236,7 @@ quietly not work — the exact silent-wrong-state this design exists to avoid.
 
 **The mutual check survives in a cheaper form.** A second scan hits the same missing
 API from the other direction, so instead **both devices display the sync id derived
-from the key** and a human compares two short strings. Same property Noah was
+from the key** and a human compares two short strings. Same property the owner was
 after: pairing completes verified or fails while somebody is still there to retry.
 
 ## What would overturn it

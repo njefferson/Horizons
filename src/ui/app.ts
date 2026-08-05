@@ -139,7 +139,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
     // The dedicated replan surface has capped at three since it existed, on the
     // reasoning that "a wall of them is the pile in a new costume". The held list
     // never had a cap at all, which nobody noticed while the fixtures held eight
-    // things. Noah imported 1,429 and got a scroll of well over a thousand rows
+    // things. a real import of 1,429 and got a scroll of well over a thousand rows
     // under one heading — the pile, in the main list, which is the thing this app
     // exists to prevent.
     //
@@ -178,7 +178,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
       // "7 under it" for a container. This is what tells an already-filed import
       // apart from a loose one — the flat list drew them identically, so a
       // backlog of a thousand could not be processed because nothing said which
-      // items already had a home (Noah, on device). A loose action returns null
+      // items already had a home (found on device). A loose action returns null
       // and shows nothing, which is correct: it IS loose.
       const place = placeWords(node, st, childCounts);
       if (place !== null) {
@@ -483,7 +483,7 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   // itemised list that backs it (build-plan item 21).
   //
   // `ready` is stated here because **the icon badge shows that same number**, and
-  // until now no surface in the app said it anywhere. Noah came back to a red 1 on
+  // until now no surface in the app said it anywhere. a reader came back to a red 1 on
   // the home screen and could not find a 1 inside — so the badge was an
   // unexplained demand, which is the one thing this app must never be. The group
   // headings deliberately carry no counts (a heading is not a score), so the
@@ -830,7 +830,7 @@ export async function main(edition?: Edition): Promise<void> {
 
   // Registration now lives with the update prompt, because the two are one
   // question: the registration is how a newer version is noticed, and noticing it
-  // without offering the copy was the gap Noah asked about. Contained there, for
+  // without offering the copy was the reported gap. Contained there, for
   // the same reason it was contained here — offline support is an enhancement and
   // must never cost capture.
   mountUpdatePrompt(session);

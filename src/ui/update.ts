@@ -1,6 +1,6 @@
 // "A new version is ready" — and the offer of a copy before it lands.
 //
-// Noah: *"Ask to backup when update detected?"*
+// A requirement: offer a backup when an update is detected.
 //
 // ## What it must not do
 //
@@ -63,8 +63,9 @@ export const updateFailedWords = (why: string): string =>
 /**
  * When the swap does not happen after the reader has asked for it.
  *
- * Noah, 2026-08-05, on an iPad: *"I hit 'install it now' 10 times, gave up,
- * force closed, and reopened, and it worked."* An installed app on iPadOS will
+ * Reported 2026-08-05 on an iPad: the Install control was pressed ten times
+ * with no visible effect, and the update landed only after the app was force
+ * closed and reopened. An installed app on iPadOS will
  * not always let the waiting version take over while the app is still running —
  * the message is sent, the worker does not step aside, and nothing on screen
  * changes. What this used to do about that was RELOAD after three seconds,

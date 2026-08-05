@@ -84,7 +84,7 @@ worst possible trade.
 - No behaviour change, no new nouns, no surface change. Nothing on any screen is
   different; it is the same screens, sooner.
 - **Item 42 is not closed by this.** The measurement that counts is still on
-  Noah's iPad — this hardware is not that device, and the ratio is more portable
+  a real iPad — this hardware is not that device, and the ratio is more portable
   than the absolute. What has changed is that the read path now has a gate at
   all, so a regression is caught before it reaches a device.
 - **A correction, made in the same commit it was found in.** The memo's first

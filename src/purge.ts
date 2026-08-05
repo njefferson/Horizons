@@ -1,10 +1,10 @@
-// Clearing things out (roadmap item Noah asked for: "the ability to purge the
-// whole set of tasks").
+// Clearing things out — a roadmap requirement: the ability to purge the whole
+// set of tasks.
 //
-// Noah, on how it should feel: *"I feel like both should be available so the user
-// has control of their data"* and *"there should be a verification that prevents it
-// from being easily done, however, and it should recommend a back up being done
-// before it happens with a button available at that point."*
+// How it was required to feel: both modes available, so the person keeps control
+// of their own data; a verification step so it cannot be done easily by accident;
+// and a backup recommended before it happens, with a button to take one at the
+// moment of the decision.
 //
 // ## Two modes, because they are genuinely different promises
 //
@@ -181,7 +181,7 @@ export async function eraseEverything(store: ErasableStore): Promise<void> {
  * What the confirmation says.
  *
  * It states the count, states what survives, and states plainly whether a copy has
- * been saved — because Noah asked for the backup to be RECOMMENDED with a button
+ * been saved — because the backup was required to be RECOMMENDED with a button
  * there, and a recommendation nobody acted on has to still be visible at the
  * moment of the decision. It does not scold and it does not block: an adult who
  * has read an accurate sentence is allowed to proceed.

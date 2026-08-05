@@ -11,7 +11,7 @@ overturn clause reads, in full: *"Nothing about the vault split."*
 
 Two things happened after it was written.
 
-**Q-10 (2026-07-29) closed vaults as a mechanism.** Noah asked whether anything
+**Q-10 (2026-07-29) closed vaults as a mechanism.** It was asked whether anything
 scoped a projection by vault; the answer was no, nothing ever had. The
 recommendation against building them is worth quoting because its reasoning is
 what decides this record: *"a hard vault split forces Next up to pick a side, and
@@ -25,7 +25,7 @@ are not being built.
 
 ## Decision
 
-**The journal is a `NodeKind` with an encrypted payload.** Noah, 2026-08-02:
+**The journal is a `NodeKind` with an encrypted payload.** Recorded 2026-08-02:
 *"Kind plus encryption sounds best."*
 
 ### Why Q-10's objection does not reach the journal, and why a lens never could

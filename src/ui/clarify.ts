@@ -117,7 +117,7 @@ export function mountTriage(
    *  do, and the thing it most obviously needed: routing something to "Do now"
    *  clocked it for today and then offered no way to say you had done it, so a
    *  two-minute job sat under "Ready now" until it was found in the list
-   *  (Noah, on device). Gated like every other completion. */
+   *  (found on device). Gated like every other completion. */
   const markDone = (node: string): void => {
     void session.commit(ctx => doneEvents(ctx, node)).then(() => {
       LIVE.textContent = 'Done.';
@@ -137,7 +137,7 @@ export function mountTriage(
     active?.stop();
     // NAME the item. The offer used to say "Now — finish it, or take two minutes"
     // with no hint of WHAT, so a fast router landed on a bar demanding an answer
-    // about a thing it would not name (Noah, on device).
+    // about a thing it would not name (found on device).
     const title = session.state().nodes.get(node)?.title || '(untitled)';
     const bar = el('div', 'donow');
     bar.append(el('span', 'donow-label', `Now: ${title}`));
@@ -321,9 +321,9 @@ export function mountTriage(
   /**
    * WHERE, which triage has never been able to answer.
    *
-   * Noah, 2026-08-04: *"I imported [a backlog] to work through and put in the
-   * right places, but keep finding that the places were not there, yet. That's
-   * the problem."* The six routes above all answer WHEN. This one answers where,
+   * Reported 2026-08-04: a backlog imported to work through and file in the
+   * right places, and the places kept turning out not to exist yet. That was
+   * the problem. The six routes above all answer WHEN. This one answers where,
    * and it MAKES the place when it is not there — law 4, levels push down and
    * the user never climbs. Sending him off to create a project and come back is
    * the climb, and across a 1,173-item import it is the whole difficulty.

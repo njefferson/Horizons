@@ -401,7 +401,7 @@ test('the tick-off control matches the groups exactly — including the Menu', (
 
 // --- a gate cure is not a demand --------------------------------------------
 //
-// Noah imported 1,429 undated things from OmniFocus. The write boundary cured every
+// a real import of 1,429 undated things from OmniFocus. The write boundary cured every
 // one so none would be silent (law 1), each cure landing at the end of that day —
 // and because "ready" was inferred from any arrived clock, the heading read
 // **"Ready now: 1,055"** and the icon badge said 1,012. Arithmetically correct,

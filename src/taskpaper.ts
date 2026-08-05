@@ -1,6 +1,6 @@
 // Bringing work in from another planner (OmniFocus and anything TaskPaper-shaped).
 //
-// Noah: *"Possible to import an Omnifocus export and really test at scale?"*
+// The requirement: import an OmniFocus export and test at real scale.
 //
 // ## Why TaskPaper and not the archive
 //
@@ -325,7 +325,7 @@ export function taskPaperEvents(
     // A date from another planner is a date somebody CHOSE, which is why it lands
     // as `due` and is therefore one a calendar may carry.
     //
-    // **Unless it has already gone.** Noah's OmniFocus export carried 1,173 due
+    // **Unless it has already gone.** A real OmniFocus export carried 1,173 due
     // dates and EVERY ONE of them was in the past — the earliest from June 2019.
     // Imported as due dates they became 1,173 things needing a new plan on the
     // morning of the import: seven years of residue arriving as today's demands.

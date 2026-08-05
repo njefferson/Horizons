@@ -195,7 +195,7 @@ export async function mountAbout(
   // A note's `**lead**` becomes a real <strong> — built from text nodes only,
   // never innerHTML. The first version handed the raw string to textContent,
   // which printed the asterisks and (worse) the entity names literally on the
-  // panel — “&ldquo;” as seven characters (Noah, on device, 1.7.1). The
+  // panel — “&ldquo;” as seven characters (found on device, 1.7.1). The
   // strings now carry real Unicode punctuation; only the bold marks need
   // translating, and an unpaired ** is rendered as the text it is.
   const noteLine = (text: string): HTMLLIElement => {
@@ -284,7 +284,7 @@ export async function mountAbout(
     //
     // Worded from what the mode MEANS, deliberately — not as a claim about any
     // particular iOS build. V-00 has measured the grant, the quota and a
-    // force-quit on Noah's iPad; it has not measured the clearing path (V-20),
+    // force-quit on a real iPad; it has not measured the clearing path (V-20),
     // and this repo does not put platform facts on screen that it has not run.
     noteOut.textContent = r.persisted
       ? 'The browser has agreed not to clear your data to make room for something else. That is the whole of what it covers: if you clear this browser’s website data yourself, Quietkeep goes with it, and the copy in your Files is what survives. Worth checking back here every so often — if this ever says otherwise, export a copy.'
@@ -331,7 +331,7 @@ export async function mountAbout(
   //
   // Silent when there is no knowable sibling. That is the whole reason this is
   // not a hardcoded URL — see `sibling.ts`.
-  // "How this works, and what it protects" — Noah asked for the security story to
+  // "How this works, and what it protects" — the security story was required to
   // have its OWN place for people who want it, without it becoming the panel.
   // A collapsed disclosure just above the What-this-is block: its own location,
   // one tap, and free to everybody who never opens it.
@@ -794,7 +794,7 @@ export async function mountAbout(
     // MULTI-DEVICE, and opt-in by being a thing you press. Nothing about this
     // runs on its own, nothing phones anywhere, and the app is complete without
     // it — someone using one device never meets it beyond a line of text
-    // (ADR-0035, Noah 2026-07-29: "it should be opt-in").
+    // (ADR-0035, 2026-07-29: required to be opt-in).
     importUnion.addEventListener('click', async () => {
       if (!staged) return;
       importUnion.disabled = true;
@@ -955,7 +955,7 @@ export async function mountAbout(
       logOpen.setAttribute('aria-expanded', String(opening));
       // The label says what the NEXT press does. aria-expanded alone told a
       // screen reader the list would collapse, and told a sighted reader
-      // nothing (Noah, on device, 1.7.2).
+      // nothing (found on device, 1.7.2).
       logOpen.textContent = opening ? 'Close the record' : 'Read the record';
       if (!opening) return;
       void (async () => {
@@ -983,7 +983,7 @@ export async function mountAbout(
   }
 
   // --- composed today, opt-in (1.6.0, ADR-0051) -----------------------------
-  // OFF until asked for — Noah's own condition ("Can you make it optional?").
+  // OFF until asked for — a real condition ("Can you make it optional?").
   // The comms-sweep shape: two mutually-exclusive buttons painted from folded
   // state, never a cached flag, and the caveat carries the three beats: off by
   // default, counts nothing, an unfinished choice is not a failure.

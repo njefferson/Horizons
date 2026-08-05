@@ -46,7 +46,7 @@ const failures = [];
  * The bug: the border lived on the title button rather than on the card, and the
  * actions were siblings that wrapped independently — so on a long title "Done"
  * landed alone on the next line, left-aligned, directly above a DIFFERENT item.
- * Noah found it at 1,429 rows. A completion control that appears to belong to the
+ * Found at 1,429 rows on a real store. A completion control that appears to belong to the
  * thing below it is a mis-tap, not a cosmetic complaint, and no contrast or target
  * check can see it.
  *
@@ -117,7 +117,7 @@ const DIALOG_COMMON = [
   '#notnow-open', '#slot-day', '#slot-set',
   // The always-reachable way out. This panel is thousands of pixels tall, so a
   // close button only at the bottom meant scrolling the entire release history
-  // to shut it (Noah, on device).
+  // to shut it (found on device).
   '#about-dismiss',
   // Bringing a copy back. The label and the picker are always there; the note
   // and the two actions only appear once a file has been read, so they get
@@ -662,7 +662,7 @@ async function auditNames(page, stateName, theme) {
   // Most collisions this finds are two of the READER'S OWN items sharing a
   // title: a card in a list and the same card in search, or two errands both
   // called "the same errand twice". The app cannot make a person's titles
-  // unique, and Noah's real store holds 1,405 actions, so a gate on this would
+  // unique, and a real store holds 1,405 actions, so a gate on this would
   // go red on his data rather than on a defect. **A check that fails on the
   // user's content is not measuring the app.**
   //

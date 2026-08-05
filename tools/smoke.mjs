@@ -388,13 +388,13 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     'routing to Do now offers what to do about it');
   // THE TIMER IS AN OFFERING, NOT A GATE. It used to start on its own, turning a
   // category ("this one is for today") into a stopwatch nobody asked for, and
-  // leaving no way at all to simply say the thing was done (Noah, on device).
+  // leaving no way at all to simply say the thing was done (found on device).
   is((await tpage.locator('.donow-label').textContent())?.includes('left'), false,
     'and does NOT start a stopwatch nobody asked for');
   is(await tpage.locator('.donow-done').count(), 1,
     'Done is offered without having to run a timer first');
   // It NAMES the item and offers a way out that is neither Done nor a timer —
-  // the offer used to be an unnamed bar with only those two exits (Noah, on
+  // the offer used to be an unnamed bar with only those two exits (found on
   // device). Made to fail if the label stops naming the item or the exit is gone.
   is((await tpage.locator('.donow-label').textContent())?.includes('do a two-minute thing'), true,
     'the Do now offer names the item it is asking about');
@@ -1715,7 +1715,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // AND it now SAYS where it sits, right on the row. This is the mark that tells
   // an already-filed item apart from a loose one — an OmniFocus import drew filed
   // and loose actions identically, so a backlog of a thousand could not be
-  // processed because nothing said which already had a home (Noah, on device).
+  // processed because nothing said which already had a home (found on device).
   const places = await tpage.evaluate(() => {
     const out = {};
     for (const card of document.querySelectorAll('#cards .card')) {
@@ -2244,7 +2244,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // called window.print() against the live page: the output was the About
   // dialog, the app behind it, and whatever the screen layout did under print
   // media. The button worked and the result was unusable.
-  // --- The way out of the panel (Noah, on device, TWICE) -------------------
+  // --- The way out of the panel (found on device, twice) -------------------
   // The header was `position: sticky` inside the dialog's own scroll container.
   // Correct, honoured by every engine in CI, and it did not hold on his iPad:
   // the bar scrolled away with the content and both ways out ended up at the
@@ -2420,7 +2420,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(copyRowAfter, copyRowBefore,
     'taking a diagnostic did not claim a backup that does not exist');
 
-  // The security explanation Noah asked for: its own place, collapsed, and
+  // The security explanation that was required: its own place, collapsed, and
   // costing nothing to anybody who never opens it. Checked in the BUILT app
   // because the passages are unit-tested but their reaching the screen is not.
   const sec_shut = await tpage.evaluate(() => {
@@ -3094,7 +3094,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // a copy does), so the panel is already gone and waiting for its X would hang.
 
   console.log('\nThe build is on the main screen, without opening anything');
-  // Noah could not tell which build his device was running, because the version
+  // a reader could not tell which build his device was running, because the version
   // lived only inside the (i) panel's title. A screenshot of the app has to say
   // it. Read with the panel SHUT, and matched against the changelog head so the
   // two cannot drift.
@@ -3218,7 +3218,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.locator('#update').isHidden(), true, 'and "Not now" closes it');
 
   console.log('\nA long list does not become a wall');
-  // Noah imported 1,429 things and got a scroll of well over a thousand rows under
+  // a real import of 1,429 things and got a scroll of well over a thousand rows under
   // one heading. The dedicated replan surface has cap_capped at three since it existed;
   // the held list had no cap at all, which nobody noticed while the fixtures held
   // eight things. Asserted through the REAL import path at a size past the cap.
@@ -3269,7 +3269,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   console.log('\nSort mode — a triage that can reach everything (1.3.0)');
   // Three LOOSE rows — top-level, no project — the shape daily triage can
   // never reach, because the captured latch bars anything arriving by
-  // node.created. This is Noah's 1,222, at fixture scale.
+  // node.created. This is a real store's 1,222, at fixture scale.
   const gaugeBeforeLoose = await tpage.locator('#triage-gauge').textContent().catch(() => '') || '';
   await tpage.click('#open-about');
   await expandGroups(tpage);
@@ -4328,7 +4328,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     return { calls, ready };
   });
   is(badge.calls.length > 0, true, `the icon is told something (${JSON.stringify(badge.calls)})`);
-  // THE NUMBER MUST BE FINDABLE. Noah came back to a red 1 on the home screen and
+  // THE NUMBER MUST BE FINDABLE. a reader came back to a red 1 on the home screen and
   // could not find a 1 inside the app — an unexplained demand, which is the one
   // thing this app must never be. The gauge has to state the same figure the icon
   // does, and the panel has to say what it means.
@@ -4350,7 +4350,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(/number on the app icon/i.test(await tpage.locator('#badge-explainer').textContent() || ''), true,
     'and the panel says what the number on the icon means');
   // The patch notes are rendered with textContent, so any entity name or **
-  // mark in the strings prints AS the markup (Noah, on device, 1.7.1). Pin:
+  // mark in the strings prints AS the markup (found on device, 1.7.1). Pin:
   // no entity-shaped token and no ** anywhere in the rendered notes, and the
   // lead of a note is a real <strong>, not asterisks.
   const notesText = await tpage.locator('#patch-notes').textContent() || '';

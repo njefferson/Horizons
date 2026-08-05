@@ -1,7 +1,7 @@
 // "How this works, and what it protects" — the panel for people who want to know.
 //
-// Noah: *"I want all security explained in the app in its own location, for people
-// who want to know how it works, but not explaining how to hack it."*
+// The requirement: all security explained in the app, in its own location, for
+// people who want to know how it works — without explaining how to attack it.
 //
 // ## The line between explaining and arming
 //

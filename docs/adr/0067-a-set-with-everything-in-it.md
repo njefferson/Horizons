@@ -4,8 +4,7 @@
 
 ## Context
 
-Noah, 2026-08-03: *"Generate enough test data in all categories, types, etc, to
-see real data errors."*
+Asked 2026-08-03: for enough test data across every category and type to surface real data errors.
 
 `src/sample.ts` already existed — the "set of test data i can import" he asked
 for on 2026-07-29. It is relative-dated, it goes through the real `admit`, and

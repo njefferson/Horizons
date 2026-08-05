@@ -24,7 +24,7 @@ after a flinch. It is the same class of objection that killed *Diopter* — a na
 that implies something is wrong with the user — arriving through sound instead of
 meaning.
 
-Noah caught it by saying it out loud. **No check in this repo would have.**
+The owner caught it by saying it out loud. **No check in this repo would have.**
 
 ## The check that was missing, now first
 
@@ -43,7 +43,7 @@ The full order for any future candidate, cheapest and most-likely-to-kill first:
 2. **Grep this repo's own spec** — the trap that killed *Lens*, *Gauge*, *Alignment*
 3. **Unscoped name + software** web search
 4. **npm and GitHub** — authoritative and reachable from a session
-5. **App Store / USPTO** — Noah's device; blocked from a session ([V-05](../verifications.md))
+5. **App Store / USPTO** — a real device; blocked from a session ([V-05](../verifications.md))
 
 Steps 1 and 2 are free and instant. They were being run last, or not at all.
 
@@ -71,4 +71,4 @@ the same one.
 
 ## What would overturn it
 
-Nothing. Withdrawn on Noah's judgement, and the objection is correct.
+Nothing. Withdrawn on the owner's judgement, and the objection is correct.

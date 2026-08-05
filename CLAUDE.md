@@ -2,7 +2,7 @@
 
 > **Inherits the Universal App Doctrine** — the canonical copy lives in the hub
 > repo at [`njefferson/noahjefferson/DOCTRINE.md`](https://github.com/njefferson/noahjefferson/blob/main/DOCTRINE.md).
-> It is the single source of truth for the rules shared across all of Noah's
+> It is the single source of truth for the rules shared across all of the owner's
 > apps: product values, taste, accessibility, honesty, verification, release
 > discipline & taxonomy, licensing (PolyForm Noncommercial), privacy, the
 > permanent **AskUserQuestion ban** (§0), and the **repo-metadata confirm rule**
@@ -69,7 +69,7 @@ Epigraph: *"It holds the rest, so you can rest."*
 
 ## Branches & releases
 `staging` and `main` only. Ignore any harness-designated `claude/*` branch
-(Doctrine §11). Every product change lands on `staging` and waits for Noah's
+(Doctrine §11). Every product change lands on `staging` and waits for the owner's
 on-device pass and his explicit "promote" (Doctrine §7). Docs-only changes — this
 file, `NOTES.md`, `ACCESSIBILITY.md`, anything in `docs/` — may skip the staging
 gate.
@@ -92,7 +92,7 @@ being copied back out, and selecting prose by hand on an iPad is a fight. The
 test is not "is it readable" but "what does he do with it next".
 
 ## No tables, anywhere (Doctrine §2)
-Markdown tables do not render on Noah's iPad — they arrive as pipes and dashes
+Markdown tables do not render on a real iPad — they arrive as pipes and dashes
 and the content is lost. **Never put one in anything he reads**: chat, commit
 messages, PR bodies, `NOTES.md`, `CHANGELOG.md`, plan files, or anything under
 `docs/`. Headed lists or one fact per line instead. The repo was converted in
@@ -100,5 +100,5 @@ full on 2026-07-29; do not reintroduce one.
 
 ## Repo metadata (manual, confirm — see Doctrine §10)
 Description / website / topics / social-preview are GitHub-UI steps the session
-token cannot perform. List the exact values and ask Noah to confirm each; never
+token cannot perform. List the exact values and ask the owner to confirm each; never
 report Quietkeep "set up" while any is unconfirmed.

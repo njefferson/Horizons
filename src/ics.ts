@@ -125,7 +125,7 @@ const stampValue = (iso: string): string =>
  * ever typed one.
  *
  * Exporting them turned "show me this again tomorrow" into "this is due tomorrow",
- * with a nine o'clock alarm, once per item. Noah routed nine things to Next action
+ * with a nine o'clock alarm, once per item. a reader routed nine things to Next action
  * in one afternoon and his calendar offered him nine all-day events on a single day,
  * none of which he had ever given a date to. **A planner that misreports your
  * obligations to a calendar you trust is worse than one with no calendar export at

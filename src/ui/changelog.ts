@@ -9,7 +9,7 @@
 // is not a convention to remember — `tools/changelog.mjs` asserts it, and
 // CHANGELOG.md is generated from this array so the two cannot drift.
 //
-// **Releases do not have names** (§7, Noah 2026-07-28). No monikers, no
+// **Releases do not have names** (§7, 2026-07-28). No monikers, no
 // codenames, no name field — there is deliberately nowhere here to put one,
 // because a slot that exists is a slot that generates the question. A release is
 // its triplet and what it did for the person using the app.

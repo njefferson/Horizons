@@ -40,7 +40,7 @@ were longer; it lives and travels with the item on the item's terms.
 
 ## What would overturn it
 
-Noah deciding notes should be private-class after all — which would be a real
+The owner deciding notes should be private-class after all — which would be a real
 migration (encrypt-forward, additive) and gets its own ADR. Nothing else: the
 choice between "title-class" and "journal-class" is a product promise, and it
 is made here, once, in writing.

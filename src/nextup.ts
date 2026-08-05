@@ -43,9 +43,9 @@ export interface NextUpItem {
   /** WHERE it sits, in words — "in Errands · under Home" — or null for a loose
    *  item, which stays silent rather than announcing its loneliness. V2 stage 1
    *  ("It says where"): the offer had answered *why now* since item 18 and had
-   *  never once answered *where from*, which is half of Noah's stated day-ender
-   *  — "I'd see the task leave and not know where/if it went, and had no
-   *  feeling that I was seeing the right things." Computed, never stored. */
+   *  never once answered *where from*, which is half of what ends a working
+   *  day: a thing leaves, there is no telling where or whether it went, and no
+   *  feeling of being shown the right things. Computed, never stored. */
   place: string | null;
 }
 
@@ -128,8 +128,8 @@ const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
     c != null && c.kind !== 'park' && isValidIso(c.at) &&
     // A GATE CURE IS NOT A DEMAND. The comment two tiers below already knew cure
     // clocks "never move"; what it did not say is that treating one as arrived
-    // means every dateless thing reads as waiting for you today. Noah imported
-    // 1,429 items and this surface reported 1,012 ready — a number that was
+    // means every dateless thing reads as waiting for you today. A real import
+    // of 1,429 items had this surface reporting 1,012 ready — a number that was
     // arithmetically correct and meant nothing. A cure exists so a node is not
     // silent; the reader never asked for anything by today.
     !isAppClock(c) &&

@@ -1,6 +1,6 @@
 // Pairing by file — the rung that works today, on every device.
 //
-// Noah: *"File first."* And he was right that it should have been first: it needs no
+// The file road was required first, and rightly: it needs no
 // camera, no QR, no decoder, and nothing from [V-16] or [V-17]. One device writes a
 // small file, the other opens it, and both hold the same key. That is the whole of it.
 //
@@ -144,8 +144,8 @@ export async function acceptPairing(
 /**
  * Pair from the KEY ALONE — the whole secret, and nothing else.
  *
- * Noah: *"can't the QR code JUST encode a number that the app pull in… as a long
- * key so the user can just press save."* Yes, and it is better than the file on
+ * A later requirement: have the QR code encode a number the app pulls in as a
+ * long key, so a person can just press save. Better than the file on
  * three counts, which is why this is now the primary road:
  *
  *   - **44 characters instead of a JSON document.** Small enough for a code a

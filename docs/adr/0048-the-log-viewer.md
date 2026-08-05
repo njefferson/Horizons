@@ -25,7 +25,7 @@ capture's text: the line says one was written, never what it said.
 
 The OPR defect (1.2.3) lived for weeks precisely because nothing could look at
 the log: the sheet wrote `person.linked`, nothing folded it, and the portfolio
-said "nobody named yet" about people Noah had named — a contradiction between
+said "nobody named yet" about people the owner had named — a contradiction between
 the record and the render that a one-glance log view would have shown the day
 it shipped. NOTES.md had already called the viewer "the sharpest debugging
 tool available" at almost no cost. And for the user, the per-node history is

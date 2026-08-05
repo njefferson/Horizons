@@ -64,7 +64,7 @@ not sure whether they already did, so that path has to cost nothing.
 - **Not conflict resolution.** Edit the same field on both devices before
   exchanging and last-writer-wins picks one, silently. That is inherent to the
   model and is stated rather than hidden.
-- **Not a network feature.** It works with no connectivity at all. Noah uses
+- **Not a network feature.** It works with no connectivity at all. The owner uses
   cellular on both devices, but *"you can't assume everyone will"* (2026-07-29) —
   so nothing here may depend on being online.
 
@@ -80,7 +80,7 @@ not sure whether they already did, so that path has to cost nothing.
 - The exchange is as many taps as the export and import take. If that friction
   turns out to be too much in real use, the next question is a transport — and
   every transport worth considering (a relay, a native wrapper) crosses a line in
-  the thesis, so it is Noah's call and a separate record, not an implementation
+  the thesis, so it is the owner's call and a separate record, not an implementation
   detail of this one.
 
 ## What would overturn it

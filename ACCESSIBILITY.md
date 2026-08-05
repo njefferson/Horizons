@@ -325,7 +325,7 @@ control that reports anything back, which the honesty line on the card says in
 words.
 
 ### B-21 · The way out of the (i) panel (0.21.1) — reported twice
-**Noah, on device, twice.** The panel's header was `position: sticky` inside the
+**found on device, twice.** The panel's header was `position: sticky` inside the
 dialog's own scroll container. That is correct, every engine in CI honours it,
 and it did **not** hold on his iPad: the header scrolled away with the content,
 so both ways out sat at the extremes of a panel thousands of pixels long.
@@ -413,7 +413,7 @@ it**. `tools/brand.mjs` is that gate for these.
 
 ### Why the field is light, and why that was not just a taste call
 
-The first palette was near-black (`#131B2E` field, `#5C6E8F` wall) and Noah asked for
+The first palette was near-black (`#131B2E` field, `#5C6E8F` wall) and A requirement:
 something less dark. **Simply paling everything is impossible here, and the arithmetic says
 why.** The mark is a three-step ladder — wall must clear 3:1 above the field, and the light
 must clear 3:1 above the wall — so it needs roughly a **9:1 span** end to end. A light field
@@ -655,7 +655,7 @@ the rendered gate in this same commit.**
 - **Toggle labels state the next press** ("Read the record" ↔ "Close the
   record"; "Things you let go" ↔ "Close the list"): `aria-expanded` alone
   told assistive tech the truth and told a sighted reader nothing — the same
-  information now reaches both (WCAG 1.3.1 in spirit; Noah, on device).
+  information now reaches both (WCAG 1.3.1 in spirit; found on device).
 - **The thesis page got its styles back**: `why.html`'s inline `<style>` was
   refused by the site's own `style-src 'self'` — the deployed page rendered
   unstyled, unmeasured by every gate because no walk ever navigated there.

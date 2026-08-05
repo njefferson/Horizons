@@ -1,7 +1,7 @@
 // A QR encoder, for showing a pairing link on one screen so another device's camera
 // can read it (sync stage 4, ADR-0037).
 //
-// Noah chose the QR route and asked where it was. It was nowhere: recorded as a
+// the QR route was chosen and then asked after. It was nowhere: recorded as a
 // decision and not built, because I had gated all of it behind [V-16] — whether an
 // iPad can *read* a code. That was the wrong boundary. Reading is blocked; SHOWING is
 // not, and this is the showing half.

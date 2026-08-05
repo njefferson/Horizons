@@ -126,5 +126,5 @@ Evidence from real use that the precedence produces a bad first suggestion often
 enough to matter — in which case the fix is a **new tier or a changed order**,
 argued explicitly, never a blended score. And if "Not this" ever needs to
 influence what is shown next, that is a change to product law territory and
-Noah's call, not a session's: the honest version would be an in-memory
+The owner's call, not a session's: the honest version would be an in-memory
 de-prioritisation for the current session only, still writing nothing.

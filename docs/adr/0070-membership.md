@@ -4,8 +4,8 @@
 
 ## Context
 
-Noah, after using the app: *"Everything I've found has pointed to an unfinished
-product."* He is right, and the defect record says precisely where the
+After using the app, the verdict was that everything found had pointed to an
+unfinished product. That is right, and the defect record says precisely where the
 unfinishedness lives. Three of the last four shipped defects were **one defect
 in different clothes**:
 
@@ -93,7 +93,7 @@ smoke assertions (run, watched red, restored).
   point — the three shipped instances each cost a release.
 - The table is honest about being a snapshot of rulings, not a proof of taste:
   it pins what was decided and forces the next decision to be written down. It
-  cannot say whether a ruling is *good* — that is Noah's on-device judgement,
+  cannot say whether a ruling is *good* — that is the owner's on-device judgement,
   which no instrument here replaces.
 
 ## What would overturn this

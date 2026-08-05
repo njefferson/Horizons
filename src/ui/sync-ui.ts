@@ -53,7 +53,7 @@ export const SHOW_KEY_WORDS =
   // The camera instruction is EXACT, because the obvious action is the wrong one.
   // A phone camera treats a scanned code as a web address, and this one is not an
   // address — it is a secret. Tapping the banner that appears sends the key to a
-  // search engine and pairs nothing. Noah hit this on the first real attempt.
+  // search engine and pairs nothing. This was hit on the first real attempt.
   + 'On the other device, point the camera at the code and then press and hold the banner that appears to COPY it — '
   + 'do not tap the banner, which would search the web for it instead. Then paste it below. '
   + 'Typing it works just as well, and nothing is saved to a file either way.';
@@ -127,7 +127,7 @@ export async function mountSync(session: Session, repaint?: () => void): Promise
   replaceBtn.type = 'button';
   actions.append(pairBtn, syncBtn, replaceBtn, forgetBtn);
 
-  // WHO HAS WRITTEN HERE. Noah asked whether a person can see how many devices
+  // WHO HAS WRITTEN HERE. It was asked whether a person can see how many devices
   // are syncing — the app has always known, from the device id on every event,
   // and had never shown it. An extra device in a pair is invisible until
   // something lists them, which makes listing them a security control and not a
@@ -135,8 +135,8 @@ export async function mountSync(session: Session, repaint?: () => void): Promise
   const devicesP = el('p', 'about-p');
   const devicesList = el('ul', 'note-list');
 
-  // THE KEY, shown as a code and as text. Noah: "can't the QR code JUST encode a
-  // number… so the user can just press save." It carries the whole secret and
+  // THE KEY, shown as a code and as text — the QR encodes a number the app pulls
+  // in, so a person can just press save. It carries the whole secret and
   // nothing else — no host, so there is nothing in it to point at a hostile
   // relay, and nothing written to a disk to be forgotten about afterwards.
   const keyBox = el('div');
@@ -145,7 +145,7 @@ export async function mountSync(session: Session, repaint?: () => void): Promise
   const keyText = el('p', 'about-p key-text');
   const keyHide = el('button', 'ghost', 'Hide the key');
   keyHide.type = 'button';
-  // The file road, kept and demoted. Noah: "both should be available so the user
+  // The file road, kept and demoted. Both roads stay available so the person
   // has control of their data." Showing the key suits two devices in one room;
   // a file suits a device that is somewhere else. The file writes the secret to
   // a disk, so it is offered rather than defaulted to, and it says so.

@@ -153,8 +153,8 @@ export async function handle(request: Request, deps: Deps): Promise<Response> {
   const url = new URL(request.url);
   const parts = url.pathname.split('/').filter(Boolean);
 
-  // A HEALTH PAGE somebody can just open — Noah asked for an alert he can
-  // understand. It carries NO sync id, so it reveals nothing about any household,
+  // A HEALTH PAGE somebody can just open — an alert a person can
+  // understand was required. It carries NO sync id, so it reveals nothing about any household,
   // and it does one cheap READ (reads are the plentiful quota, not the scarce
   // one) to prove the store is reachable and not only the worker. Plain text, so
   // opening it in a browser is a sentence and not a puzzle.

@@ -67,4 +67,4 @@ is a machine for generating quitting moments.
 ## What would overturn it
 
 Nothing. This is product law 5. A change here changes what the app is
-(Doctrine §1) and is Noah's call, not a session's.
+(Doctrine §1) and is the owner's call, not a session's.

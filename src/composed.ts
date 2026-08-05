@@ -1,7 +1,7 @@
 // Composed Today (1.6.0, ADR-0051) — a day you chose, by hand, optionally.
 //
 // OFF BY DEFAULT. Nothing here renders anywhere until the `today` module is
-// turned on in the (i) panel's Extras (Noah: "Can you make it optional?"), and
+// turned on in the (i) panel's Extras — it was required to be optional — and
 // turning it off makes every surface of it vanish while the log keeps its
 // honest record.
 //

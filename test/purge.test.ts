@@ -1,4 +1,4 @@
-// Clearing things out (roadmap item Noah asked for).
+// Clearing things out (a roadmap requirement).
 //
 // Three tests carry the weight, and all three are about the guard rather than the
 // act:
@@ -170,7 +170,7 @@ test('one thing is "1 thing", not "1 things"', () => {
 // --- the words -------------------------------------------------------------
 
 test('the backup is recommended at the moment of the decision, in both states', () => {
-  // Noah asked for the backup to be recommended with a button there. A
+  // The backup was required to be recommended with a button there. A
   // recommendation nobody acted on has to still be visible when the choice is
   // made, so the sentence states which it is either way.
   const c = { things: 12, unsorted: 3, events: 400 };

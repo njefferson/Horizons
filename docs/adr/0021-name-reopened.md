@@ -24,7 +24,7 @@ Three software companies hold the name, and the subdomain is gone:
 - ****Perennial Systems**** — Web development and fintech consultancy
 - ****Perennial Software**** — Security / integration sector
 
-`perennial.pages.dev` was confirmed taken by Noah on his own device, 2026-07-28. Q-04 is
+`perennial.pages.dev` was confirmed taken by the owner on his own device, 2026-07-28. Q-04 is
 answered negatively.
 
 None of these is likely fatal on trademark grounds for a free, noncommercial app — they are
@@ -50,7 +50,7 @@ Neither found any of the three companies. A single properly-scoped query —
 > A narrow query is a weak probe wearing a thorough one's clothes: it returns a confident
 > empty result for a name that is heavily occupied.
 
-This compounded a second failure: the `pages.dev` check was handed to Noah as a manual step
+This compounded a second failure: the `pages.dev` check was handed to the owner as a manual step
 without being attempted first, one message after he had corrected exactly that behaviour.
 It could not in fact have been loaded from a session — the gateway blocks it, now proven in
 [V-05](../verifications.md) — but *searching* for the occupant was always possible and was
@@ -59,7 +59,7 @@ never tried.
 ## Consequences
 
 - **Every future candidate is checked name-plus-software first, unscoped**, before any
-  category-specific query and before it is ever shown to Noah.
+  category-specific query and before it is ever shown to the owner.
 - The graveyard in [ADR-0020](0020-name-perennial.md) stands and grows — ~21 candidates now,
   Perennial included. It is the most reusable artifact of this exercise.
 - Everything downstream of the name stays cheap: nothing in the schema, the event
@@ -69,4 +69,4 @@ never tried.
 
 ## What would overturn it
 
-Nothing. Perennial is withdrawn on Noah's decision, 2026-07-28.
+Nothing. Perennial is withdrawn on the owner's decision, 2026-07-28.

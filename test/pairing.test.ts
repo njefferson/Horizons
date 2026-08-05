@@ -225,8 +225,8 @@ test('a plain-http handover point is refused, and said to be insecure', async ()
 
 // --- pairing from the key alone ---------------------------------------------
 //
-// Noah: "can't the QR code JUST encode a number that the app pull in… as a long
-// key so the user can just press save." It carries the whole secret and nothing
+// A requirement: have the QR encode a number the app pulls in as a long key, so
+// a person can just press save. It carries the whole secret and nothing
 // else, which is better than the file on three counts: 44 characters instead of
 // a document, nothing left in a Downloads folder, and NO HOST FIELD — so the
 // hostile-relay attack the file rung had to defend against simply does not

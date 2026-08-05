@@ -25,7 +25,7 @@ export interface Clock {
    * wrongly in its own way.
    *
    * The calendar exported the app's own clocks as appointments. The held list read
-   * a cure clock as "ready now" and told Noah a thousand imported things were
+   * a cure clock as "ready now" and reported a thousand imported things as
    * ready today. Next-up did the same. One field, asked once, instead of three
    * guesses.
    */

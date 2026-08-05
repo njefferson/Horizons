@@ -533,9 +533,9 @@ test('a bad method or a chunk-level path is still refused', async () => {
   assert.equal(res.status, 405, 'no per-chunk delete');
 });
 
-// --- the health page and the daily-limit signal (Noah's alert) --------------
+// --- the health page and the daily-limit signal (the write-rate alert) --------------
 //
-// Noah asked for "a write-rate alert I can understand". A true per-minute meter
+// A requirement: a write-rate alert a person can understand. A true per-minute meter
 // needs Cloudflare's own dashboard (a counter in the worker would spend the very
 // writes it is trying to protect). What IS buildable: a plain-language status
 // page anyone can open, and a NAMED daily-limit signal instead of an opaque

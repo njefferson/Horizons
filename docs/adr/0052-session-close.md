@@ -44,5 +44,5 @@ the close is asking at the moment the answer is cheapest.
 ## What would overturn it
 
 Nothing about the ramp (it is the comms chip's own settled mechanism). The
-words could change on Noah's on-device read; the three "never"s above would
+words could change on the owner's on-device read; the three "never"s above would
 need this ADR reversed in writing.

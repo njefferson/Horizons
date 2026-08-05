@@ -2,7 +2,7 @@
 
 **Status:** Accepted · **Date:** 2026-07-27 · **Promoted 2026-07-27**
 
-> **This is now the primary path, not the iOS path.** Noah settled that this is a
+> **This is now the primary path, not the iOS path.** The owner settled that this is a
 > personal-iPad app, which makes iPadOS the reference platform — and there is no folder
 > mirror there ([ADR-0003](0003-folder-mirror.md), V-01). Everything below was written
 > as the graceful answer for a secondary platform. **It is the answer.** It carries the

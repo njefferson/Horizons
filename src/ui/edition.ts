@@ -7,7 +7,7 @@
 // the default passes nothing) — so that every sentence describing "this app"
 // can tell the truth about THIS build. The default's words shown inside
 // Quietkeep Sync claimed "there is no server" and "the default app you are in
-// never contacts anything at all" — both lies in that build (Noah, on device,
+// never contacts anything at all" — both lies in that build (found on device,
 // 1.7.2).
 
 let sync = false;

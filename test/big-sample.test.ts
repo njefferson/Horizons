@@ -1,7 +1,7 @@
 // Every projection, over a set with everything in it (1.16.0, ADR-0067).
 //
-// Noah: *"Generate enough test data in all categories, types, etc, to see real
-// data errors."* This is the half that finds them without him having to look.
+// A requirement: generate enough test data across every category and type to
+// surface real data errors. This is the half that finds them unprompted.
 //
 // The unit tests in this repo are precise and narrow: each one stages the two or
 // three nodes its subject needs. That is the right shape for proving a rule, and

@@ -369,7 +369,7 @@ test('erasing clears the mark too, so a later pairing cannot skip events', async
 
 // --- a planner that arrived by import must still sync ------------------------
 //
-// Noah, from his iPad and phone: "Pairing works although no data syncs."
+// Reported from an iPad and a phone: pairing worked while no data synced.
 //
 // His exports told the whole story. The iPad held 2900 events and sent ZERO; the
 // phone held one event it had written itself, and that one crossed. The cause:
@@ -497,9 +497,9 @@ test('replacing the key on a device makes it re-offer everything to the new mail
   assert.ok(after.result!.sent > 0, 'it re-offered its work to the new mailbox');
 });
 
-// --- revocation actually deletes (Noah's decision) --------------------------
+// --- revocation actually deletes (an owner decision) --------------------------
 //
-// Noah: "Revocation needs to delete." The audit found "Replace the key" only
+// The requirement: revocation has to delete. The audit found "Replace the key" only
 // gave forward secrecy — a dropped device could still collect up to a month of
 // backlog from the old mailbox. Replacing the key now EMPTIES that mailbox, so
 // there is nothing left for the old key to fetch.

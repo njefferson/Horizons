@@ -1,6 +1,6 @@
 // The security explanation, held to both of its jobs.
 //
-// Noah asked for the security story to be explained in the app "for people who
+// The security story was required to be explained in the app, for people who
 // want to know how it works, but not explaining how to hack it". That is two
 // requirements pulling against each other, and both are testable:
 //

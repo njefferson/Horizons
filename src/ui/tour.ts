@@ -32,7 +32,7 @@ interface Step {
 
 /** Computed per show, not at import: the last step's privacy sentence must
  *  state THIS edition's truth, and the edition is only known once `main()`
- *  has run (Noah caught the default's words inside Quietkeep Sync, 1.7.2). */
+ *  has run (the default's words were caught inside Quietkeep Sync, 1.7.2). */
 const stepsNow = (): readonly Step[] => [
   {
     heading: `Welcome to ${editionName()}`,

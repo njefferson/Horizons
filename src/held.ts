@@ -77,7 +77,7 @@ export function soonestClock(
    *
    * `false` when deciding whether something is ready or coming up, because a cure
    * says "this will come back to you", not "this is due". With cures counted, every
-   * dateless thing sat in "Ready now" — Noah imported 1,429 items and the heading
+   * dateless thing sat in "Ready now" — a real import of 1,429 items and the heading
    * claimed 1,055 were ready today, which was arithmetically true and completely
    * false as a statement about his day.
    *
@@ -262,7 +262,7 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
  * project's actions in parented to it, but the flat list drew them the same as a
  * loose inbox item — so a thing already filed under "Boy Scouts" looked exactly
  * like something still needing a home, and a backlog could not be processed
- * because nothing said which was which (Noah, on device). A trashed or merged
+ * because nothing said which was which (found on device). A trashed or merged
  * child is not something a node holds, so it does not count.
  */
 export function liveChildCounts(state: State): Map<string, number> {
@@ -307,8 +307,8 @@ export function placeWords(n: NodeState, state: State, childCounts: Map<string, 
  * Held, but carrying no date anybody chose — the honest size of "you have not
  * decided about these yet".
  *
- * Exists because "nothing is asking" is true and unhelpful on its own. Noah
- * imported 1,429 things, none of them dated, and the work surface correctly had
+ * Exists because "nothing is asking" is true and unhelpful on its own. A real
+ * import of 1,429 things, none of them dated, left the work surface with
  * nothing to offer — which reads as an empty app rather than as a full one waiting
  * on a decision. This is the number that makes the difference sayable.
  *

@@ -263,7 +263,7 @@ export function mountWork(
       // NOTHING IS ASKING — and if things are being held without dates, say that
       // too rather than simply vanishing.
       //
-      // "Nothing is asking" is true and, on its own, unhelpful: Noah imported 1,429
+      // "Nothing is asking" is true and, on its own, unhelpful: a real import of 1,429
       // undated things and this surface correctly had nothing to offer, which reads
       // as an empty app rather than as a full one waiting on a decision. The section
       // stays, says the real number, and the two action buttons go — there is

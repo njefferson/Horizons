@@ -1,7 +1,7 @@
 // Which devices have written into this planner.
 //
-// Noah: *"Can a user see how many devices are syncing, and delete them or reset
-// the key to remove the sync from that point on."*
+// The requirement: a person can see how many devices are syncing, and can
+// delete them, or reset the key to end the sync from that point on.
 //
 // The app has always known this — every event carries the id of the device that
 // wrote it — and has never shown it. That is a real gap: somebody who cannot see

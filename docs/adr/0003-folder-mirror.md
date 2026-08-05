@@ -2,12 +2,12 @@
 
 **Status:** Accepted · **Date:** 2026-07-27 · **Scope narrowed 2026-07-27**
 
-> **This is a secondary-platform convenience, not the sync story.** When Noah settled
+> **This is a secondary-platform convenience, not the sync story.** When the owner settled
 > that this is a personal-iPad app, the folder mirror stopped being available on the
 > reference platform — Safari has no disk picker (V-01), so on iPadOS **this feature
 > does not exist**. Sync and recovery are [ADR-0004](0004-ios-path.md).
 >
-> The ADR is kept in full because a personal desktop remains plausible — Noah ruled out
+> The ADR is kept in full because a personal desktop remains plausible — the owner ruled out
 > government equipment, not desktops — and the design below is sound where the API
 > exists. But nothing may be built on the assumption that a user has it.
 

@@ -1,6 +1,6 @@
 // A set of sample work, for trying the app out without inventing a life first.
 //
-// Noah asked for "a set of test data i can import". Two things make that harder
+// A requirement: a set of test data that can be imported. Two things make it harder
 // than it sounds, and both are the reason this is a generator rather than a file:
 //
 // **It must be relative-dated.** A fixture with `2026-07-30` in it is a fixture

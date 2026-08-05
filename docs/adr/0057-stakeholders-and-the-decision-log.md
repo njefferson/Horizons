@@ -29,7 +29,7 @@ one answer or it has none". Stakeholders are multi-valued, which is what
 
 **And the healing is better without it.** Every `person.linked{relation:
 'stakeholder'}` written since 0.15.0 is ALREADY in state — only the reader was
-missing. Noah's stakeholders appear the moment this ships, with nothing
+missing. The owner's stakeholders appear the moment this ships, with nothing
 re-entered and no fold rewrite. That is the 1.2.3 lesson in its truest form.
 
 `stakeholder.added` is emitted forward beside the link (the OPR shape) and
@@ -115,7 +115,7 @@ convention, never a score.
 ## What would overturn it
 
 - **The report's ordering of decisions** (newest first) — chronological reads
-  better as a narrative of a bounded period, and if Noah reads a report aloud
+  better as a narrative of a bounded period, and if the owner reads a report aloud
   and finds it backwards, that is the first thing to change.
 - **`meeting`** becomes writable the day something resolves a meeting name —
   the field is already folded and rendered, so that release adds an emitter

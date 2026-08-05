@@ -84,7 +84,7 @@ self.addEventListener('fetch', (event) => {
   if (req.mode === 'navigate') {
     const NAV_DEADLINE_MS = 2000;
     // Which shell page IS this navigation? './index.html' for the app itself,
-    // './why.html' for the thesis. Two defects lived here (Noah, on device,
+    // './why.html' for the thesis. Two defects lived here (found on device,
     // 1.7.2): the freshen wrote EVERY navigation's body under './index.html' —
     // so one visit to the thesis would have replaced the cached app shell with
     // an essay — and the fallback served the app shell for every navigation,

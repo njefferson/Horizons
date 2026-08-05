@@ -82,7 +82,7 @@ six routes and the sheet's fold verb do the rest.
   a carried date that was itself the duplicate's error). The answer would be
   a smarter carry, never a bare merge: "swallow silently" does not become
   right because carrying was imperfect.
-- **Exact-only twins, by Noah's word after real use** — if months of sittings
+- **Exact-only twins, by the owner's word after real use** — if months of sittings
   show the near-miss pairs are the common case and the conveyor never meets
   them, a *suggestion* surface could be argued for. It would still be a range
   a person walks, never an auto-merge; law 2 is not overturnable here.

@@ -53,7 +53,7 @@ function staffed(): State {
 // --- stakeholders ------------------------------------------------------------
 
 test('THE HEALING: a link written with no stakeholder.added is already readable', () => {
-  // The release's central claim. Every stakeholder Noah linked since 0.15.0
+  // The release's central claim. Every stakeholder linked since 0.15.0
   // appears the moment this ships — nothing re-entered, no fold rewrite.
   const s = staffed();
   const log = [...s.nodes.values()];

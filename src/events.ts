@@ -65,7 +65,7 @@ export const DEMAND_FREE_KINDS = ['aspiration', 'pebble', 'person', 'journal', '
 export type ClockKind = 'due' | 'start' | 'suspense' | 'review' | 'park';
 // `filed` is WHERE, and the only route that answers it. The other six say
 // when — a clock, the Menu, or gone — and an imported backlog sorted by
-// urgency and never filed is what that costs (Noah, 2026-08-04). Additive to
+// urgency and never filed is what that costs (reported 2026-08-04). Additive to
 // a closed vocabulary, so every log already written stays readable (law 9).
 export type ClarifyRoute = 'do-now' | 'next-action' | 'waiting-for' | 'someday' | 'reference' | 'trash' | 'filed';
 // `sample` is the demonstration set (src/sample.ts). Named rather than folded

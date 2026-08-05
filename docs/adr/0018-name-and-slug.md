@@ -9,7 +9,7 @@ superseded by [ADR-0021](0021-name-reopened.md) — the name is **open** · **Da
 > from where you stand — a literal, load-bearing claim. This app's was figurative.
 
 > **Outcome:** option 1 below — keep both names and differentiate on the hub — was
-> **not** taken. Noah chose to rename this app. The reasoning below is kept because it
+> **not** taken. The choice was to rename this app. The reasoning below is kept because it
 > is why the rename is happening, and because the closing observation still holds and
 > is what makes the rename cheap: **nothing in the schema, the event vocabulary, or the
 > file formats encodes the product name.**
@@ -63,7 +63,7 @@ question that is still open.
   rename is a copy change and not a refactor. **Nothing in the schema, the event
   vocabulary, or the file formats encodes the product name.** This is deliberate.
 
-## Options, if Noah wants a different answer
+## Options, if The requirement is a different answer
 
 1. **Keep both names, differentiate hard on the hub** — cheapest, and the current
    default.
@@ -77,4 +77,4 @@ Not recommending 3.
 ## What would overturn it
 
 A USPTO knockout returning a live mark in class 9 or 42 would force a rename
-outright. Noah's preference on the hub-collision reading would settle the rest.
+outright. The owner's preference on the hub-collision reading would settle the rest.

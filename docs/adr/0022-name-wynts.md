@@ -11,7 +11,7 @@
 
 ## Decision
 
-The app is **Wynts** — Noah's coinage, an acronym hidden inside a word:
+The app is **Wynts** — the owner's coinage, an acronym hidden inside a word:
 
 > **W**hat **Y**ou **N**eed **T**o **S**ee
 
@@ -31,7 +31,7 @@ survives is compounds, coinages, and slightly-odd words. Wynts is the first
 candidate to pass *every* check available (see below) rather than merely survive
 one.
 
-**The hidden acronym is the structure in its right place.** Noah wanted a name
+**The hidden acronym is the structure in its right place.** The owner wanted a name
 that encodes the machinery; PDC was rejected because a bare three-letter acronym
 is the register of the workplace this app exists to be a relief from
 ([ADR-0020](0020-name-perennial.md) graveyard). Buried inside a pronounceable
@@ -64,7 +64,7 @@ because it is a grep and it is free.
   - Instrument: reading
   - Result: not a term of art anywhere (unlike *Detent*)
 
-**Not checked, and still owed on Noah's device:** the App Store search from a real
+**Not checked, and still owed on a real device:** the App Store search from a real
 device, and a USPTO knockout in classes 9 and 42 if he wants one. Both are blocked
 from a session — proven, not assumed ([V-05](../verifications.md)).
 
@@ -78,7 +78,7 @@ from a session — proven, not assumed ([V-05](../verifications.md)).
   Accepted knowingly.
 - **Pronunciation is not self-evident** — *WINTS* or *WHYNTS*. A name people say
   aloud needs one answer, and a name whose pronunciation people guess at gets said
-  wrong forever. **Open for Noah** (Q-08); recorded in the README once he rules.
+  wrong forever. **Open for the owner** (Q-08); recorded in the README once he rules.
 - **It carries no meaning on first contact.** That is the trade a coinage makes:
   ownable and clearable, but opaque until explained. For a personal free tool
   whose primary user is its author, that cost is small and the "inside knowledge"
@@ -98,5 +98,5 @@ from a session — proven, not assumed ([V-05](../verifications.md)).
 ## What would overturn it
 
 A USPTO knockout returning a live mark in class 9 or 42, or an App Store search
-on Noah's device finding something the web did not. Nothing else — the caveats
+on a real device finding something the web did not. Nothing else — the caveats
 above are recorded and accepted.

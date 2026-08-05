@@ -15,7 +15,7 @@ Static PWA, no build step where avoidable — the family standard, and it surviv
 abandonment ([`data-constitution.md`](data-constitution.md)).
 
 > **The reference platform is a personal iPad**, installed to the Home Screen from
-> Safari (Noah, 2026-07-27). Every budget is measured there, every surface is designed
+> Safari (2026-07-27). Every budget is measured there, every surface is designed
 > for touch at that size first, and **the folder mirror does not exist there** — so
 > export/import via Files carries the whole sync and durability story
 > ([ADR-0004](adr/0004-ios-path.md)). Desktop is a secondary environment that may gain
@@ -313,13 +313,13 @@ Each exits non-zero. A gate that warns is not a gate.
 
 ## 6 · Release
 
-Doctrine §7. Every product change lands on `staging`, and promotion needs Noah's
+Doctrine §7. Every product change lands on `staging`, and promotion needs the owner's
 explicit "promote" on his actual device — never a session's read that it looks
 ready. Docs-only changes may skip the gate.
 
 Releases are **version.capability.iteration**, one kind each, with the
 service-worker cache name carrying the same triplet and bumped together.
-**Names are earned, and Noah says when** — never invented, never a placeholder,
+**Names are earned, and the owner says when** — never invented, never a placeholder,
 and not a field to fill at every bump.
 
 ---

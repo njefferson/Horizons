@@ -33,7 +33,7 @@ const st = (...events: AppEvent[]): State => foldEvents(events);
 // Defaults to `due` — the kind somebody set themselves, and the only sort a
 // calendar has any business carrying. It defaulted to `review` for as long as this
 // file existed, which meant every fixture here was quietly asserting that the app's
-// own resurfacing markers belong in a diary. They do not, and Noah's calendar found
+// own resurfacing markers belong in a diary. They do not, and a real calendar found
 // out before these tests did.
 const clockAt = (id: string, days: number, kind = 'due'): AppEvent =>
   ev('clock.set', id, { clockKind: kind, at: new Date(Date.parse(NOW) + days * 86_400_000).toISOString(), source: 't' });
@@ -477,13 +477,13 @@ test('with no zone it is unchanged, and a malformed instant does not throw', () 
 
 // --- what a calendar is allowed to claim ------------------------------------
 //
-// Noah, on device, with ten events offered: *"it's literally everything in the
+// found on device, with ten events offered: *"it's literally everything in the
 // list that has just been given a date of today supposedly, I assume, because they
 // couldn't be blank?"* He was right. Routing to Next action sets a `review` clock
 // at end of tomorrow, so nine things routed in one afternoon became nine all-day
 // events on one day, each with a nine o'clock alarm, none of which he had dated.
 
-test('THE ONE NOAH FOUND: a review clock is the app talking to itself, not a date', () => {
+test('THE ONE FOUND ON DEVICE: a review clock is the app talking to itself, not a date', () => {
   const s = st(...item('R', 'routed to next action', 1));
   const withReview = st(
     ev('node.created', 'R2', { nodeKind: 'action', title: 'routed to next action' }),
@@ -521,7 +521,7 @@ test('and the real routing intent produces exactly that, end to end', () => {
 });
 
 test('a due date beats a sooner review clock, rather than the review winning', () => {
-  // The exact shape of Noah's screenshot: the review clock was SOONER, so it won
+  // The exact shape it took on device: the review clock was SOONER, so it won
   // the soonest-clock contest and named the day. Now it is not in the contest.
   const s = st(
     ev('node.created', 'N', { nodeKind: 'action', title: 'x' }),

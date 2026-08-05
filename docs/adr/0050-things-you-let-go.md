@@ -41,6 +41,6 @@ the record of "I decided no", kept because decisions can be revisited.
 ## What would overturn it
 
 Nothing about visibility — a promise the UI makes must be keepable. The cap
-and placement could move on Noah's word; the one-verb rule and the
+and placement could move on the owner's word; the one-verb rule and the
 no-decay/no-demand rule are the law-3 boundary itself and would need this
 ADR reversed in writing.

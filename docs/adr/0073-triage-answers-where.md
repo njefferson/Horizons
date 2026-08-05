@@ -4,7 +4,7 @@
 
 ## Context
 
-Noah, on what actually ends a working day and resets the dogfood gate:
+The owner, on what actually ends a working day and resets the dogfood gate:
 
 > *"I have a huge backlog, and I imported it to work through and put in the right
 > places, but keep finding that the places were not there, yet. That's the
@@ -89,5 +89,5 @@ uses it. **Filing says where; the place's clock says when. One answer each.**
   1.18.4 covers them.
 - **Not done:** nothing yet shows a place's *contents* on the runway when its
   review comes round. Filing puts things somewhere and the place returns; what it
-  returns *with* is the next question, and it is the one to ask Noah about after
+  returns *with* is the next question, and it is the one to ask the owner about after
   he has used this.

@@ -1,4 +1,4 @@
-// The sample set (roadmap item Noah asked for: "a set of test data i can import").
+// The sample set (a roadmap requirement: test data that can be imported).
 //
 // The load-bearing test is that **every event passes the real `admit`**. Sample
 // data that bypassed the write boundary could violate law 1, which would make the

@@ -1,6 +1,6 @@
 # The collision catalogue — how ND users collide with planning systems, and how Quietkeep routes each
 
-> Commissioned by Noah, 2026-08-04: *"bring in everything you can find about how
+> Commissioned 2026-08-04, asking for everything findable about how
 > neurodivergent users typically collide with system problems, so they (I) can be
 > properly and better routed."* Compiled from research and community knowledge,
 > checked entry by entry against this repo's laws, ADRs and code. Routing marks:
@@ -31,7 +31,7 @@ How neurodivergent users typically collide with planning systems, and how Quietk
 - **WHAT HAPPENS** — Colloquially "no object permanence"; mechanically it is cue-dependent prospective memory failure (Einstein & McDaniel): intentions fire on external cues, and an item with no cue never fires. Filed means gone. The person keeps everything on the desk, the counter, and forty open tabs, because visible is the only kind of remembered.
 - **HOW CONVENTIONAL SYSTEMS MAKE IT WORSE** — Filing and archiving are the *virtues* of conventional systems — inbox zero is literally the instruction to put everything where it can no longer cue you.
 - **WHAT QUIETKEEP ALREADY DOES** — This collision is the thesis. Law 1's return engine: every node is on a surface, under a clock, on the Menu, or parented to something under a clock, and the write gate refuses anything else. The coverage gauge shows the proof ("everything returns · 0 silent"). 1.19.0's `filed` route makes the place, and the place carries the clock so its contents come back with it (ADR-0073).
-- **ROUTING PROPOSAL** — **V2-candidate, and it is already named as owed.** When a place's review comes round, its return card carries a bounded view of contents (capped per law 8) — the 1.19.0 log entry records this exact question and says to ask Noah after he has used filing, not to guess. That sequencing is the proposal.
+- **ROUTING PROPOSAL** — **V2-candidate, and it is already named as owed.** When a place's review comes round, its return card carries a bounded view of contents (capped per law 8) — the 1.19.0 log entry records this exact question and says to ask the owner after he has used filing, not to guess. That sequencing is the proposal.
 
 ### 4. Time blindness — the future is not real until it is now
 
@@ -45,7 +45,7 @@ How neurodivergent users typically collide with planning systems, and how Quietk
 - **WHAT HAPPENS** — William Dodson's interest-based nervous system: activation follows Interest, Novelty, Challenge, Urgency, and Passion, not importance or consequence. A task can be acknowledged as critical and still produce nothing, while a fascinating trivial one produces hours. This is a different ignition system, not a values defect.
 - **HOW CONVENTIONAL SYSTEMS MAKE IT WORSE** — The Eisenhower quadrant assumes importance activates — its entire top row is a dead letter for this nervous system — and "just prioritize" moralizes the mismatch.
 - **WHAT QUIETKEEP ALREADY DOES** — The heat pass is a two-tap interest read (`heat.set`, ADR-0029); the Menu gives wants a home that owes nothing (law 6); a wish rides in every offer and structurally cannot become work (ADR-0060). But the azimuth check found that nothing about interest reaches `nextUp` — everything ranks on *when*.
-- **ROUTING PROPOSAL** — **later, explicitly gated on Q-11 and Q-12.** The natural mechanism — heat informing which candidate fills the offer's `ready` slot — is a ranking change, and NOTES.md's own rule stands: *do not build past Q-11 on a guess*. Recorded here so that when Noah answers, the INCUP framing is on the table.
+- **ROUTING PROPOSAL** — **later, explicitly gated on Q-11 and Q-12.** The natural mechanism — heat informing which candidate fills the offer's `ready` slot — is a ranking change, and NOTES.md's own rule stands: *do not build past Q-11 on a guess*. Recorded here so that when the owner answers, the INCUP framing is on the table.
 
 ### 6. Autistic inertia and task-switching cost — hard to start, hard to stop, monotropism underneath
 
@@ -80,7 +80,7 @@ How neurodivergent users typically collide with planning systems, and how Quietk
 - **WHAT HAPPENS** — Christine Miserandino's spoon theory: energy is a small, countable, day-variable budget, and tasks draw it down unevenly. Overextension borrows from tomorrow at punitive interest. A plan built for the good-day self meets the actual day's self and loses.
 - **HOW CONVENTIONAL SYSTEMS MAKE IT WORSE** — Rigid daily plans assume constant capacity; streaks and velocity metrics turn a low-capacity day into a visible failure rather than a fact about the body.
 - **WHAT QUIETKEEP ALREADY DOES** — `capacity.declared` is believed on its own — the app has no standing to ask for evidence about how you are (law 7, ADR-0065); pebbles record load with magnitude, three small things or one boulder narrow the offer — never below one, and the wish stays; the note reads "Fewer things, while you have this much on", where *while* is load-bearing: co-occurrence, never causation.
-- **ROUTING PROPOSAL** — **later.** The mechanism is built; the open question is reach — whether the declare verb sits where a heavy morning actually happens (the work surface) rather than down a sheet. A placement question for Noah after use, not a new mechanism.
+- **ROUTING PROPOSAL** — **later.** The mechanism is built; the open question is reach — whether the declare verb sits where a heavy morning actually happens (the work surface) rather than down a sheet. A placement question for the owner after use, not a new mechanism.
 
 ### 11. All-or-nothing restart failure — one missed day reads as ruin
 
@@ -172,7 +172,7 @@ How neurodivergent users typically collide with planning systems, and how Quietk
 
 Ranked by value to the owner as he has described his days, multiplied by fit with machinery that already exists.
 
-1. **Place-return-with-contents (entry 3):** when a filed place's review comes round, its return card shows a law-8-capped view of what it holds — the exact "still owed" question the 1.19.0 log entry says to put to Noah after use, and the missing half of the feature that answers his stated day-ender.
+1. **Place-return-with-contents (entry 3):** when a filed place's review comes round, its return card shows a law-8-capped view of what it holds — the exact "still owed" question the 1.19.0 log entry says to put to the owner after use, and the missing half of the feature that answers his stated day-ender.
 2. **Capture context on the triage card (entry 17):** state when an item was written and what was in focus at the time, as a pure projection over data already in the log — highest leverage on the 1,173-item backlog he is triaging right now, at zero vocabulary cost.
 3. **The "smaller bite" verb on the offer (entry 1):** split a first physical action out of the offered item without leaving the surface, the 1.19.0 pattern applied to initiation — the half the azimuth check itself names as thin.
 4. **The pocket offer for waiting mode (entry 9):** when a hard date sits later today, prefer offer items whose logged duration estimate fits the gap and say so as a fact — both inputs already exist, and it converts his most-wasted hours.

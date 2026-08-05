@@ -28,7 +28,7 @@ const capture = (prior: State, id: string): State =>
 
 test('modules fold: enabled adds, disabled removes, off is the default', () => {
   let s = emptyState();
-  assert.equal(todayIsOn(s), false, 'off by default — Noah\'s condition');
+  assert.equal(todayIsOn(s), false, 'off by default — the stated condition');
   s = write(s, [ev('module.enabled', null, { module: TODAY_MODULE })]);
   assert.equal(todayIsOn(s), true);
   s = write(s, [ev('module.disabled', null, { module: TODAY_MODULE })]);

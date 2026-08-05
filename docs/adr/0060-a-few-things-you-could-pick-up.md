@@ -4,9 +4,9 @@
 
 ## Context
 
-Noah: *"I'd like the app to queue towards offering what the user wants to choose
-to do, as opposed to a list of things waiting to be done. More of a menu than a
-task list."*
+The direction asked for: the app queues towards offering what a person wants to
+choose to do, rather than listing things waiting to be done — more a menu than a
+task list.
 
 Next up has offered exactly one thing since build-plan items 18–19, and the
 reason is recorded: **choice overload** (thesis §4). That finding is real and it

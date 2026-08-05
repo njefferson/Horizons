@@ -69,6 +69,6 @@ records it; no new noun.
 ## What would overturn it
 
 On-device evidence that chunk size or the preview's counting is wrong at
-Noah's real scale — mechanics, not shape. The receipts-are-legal ruling and
+a real scale — mechanics, not shape. The receipts-are-legal ruling and
 the never-offer-an-illegal-verb rule are load-bearing product positions;
 changing either needs its own ADR.

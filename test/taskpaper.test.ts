@@ -1,4 +1,4 @@
-// Bringing work in from another planner (Noah: "Possible to import an Omnifocus
+// Bringing work in from another planner (a requirement: import an OmniFocus
 // export and really test at scale?").
 //
 // The tests that carry weight:
@@ -298,7 +298,7 @@ test('the words never claim more than the file held', () => {
 
 // --- dates that already went by ---------------------------------------------
 //
-// Noah's real OmniFocus export: 1,173 due dates, EVERY ONE in the past, earliest
+// a real OmniFocus export: 1,173 due dates, EVERY ONE in the past, earliest
 // June 2019. Imported as due dates they became 1,173 things needing a new plan on
 // the morning of the import — seven years of residue arriving as today's demands.
 

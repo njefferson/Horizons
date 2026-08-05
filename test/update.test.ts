@@ -1,4 +1,4 @@
-// "A new version is ready" (Noah: "Ask to backup when update detected?").
+// "A new version is ready" (a requirement: offer a backup when one is detected).
 //
 // The words carry as much weight here as the logic. An update CANNOT lose what is
 // already written — append-only log, `state = fold(log)`, additive migrations — so a
@@ -113,8 +113,9 @@ test('a failed copy is said out loud and does not pretend to be harmless', () =>
 
 // --- when the swap does not happen ------------------------------------------
 //
-// Noah, on an iPad: "I hit 'install it now' 10 times, gave up, force closed,
-// and reopened, and it worked." An installed app on iPadOS will not always let
+// Reported on an iPad: the Install control was pressed ten times with no
+// visible effect, and the update landed only after a force close and reopen.
+// An installed app on iPadOS will not always let
 // the waiting version take over while it is open. The old fallback reloaded
 // after three seconds, which re-entered the same build and re-offered the same
 // update — a control that visibly does nothing, pressed ten times.

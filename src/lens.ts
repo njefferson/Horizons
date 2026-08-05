@@ -1,4 +1,4 @@
-// The lens (1.7.0, ADR-0054) — Q-10's recorded shape, built on Noah's word.
+// The lens (1.7.0, ADR-0054) — Q-10's recorded shape, built to order.
 //
 // A lens is a FILTER YOU SWITCH ON AND OFF over what you are LOOKING at, and
 // never a partition of what the app holds. Q-10's closure is the law here:

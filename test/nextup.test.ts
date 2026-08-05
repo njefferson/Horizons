@@ -369,8 +369,9 @@ test('the gauge counts exactly what the coverage list itemises (audit)', () => {
 
 // --- WHERE it sits (V2 stage 1, "It says where") -----------------------------
 //
-// Noah: "I'd see the task leave and not know where/if it went, and had no
-// feeling that I was seeing the right things." The offer answered *why now*
+// Reported: a thing would leave the surface with no way to tell where or
+// whether it went, and no feeling of being shown the right things. The offer
+// answered *why now*
 // from its first release and never once *where from*. `lineageOf` is that
 // answer, and `place` rides on every NextUpItem.
 

@@ -5,8 +5,7 @@
 
 ## Context
 
-Noah, 2026-08-02: *"Right now, if I clear Safari cookies etc, do I lose
-everything?"*
+Asked 2026-08-02: whether clearing Safari's website data loses everything.
 
 The answer is yes. Everything Quietkeep holds lives in one IndexedDB database —
 `events`, `snapshots`, and `kv` are three tables in it (`src/dexie-store.ts`, the

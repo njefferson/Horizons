@@ -1,7 +1,7 @@
 // The number on the app icon, and the switch that turns it off.
 //
-// Noah: *"Make the badge optional as well, if you didn't already?"* — after coming
-// back to a red 1 he could not find inside the app.
+// The badge was required to be optional too — after somebody came back to a
+// red 1 they could not find anywhere inside the app.
 //
 // ## Why it is a switch and not a removal
 //

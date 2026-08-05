@@ -33,7 +33,7 @@ and SVG is text, so the identity is diffable and reviewable like everything else
 The drawn mark keeps the third one's idea and fixes both faults: the wall is a **rounded
 square** — a wall, not a marker — and the arch now appears only in the warm opening.
 
-**No spiral, and that rule outranks every legibility argument above.** Noah's call:
+**No spiral, and that rule outranks every legibility argument above.** The owner's call:
 *"spiraling looks bad… a spiral is the loss of control, and anxiety laden."*
 
 That is the whole reason, and it is not a matter of taste. **A spiral is loss of control.**
@@ -76,7 +76,7 @@ as a picture. *It holds the rest, so you can rest.*
   never *late*. B-01's no-red-walls rule is a palette rule too — a colour that means
   "attention" in the brand will eventually mean "you failed" in the UI.
 - **The field is light and the wall is dark, and that inversion was forced by arithmetic.**
-  Noah asked for something less dark. Paling the whole mark is impossible: the three-step
+  A requirement: something less dark. Paling the whole mark is impossible: the three-step
   ladder needs ~9:1 of range, so a light field leaves nowhere for the light to go — every
   lift-everything variant failed at 2.0–2.4:1. Inverting the wall keeps the opening reading
   as *lit*, and it measured **better**: 8.92:1 / 6.48:1 against the old 3.34:1 / 3.45:1.

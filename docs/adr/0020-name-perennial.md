@@ -35,7 +35,7 @@ you remember to look. Perennial names that directly:
 - **A dormant perennial has not failed** (law 8). Rest is legitimate, and the word already
   knows it — dormancy is part of the organism's normal year, not a lapse from it.
 
-It also collides with nothing Noah owns, which the previous name did.
+It also collides with nothing the owner owns, which the previous name did.
 
 **The floral reading is a branding choice, not a property of the word.** A *perennial
 stream* flows year-round where an intermittent one does not; a *perennial problem* and a
@@ -53,7 +53,7 @@ themselves design constraints.
 - ****Prism**** — PRISM Corporation holds a class 9 registration, and PRISM was the NSA's mass-surveillance programme — actively hostile to a no-telemetry, no-server app.
 - ****Lens**, **Gauge**, **Objective**** — Collide with this app's own vocabulary: the *person lens* is a v1 surface, the *coverage gauge* is law 2, and `goal` nodes carry OKR-style key results.
 - ****Diopter**** — Names a *correction applied to the eye* — implies the user is the defect. Against the shame-free voice.
-- ****Parfocal**** — `parfocal.ca` is a Toronto agency doing **product photography** — adjacency in Noah's own field.
+- ****Parfocal**** — `parfocal.ca` is a Toronto agency doing **product photography** — adjacency in the owner's own field.
 - ****Cairn**** — *Cairn Tasks* already on the App Store, plus three companies holding marks.
 - ****Trellis**** — Busy in software, and too close to Trello.
 - ****Groundglass**** — Reads as broken glass.
@@ -69,7 +69,7 @@ themselves design constraints.
 - ****Latent**** — Clear, but reads as machine-learning vocabulary (latent space) — off-message for an app that keeps AI at arm's length.
 - ****Helicoid**, **Telecentric**, **Emulsion**, **Lightpipe**** — Un-killed but rejected on sound, length, or descriptiveness. Lightpipe additionally names a real stocked component, which makes it weak as a mark.
 - ****PDC** (backronym)** — A three-letter acronym is the native register of the workplace this app exists to be a relief from — OPR, WAR, SOP. The doctrine bans that voice in naming. Also unsearchable, and *Primary Domain Controller* occupies it in class 9. **Available as an internal codename**, where it costs nothing and is a private joke.
-- ****Wynts**** — Adopted then withdrawn the same day, 2026-07-28. Passed every registry check — npm, GitHub, App Store, trademark, internal grep — and **sounds like "wince"**. Disqualifying for an app whose voice is shame-free and never a rebuke. No check in the repo would have caught it; Noah said it out loud. See [ADR-0023](0023-name-wynts-withdrawn.md).
+- ****Wynts**** — Adopted then withdrawn the same day, 2026-07-28. Passed every registry check — npm, GitHub, App Store, trademark, internal grep — and **sounds like "wince"**. Disqualifying for an app whose voice is shame-free and never a rebuke. No check in the repo would have caught it; It was said it out loud. See [ADR-0023](0023-name-wynts-withdrawn.md).
 - ****Detent**** — Checked properly 2026-07-28 and rejected. npm free and the only trademark is a *skincare* mark — but **an app named Detent already exists on the App Store** (a haptic fidget wheel), and `detent` is **core Apple UI vocabulary** (`presentationDetents`, sheet detents since iOS 16). For an iPad-first app that is the worst possible collision: searching it returns Apple's docs. Also `digitaldrywood/detent`, an active work-orchestration tool.
 - ****Parallax**** — **Already a project-management platform** — same category. Plus Parallax Inc. (microcontrollers, class 9, since 1987), Parallax Software, Parallax Graphics, parall.ax. npm taken. And "parallax scrolling" is ubiquitous web-design vocabulary.
 - ****Alignment**** — Collides with this app's own **alignment tree** (ADR-0013, a Review surface) — the same trap as Lens and Gauge. "AI alignment" has also swallowed the word.
@@ -77,19 +77,19 @@ themselves design constraints.
 - ****Tideline**** — Three companies: consulting, real estate, technology services.
 - ****Gimbal**** — Gimbal by Infillion — a **location-tracking** adtech platform, plus App Store apps. Wrong in every sense for a no-telemetry app.
 - ****Isochrone**** — Standard GIS term with a dozen products (Mapbox's Isochrone API, Smappen, an app on Play).
-- ****Escapement**** — Survived every check — npm free, no App Store app, no product — and survived the say-it-aloud check too. **Not chosen.** It drags "escape" behind it, which Noah ruled out as escape-adjacent, and its metaphor describes the mechanism rather than the promise. A survivor of a closed search, not a runner-up to a live name.
+- ****Escapement**** — Survived every check — npm free, no App Store app, no product — and survived the say-it-aloud check too. **Not chosen.** It drags "escape" behind it, which the owner ruled out as escape-adjacent, and its metaphor describes the mechanism rather than the promise. A survivor of a closed search, not a runner-up to a live name.
 - ****Perennial**** — Withdrawn 2026-07-28. **Perennial Labs, Inc.** (DeFi protocol) is serving `perennial.pages.dev`; **Perennial Systems** (web dev/fintech) and **Perennial Software** (security) also hold it. Not a trademark problem for a free app — a findability one. Fourth Perennial in software = invisible.
 
 
 ### The 2026-07-28 round — the search that ended in Quietkeep
 
-Noah's candidates and mine, worked through in one sitting. Recorded at the same standard
+The owner's candidates and mine, worked through in one sitting. Recorded at the same standard
 as the rows above: **this is a trail, not a proof that nothing is left.** Several of these
 are good names that lost to a better one, and they are written down so they can be
 reconsidered rather than re-discovered.
 
 *The military-vocabulary bar in the voice rules applies to what a **session** proposes.
-Where Noah proposed a term himself, it was checked on its merits and killed on other
+Where the owner proposed a term himself, it was checked on its merits and killed on other
 grounds or not at all.*
 
 - ****Sherpa**** — An ethnic group used as a word for a porter. Also heavily occupied in software (Sherpa the assistant app, Sherpa Digital Media, several logistics products).
@@ -102,7 +102,7 @@ grounds or not at all.*
 - ****All things considered**** — NPR's flagship programme since 1971.
 - ****Orbital / Orbitals**** — Orbital Insight, Orbital Sciences, Orbital Materials, an App Store game. Class 9 is dense with it.
 - ****Naowat**** — The joke ("now what?") does not survive being read cold — it reads as a foreign loanword of unclear origin, and the spelling has to be explained every time.
-- ****Quest log**** — Noah's own suggestion, so the vocabulary bar did not apply. Killed on register instead: it is game UI, and a planner that calls a life a quest log makes the user a player character. Also literally the name of the panel in a dozen games.
+- ****Quest log**** — the owner's own suggestion, so the vocabulary bar did not apply. Killed on register instead: it is game UI, and a planner that calls a life a quest log makes the user a player character. Also literally the name of the panel in a dozen games.
 - ****Cooldown**, **Respawn**, **Loadout**, **Checkpoint**, **Minimap**** — The same seam, tried properly. All are load-bearing game vocabulary with products already on them (Respawn Entertainment; Loadout the game; Checkpoint the security firm and Check Point Software). *Cooldown* additionally reads as a rest timer imposed on the user — the opposite of law 8.
 - ****Base camp**** — **Basecamp** is project-management software. The single most occupied name in the category.
 - ****Trailhead**** — **Salesforce Trailhead.** Enormous, and in the adjacent business-software world.
@@ -143,4 +143,4 @@ see [ADR-0024](0024-name-quietkeep.md).
 ## What would overturn it
 
 A USPTO knockout returning a live mark in class 9 or 42. Nothing else — the floral reading
-is answerable, and Noah has accepted it.
+is answerable, and the owner has accepted it.

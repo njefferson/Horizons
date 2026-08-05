@@ -1,6 +1,6 @@
 # ADR-0017 · PolyForm Noncommercial 1.0.0
 
-**Status:** **Accepted** · **Date:** 2026-07-27 · **Confirmed by Noah 2026-07-27**
+**Status:** **Accepted** · **Date:** 2026-07-27 · **Confirmed by the owner 2026-07-27**
 ("Doctrinal intent is correct")
 
 ## Decision
@@ -60,10 +60,10 @@ Doctrine's answer rather than the brief's.
 
 ## Resolution
 
-Asked and answered, 2026-07-27. Noah: *"Doctrinal intent is correct."* The brief's
+Asked and answered, 2026-07-27. The doctrinal intent was confirmed correct. The brief's
 AGPL line is superseded by Doctrine §8; the family standard holds and this repo
 does not diverge from it.
 
 ## What would overturn it
 
-Noah's word. That is the whole of it.
+The owner's word. That is the whole of it.

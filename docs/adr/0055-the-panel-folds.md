@@ -6,7 +6,7 @@
 
 The ⓘ panel carries everything — help, storage, import, extras, the record,
 the release notes — and everything at once was too much to stand in front of.
-Noah, on device: accent rules separated small things while nothing separated
+found on device: accent rules separated small things while nothing separated
 the big ones, and *"the information panel is carrying too much"*. He offered
 two shapes: the sections collapse, or a separate settings surface. The panel
 folds — the smaller change, and it keeps the family's one-panel promise (one
@@ -37,7 +37,7 @@ four groups can hold, this decision is the one to revisit.
 
 ## What would overturn it
 
-- **The default-closed posture, by Noah's word** — if real use shows he (or
+- **The default-closed posture, by the owner's word** — if real use shows he (or
   anyone) reopens the same groups every single time, per-device memory should
   already absorb that; if it does not, default-open for remembered groups is
   the first fallback, and a settings split is the second.

@@ -1,6 +1,6 @@
 # ADR-0036 · Two builds from one branch — the default cannot sync, and the browser enforces it
 
-**Status:** Accepted · **Date:** 2026-07-29 · Noah's decision
+**Status:** Accepted · **Date:** 2026-07-29 · the owner's decision
 
 ## Decision
 
@@ -89,7 +89,7 @@ shared accessibility statement.
 - The repo description and the About copy currently say "no accounts, no
   telemetry, no server". That stays true of Quietkeep and becomes false of
   Quietkeep Sync, so both need their own wording — a Doctrine §10 confirm item,
-  listed for Noah rather than changed unilaterally.
+  listed for the owner rather than changed unilaterally.
 
 ## What would overturn it
 
@@ -97,9 +97,9 @@ The two builds needing to differ in product terms rather than in one module. At
 that point they are two products, two branches are honest, and this record is
 superseded rather than stretched.
 
-## Amendment — 2026-08-01 (1.7.2): the words follow the edition, on Noah's word
+## Amendment — 2026-08-01 (1.7.2): the words follow the edition, on the owner's word
 
-The wording gap this record listed for Noah resolved itself the honest way: he
+The wording gap this record listed for the owner resolved itself the honest way: he
 opened Quietkeep Sync and caught the default's copy lying to him — "there is no
 server" and "the default app you are in never contacts anything at all", both
 false in that build. On his instruction ("these two lie… these need to match

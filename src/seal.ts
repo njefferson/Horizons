@@ -144,7 +144,7 @@ const FRAME_MAGIC = [0x51, 0x4b, 0x50, 0x31];
 /**
  * Every sealed body is rounded up to a multiple of this before encryption.
  *
- * **Noah asked the right question:** could somebody inject one item, have it
+ * **The right question was asked:** could somebody inject one item, have it
  * travel without a pile of other data around it, and learn more from the result?
  *
  * The mechanism is not quite the one in the question, and it is real. A chunk
@@ -173,7 +173,7 @@ export const PAD_TO = 4096;
  * Squeeze, if this platform can.
  *
  * An event log compresses extraordinarily well — the same keys, the same device
- * id and near-identical timestamps on every line. Noah's planner measured 8.4x,
+ * id and near-identical timestamps on every line. A real planner measured 8.4x,
  * which turns a first sync from eight uploads into one. Storage writes are the
  * scarcest thing in this whole design, so that is the difference between a
  * comfortable margin and a tight one.

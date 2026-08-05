@@ -4,7 +4,7 @@
 [ADR-0061](0061-the-journal-is-a-kind-not-a-vault.md)** · **Date:** 2026-07-27
 
 > **Superseded in part, 2026-08-02 (1.13.0).** The journal is a `NodeKind` with
-> an encrypted payload, not a vault — Noah's decision, because this record's own
+> an encrypted payload, not a vault — the owner's decision, because this record's own
 > overturn clause says nothing overturns the vault split, so no session could
 > make that call. **Everything else here still binds and is not loosened:** the
 > `{ciphertext, iv}` at-rest shape, the rule that encryption ships in the same

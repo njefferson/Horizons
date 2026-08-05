@@ -282,10 +282,10 @@ export async function exchangeOnce(deps: ExchangeDeps): Promise<ExchangeResult> 
   // that wrote it is not in the pair and never will be.
   //
   // Moving between the editions IS an export and an import (ADR-0036), so this
-  // was the documented route, not an edge of it. Noah's iPad held 2900 events
-  // brought over from the plain edition and offered zero of them; his phone held
-  // one event it had written itself, and that one crossed. "Pairing works
-  // although no data syncs."
+  // was the documented route, not an edge of it. One device held 2900 events
+  // brought over from the plain edition and offered zero of them; a second held
+  // one event it had written itself, and that one crossed — pairing worked while
+  // no data synced.
   //
   // Offering what is HELD also makes the pair self-healing: if one device is
   // lost, the survivor can still publish that device's work to a replacement.

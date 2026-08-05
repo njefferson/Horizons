@@ -4,7 +4,7 @@
 
 ## Decision
 
-Q-10's recorded shape, built on Noah's word ("work on duplicate handling and
+Q-10's recorded shape, built on the owner's word ("work on duplicate handling and
 lenses"). A **lens** is one live top-level container — a "Home" or "Work"
 area — chosen from a select above the held list. While it is active, the held
 list's ROWS are filtered to things sitting anywhere beneath that root
@@ -57,7 +57,7 @@ by the lens is simply absent — like an empty group always is.
 
 - **The never-filter fence: nothing.** A lensed Next up or a lensed gauge is
   Q-10's refused vault with a select instead of a wall; the fence is the
-  decision. If real use shows the WHOLE-life Next up is wrong for Noah, that
+  decision. If real use shows the WHOLE-life Next up is wrong for the owner, that
   is a Next-up question to bring to him, not a lens argument.
 - **The row-filter shape, by his word** — if the select above the list proves
   the wrong furniture (mis-taps, or the line grows tired), the surface can

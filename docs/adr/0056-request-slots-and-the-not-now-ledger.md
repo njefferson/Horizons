@@ -93,7 +93,7 @@ a defect, not a feature request.
 
 ## What would overturn it
 
-- **The ledger's placement and cap, by Noah's word** — ADR-0050's own clause,
+- **The ledger's placement and cap, by the owner's word** — ADR-0050's own clause,
   inherited.
 - **The one-slot limit, by evidence** — if real use shows two genuinely
   different request rhythms (say, home and work), the `weekly:` prefix format

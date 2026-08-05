@@ -252,7 +252,7 @@ test('the key is 256 bits and the text is short enough to hand over', async () =
 
 // --- compression, inside the seal -------------------------------------------
 //
-// Noah: "Should there be a type of compression on it?" Measured on his own
+// It was asked whether there should be compression on it. Measured on a real
 // planner: 8.4x, turning a first sync from eight uploads into one. Storage
 // writes are the scarcest resource in this design, so that is the difference
 // between a comfortable margin and a tight one.
@@ -344,7 +344,7 @@ test('tiny payloads still work, even though compression cannot help them', async
 
 // --- padding, and the question that produced it ------------------------------
 //
-// Noah: "Can someone later inject a single item that then exports just itself and
+// The question asked: can someone later inject a single item that then exports just itself and
 // reveals much more because it is not obfuscated in a data pile?"
 //
 // The mechanism is not quite the one in the question, and it is real. A chunk

@@ -1,7 +1,7 @@
 // Nothing personal about the owner ever lands in this repo. FAIL state.
 //
-// Noah, 2026-08-04, verbatim: "Make sure you never record anything in the repo
-// that is personal or embarrassing for me. That is a FAIL state."
+// The rule, stated by the owner 2026-08-04: nothing personal or embarrassing
+// about him is ever recorded in the repo. That is a FAIL state.
 //
 // The line that decides every case: his design statements are repo material;
 // who he is, is not. The product's framing ("a planner for neurodivergent

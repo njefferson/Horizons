@@ -183,10 +183,10 @@ export function undoRouteEvents(
 /**
  * Put it in a PLACE — the answer to "where", which triage has never had.
  *
- * Noah, 2026-08-04, on what actually ends a working day: *"I imported [a huge
- * backlog] to work through and put in the right places, but keep finding that
- * the places were not there, yet. That's the problem. I'd see the task leave and
- * not know where/if it went."*
+ * What actually ends a working day, reported 2026-08-04: a huge backlog
+ * imported to work through and file in the right places, and the places kept
+ * turning out not to exist yet. A thing would leave the surface with no way to
+ * tell where, or whether, it had gone.
  *
  * Every route above answers WHEN — a clock, or the Menu, or gone. None of them
  * answers WHERE, and `routeEvents` takes no parent at all. So an imported

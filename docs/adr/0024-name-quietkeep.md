@@ -52,7 +52,7 @@ check and still had to be withdrawn.
   - Result: `quietkeep`, `quiet-keep`, `quietkeep-app`, `usequietkeep` all free. No GitHub project of the name.
 - **5**
   - Check: **App Store**
-  - Instrument: **Noah's own device**
+  - Instrument: **a real device**
   - Result: *"there is nothing on the App Store that I see near it."* Blocked from a session and proven so ([V-05](../verifications.md)); handed over, and it came back answered.
 
 **Recorded rather than omitted — the nearest live neighbours:**
@@ -81,7 +81,7 @@ app, per [V-04](../verifications.md). This record is Accepted, not "cleared for 
   the GitHub slug and moves in the same commit as the repo rename; changing it earlier
   aims the notice at a 404.
 - Q-04 becomes concrete: the subdomain to test is `quietkeep.pages.dev`, and the four §10
-  metadata values can now be drafted for Noah's confirmation.
+  metadata values can now be drafted for the owner's confirmation.
 - The graveyard in [ADR-0020](0020-name-perennial.md) stays authoritative and stays open —
   it is the record of what was tried, not evidence that the search is finished.
 

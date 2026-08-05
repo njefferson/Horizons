@@ -7,7 +7,7 @@
 A person can compose their day **by hand**: choose up to `COMPOSED_CAP = 5`
 things from their own sheets, see them as a quiet strip above Next up, and
 have the choosing **lapse at midnight with no residue**. The whole capability
-is an **opt-in module, off by default** — Noah's own condition ("Can you make
+is an **opt-in module, off by default** — the owner's own condition ("Can you make
 it optional?") — riding `module.enabled`/`module.disabled{module:'today'}`,
 the two nouns the vocabulary has carried since Phase 0 with no emitter and no
 fold until now. `State.modules` is the new fold (a set; enabled adds,
@@ -45,11 +45,11 @@ but a fact with no reader is not a score.
   for it, it counts nothing, and an unfinished choice is not a failure.
 - **The print card stays computed this release.** `todayCard`'s own rule — one
   definition of "what matters today" per surface — cuts both ways; composing
-  the PRINT from the chosen set is future work on Noah's word, not a default.
+  the PRINT from the chosen set is future work on the owner's word, not a default.
 
 ## What would overturn it
 
-Noah's word, at the module boundary: the whole feature can be switched off
+The owner's word, at the module boundary: the whole feature can be switched off
 forever without touching the log. The expiry-by-projection core is not
 overturnable by convenience — a reader for past days would be the shame
 ledger this app exists to not keep, and it would need this ADR reversed in

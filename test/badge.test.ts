@@ -1,7 +1,7 @@
 // The number on the app icon, and the switch that turns it off.
 //
-// Noah asked for it to be optional after coming back to a red 1 he could not find
-// inside the app. The tests that matter are that **off means off immediately** — a
+// It was required to be optional, after somebody came back to a red 1 they
+// could not find anywhere inside the app. The tests that matter are that **off means off immediately** — a
 // switch whose effect waits for the next render reads as a broken switch — and that
 // the preference is device-local, because a badge is a property of an installation
 // and not a fact about somebody's work.

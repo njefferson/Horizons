@@ -5,7 +5,7 @@
 ## Decision
 
 v1 is **frozen** at the Must list in [`NOTES.md`](../../NOTES.md). Moving an item
-into v1 is a scope change and needs Noah's word.
+into v1 is a scope change and needs the owner's word.
 
 **v1 is finished when the dogfood gate passes**, not when the Must list is
 implemented:
