@@ -122,7 +122,7 @@ export const RELEASES: readonly Release[] = [
     notes: [
       '**The sheet no longer offers what the app will refuse.** Opening a person, a named period, a weight, a private entry, or a wish taken off the Menu no longer shows date, \u201cnot before\u201d, or repeat controls \u2014 none of those things can carry a date, and until now the controls were shown and the tap was refused afterwards. \u201cPut it in today\u201d is likewise no longer offered on a named period or a journal entry.',
       '**This was the fourth of the same defect**, after private entries showing in the coverage list and people sitting in the todo list \u2014 a kind of thing appearing somewhere it does not belong. So the fix comes with the thing that was missing: a written table of which kinds belong on which of the sixteen list surfaces, with a reason for each, checked on every build over the set-of-everything. The next one of these fails a named check before it ships instead of waiting for someone to notice.',
-      'You said everything you found pointed to an unfinished product. This is the start of the answer to that: no new features \u2014 the seams, gated. A wider audit of the same class is running and its findings come next.',
+      'No new features in this one, on purpose. The rough edges are the work: each one closed, and each one held closed by a check so it cannot come back quietly. More of the same kind is on the way.',
     ],
   },
   {
@@ -616,7 +616,7 @@ export const RELEASES: readonly Release[] = [
       '**The X on the (i) panel stays where you can reach it.** It was pinned to the top of the panel, and on the iPad it scrolled away with everything else \u2014 so both ways out ended up at the very top and the very bottom of a panel thousands of pixels long. It no longer moves at all, because it is no longer inside the part that scrolls.',
       '**And the panel is not thousands of pixels long any more.** It was showing every release note ever written, all at once. Now it shows what changed this time, with everything older one tap away.',
       'Escape closes it too, on a keyboard.',
-      'Sorry \u2014 you told me about this one twice.',
+      'This one had come back after being fixed once. It is held by a check now.',
     ],
   },
   {
