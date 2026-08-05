@@ -536,11 +536,11 @@ decided by a session.**
 
 ### Staged and waiting on Noah
 
-**Nothing is waiting.** `main` and `staging` both carry **1.20.1**, promoted on
+**Nothing is waiting.** `main` and `staging` both carry **1.20.2**, promoted on
 his word 2026-08-05. The section below describes what 1.20.0 brought and is
 kept because it is still what to look at on device.
 
-- **https://quietkeep.pages.dev** — production, **1.20.1**
+- **https://quietkeep.pages.dev** — production, **1.20.2**
 - **https://staging.quietkeep.pages.dev** — same commit as production
 
 **Not verified by this session, and it is the one that matters:** nobody has
@@ -620,6 +620,28 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.20.2 (ITERATION) cut and PROMOTED: the Install control was
+  dead on his device.** Noah, on an iPad: *"I hit 'install it now' 10 times,
+  gave up, force closed, and reopened, and it worked."* An installed app on
+  iPadOS will not reliably let a waiting worker take over while the app is
+  open; the message went, the worker did not step aside, and the code's answer
+  was to RELOAD after three seconds — re-entering the same build and re-showing
+  the same offer. A control that visibly does nothing, ten times over, with no
+  hint that closing the app is the thing that works. The timeout now says what
+  is true and hides the control, since pressing it again cannot help. The happy
+  path is untouched and `update:walk` still passes end to end.
+  · **Why the gate did not catch it, which outlives the bug.** `update:walk`
+  drives a real second worker, a real press, and asserts the swap completed —
+  and it passes, in headless Chromium, where this cannot happen. The check was
+  measuring a machine the defect does not exist on (hub LESSONS §54, extended
+  with this). The platform is out of reach here, so the new assertion targets
+  the FAILURE path instead: the source must carry no timed blind reload and
+  must use the stuck message. Seen red by restoring the old
+  `setTimeout(reloadOnce, 3000)` and green after.
+  · **Said in the release note, not just here:** a fix to the update mechanism
+  can only arrive through the update mechanism it fixes, so this one still
+  needs the app closed fully once more on those devices.
 
 - **2026-08-05 — 1.20.1 (ITERATION) cut and PROMOTED to `main` on Noah's word.**
   Doctrine §7d.1 landed in the hub — release notes drift into development diary,
