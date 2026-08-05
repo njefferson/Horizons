@@ -61,6 +61,25 @@ export const updateFailedWords = (why: string): string =>
   `That copy could not be saved — ${why} Nothing has changed, and you can carry on as you are.`;
 
 /**
+ * When the swap does not happen after the reader has asked for it.
+ *
+ * Noah, 2026-08-05, on an iPad: *"I hit 'install it now' 10 times, gave up,
+ * force closed, and reopened, and it worked."* An installed app on iPadOS will
+ * not always let the waiting version take over while the app is still running —
+ * the message is sent, the worker does not step aside, and nothing on screen
+ * changes. What this used to do about that was RELOAD after three seconds,
+ * which re-entered the same build and put the same offer back on screen. From
+ * the outside that is a button that does nothing, ten times over.
+ *
+ * So it says what is true and names the thing that actually works. Closing the
+ * app fully is not a workaround for a bug we have not fixed — it is the only
+ * way the platform releases the old version, and the reader should not have to
+ * discover it by giving up.
+ */
+export const UPDATE_STUCK_WORDS =
+  'That did not take. Some devices will not let a new version take over while the app is still open — closing it completely and opening it again will do it. The new version is already downloaded and waiting, so nothing needs fetching, and nothing you have written is affected.';
+
+/**
  * Is there a version newer than the one running?
  *
  * `waiting` is the classic signal. `installed` on `installing` covers the window
@@ -153,9 +172,17 @@ export function mountUpdatePrompt(session: Session): void {
     if (waiting) {
       asked = true;
       try { waiting.postMessage({ type: 'SKIP_WAITING' }); } catch { reloadOnce(); }
-      // If the swap never happens — a worker that ignores the message, an
-      // engine that refuses — the reader is not left pressing a dead control.
-      setTimeout(reloadOnce, 3000);
+      // If the swap never happens, SAY SO. This used to reload after three
+      // seconds, which on an installed iPadOS app re-entered the same build and
+      // re-offered the same update — a control that visibly does nothing, which
+      // is what made somebody press it ten times before force-closing. A reload
+      // cannot fix this: the platform will not release the old version while the
+      // app is running, so the only honest move is to name the thing that works.
+      setTimeout(() => {
+        if (reloading) return;              // the swap happened; we are on our way out
+        ui.words.textContent = UPDATE_STUCK_WORDS;
+        ui.reload.hidden = true;            // pressing it again cannot help
+      }, 3000);
       return;
     }
     reloadOnce();

@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
 import {
-  UPDATE_WORDS, UPDATE_SAVED_WORDS, updateFailedWords, updateIsReady,
+  UPDATE_WORDS, UPDATE_SAVED_WORDS, UPDATE_STUCK_WORDS, updateFailedWords, updateIsReady,
 } from '../src/ui/update.ts';
 import { CURRENT } from '../src/ui/changelog.ts';
 
@@ -111,8 +111,40 @@ test('a failed copy is said out loud and does not pretend to be harmless', () =>
   assert.match(w, /Nothing has changed/);
 });
 
-test('none of the three sentences reaches for a word this app refuses', () => {
-  for (const w of [UPDATE_WORDS, UPDATE_SAVED_WORDS, updateFailedWords('x.')]) {
+// --- when the swap does not happen ------------------------------------------
+//
+// Noah, on an iPad: "I hit 'install it now' 10 times, gave up, force closed,
+// and reopened, and it worked." An installed app on iPadOS will not always let
+// the waiting version take over while it is open. The old fallback reloaded
+// after three seconds, which re-entered the same build and re-offered the same
+// update — a control that visibly does nothing, pressed ten times.
+
+test('the stuck message names the thing that actually works', () => {
+  assert.match(UPDATE_STUCK_WORDS, /clos/i,
+    'it must say to close the app — that is the only step that releases the old version');
+  assert.match(UPDATE_STUCK_WORDS, /open/i, 'and to open it again');
+  assert.match(UPDATE_STUCK_WORDS, /already downloaded|waiting/i,
+    'closing costs nothing if the reader knows the new version is already here');
+});
+
+test('the stuck message does not blame the reader or claim data is at risk', () => {
+  assert.doesNotMatch(UPDATE_STUCK_WORDS, /\byou (did|failed|must|should)\b/i);
+  assert.doesNotMatch(UPDATE_STUCK_WORDS, /\b(lost|risk|danger|corrupt)\b/i);
+  assert.match(UPDATE_STUCK_WORDS, /nothing you have written is affected/i);
+});
+
+test('the Install control no longer reloads blindly when the swap does not take', () => {
+  const src = readFileSync(new URL('../src/ui/update.ts', import.meta.url), 'utf8')
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+  assert.doesNotMatch(src, /setTimeout\(\s*reloadOnce\s*,/,
+    'a timed reload re-enters the same build and re-offers the same update — the ten-presses defect');
+  assert.match(src, /UPDATE_STUCK_WORDS/,
+    'the timeout must say what is true instead of reloading');
+});
+
+test('none of the sentences reaches for a word this app refuses', () => {
+  for (const w of [UPDATE_WORDS, UPDATE_SAVED_WORDS, UPDATE_STUCK_WORDS, updateFailedWords('x.')]) {
     for (const bad of ['overdue', 'streak', 'you failed', 'behind']) {
       assert.doesNotMatch(w, new RegExp(bad, 'i'), `"${w}" says "${bad}"`);
     }
