@@ -227,6 +227,12 @@ const REGISTRY = {
   // `.linklike` accent-on-background pair the app's links use; the "where" line
   // is the quiet token naming the destination.
   'route undo': ['.triage-undo-where', '.triage-undo-btn'],
+  // The filed receipt, with its unanswered question and the way to answer it
+  // (V2 stage 3). Its own state because the control appears ONLY on the no-date
+  // branch — folding it into 'route undo' would demand it be visible after an
+  // ordinary route, which is the opposite of what it is.
+  'filed receipt': ['.triage-undo-where', '.triage-place-when', '.triage-place-set',
+    '.triage-undo-btn'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
   // shows the six routes, each a label over a hint. Every visible pair is
   // audited — the hint is the lowest-contrast text on the surface, so it is
@@ -1073,6 +1079,24 @@ try {
     await auditNames(page, 'place picker', theme);
     await auditTargets(page, 'place picker', theme);
     await auditFocusRings(page, 'place picker', theme, ['#triage-actions .route']);
+
+    // State 3b-iii: the filed receipt, carrying the question and its answer
+    // (V2 stage 3). File into a NEW place — which is the branch that always has
+    // no return date — audit the bar, then Undo, which puts the card back and
+    // leaves the surface as this section found it.
+    await page.fill('#triage-place-new', 'A place for a11y');
+    await page.locator('#triage-actions .route', { hasText: 'Make it' }).first().click();
+    await page.waitForSelector('.triage-place-when');
+    await auditContrast(page, 'filed receipt', theme);
+    await auditAxe(page, 'filed receipt', theme);
+    await auditNames(page, 'filed receipt', theme);
+    await auditTargets(page, 'filed receipt', theme);
+    await auditFocusRings(page, 'filed receipt', theme, ['.triage-place-when', '.triage-place-set']);
+    await page.locator('.triage-undo-btn').click();
+    await page.waitForSelector('#triage-actions .route .route-hint');
+
+    await page.locator('#triage-actions .route', { hasText: 'Put it somewhere' }).first().click();
+    await page.waitForSelector('#triage-place-new');
     await page.evaluate(() => document.querySelector('#triage-actions .route')?.click()); // Back
     await page.waitForSelector('#triage-actions .route .route-hint');
 

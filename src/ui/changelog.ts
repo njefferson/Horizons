@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.26.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-06',
+    notes: [
+      '**A place you file things into can now be given a return date — and until today it could not, which meant it never came back.** When you file something into a place, the receipt has always told you honestly: “no return date yet”. That was true and there was nothing you could do about it, so the place sat holding your things and never asked for you again. Everything filed was safe and invisible, which is the exact problem filing was meant to solve.',
+      '**The answer is now on the receipt itself.** “Bring it back on…” — pick a day, and the place comes back to you on it, carrying what you put in it. The sentence updates to say when.',
+      'It is offered, never required. Filing without a date is still a complete act, and the receipt will go on telling you the truth about it.',
+      'A place comes back to be looked in, not to be finished. It is never marked done and never turns into something late.',
+      '*Still missing:* what a place shows you when it does come round is still just the place — a view of what is inside it comes next.',
+    ],
+  },
+  {
     triplet: '1.25.0',
     kind: 'CAPABILITY',
     date: '2026-08-06',

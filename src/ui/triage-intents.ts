@@ -22,7 +22,7 @@ import type { AppEvent, ClarifyRoute, ClockKind, Heat, MenuCategory, NodeKind } 
 import type { NodeState } from '../fold.ts';
 import type { StampContext } from './session.ts';
 import { calendarDaysBetween, endOfLocalDay, isValidIso } from '../time.ts';
-import { createParentEvents } from './detail-intents.ts';
+import { createParentEvents, endOfDayKey } from './detail-intents.ts';
 import { isAppClock } from '../fold.ts';
 
 const base = (ctx: StampContext, kind: string, node: string, payload: unknown): AppEvent => ({
@@ -258,6 +258,41 @@ export function fileUnderNewEvents(
     ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
   ];
 }
+
+/**
+ * WHEN SHOULD THIS PLACE COME BACK TO YOU (V2 stage 3).
+ *
+ * The write that closes the hollow return. A place minted at file time carries
+ * only a `gate:node.created` cure, and `isAppClock` excludes that from
+ * `soonestDemand` and `arrivedClock` — so it sits in "Later" for ever, holding
+ * everything filed into it. Nothing is lost and nothing returns, which is the
+ * exact complaint filing was built to end, one layer down.
+ *
+ * **A REVIEW CLOCK, NOT A DUE.** The detail sheet's date control has always
+ * been reachable on a container and writes `due` — and a place is not DUE. You
+ * do not finish Errands; you look in it again. The noun matters beyond taste:
+ * `due` is a hard clock, and the only reason a passed one does not raise a
+ * replan card on a place is that every container sits in `NO_REPLAN_CARD`. That
+ * is an accident of kind, not a decision about places, and it is not a thing to
+ * lean on. `review` is what the app already calls "bring this back to you", and
+ * it is what `heldGroups` reads to move a place from Later, to Coming up, to
+ * Ready now — verified against the fold rather than assumed.
+ *
+ * Nothing else changes. No new event kind, no fold field, no migration: the
+ * whole return mechanism already existed and nothing wrote the clock.
+ *
+ * `source` names the surface, as every other writer does, so the log can say
+ * where a date came from and `isAppClock` can keep telling a human clock from a
+ * cure.
+ */
+export const datePlaceEvents = (
+  ctx: StampContext, place: string, dayKey: string,
+): AppEvent[] => {
+  if (!place || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey)) return [];
+  return [base(ctx, 'clock.set', place, {
+    clockKind: 'review', at: endOfDayKey(dayKey, ctx.zone), source: 'triage:place-return',
+  })];
+};
 
 /**
  * When does this place come round — by the reader's own clocks, never the

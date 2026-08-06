@@ -14,9 +14,10 @@ import { fold, emptyState, type State } from '../src/fold.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { localDayKey, calendarDaysBetween } from '../src/time.ts';
 import { unclarified, needsHeat, nextToClarify, inboxGauge } from '../src/triage.ts';
+import { heldGroups } from '../src/held.ts';
 import {
   routeEvents, heatEvents, fileUnderEvents, fileUnderNewEvents, undoRouteEvents, clocksOf,
-  fileReceiptWords, placeReturnDays,
+  datePlaceEvents, fileReceiptWords, placeReturnDays,
 } from '../src/ui/triage-intents.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
@@ -299,4 +300,75 @@ test('placeReturnDays reads only HUMAN clocks — a gate cure is not a return da
   } as AppEvent]);
   const dated = s.nodes.get(place.id)!;
   assert.equal(placeReturnDays(dated, at, 'America/Denver'), 2, 'two calendar days out');
+});
+
+// --- V2 stage 3: dating a place, which closes the hollow return ---------------
+//
+// The defect, stated once: a place minted at file time carries only a
+// `gate:node.created` cure. `isAppClock` excludes that from `soonestDemand` and
+// `arrivedClock`, so the place sits in "Later" for ever holding everything
+// filed into it. Nothing is lost and nothing returns — the filed backlog is
+// safe and invisible, which is the exact complaint filing was built to end.
+//
+// The return machinery was always complete. Nothing wrote the clock.
+
+test('THE HOLLOW RETURN: an undated place never comes round, a dated one does', () => {
+  // Asserted through `heldGroups`, which is what actually puts a place in front
+  // of somebody. Testing the intent alone would prove the event was built and
+  // say nothing about whether anybody ever sees the place again — and that gap
+  // IS the defect.
+  let s = write(emptyState(), [{
+    id: 'p0', vault: 'personal', at, device: 'd0', seq: seq++,
+    kind: 'node.created', node: 'PLACE', payload: { nodeKind: 'project', title: 'Errands' },
+  } as AppEvent]);
+  const groups = (st: State): string[] => heldGroups(st, at, 'America/Denver')
+    .filter(g => g.items.some(n => n.id === 'PLACE')).map(g => g.key);
+  assert.deepEqual(groups(s), ['later'],
+    'minted and undated, it sits in Later — held, and asking nothing, for ever');
+
+  // Three days out, through the intent the receipt now offers.
+  s = write(s, datePlaceEvents(ctx(), 'PLACE', '2026-07-31'));
+  assert.deepEqual(groups(s), ['soon'], 'dated, it is coming up');
+
+  // And on the day.
+  const onTheDay = heldGroups(s, '2026-07-31T20:00:00.000Z', 'America/Denver')
+    .filter(g => g.items.some(n => n.id === 'PLACE')).map(g => g.key);
+  assert.deepEqual(onTheDay, ['ready'], 'and on the day it is ready — it came back');
+});
+
+test('it writes a REVIEW clock, never a due — a place is not something you finish', () => {
+  // The noun matters beyond taste. `due` is a hard clock, and the only reason a
+  // passed one does not raise a replan card on a place is that every container
+  // sits in NO_REPLAN_CARD — an accident of kind, not a decision about places.
+  const [e] = datePlaceEvents(ctx(), 'PLACE', '2026-07-31');
+  assert.equal(e!.kind, 'clock.set');
+  assert.equal((e!.payload as { clockKind: string }).clockKind, 'review');
+  // And a HUMAN source, or `placeReturnDays` and `arrivedClock` would both go
+  // on ignoring it exactly as they ignore the gate's cure.
+  const src = (e!.payload as { source: string }).source;
+  assert.doesNotMatch(src, /^gate:/, 'not a cure — a date somebody chose');
+});
+
+test('the receipt and the confirmation cannot describe one date two ways', () => {
+  // Both read `placeReturnDays` over the same state, so there is one sentence
+  // for one fact. A second copy of "when does this come round" is how a surface
+  // ends up disagreeing with itself.
+  let s = write(emptyState(), [{
+    id: 'p1', vault: 'personal', at, device: 'd0', seq: seq++,
+    kind: 'node.created', node: 'PLACE', payload: { nodeKind: 'project', title: 'Errands' },
+  } as AppEvent]);
+  assert.match(fileReceiptWords('Errands',
+    placeReturnDays(s.nodes.get('PLACE'), at, 'America/Denver')), /no return date yet/);
+  s = write(s, datePlaceEvents(ctx(), 'PLACE', '2026-07-29'));
+  const after = fileReceiptWords('Errands',
+    placeReturnDays(s.nodes.get('PLACE'), at, 'America/Denver'));
+  assert.match(after, /comes round tomorrow/);
+  assert.doesNotMatch(after, /no return date/);
+});
+
+test('a day nobody picked writes nothing at all', () => {
+  for (const bad of ['', '2026-7-31', 'tomorrow', '31-07-2026']) {
+    assert.deepEqual(datePlaceEvents(ctx(), 'PLACE', bad), [], `"${bad}" is not a day`);
+  }
+  assert.deepEqual(datePlaceEvents(ctx(), '', '2026-07-31'), [], 'nor is nowhere a place');
 });

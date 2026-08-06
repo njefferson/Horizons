@@ -538,6 +538,26 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 }
 .triage-undo-where { color: var(--ink-soft); font-size: 0.9375rem; }
 
+/* WHEN SHOULD THIS PLACE COME BACK (V2 stage 3). It sits on the receipt bar,
+ * which is a flex ROW that wraps — so unlike the detail sheet's date fields
+ * there is no column-axis trap here, and the basis stays on the axis it was
+ * written for. `flex: 0 0 auto` regardless, because that trap cost a release
+ * (1.24.1) and this is a date input on a wrapping row: exactly the shape that
+ * produced it. No new colour pair — the input inherits the same tokens every
+ * other field uses, and the control reuses .linklike beside Undo. */
+.triage-place-when {
+  flex: 0 0 auto;
+  max-width: 100%;
+  min-height: var(--target);
+  padding: 0.25rem 0.5rem;
+  color: var(--ink);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  font: inherit;
+  font-size: 0.9375rem;
+}
+
 /* --- search ----------------------------------------------------------------
  *
  * A tool, not a surface: the input is always there, the results only exist once

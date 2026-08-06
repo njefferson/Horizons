@@ -4709,6 +4709,126 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(tailNow < 500, true,
     `the next cold start folds a bounded tail, not the world (${tailNow} of ${logSize} events)`);
 
+  // --- V2 stage 3: dating a place, which closes the hollow return -----------
+  //
+  // THE DEFECT THIS CLOSES, stated once. A place minted at file time carries
+  // only a `gate:node.created` cure, and `isAppClock` excludes that from
+  // `soonestDemand` and `arrivedClock` — so the place sat in "Later" for ever,
+  // holding everything filed into it. Nothing lost, nothing returned: the filed
+  // backlog safe and invisible, which is the exact complaint filing was built
+  // to end, one layer down.
+  //
+  // The return machinery was always complete. Nothing wrote the clock, and the
+  // only path to writing one was to know the place existed, open the tree, find
+  // it, open its sheet, and set a date that would have been a `due` — a demand
+  // on a thing that is never done.
+  //
+  // Driven through the app's own controls, and asserted on the HELD LIST rather
+  // than on the log: an event proves the write happened and says nothing about
+  // whether anybody ever sees the place again, and that gap IS the defect.
+  console.log('\nFiling — a place you date actually comes back');
+  // ITS OWN ITEM, so this block neither eats a card its neighbours route by name
+  // nor perturbs the six-routes accounting above it. Three earlier blocks in
+  // this file learned that the hard way; a section that brings its own subject
+  // cannot litter.
+  await tpage.fill('#capture', 'the thing in the shed');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+  for (let i = 0; i < 12; i++) {
+    const prompt = await tpage.locator('#triage-prompt').textContent();
+    if (!/hot or cold/i.test(prompt || '')) break;
+    await tpage.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();
+    await tpage.waitForTimeout(120);
+  }
+  await tpage.locator('#triage-actions .route', { hasText: 'Put it somewhere' }).first().click();
+  await tpage.waitForSelector('#triage-place-new');
+  await tpage.fill('#triage-place-new', 'The shed');
+  await tpage.locator('#triage-actions .route', { hasText: 'Make it' }).first().click();
+  await tpage.waitForSelector('#triage-undo .triage-undo-bar');
+  const receipt0 = await tpage.locator('.triage-undo-where').first().textContent();
+  is(/no return date yet/.test(receipt0 || ''), true,
+    `a new place starts with no return date, and says so ("${receipt0}")`);
+  // The control is offered exactly where that sentence is stated. Before 1.26.0
+  // this was information with nothing to press.
+  is(await tpage.locator('#triage-place-when').count(), 1,
+    'and the way to answer it is right there on the receipt');
+
+  // The place is held and asking nothing — "Later" is the hollow return, seen.
+  const shedGroupBefore = await tpage.evaluate(() => {
+    const heads = [...document.querySelectorAll('#cards .group-head')];
+    for (const h of heads) {
+      const ul = h.nextElementSibling;
+      if (ul && [...ul.querySelectorAll('.card-title')].some(t => t.textContent === 'The shed')) {
+        return h.textContent;
+      }
+    }
+    return '(not found)';
+  });
+
+  const inThreeDays = await tpage.evaluate(() => {
+    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
+    const [y, m, d] = today.split('-').map(Number);
+    return new Date(Date.UTC(y, m - 1, d + 3)).toISOString().slice(0, 10);
+  });
+  await tpage.fill('#triage-place-when', inThreeDays);
+  await tpage.locator('.triage-place-set').click();
+  await tpage.waitForFunction(() =>
+    /comes round/.test(document.querySelector('.triage-undo-where')?.textContent ?? ''));
+  const receipt1 = await tpage.locator('.triage-undo-where').first().textContent();
+  is(/comes round in 3 days/.test(receipt1 || ''), true,
+    `and answering it re-states the receipt from the same words ("${receipt1}")`);
+
+  // THE ASSERTION THE WHOLE STAGE EXISTS FOR: the place moved off Later.
+  const shedGroupAfter = await tpage.evaluate(() => {
+    const heads = [...document.querySelectorAll('#cards .group-head')];
+    for (const h of heads) {
+      const ul = h.nextElementSibling;
+      if (ul && [...ul.querySelectorAll('.card-title')].some(t => t.textContent === 'The shed')) {
+        return h.textContent;
+      }
+    }
+    return '(not found)';
+  });
+  is(shedGroupBefore !== shedGroupAfter, true,
+    `dating it moved it off where it was stuck ("${shedGroupBefore}" -> "${shedGroupAfter}")`);
+  is(/later/i.test(shedGroupAfter || ''), false,
+    'and it is no longer held-but-asking-nothing — it comes back now');
+
+  // The clock is a REVIEW somebody chose, not a due and not a cure. A `due`
+  // would be a demand on a thing that is never done, and its only protection
+  // from raising a replan card is that containers sit in NO_REPLAN_CARD — an
+  // accident of kind rather than a decision about places.
+  const shedClock = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const all = await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
+      tx.onsuccess = () => res(tx.result);
+    });
+    const shed = all.find(e => e.kind === 'node.created' && e.payload?.title === 'The shed');
+    const set = all.filter(e => e.kind === 'clock.set' && e.node === shed?.node
+      && e.payload?.source === 'triage:place-return');
+    return set.map(e => e.payload?.clockKind);
+  });
+  is(JSON.stringify(shedClock), JSON.stringify(['review']),
+    `one review clock, chosen by a person (${JSON.stringify(shedClock)})`);
+
+  // LEAVE THE SURFACE AS THIS SECTION FOUND IT. Undo puts the item back in the
+  // inbox — the app's own path, so this also exercises it — and the rest of the
+  // walk routes specific cards by name. Third time in this file that a new
+  // block has eaten a card its neighbours needed; the fix is always the same.
+  // "The shed" stays created and dated, which is correct: undoing where
+  // something was filed does not un-name the place, and nothing later depends
+  // on the set of places being empty.
+  // Undo, which is the point of keeping it alive: dating a place must not cost
+  // the way to take the filing back. No further tidying — this section is last
+  // in the walk and brings its own subject, so there is nothing after it to
+  // litter. (An earlier draft waited for the inbox to empty here, which is only
+  // true near the START of the walk; by this point other items are still in it.)
+  await tpage.locator('.triage-undo-btn').click();
+  await tpage.waitForTimeout(250);
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+
+
   console.log('\nWork mode — no page errors');
   is(tErrors.length, 0, tErrors.length ? `console/page errors: ${tErrors.join(' | ')}` : 'none');
   await tctx.close();

@@ -15,7 +15,7 @@ import type { Session } from './session.ts';
 import { unclarified, needsHeat } from '../triage.ts';
 import {
   clocksOf, demandClocksOf, fileReceiptWords, fileUnderEvents, fileUnderNewEvents,
-  heatEvents, placeReturnDays, routeEvents, undoRouteEvents,
+  datePlaceEvents, heatEvents, placeReturnDays, routeEvents, undoRouteEvents,
 } from './triage-intents.ts';
 import { CONTAINER_KINDS } from '../tree.ts';
 import { captureContextWords } from '../capture-context.ts';
@@ -338,10 +338,84 @@ export function mountTriage(
   const showUndo = (
     node: string, route: ClarifyRoute, fromKind: NodeKind, where: string,
     words?: string,
+    /** The place this went into, when it has no return date yet (V2 stage 3). */
+    undatedPlace?: string | null,
   ): void => {
     if (!undoRegion) return;
     const bar = el('p', 'triage-undo-bar');
-    bar.append(el('span', 'triage-undo-where', words ?? `Sent to ${where}.`));
+    const said = el('span', 'triage-undo-where', words ?? `Sent to ${where}.`);
+    bar.append(said);
+
+    /**
+     * WHEN SHOULD IT COME BACK — offered where the receipt says it will not.
+     *
+     * V2 stage 3, and it closes the hollow return. The machinery has always
+     * worked: give a place a human review clock and `heldGroups` moves it from
+     * Later to Coming up to Ready now, carrying everything filed into it.
+     * Nothing wrote that clock, and the only path to writing one was to know
+     * the place existed, open the tree, find it, open its sheet and set a date
+     * that would have been a `due` — a demand on a thing that is never done.
+     *
+     * So the control goes exactly where the finding is stated. The receipt has
+     * said "no return date yet" since 1.20.0, which was the honest sentence and
+     * an unanswerable one: information for the one person who could fix it,
+     * with nothing to press.
+     *
+     * OFFERED, NEVER DEMANDED. It appears only on the no-date branch, it can be
+     * ignored, and ignoring it changes nothing — the receipt already said what
+     * is true. Filing without dating stays a complete act (law 6), and this is
+     * a door rather than a question that must be answered before moving on.
+     */
+    if (undatedPlace) {
+      const when = document.createElement('input');
+      when.type = 'date';
+      when.id = 'triage-place-when';
+      when.className = 'triage-place-when';
+      const wLabel = el('label', 'visually-hidden', `When should ${where} come back to you?`);
+      wLabel.setAttribute('for', 'triage-place-when');
+      const set = el('button', 'linklike triage-place-set', 'Bring it back on…');
+      set.type = 'button';
+      // THE VISIBLE WORDS LEAD THE SPOKEN NAME (SC 2.5.3). The first version
+      // said "Set when ⟨place⟩ comes back to you" while the button read "Bring
+      // it back on…" — a voice-control user saying what they can see would have
+      // hit nothing, and the a11y gate caught it on its first run. The place's
+      // name still rides along, because §4 needs each receipt's control to
+      // answer to something of its own.
+      set.setAttribute('aria-label', `Bring it back on — set when ${where} comes back to you`);
+      set.addEventListener('click', () => {
+        const key = when.value;
+        // A date input yields '' when empty or invalid; nothing is a legal
+        // answer, and saying so beats committing silence.
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(key)) { LIVE.textContent = 'Pick a day first.'; when.focus(); return; }
+        set.disabled = true;
+        void session.commit(ctx => datePlaceEvents(ctx, undatedPlace, key))
+          .then(() => {
+            const days = placeReturnDays(
+              session.state().nodes.get(undatedPlace), new Date().toISOString(), session.zone);
+            // The SAME sentence the receipt speaks, from the same function, so
+            // the confirmation and the receipt can never describe one date two
+            // ways.
+            LIVE.textContent = fileReceiptWords(where, days);
+            // The sentence is REPLACED IN PLACE and only the answered question
+            // is withdrawn. The first version rebuilt the whole bar, which took
+            // Undo down with it — so answering "when does this come back"
+            // silently cost the way to take the filing back, on the one surface
+            // whose entire job is that you can. Caught by the walk timing out
+            // on a control that had been correct a line earlier.
+            said.textContent = fileReceiptWords(where, days);
+            wLabel.remove();
+            when.remove();
+            set.remove();
+            onChange();
+          })
+          .catch((err: Error) => {
+            set.disabled = false;
+            LIVE.textContent = `That date did not save — ${err.message}`;
+          });
+      });
+      bar.append(wLabel, when, set);
+    }
+
     const btn = el('button', 'linklike triage-undo-btn', 'Undo');
     btn.type = 'button';
     btn.addEventListener('click', () => {
@@ -448,10 +522,20 @@ export function mountTriage(
       place: import('../fold.ts').NodeState | null,
     ): void => {
       clearUndo();
-      const receipt = fileReceiptWords(
-        where, placeReturnDays(place, new Date().toISOString(), session.zone));
+      const days = placeReturnDays(place, new Date().toISOString(), session.zone);
+      const receipt = fileReceiptWords(where, days);
       void commit(make as Parameters<Session['commit']>[0], receipt).then(ok => {
-        if (ok) showUndo(nodeId, 'filed', kind as NodeKind, where, receipt);
+        // WHICH place, read back from state AFTER the write. A place minted by
+        // this very act has its id chosen inside `createParentEvents`, and the
+        // honest way to learn it is to ask what the item is now under rather
+        // than to thread an id back out of an event builder. It also covers the
+        // existing-place branch with the same line.
+        const landedIn = ok ? (session.state().nodes.get(nodeId)?.parent ?? null) : null;
+        // Offered only where the receipt says there is no date. A place that
+        // already comes round needs nothing, and a control that appeared anyway
+        // would be asking a question the sentence beside it has just answered.
+        if (ok) showUndo(nodeId, 'filed', kind as NodeKind, where, receipt,
+          days === null ? landedIn : null);
         restoreFocus();
       });
     };

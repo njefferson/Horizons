@@ -535,11 +535,22 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Nothing is waiting.** 1.24.0, 1.24.1 and 1.25.0 were promoted together on his
-word 2026-08-06, and `main` and `staging` both carry **1.25.0**.
+**One release is waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0 were
+promoted together on his word 2026-08-06. `staging` carries **1.26.0**.
 
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.26.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
-- **https://staging.quietkeep.pages.dev** — the same commit as production
+
+**1.26.0 closes the hollow return — the oldest open defect in the repo.** A
+place you file into can be given a return date, from the receipt that has been
+telling you it had none since 1.20.0. Pick a day and the place comes back on it,
+carrying what you put in it. Until now it never came back at all: everything
+filed was safe and invisible, which is the exact problem filing was built to
+solve.
+
+**What to try:** file something with *Put it somewhere*, make a new place, and
+the receipt now offers **"Bring it back on…"**. Then look at *What you are
+holding* — the place should have moved out of "Later".
 
 **Two of 1.24.1's fixes were never seen on a device before promotion** — the
 date field's height and the version stamp opening the report. Both were derived
@@ -734,6 +745,37 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-06 — 1.26.0 (CAPABILITY): V2 stage 3, and the hollow return is
+  closed** ([ADR-0080](docs/adr/0080-dating-a-place.md)). A place minted at file
+  time carried only a `gate:node.created` cure, which `isAppClock` excludes from
+  `soonestDemand` and `arrivedClock` — so it sat in "Later" for ever holding
+  everything filed into it.
+
+  **Two facts the record did not have, both found by probing the fold rather
+  than re-reading the notes.** The return machinery was ALREADY complete: give a
+  place a human review clock and `heldGroups` moves it Later → Coming up →
+  Ready now, verified before a line was written. And a date control already
+  existed on a place — containers are not demand-free, so they pass the detail
+  sheet's own `temporal` test, and tree rows have opened the sheet since 1.6.0.
+
+  So the defect was never "there is no control". It was **the path and the
+  noun**: you had to know the place existed, open the tree, find it, open its
+  sheet, and set a date that would have been a `due`. A place is not something
+  you finish. The write is a `review` clock, offered on the receipt that had
+  been stating the problem with nothing to press.
+
+  **Two defects of my own, both caught by gates rather than by review.** The
+  first version rebuilt the receipt bar on success and took the Undo button with
+  it — so answering "when does this come back" silently removed the way to take
+  the filing back, on the surface whose whole job is that you can. And the
+  button announced "Set when ⟨place⟩ comes back to you" while reading "Bring it
+  back on…", an SC 2.5.3 failure the a11y gate caught on its first run.
+
+  **The smoke block moved three times before it stopped littering** — it ate a
+  card its neighbours routed by name, then perturbed the six-routes accounting,
+  then assumed an empty inbox that only exists near the start of the walk. It
+  sits last now, brings its own item, and cleans up with the app's own Undo.
 
 - **2026-08-06 — 1.24.0, 1.24.1 and 1.25.0 PROMOTED together.** A clean
   fast-forward: `main` was an ancestor of `staging` with nothing on the other
