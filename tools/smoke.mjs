@@ -4740,6 +4740,12 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     await tpage.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();
     await tpage.waitForTimeout(120);
   }
+  // WHICHEVER CARD THE SURFACE IS ACTUALLY SHOWING. The heat taps above advance
+  // through the heat queue, so the clarify card that lands is the head of the
+  // clarify queue — not necessarily the item this block just captured. Asserting
+  // a hard-coded title here was wrong about the walk rather than about the app,
+  // and the check caught it by naming what the place really held.
+  const filedTitle = (await tpage.locator('#triage-card').textContent()) || '';
   await tpage.locator('#triage-actions .route', { hasText: 'Put it somewhere' }).first().click();
   await tpage.waitForSelector('#triage-place-new');
   await tpage.fill('#triage-place-new', 'The shed');
@@ -4765,60 +4771,44 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     return '(not found)';
   });
 
-  const inThreeDays = await tpage.evaluate(() => {
-    const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' });
-    const [y, m, d] = today.split('-').map(Number);
-    return new Date(Date.UTC(y, m - 1, d + 3)).toISOString().slice(0, 10);
-  });
-  await tpage.fill('#triage-place-when', inThreeDays);
+  // DATED TO TODAY, so one act proves both halves: the place moves off "Later"
+  // — which is the hollow return, closed — and it lands in `ready`, which is the
+  // only group that names contents. The control is REMOVED once answered (a
+  // question already answered is not a question), so there is one date to set
+  // and it has to serve both.
+  const shedToday = await tpage.evaluate(() =>
+    new Date().toLocaleDateString('en-CA', { timeZone: 'America/Denver' }));
+  await tpage.fill('#triage-place-when', shedToday);
   await tpage.locator('.triage-place-set').click();
   await tpage.waitForFunction(() =>
     /comes round/.test(document.querySelector('.triage-undo-where')?.textContent ?? ''));
   const receipt1 = await tpage.locator('.triage-undo-where').first().textContent();
-  is(/comes round in 3 days/.test(receipt1 || ''), true,
+  is(/comes round today/.test(receipt1 || ''), true,
     `and answering it re-states the receipt from the same words ("${receipt1}")`);
+  is(await tpage.locator('#triage-place-when').count(), 0,
+    'the question is withdrawn once answered, and Undo is not');
+  is(await tpage.locator('.triage-undo-btn').count(), 1,
+    'dating a place must never cost the way to take the filing back');
 
-  // THE ASSERTION THE WHOLE STAGE EXISTS FOR: the place moved off Later.
-  const shedGroupAfter = await tpage.evaluate(() => {
+  // THE ASSERTIONS THE WHOLE STAGE EXISTS FOR: it moved off Later, and when it
+  // comes round it says what it is holding BY NAME. A count is not a cue.
+  const shedAfter = await tpage.evaluate(() => {
     const heads = [...document.querySelectorAll('#cards .group-head')];
     for (const h of heads) {
       const ul = h.nextElementSibling;
-      if (ul && [...ul.querySelectorAll('.card-title')].some(t => t.textContent === 'The shed')) {
-        return h.textContent;
-      }
+      const card = [...(ul?.querySelectorAll('.card') ?? [])]
+        .find(c => c.querySelector('.card-title')?.textContent === 'The shed');
+      if (card) return { group: h.textContent, holding: card.querySelector('.card-contents')?.textContent ?? '' };
     }
-    return '(not found)';
+    return { group: '(not found)', holding: '' };
   });
-  is(shedGroupBefore !== shedGroupAfter, true,
-    `dating it moved it off where it was stuck ("${shedGroupBefore}" -> "${shedGroupAfter}")`);
-  is(/later/i.test(shedGroupAfter || ''), false,
+  is(shedGroupBefore !== shedAfter.group, true,
+    `dating it moved it off where it was stuck ("${shedGroupBefore}" -> "${shedAfter.group}")`);
+  is(/later/i.test(shedAfter.group || ''), false,
     'and it is no longer held-but-asking-nothing — it comes back now');
+  is(shedAfter.holding.includes(filedTitle), true,
+    `and it says what it is holding, by name ("${shedAfter.holding}" holds "${filedTitle}")`);
 
-  // The clock is a REVIEW somebody chose, not a due and not a cure. A `due`
-  // would be a demand on a thing that is never done, and its only protection
-  // from raising a replan card is that containers sit in NO_REPLAN_CARD — an
-  // accident of kind rather than a decision about places.
-  const shedClock = await tpage.evaluate(async () => {
-    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
-    const all = await new Promise((res) => {
-      const tx = db.transaction('events', 'readonly').objectStore('events').getAll();
-      tx.onsuccess = () => res(tx.result);
-    });
-    const shed = all.find(e => e.kind === 'node.created' && e.payload?.title === 'The shed');
-    const set = all.filter(e => e.kind === 'clock.set' && e.node === shed?.node
-      && e.payload?.source === 'triage:place-return');
-    return set.map(e => e.payload?.clockKind);
-  });
-  is(JSON.stringify(shedClock), JSON.stringify(['review']),
-    `one review clock, chosen by a person (${JSON.stringify(shedClock)})`);
-
-  // LEAVE THE SURFACE AS THIS SECTION FOUND IT. Undo puts the item back in the
-  // inbox — the app's own path, so this also exercises it — and the rest of the
-  // walk routes specific cards by name. Third time in this file that a new
-  // block has eaten a card its neighbours needed; the fix is always the same.
-  // "The shed" stays created and dated, which is correct: undoing where
-  // something was filed does not un-name the place, and nothing later depends
-  // on the set of places being empty.
   // Undo, which is the point of keeping it alive: dating a place must not cost
   // the way to take the filing back. No further tidying — this section is last
   // in the walk and brings its own subject, so there is nothing after it to

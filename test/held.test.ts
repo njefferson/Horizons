@@ -10,7 +10,7 @@ import assert from 'node:assert/strict';
 
 import { fold, emptyState, isAppClock, type State, type NodeState } from '../src/fold.ts';
 import { heldNodes, coverageGauge, admit, gateOptionsFor } from '../src/gate.ts';
-import { heldGroups, heldStatus, undatedCount, SOON_DAYS, liveChildCounts, parentTitleOf, placeWords } from '../src/held.ts';
+import { contentsWords, heldGroups, heldStatus, undatedCount, SOON_DAYS, liveChildCounts, parentTitleOf, placeWords } from '../src/held.ts';
 import { nextUpQueue } from '../src/nextup.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
 import { renameEvents, TITLE_MAX } from '../src/ui/detail-intents.ts';
@@ -494,4 +494,50 @@ test('a log written before the source existed behaves exactly as it did', () => 
   );
   assert.equal(isAppClock(s.nodes.get('O')!.clocks.review), false);
   assert.equal(heldGroups(s, NOW, TZ).find(g => g.items.some(n => n.id === 'O'))?.key, 'ready');
+});
+
+// --- what a place is holding, when it comes round ----------------------------
+//
+// docs/nd-collisions.md entry 3, and the completion of the promise 1.19.0 made:
+// "the place comes back, and its contents come back with it". 1.26.0 made a
+// place able to come back at all. A place that arrives saying only "7 under it"
+// hands you a number and sends you looking — and entry 3 is cue-dependent
+// prospective memory, where a count is not a cue and a NAME is.
+
+test('a returning place names what is in it, bounded and honest about the rest', () => {
+  const s = fold([
+    ev('node.created', 'P', { nodeKind: 'project', title: 'The shed' }),
+    ...['a', 'b', 'c', 'd', 'e'].map((k, i) =>
+      ev('node.created', k, { nodeKind: 'action', title: `thing ${i + 1}`, parent: 'P' })),
+  ]);
+  const words = contentsWords(s, s.nodes.get('P')!)!;
+  // THE RULE, not the sentence (hub LESSONS §59): it names some, it says how
+  // many more, and it never dumps the lot. A return card that unfolds into
+  // everything filed is the pile, arriving on a schedule (law 8).
+  assert.match(words, /thing 1/);
+  assert.match(words, /\b2 more\b/, 'five inside, three named, two more');
+  assert.doesNotMatch(words, /thing 5/, 'the cap is real');
+});
+
+test('it counts only what is still IN there', () => {
+  const s = fold([
+    ev('node.created', 'P', { nodeKind: 'project', title: 'The shed' }),
+    ev('node.created', 'a', { nodeKind: 'action', title: 'still here', parent: 'P' }),
+    ev('node.created', 'b', { nodeKind: 'action', title: 'finished', parent: 'P' }),
+    ev('done.marked', 'b', { at: NOW }),
+    ev('node.created', 'c', { nodeKind: 'action', title: 'let go', parent: 'P' }),
+    ev('node.trashed', 'c', { reason: 'test' }),
+  ]);
+  const words = contentsWords(s, s.nodes.get('P')!)!;
+  assert.match(words, /still here/);
+  // Naming what you already did would be a receipt for work, which is the shape
+  // law 5 refuses — and a thing let go is not in the shed either.
+  assert.doesNotMatch(words, /finished/);
+  assert.doesNotMatch(words, /let go/);
+  assert.doesNotMatch(words, /more/, 'one live thing, and no phantom remainder');
+});
+
+test('an empty place says nothing rather than announcing its emptiness', () => {
+  const s = fold([ev('node.created', 'P', { nodeKind: 'project', title: 'The shed' })]);
+  assert.equal(contentsWords(s, s.nodes.get('P')!), null);
 });

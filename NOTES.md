@@ -538,8 +538,12 @@ decided by a session.**
 **One release is waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0 were
 promoted together on his word 2026-08-06. `staging` carries **1.26.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.26.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.27.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.27.0 finishes the sentence 1.19.0 started.** A place that comes round now
+says what it is holding — the first few by name, then how many more. "7 under
+it" was a number, and a number is not a reminder of what you put there.
 
 **1.26.0 closes the hollow return — the oldest open defect in the repo.** A
 place you file into can be given a return date, from the receipt that has been
@@ -745,6 +749,29 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-06 — 1.27.0 (CAPABILITY): a returning place says what it is
+  holding.** The other half of "the place comes back, and its contents come back
+  with it" — 1.26.0 made a place able to return, and it arrived saying "7 under
+  it". The collision catalogue's top-ranked proposal (entry 3) is that filed
+  means gone because a filed thing has no cue; a count is not a cue and a name
+  is.
+
+  Bounded per law 8: three by name, then how many more. **Only in `ready`**,
+  which is the whole restraint — every container naming its contents would turn
+  the held list into the org chart law 4 refuses. Completed things are left out;
+  naming what you already did would be a receipt for work.
+
+  **`.card-place` had never been measured by the a11y gate** — the line that
+  says "in Errands · under Home", on every filed card since 1.20.0. Registered
+  now, in the state that reliably has one, at 7.31:1 light and 7.93:1 dark.
+
+  Two plants seen red: the cap removed (the pile, arriving on a schedule) and
+  completed work counted as still inside. And the smoke assertion was wrong
+  about the WALK rather than the app — it hard-coded the title of the item it
+  had captured, but the heat taps advance the heat queue, so the clarify card
+  that lands is the head of the clarify queue. It reads the card it is actually
+  filing now.
 
 - **2026-08-06 — 1.26.0 (CAPABILITY): V2 stage 3, and the hollow return is
   closed** ([ADR-0080](docs/adr/0080-dating-a-place.md)). A place minted at file

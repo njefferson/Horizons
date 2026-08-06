@@ -30,7 +30,8 @@ import { mountClock, type ClockUI } from './clock-ui.ts';
 import { mountPrint } from './print.ts';
 import { mountReplan } from './replan.ts';
 import { doneEvents } from './work.ts';
-import { heldGroups, heldStatus, liveChildCounts, placeWords } from '../held.ts';
+import { contentsWords, heldGroups, heldStatus, liveChildCounts, placeWords } from '../held.ts';
+import { CONTAINER_KINDS } from '../tree.ts';
 import { reviewExceptions, reviewWords } from '../review.ts';
 import { composedFor, todayIsOn } from '../composed.ts';
 import { LENS_KEY, lensChoices, lensWords, underLensIds } from '../lens.ts';
@@ -187,6 +188,30 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
         where.className = 'card-place';
         where.textContent = place;
         open.append(where);
+      }
+
+      // WHAT IS IN IT, but only when it has actually come round.
+      //
+      // The completion of "the place comes back, and its contents come back with
+      // it". 1.26.0 made a place able to return; a place that arrives saying
+      // only "7 under it" gives a number and sends you looking to find out
+      // whether it is the number you cared about. Entry 3 of the collision
+      // catalogue is cue-dependent prospective memory — filed means gone, and a
+      // count is not a cue, a NAME is.
+      //
+      // ONLY IN `ready`, and that is the whole restraint. Every container in the
+      // list carrying its contents would turn the held list into an org chart —
+      // the thing law 4 refuses and the flat-list problem in a new costume. This
+      // is a RETURN card: the place asked for you, so it says what it is asking
+      // about. Everywhere else it stays a row.
+      if (group.key === 'ready' && CONTAINER_KINDS.has(node.kind)) {
+        const holding = contentsWords(st, node);
+        if (holding !== null) {
+          const inside = document.createElement('span');
+          inside.className = 'card-place card-contents';
+          inside.textContent = holding;
+          open.append(inside);
+        }
       }
 
       if (openDetail) open.addEventListener('click', () => openDetail(node));

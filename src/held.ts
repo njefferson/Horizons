@@ -288,6 +288,51 @@ export function parentTitleOf(n: NodeState, state: State): string | null {
   return p.title || '(untitled)';
 }
 
+/** How many of a place's contents a return card names before it stops naming
+ *  them. Law 8 bounds what a return may show: coming back to a place after a
+ *  fortnight must not be met with a wall, and three is enough to recognise what
+ *  is in there without the card becoming the list. */
+export const CONTENTS_CAP = 3;
+
+/**
+ * WHAT IS ACTUALLY IN THIS PLACE — the other half of "the place comes back, and
+ * its contents come back with it".
+ *
+ * `docs/nd-collisions.md` entry 3, its top-ranked proposal, and the completion
+ * of the promise 1.19.0's docblock made. 1.26.0 made a place able to come back
+ * at all; a place that arrives saying only "7 under it" tells you a number and
+ * makes you go looking to find out whether it is the number you cared about.
+ * Entry 3 is cue-dependent prospective memory: filed means gone, and a count is
+ * not a cue. A NAME is.
+ *
+ * Bounded and honest about it: the first few by the order they were put there,
+ * then how many more. Never the whole list — a return card that unfolds into
+ * everything you filed is the pile, arriving on a schedule.
+ *
+ * Completed things are left out. A place coming round to be looked in is about
+ * what is still in it; naming what you already did would be a receipt, and a
+ * receipt for work is the shape law 5 refuses.
+ *
+ * Null when there is nothing live inside — an empty place says nothing rather
+ * than announcing its emptiness.
+ */
+export function contentsWords(
+  state: State, place: NodeState, cap = CONTENTS_CAP,
+): string | null {
+  const inside: string[] = [];
+  let total = 0;
+  for (const n of state.nodes.values()) {
+    if (n.parent !== place.id) continue;
+    if (n.trashed || n.mergedInto || n.lastDone) continue;
+    total += 1;
+    if (inside.length < cap) inside.push(n.title || '(untitled)');
+  }
+  if (total === 0) return null;
+  const more = total - inside.length;
+  const named = inside.join(', ');
+  return more > 0 ? `Holding ${named} and ${more} more` : `Holding ${named}`;
+}
+
 /**
  * The one line a card shows about where a node sits in the structure: the
  * container it is in, and/or how many things are under it. Either, both, or

@@ -232,7 +232,15 @@ const REGISTRY = {
   // branch — folding it into 'route undo' would demand it be visible after an
   // ordinary route, which is the opposite of what it is.
   'filed receipt': ['.triage-undo-where', '.triage-place-when', '.triage-place-set',
-    '.triage-undo-btn'],
+    '.triage-undo-btn',
+    // `.card-place` had never been measured anywhere — the line that says "in
+    // Errands · under Home", and from 1.27.0 also what a returned place is
+    // holding, which reuses the same class and so the same pair. It is
+    // registered HERE because this is the state that reliably has one: the
+    // filing just happened, so the item's card now says where it went. In the
+    // ordinary card state nothing is filed and the entry would correctly match
+    // nothing visible.
+    '.card-place'],
   // The triage surface, in both of its passes. Heat shows Hot/Cold; clarify
   // shows the six routes, each a label over a hint. Every visible pair is
   // audited — the hint is the lowest-contrast text on the surface, so it is

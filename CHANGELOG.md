@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.27.0 — CAPABILITY
+
+*2026-08-06*
+
+- **When a place comes back to you, it now tells you what is in it.** “Holding the tap washers, the shed key and 4 more.” Until today it came back saying “7 under it”, which is a number — and a number is not a reminder of what you put there.
+- The first few by name, then how many more. Never the whole list: a place arriving with everything you filed in it would just be the pile again, on a schedule.
+- It says this only when the place has actually come round. Everywhere else it stays an ordinary row — your list is not a filing cabinet diagram.
+- Things you have finished are not listed. A place coming round is about what is still in it.
+
 ## 1.26.0 — CAPABILITY
 
 *2026-08-06*
