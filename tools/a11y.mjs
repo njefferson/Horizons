@@ -231,7 +231,12 @@ const REGISTRY = {
   // shows the six routes, each a label over a hint. Every visible pair is
   // audited — the hint is the lowest-contrast text on the surface, so it is
   // named explicitly rather than left to axe alone.
-  'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route'],
+  // 1.25.0 adds "Not this one" to BOTH passes, so both entries gain its parts.
+  // On the heat pass it is the only control carrying a hint, which is
+  // deliberate — "nothing is recorded" is the whole reassurance — and it is
+  // therefore the lowest-contrast text on that surface.
+  'heat pass': ['.triage-gauge', '.triage-prompt', '.triage-card', '.route',
+    '.route-label', '.route-hint'],
   'clarify': ['.triage-gauge', '.triage-prompt', '.triage-card',
     '.route', '.route-label', '.route-hint',
     // When it was written (1.23.0). Reuses .sort-where's measured pair, so no
@@ -1052,12 +1057,16 @@ try {
     await auditTargets(page, 'clarify', theme);
     await auditFocusRings(page, 'clarify', theme, ['#triage-actions .route']);
 
-    // State 3b-ii: WHERE does it go. The last route in the row opens the place
-    // picker; Back returns, so the walk leaves the surface as it found it.
-    await page.evaluate(() => {
-      const rs = [...document.querySelectorAll('#triage-actions .route')];
-      rs[rs.length - 1]?.click();
-    });
+    // State 3b-ii: WHERE does it go. Reached BY NAME; Back returns, so the walk
+    // leaves the surface as it found it.
+    //
+    // This used to click "the last route in the row", which was true until
+    // 1.25.0 put "Not this one" after it — deliberately, since every answer
+    // should come before the way out. The walk then passed over the card and
+    // waited thirty seconds for a picker it had never opened. Position is not
+    // identity: a control's place in a row is a layout decision and will move
+    // again.
+    await page.locator('#triage-actions .route', { hasText: 'Put it somewhere' }).first().click();
     await page.waitForSelector('#triage-place-new');
     await auditContrast(page, 'place picker', theme);
     await auditAxe(page, 'place picker', theme);
@@ -1286,8 +1295,14 @@ try {
     await page.click('#capture-form button[type=submit]');
     await page.waitForSelector('#triage:not([hidden]) .route');
     for (let i = 0; i < 12; i++) {
-      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
-      await page.click('#triage-actions .route');
+      // WHICH PASS, asked of the PROMPT (1.25.0). This read "break once a hint
+      // appears", because heat cards had none and clarify cards did — until the
+      // way past a card arrived carrying one on both passes. The heat card then
+      // looked like a clarify card and the walk hunted for a route that is not
+      // on it. The prompt names the pass outright.
+      const p = await page.locator('#triage-prompt').textContent();
+      if (!/hot or cold/i.test(p || '')) break;
+      await page.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();
       await page.waitForTimeout(120);
     }
     await page.locator('#triage-actions .route', { hasText: 'Someday' }).first().click();
@@ -1432,8 +1447,14 @@ try {
     await page.click('#capture-form button[type=submit]');
     await page.waitForSelector('#triage:not([hidden]) .route');
     for (let i = 0; i < 12; i++) {
-      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
-      await page.click('#triage-actions .route');
+      // WHICH PASS, asked of the PROMPT (1.25.0). This read "break once a hint
+      // appears", because heat cards had none and clarify cards did — until the
+      // way past a card arrived carrying one on both passes. The heat card then
+      // looked like a clarify card and the walk hunted for a route that is not
+      // on it. The prompt names the pass outright.
+      const p = await page.locator('#triage-prompt').textContent();
+      if (!/hot or cold/i.test(p || '')) break;
+      await page.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();
       await page.waitForTimeout(120);
     }
     await page.locator('#triage-actions .route', { hasText: 'Waiting for' }).first().click();
@@ -1527,8 +1548,14 @@ try {
     await page.click('#capture-form button[type=submit]');
     await page.waitForSelector('#triage:not([hidden]) .route');
     for (let i = 0; i < 12; i++) {
-      if (await page.locator('#triage-actions .route .route-hint').count() > 0) break;
-      await page.click('#triage-actions .route');       // Hot — advances to clarify
+      // WHICH PASS, asked of the PROMPT (1.25.0). This read "break once a hint
+      // appears", because heat cards had none and clarify cards did — until the
+      // way past a card arrived carrying one on both passes. The heat card then
+      // looked like a clarify card and the walk hunted for a route that is not
+      // on it. The prompt names the pass outright.
+      const p = await page.locator('#triage-prompt').textContent();
+      if (!/hot or cold/i.test(p || '')) break;
+      await page.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();       // Hot — advances to clarify
       await page.waitForTimeout(120);
     }
     await page.locator('#triage-actions .route', { hasText: 'Next action' }).first().click();

@@ -535,11 +535,18 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Two releases are waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0
-were promoted together on 2026-08-05. `staging` carries **1.24.1**.
+**Three releases are waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0
+were promoted together on 2026-08-05. `staging` carries **1.25.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.24.1**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.25.0**
 - **https://quietkeep.pages.dev** — production, **1.23.0**
+
+**1.25.0 answers "paths in without a path out."** Sorting things out now has a
+**Not this one** on both passes. It moves on and records nothing — not what was
+passed over, not how many times, not for how long. It is remembered only until
+the app closes, and the count still says what is in the inbox rather than what
+was skipped. When everything has been passed once it comes back round to the
+top: passed over, never put away.
 
 **1.24.1 is a fix release, from four screenshots off a real phone.** The one
 that matters: **a paragraph of this repo's own source commentary had been
@@ -720,6 +727,34 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-06 — 1.25.0 (CAPABILITY): a way past a card**
+  ([ADR-0079](docs/adr/0079-a-way-past-a-card.md)). Reported in four words:
+  paths in without a path out. The heat pass offered Hot and Cold, clarify
+  offered seven routes, and neither had a skip — while Next up has had one since
+  ADR-0030, recording nothing, precisely because "a person who has to justify
+  skipping something will avoid opening the app at all".
+
+  The same reasoning applied harder here and had never been applied.
+  `unclarified` is oldest-first and stable, so a card somebody could not decide
+  about was the SAME card at the top of the surface every time the app opened.
+  The surface whose job is to drain the inbox had a head that could not be got
+  past, in an app for people whose defining difficulty is starting.
+
+  **It records nothing, and that is the whole decision.** An in-memory set,
+  `work.ts`'s rule exactly. A skip that survived a reload would be a durable
+  list of what somebody could not face, kept by the app on their behalf — worse
+  than a score, because it would be a score about avoidance specifically. A
+  passed card goes to the back, never away: when all of them have been passed
+  the queue starts again from the top, because an inbox that emptied itself
+  through skipping would be the app hiding work.
+
+  **Two walks broke on this commit, in the same shape.** Smoke detected a heat
+  card as "the one with no hints" and the new control carries a hint on both
+  passes. The a11y walk opened the place picker by clicking "the last route in
+  the row" and the way out now sits after it. Both inferences — identity from
+  the absence of a thing, identity from position — held for a year and broke on
+  the first release that added one control to that surface. Both ask by name now.
 
 - **2026-08-05 — 1.24.1 (ITERATION): five things found on a real phone, and the
   two gates that had no opinion about any of them**

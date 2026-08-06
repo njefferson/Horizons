@@ -119,8 +119,28 @@ export function mountTriage(
   // records its span and nothing about why it closed (1.10.0, ADR-0059).
   let active: { stop: (andDone?: boolean) => void } | null = null;
 
-  // Which node the card currently shows, so tapping it can open the right
-  // sheet. The card is a real <button> since 1.3.0.
+  /**
+   * PASSED OVER THIS SESSION (1.25.0) — a way out of a surface that had none.
+   *
+   * Reported from a phone: paths in without a path out. The heat pass offered
+   * Hot and Cold, clarify offered seven routes, and neither had a skip — while
+   * Next up has had "Not this" since ADR-0030. `unclarified` is oldest-first
+   * and stable, so a card somebody could not decide about was not merely
+   * awkward: it was the SAME card at the top of the surface every time the app
+   * opened, for ever. The wall this app exists to prevent, built into the
+   * surface whose job is to drain the inbox.
+   *
+   * IN MEMORY, AND NOWHERE ELSE — Next up's rule exactly. A skip that survived
+   * a reload would be a record of a decision the app promised not to keep, and
+   * on THIS surface it would be worse than on the offer: a durable list of what
+   * somebody could not face is the wall rebuilt one layer down, with the app
+   * keeping it for them. Nothing is written, nothing is counted, and the gauge
+   * never mentions it.
+   */
+  const passed = new Set<string>();
+
+  /** Which node the card currently shows, so tapping it can open the right
+   *  sheet. The card is a real <button> since 1.3.0. */
   let showing: string | null = null;
   CARD.addEventListener('click', () => {
     if (!showing || !openDetail) return;
@@ -343,6 +363,35 @@ export function mountTriage(
     undoRegion.replaceChildren(bar);
   };
 
+  /**
+   * "Not this one" — the way past a card, on both passes.
+   *
+   * It commits nothing and announces the move rather than the decision: there
+   * was no decision. The words matter as much as the behaviour here, because
+   * this control exists for the moment somebody cannot answer the question, and
+   * a label that implied they had answered it would be the surface putting a
+   * verdict in their mouth.
+   *
+   * Marked `ghost` like Next up's "Not this", so it reads as the way past
+   * rather than as an eighth route.
+   */
+  const skipControl = (nodeId: string): HTMLButtonElement => {
+    const b = el('button', 'route ghost');
+    b.type = 'button';
+    b.append(el('span', 'route-label', 'Not this one'),
+             el('span', 'route-hint', 'come back to it — nothing is recorded'));
+    b.addEventListener('click', () => {
+      passed.add(nodeId);
+      // A pending route-undo belongs to a DIFFERENT card, and the surface is
+      // about to show one. Same reasoning as the heat tap above it.
+      clearUndo();
+      LIVE.textContent = 'Passed over. It is still in the inbox.';
+      refresh();
+      restoreFocus();
+    });
+    return b;
+  };
+
   const renderHeat = (nodeId: string, text: string): void => {
     PROMPT.textContent = 'Hot or cold?';
     showing = nodeId;
@@ -358,6 +407,7 @@ export function mountTriage(
       });
       return b;
     }));
+    ACTIONS.append(skipControl(nodeId));
   };
 
   /**
@@ -449,7 +499,7 @@ export function mountTriage(
     showing = nodeId;
     CARD.textContent = text;
     paintContext(nodeId);
-    ACTIONS.replaceChildren(...ROUTES.map(({ route, label, hint }) => {
+    const routeButtons = ROUTES.map(({ route, label, hint }) => {
       const b = el('button', 'route');
       b.type = 'button';
       b.append(el('span', 'route-label', label), el('span', 'route-hint', hint));
@@ -472,7 +522,8 @@ export function mountTriage(
           });
       });
       return b;
-    }));
+    });
+    ACTIONS.replaceChildren(...routeButtons);
 
     // WHERE, offered beside the six WHENs. Last in the row because the common
     // case is still "when", and first-class rather than buried because for an
@@ -483,6 +534,9 @@ export function mountTriage(
       el('span', 'route-hint', 'into a place — make one if it is not there'));
     put.addEventListener('click', () => renderPlaces(nodeId, text, kind, heat));
     ACTIONS.append(put);
+    // And the way past, last of all: every answer first, then the way out for
+    // when none of them is available yet.
+    ACTIONS.append(skipControl(nodeId));
   };
 
   function refresh(): void {
@@ -497,8 +551,23 @@ export function mountTriage(
     // Heat pass first while there is anything unheated; then clarify. Both are
     // one card; the surface hides itself when the inbox is clear. A running
     // do-now timer is deliberately NOT cleared here — it lives in its own region.
-    const heatItem = heatQueue[0] ?? null;
-    const clarifyItem = inbox[0] ?? null;
+    //
+    // WHAT WAS PASSED OVER GOES TO THE BACK, NOT AWAY (1.25.0). Prefer the
+    // first card not passed this session; when every one has been, start again
+    // from the top rather than showing an empty surface. That is `work.ts`'s
+    // rule for its own declined set, and it matters more here: an inbox that
+    // emptied itself because somebody skipped everything would be the app
+    // hiding work, which is the opposite of law 1 and the exact fear that makes
+    // a person keep forty tabs open.
+    //
+    // The GAUGE above is untouched by any of this. It counts what is in the
+    // inbox, which is what the number means and what somebody would check it
+    // against — a count that shrank as things were passed over would be the
+    // surface keeping score of what was avoided.
+    const fresh = <T extends { id: string }>(q: readonly T[]): T | null =>
+      q.find(n => !passed.has(n.id)) ?? q[0] ?? null;
+    const heatItem = fresh(heatQueue);
+    const clarifyItem = fresh(inbox);
 
     if (heatItem) {
       REGION.hidden = false;

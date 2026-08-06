@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.25.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-06',
+    notes: [
+      '**You can pass over a card now.** Sorting things out asked you to answer, and if you could not, that was the end of the road — and because the queue is oldest-first, the same card was waiting at the top the next time you opened the app, and the time after that. There is a **Not this one** on both passes: it moves on, and it records nothing at all.',
+      '**Nothing is kept about it.** Not what you passed over, not how many times, not for how long. It is remembered only until you close the app, and the count still says what is in your inbox rather than what you skipped.',
+      'When you have been past everything once, it comes back round to the top rather than showing you an empty inbox. Nothing is ever hidden from you — it was passed over, not put away.',
+      '*Still missing, and unchanged:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.',
+    ],
+  },
+  {
     triplet: '1.24.1',
     kind: 'ITERATION',
     date: '2026-08-05',

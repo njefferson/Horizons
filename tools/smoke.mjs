@@ -369,6 +369,54 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(await tpage.evaluate(() => document.activeElement?.id), 'triage-prompt',
     'focus is kept on the surface after a triage tap, never dropped to <body>');
 
+  // A WAY PAST A CARD (1.25.0). Reported from a phone: paths in without a path
+  // out. `unclarified` is oldest-first and stable, so a card somebody could not
+  // decide about was the SAME card at the top of this surface every time the
+  // app opened — the wall this app exists to prevent, built into the surface
+  // whose job is to drain the inbox.
+  const beforeSkip = await tpage.locator('#triage-card').textContent();
+  const logBeforeSkip = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  const gaugeBeforeSkip = await tpage.locator('#triage-gauge').textContent();
+  await tpage.locator('#triage-actions button', { hasText: 'Not this one' }).click();
+  await tpage.waitForTimeout(200);
+  const afterSkipCard = await tpage.locator('#triage-card').textContent();
+  const logAfterSkip = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const tx = db.transaction('events', 'readonly').objectStore('events').count();
+      tx.onsuccess = () => res(tx.result);
+    });
+  });
+  is(afterSkipCard !== beforeSkip, true,
+    `passing over moves on ("${beforeSkip}" -> "${afterSkipCard}")`);
+  // THE INVARIANT. A skip that wrote anything down would be a durable record of
+  // what somebody could not face — the wall rebuilt one layer down, with the
+  // app keeping it for them. Next up's "Not this" has recorded nothing since
+  // ADR-0030 and this is held to the same standard.
+  is(logAfterSkip, logBeforeSkip,
+    `and appends NOTHING to the log (${logBeforeSkip} events before and after)`);
+  // And the count is untouched: it says what is in the inbox, not what was
+  // avoided. A number that shrank on a skip would be a score.
+  is(await tpage.locator('#triage-gauge').textContent(), gaugeBeforeSkip,
+    'and the count still says what is in the inbox, not what was passed over');
+
+  // IT DOES NOT SURVIVE A RELOAD, and proving that also puts the surface back
+  // the way this section found it — the rest of the walk routes specific cards
+  // by name, and a skip left in place hands them a different one. (The first
+  // version of this block did exactly that and took two later checks down with
+  // it; leave the surface as you found it.)
+  await tpage.reload({ waitUntil: 'load' });
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+  is(await tpage.locator('#triage-card').textContent(), beforeSkip,
+    'a reload brings it back to the top — nothing about the skip was kept');
+
   // WHEN IT WAS WRITTEN (1.23.0). Fills in from the log AFTER the card, so it is
   // waited for rather than read straight away — and it must be waited for on
   // the CLARIFY card specifically, because that is the surface a backlog is
@@ -1702,10 +1750,19 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // wait for a clarify hint time out.
   const routeOne = async (label) => {
     await tpage.waitForSelector('#triage:not([hidden]) .route');
-    // Heat cards have no hint; clarify cards do. Tap Hot until clarify appears.
+    // WHICH PASS IS SHOWING, asked of the PROMPT rather than inferred.
+    //
+    // This used to read "heat cards have no hint; clarify cards do" and tap Hot
+    // until a hint appeared. 1.25.0's "Not this one" carries a hint on both
+    // passes — deliberately, since "nothing is recorded" is the whole
+    // reassurance — so the heat card started looking like a clarify card, the
+    // loop exited immediately, and the walk then hunted for a route label that
+    // is not on a heat card. The prompt says which pass this is, in so many
+    // words, and cannot be knocked over by adding a control.
     for (let i = 0; i < 12; i++) {
-      if (await tpage.locator('#triage-actions .route .route-hint').count() > 0) break;
-      await tpage.click('#triage-actions .route');
+      const prompt = await tpage.locator('#triage-prompt').textContent();
+      if (!/hot or cold/i.test(prompt || '')) break;
+      await tpage.locator('#triage-actions .route', { hasText: 'Hot' }).first().click();
       await tpage.waitForTimeout(120);
     }
     await tpage.locator('#triage-actions .route', { hasText: label }).first().click();
