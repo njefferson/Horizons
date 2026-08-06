@@ -816,9 +816,9 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
 /* Each "also asking" item is a ROW with its own title and a quiet reason beneath
    it — the same title-over-reason shape as the primary Next-up card above. They
    used to sit as title-and-reason justified on one line, same weight and same
-   quiet colour, which read as a run of prose rather than a list of things (Noah,
-   on device). A divider and a title in full ink make them separate, nameable
-   items. */
+   quiet colour, which read as a run of prose rather than a list of things —
+   found on device. A divider and a title in full ink make them separate,
+   nameable items. */
 .behind-item {
   padding: 0.5rem 0;
   border-top: 1px solid var(--line);
@@ -931,8 +931,8 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
      wrap point moved with the length of each title — so on a long row "Done"
      wrapped onto a line of its own, left-aligned, sitting directly above the NEXT
      item. A completion button that appears to belong to the thing below it is not
-     an alignment complaint, it is a mis-tap waiting to happen, and Noah found it
-     at 1,429 rows where almost every title is long.
+     an alignment complaint, it is a mis-tap waiting to happen, and it was found
+     on device at 1,429 rows where almost every title is long.
      With the container on `.card`, anything that wraps stays visibly inside the
      item it acts on, at every width and every text size. */
   padding: 0.5rem 0.6rem;
@@ -1119,9 +1119,9 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
 /* THE ALWAYS-REACHABLE WAY OUT, and it no longer depends on `position: sticky`.
  *
  * It was sticky inside the dialog's own scroll container — which is correct, and
- * which every engine here honours, and which did NOT hold on Noah's iPad: the
- * header scrolled away with the content and both ways out ended up at the
- * extremes of a panel thousands of pixels tall. Reported twice.
+ * which every engine here honours, and which did NOT hold on the reference iPad:
+ * the header scrolled away with the content and both ways out ended up at the
+ * extremes of a panel thousands of pixels tall. Found twice, on device.
  *
  * So the dependency is gone rather than debugged. `#about` is a flex column that
  * does not scroll; `.about-body` is the only thing that moves. The bar cannot
@@ -1358,7 +1358,7 @@ dialog, dialog * { overflow-wrap: anywhere; }
 /* A status region with nothing to say must take no room and draw no rule.
    A dozen of these sit empty through the whole panel, and each was drawing a
    full-width line — stray separators cutting sections mid-flow, so a section's
-   own caveat read as belonging to the next one (Noah, on device, 1.7.1). The
+   own caveat read as belonging to the next one (found on device, 1.7.1). The
    element stays in the tree (it is a live region); only its furniture goes. */
 .storage-note:empty {
   margin: 0;
@@ -1481,9 +1481,9 @@ dialog, dialog * { overflow-wrap: anywhere; }
    calendar that silently goes stale would be the app implying it is live. */
 /* Caveats are the quiet honesty under a control — subordinate to the section's
    own prose, so the eye can skim headings and buttons and drop into the small
-   print only when it wants it (Noah: the words are all needed, but they were
-   not presented smartly). Italic at the same registered --ink-soft pair —
-   posture changes, contrast does not. */
+   print only when it wants it. Found on device: the copy was all necessary and
+   all set at one weight, so nothing could be skimmed past. Italic at the same
+   registered --ink-soft pair — posture changes, contrast does not. */
 .about-caveat { color: var(--ink-soft); font-size: 0.875rem; font-style: italic; }
 
 /* The record itself (1.4.0). Lines WRAP — the (i) dialog's 320px overflow gate

@@ -1,6 +1,6 @@
 name: Deploy
 
-# staging -> staging.quietkeep.pages.dev   (Noah's on-device pass; Doctrine §7)
+# staging -> staging.quietkeep.pages.dev   (the on-device pass; Doctrine §7)
 # main    -> quietkeep.pages.dev           (production, only after his "promote")
 #
 # Cloudflare Pages serves a preview branch at <branch>.<project>.pages.dev, which
