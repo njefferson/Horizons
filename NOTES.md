@@ -535,11 +535,18 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Three releases are waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0
-were promoted together on 2026-08-05. `staging` carries **1.25.0**.
+**Nothing is waiting.** 1.24.0, 1.24.1 and 1.25.0 were promoted together on his
+word 2026-08-06, and `main` and `staging` both carry **1.25.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.25.0**
-- **https://quietkeep.pages.dev** — production, **1.23.0**
+- **https://quietkeep.pages.dev** — production, **1.25.0**
+- **https://staging.quietkeep.pages.dev** — the same commit as production
+
+**Two of 1.24.1's fixes were never seen on a device before promotion** — the
+date field's height and the version stamp opening the report. Both were derived
+from the source and proved by planting the defect, which is a real standard and
+is not the same as looking. Production is where they are first seen, and that
+was the deliberate trade: the leaked source comment was live on every screen
+and got worse every day it stayed.
 
 **1.25.0 answers "paths in without a path out."** Sorting things out now has a
 **Not this one** on both passes. It moves on and records nothing — not what was
@@ -727,6 +734,20 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-06 — 1.24.0, 1.24.1 and 1.25.0 PROMOTED together.** A clean
+  fast-forward: `main` was an ancestor of `staging` with nothing on the other
+  side, checked with `merge-base --is-ancestor` rather than assumed. CI was
+  already green for the exact SHA before the promotion — Spine's 26 steps and
+  Deploy's 18, all confirmed RAN, including step 7, the Doctrine §9b privacy
+  gate — and Deploy on `main` was then read separately for its own
+  `Deployed to PRODUCTION` line, which the workflow's branch conditional only
+  prints there.
+
+  What went out: the smaller-bite line and "This one is heavy" on the offer
+  card; the five defects his own screenshots found, including the source comment
+  that had been painting under the accessibility link on every screen; and a way
+  past a card in triage.
 
 - **2026-08-06 — 1.25.0 (CAPABILITY): a way past a card**
   ([ADR-0079](docs/adr/0079-a-way-past-a-card.md)). Reported in four words:
