@@ -1125,6 +1125,27 @@ dialog h2 { margin: 0 0 0.75rem; font-size: 1.25rem; }
      the bar spans the full width. */
   margin: 0 -1.25rem -1.25rem;
   padding: 0 1.25rem 1.25rem;
+
+  /* IT HAS TO LOOK SCROLLABLE (1.24.1). Reported from a phone: nothing in the
+   * panel showed that it moves. iOS hides overlay scrollbars until a finger is
+   * already on the glass, so a panel measured at 2,321px read as ending at the
+   * fold — with the storage question, the export, the import and the whole
+   * record below a line nobody knew was a line.
+   *
+   * A shading cue, not a control: the panel already carries two ways out and
+   * does not need a third thing to press. `background-attachment: local` on the
+   * two inner layers pins them to the CONTENT, so they scroll away with it,
+   * while the `scroll`-attached shadows stay put at the frame — the pair only
+   * shows a shadow at an edge there is more content past. Nothing to maintain
+   * and no JS: it is arithmetic the compositor already does.
+   *
+   * Gradients only, so forced-colours modes drop them harmlessly and the
+   * `prefers-reduced-motion` block below has nothing here to suppress. */
+  background:
+    linear-gradient(var(--surface) 30%, rgba(0 0 0 / 0)) top / 100% 1.25rem no-repeat local,
+    linear-gradient(rgba(0 0 0 / 0), var(--surface) 70%) bottom / 100% 1.25rem no-repeat local,
+    radial-gradient(farthest-side at 50% 0, rgba(0 0 0 / 0.16), rgba(0 0 0 / 0)) top / 100% 0.6rem no-repeat scroll,
+    radial-gradient(farthest-side at 50% 100%, rgba(0 0 0 / 0.16), rgba(0 0 0 / 0)) bottom / 100% 0.6rem no-repeat scroll;
 }
 .about-bar {
   flex: none;
@@ -1402,6 +1423,21 @@ dialog, dialog * { overflow-wrap: anywhere; }
   .detail-row { flex-direction: column; align-items: stretch; }
   .detail-row input, .detail-row button { width: 100%; }
   .detail-row input[type="number"] { width: 100%; }
+  /* FLEX-BASIS IS THE MAIN AXIS, AND THE MAIN AXIS IS NOW HEIGHT.
+   *
+   * The rule above this block reads `flex: 1 1 10rem` on a date input — a
+   * sensible minimum WIDTH while the row is a row. The moment this query flips
+   * the container to a column, that 10rem becomes a minimum HEIGHT, and "Give
+   * it a date" renders as a ~160px empty box on every phone. Found on a real
+   * one; it had shipped for releases.
+   *
+   * `width: 100%` above does not undo it, because width is now the cross axis
+   * and was never the problem. The basis has to be reset on the axis that
+   * moved.
+   *
+   * No gate caught it: the target check has a 44px floor and had no ceiling, so
+   * an absurdly tall control passed every pass. It has a ceiling now. */
+  .detail-row input[type="date"] { flex: 0 0 auto; }
 }
 .detail-inline { color: var(--ink-soft); font-size: 0.9375rem; }
 .detail-hint { margin: 0.5rem 0 0; color: var(--ink-soft); font-size: 0.875rem; }

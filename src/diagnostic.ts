@@ -354,9 +354,17 @@ export function diagnosticReport(
   // which is a different number and the one that explains a day ending early.
   const pb = pressureBands(state, nowIso, r.zone);
   L.push('WHAT HAS COME ROUND AGAIN');
-  L.push(`  Ready again now: ${pb.readyAgain} of ${pb.withClock} that carry a clock`);
+  // WORDED FOR WHAT IT ACTUALLY COUNTS (1.24.1). These two lines used to say
+  // "that carry a clock" and "Held without a clock", and `pressureBands` counts
+  // neither of those things — it counts what carries a REPEAT INTERVAL, which
+  // is what produces decay pressure. So a report that listed "due 259 · park 71
+  // · review 239" four lines above went on to say 529 things were held without
+  // a clock. Two stories about one store, in the one artefact built to be handed
+  // to somebody else when something is wrong. The numbers were right the whole
+  // time; the words were the defect.
+  L.push(`  Ready again now: ${pb.readyAgain} of ${pb.withClock} that repeat on a rhythm`);
   if (pb.withoutClock > 0) {
-    L.push(`  Held without a clock: ${pb.withoutClock} (they rank by their own, not by pressure)`);
+    L.push(`  Held with no rhythm of their own: ${pb.withoutClock} (they come back on their date, not on pressure)`);
   }
   if (pb.withClock > 0) {
     L.push('  How long they have been waiting, in the words the app uses:');

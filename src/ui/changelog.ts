@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.24.1',
+    kind: 'ITERATION',
+    date: '2026-08-05',
+    notes: [
+      '**A paragraph of the app’s own source code was showing at the bottom of every screen.** A note meant for whoever writes this thing had escaped into the page, under the Accessibility link, and it had been there for several releases. It is gone, and the walk now checks every screen for anything like it before a release can go out.',
+      '**“Give it a date” was a huge empty box on a phone.** The date field was being stretched to about an inch and a half tall by a layout rule that was correct on a wide screen and wrong on a narrow one. It is the size of a date field again.',
+      '**Tapping the version number now opens the report, instead of just opening this panel.** It said it would open the diagnostic and then left you looking at a menu with the right button somewhere below the fold.',
+      '**This panel now looks like it scrolls.** There is a lot below the fold here — the storage question, your copies, bringing one back, the whole record — and nothing showed that it kept going.',
+      '**The report no longer contradicts itself.** It listed how many clocks were in use and then said hundreds of things had no clock. It meant things with no repeating rhythm, and now says so.',
+      '*Still missing, and unchanged:* a place you make on the spot has no return date until you set one, and there is still no control on the receipt to set it.',
+    ],
+  },
+  {
     triplet: '1.24.0',
     kind: 'CAPABILITY',
     date: '2026-08-05',

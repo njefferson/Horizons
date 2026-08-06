@@ -347,8 +347,30 @@ test('the report says what has come round again, in the app\'s own words', () =>
   ]);
   const text = diagnosticReport(s, [], wellDevice(), NOW);
   assert.match(text, /WHAT HAS COME ROUND AGAIN/);
-  assert.match(text, /Ready again now: 1 of 1 that carry a clock/);
+  // THE RULE, NOT THE SENTENCE (hub LESSONS §59). What must hold is the pair of
+  // numbers — how many have come round, out of how many can — not the words
+  // between them. This assertion was pinned to "1 of 1 that carry a clock" and
+  // went red on the 1.24.1 rewording, which was a fix rather than a defect.
+  assert.match(text, /Ready again now: 1 of 1\b/);
   // The banned word, in the one place a report would be most tempted to use it.
   assert.doesNotMatch(text, /overdue/i, 'there is no "overdue" in this app');
   assert.doesNotMatch(text, /\blate\b/i, 'nor "late"');
+});
+
+test('THE REPORT DOES NOT CONTRADICT ITSELF ABOUT CLOCKS', () => {
+  // Found on a real device (1.24.1). The report listed "Clocks in use: due 259
+  // · park 71 · review 239" and then said "Held without a clock: 529" — because
+  // `pressureBands` counts what carries a REPEAT INTERVAL, and the line called
+  // that a clock. Two stories about one store, in the one artefact built to be
+  // handed to somebody else when something has gone wrong.
+  const s = write(emptyState(), [
+    // Something with a real clock and no rhythm — the ordinary case, and the
+    // 529 in that report.
+    ev('node.created', 'A', { nodeKind: 'action', title: 'x' }),
+    ev('clock.set', 'A', { clockKind: 'due', at: NOW, source: 'test' }),
+  ]);
+  const text = diagnosticReport(s, [], wellDevice(), NOW);
+  assert.match(text, /Clocks in use:[^\n]*due 1/, 'the report counts a due clock');
+  assert.doesNotMatch(text, /without a clock/i,
+    'so nothing in it may call that same item clockless');
 });

@@ -877,6 +877,36 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(/\b(overdue|late|missed|streak)s?\b/i.test(surfaceText), false,
     'the rendered page carries no shame vocabulary');
 
+  // NOTHING NOBODY MEANT TO PUBLISH (1.24.1).
+  //
+  // A comment in the footer was split in two and the middle five lines were
+  // left outside it, so engineering prose about SC 2.5.3 — and a bare closing
+  // arrow — painted at the bottom of every screen, on PRODUCTION, until it was
+  // read off a phone. Every gate was green throughout: the a11y pass measures
+  // contrast, names and target size; this walk drives behaviour; neither had
+  // any opinion about text nobody meant to publish.
+  //
+  // Comment syntax in rendered text is the cheapest possible signature of it,
+  // and it is exactly what a reader saw. Checked on the landing surface and
+  // inside the (i) panel, since the panel is thousands of pixels of prose and
+  // the likeliest place for the next one.
+  const commentSyntax = (t) => /<!--|--\s*>/.test(t || '');
+  is(commentSyntax(surfaceText), false,
+    'no comment syntax is rendered as text on the landing surface');
+  await tpage.click('#open-about');
+  await tpage.waitForSelector('#about-body');
+  const panelText = await tpage.evaluate(() =>
+    document.querySelector('#about-body')?.innerText ?? '');
+  is(commentSyntax(panelText), false, 'nor anywhere in the (i) panel');
+  // And the footer specifically, which is where it happened and which sits
+  // below the fold on a phone — the reason it survived releases.
+  const footText = await tpage.evaluate(() =>
+    document.querySelector('.foot')?.innerText ?? '');
+  is(/accessible name|app\.ts|SC 2\.5\.3|pre-paint/i.test(footText), false,
+    `the footer says nothing about how it was built ("${footText.replace(/\s+/g, ' ').slice(0, 70)}")`);
+  await tpage.click('#about-close');
+  await tpage.waitForTimeout(150);
+
   // --- Load, not work (1.15.0, ADR-0065) ------------------------------------
   // ADR-0014 said in the design phase that unresolved weight "may depress
   // capacity / WIP while active … the mechanism by which it shows up in what the

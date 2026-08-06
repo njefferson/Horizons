@@ -1784,13 +1784,52 @@ export async function mountAbout(
   // version stamp is a good home"). Same shape as `#restore-go` below: open the
   // panel, unfold the group through its own toggle so the choice is remembered
   // the way every other unfold is, then scroll and focus.
+  //
+  // IT PRESSES THE BUTTON (1.24.1). It used to open the panel, unfold the
+  // group, scroll to `#diagnostic-show` and focus it — and stop there. So a
+  // control whose accessible name is "open the diagnostic report" opened the
+  // (i) menu and left the report unopened, with the reader parked on a button
+  // they now had to work out they were meant to press. Reported from a phone,
+  // in exactly those words: the version number opens the (i) menu instead of a
+  // debug screen.
+  //
+  // Focus lands on the REPORT rather than on the control that produced it,
+  // because the report is the thing that was asked for. `#diagnostic-text`
+  // carries tabindex="0" already, so it can take focus and be read.
   document.querySelector<HTMLButtonElement>('#build-version')?.addEventListener('click', () => {
     show(false);
     const toggle = document.querySelector<HTMLButtonElement>('#group-about-open');
     if (toggle && toggle.getAttribute('aria-expanded') !== 'true') toggle.click();
     const btn = document.querySelector<HTMLButtonElement>('#diagnostic-show');
-    btn?.scrollIntoView({ block: 'center' });
-    btn?.focus();
+    if (!btn) return;
+    const out = document.querySelector<HTMLElement>('#diagnostic-text');
+    if (!out) { btn.scrollIntoView({ block: 'center' }); btn.focus(); return; }
+
+    // Already showing: no second press. Pressing again would rebuild the report
+    // and yank the scroll out from under somebody who is already reading one.
+    if (out.hidden === false) { out.scrollIntoView({ block: 'start' }); out.focus(); return; }
+
+    // BUILDING IT IS ASYNCHRONOUS — it reads storage estimates, the cache
+    // names and the worker state. So `hidden` is still true on the next line,
+    // and a synchronous check here would have quietly reverted this fix to the
+    // behaviour it replaces: report generating somewhere behind, focus parked
+    // on the button that started it.
+    const land = (): void => { out.scrollIntoView({ block: 'start' }); out.focus(); };
+    const obs = new MutationObserver(() => {
+      if (out.hidden !== false) return;
+      obs.disconnect();
+      land();
+    });
+    obs.observe(out, { attributes: true, attributeFilter: ['hidden'] });
+    // The report says so itself when it cannot be built, in `#diagnostic-note`.
+    // This is only the guard against watching for ever: focus goes somewhere
+    // real either way, and never to <body> (WCAG 2.4.3).
+    setTimeout(() => {
+      obs.disconnect();
+      if (out.hidden === false) land();
+      else { btn.scrollIntoView({ block: 'center' }); btn.focus(); }
+    }, 3000);
+    btn.click();
   });
 
   // The way back, from the empty screen (1.14.0, ADR-0062).

@@ -535,13 +535,23 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**One release is waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0 were
-promoted together on his word 2026-08-05 — Deploy on `main` ran every step and
-printed `Deployed to PRODUCTION: https://quietkeep.pages.dev`, and Spine was
-green for the same SHA. `staging` now carries **1.24.0** alone.
+**Two releases are waiting on an on-device pass.** 1.21.0, 1.22.0 and 1.23.0
+were promoted together on 2026-08-05. `staging` carries **1.24.1**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.24.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.24.1**
 - **https://quietkeep.pages.dev** — production, **1.23.0**
+
+**1.24.1 is a fix release, from four screenshots off a real phone.** The one
+that matters: **a paragraph of this repo's own source commentary had been
+painting at the bottom of every screen, on production**, under the accessibility
+link. A comment was split in two and its middle was left as markup. Every gate
+was green the whole time, because none of them had any opinion about text nobody
+meant to publish. The walk checks for it now.
+
+Also: the date field was rendering about an inch and a half tall on a phone;
+tapping the version number opened this panel instead of the report it is named
+for; the panel gave no sign it scrolls; and the diagnostic contradicted itself
+about clocks.
 
 **What to look at in 1.24.0 — the two things you can do when you cannot start.**
 Under Next up there is now a line asking for a smaller first bit. Type a first
@@ -710,6 +720,48 @@ statement (no stability test is possible yet): the resets are measurements,
 and the register classifies each one.
 
 ### Log
+
+- **2026-08-05 — 1.24.1 (ITERATION): five things found on a real phone, and the
+  two gates that had no opinion about any of them**
+  ([ADR-0078](docs/adr/0078-what-the-gates-did-not-look-at.md)).
+
+  **A comment rendered as text on every screen, on production.** Five lines of
+  engineering prose about SC 2.5.3, plus a bare closing arrow, under the
+  accessibility link in the footer. One comment split in two with its middle
+  left outside both halves. It survived releases because the footer is below the
+  fold on a phone — which is also where it did the most damage.
+
+  **The gate lesson is the release.** The a11y pass measures contrast, names and
+  target size; the smoke walk drives behaviour; `docs-check` reads markdown.
+  Every one of them measures a PROPERTY of the output, and none of them looks at
+  whether the page says something nobody wrote on purpose. `npm run smoke` now
+  reads `innerText` on the landing surface, in the (i) panel and in the footer.
+
+  **And a floor with no ceiling is half a measurement.** `flex: 1 1 10rem` on a
+  date input is a minimum WIDTH while the row is a row; below 26rem the row
+  becomes a column and flex-basis sizes the main axis, so it became a minimum
+  HEIGHT. A 160px empty box under "Give it a date", on every phone, passing a
+  44px-floor target check with no upper bound.
+
+  **The ceiling took three attempts and only planting found that.** A quarter of
+  the viewport did NOT catch it — 160px against a 211px quarter-screen — so the
+  gate would have shipped looking like protection. Three times the 44px floor
+  caught it and also failed a place-picker route button legitimately 143px tall
+  from its wrapped label, which is the one thing a gate here may never do.
+  Fields only, never buttons: an input is a single line by construction, a
+  button is content-sized.
+
+  **The tab budget moved 60 → 90, for the third time.** 1.24.0's three new
+  controls on the work surface pushed `#tree-open` past it, and the walk called
+  a perfectly focusable button unfocusable. Light failed and dark passed in the
+  same run — one tab order, two verdicts, which is a budget at its edge and
+  never a broken control. The message names the budget now.
+
+  Also fixed: the version stamp presses the diagnostic it is named for and waits
+  for it (building it is async, so a synchronous check would have silently
+  restored the old behaviour); the (i) panel shows that it scrolls; and the
+  diagnostic stopped saying hundreds of things had no clock four lines after
+  counting their clocks.
 
 - **2026-08-05 — 1.21.0, 1.22.0 and 1.23.0 PROMOTED together.** A clean
   fast-forward: `main` was an ancestor of `staging` with nothing on the other

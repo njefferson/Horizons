@@ -727,6 +727,53 @@ async function auditTargets(page, stateName, theme) {
   (small.length === 0 ? pass : fail)(
     `${theme}/${stateName}: targets ≥44px tall, ≥24px wide${small.length ? ` — ${small.join(', ')}` : ''}`,
   );
+
+  // AND A CEILING (1.24.1). A FLOOR WITH NO CEILING IS HALF A MEASUREMENT.
+  //
+  // `.detail-row input[type=date] { flex: 1 1 10rem }` is a sensible minimum
+  // WIDTH while the row is a row. Below 26rem the row becomes a column, and
+  // flex-basis sizes the MAIN axis — so it became a minimum HEIGHT, and "Give
+  // it a date" rendered as a ~160px empty box on every phone. It shipped for
+  // releases and every a11y pass was green, because a target that is far too
+  // big is still comfortably bigger than 44px.
+  //
+  // THE BOUND IS THREE TIMES THE FLOOR, IN THE READER'S OWN REM.
+  //
+  // Every target in this app is sized from `--target` (2.75rem = the 44px
+  // floor). Nothing here is legitimately more than three of those tall, and a
+  // control that is has been stretched by a layout rule rather than designed.
+  // Expressed in rem so it scales with the reader's text setting exactly as
+  // `--target` does, and therefore holds at 320px/200% as well as at default.
+  //
+  // THE FIRST VERSION OF THIS CHECK USED A QUARTER OF THE VIEWPORT AND DID NOT
+  // CATCH THE DEFECT IT WAS WRITTEN FOR. The date box was 10rem — 160px against
+  // a 211px quarter-screen — so the plant passed and the gate would have shipped
+  // looking like protection. Found by planting it, which is the only reason a
+  // number like this can be trusted at all.
+  const huge = await page.evaluate(() => {
+    const root = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const cap = root * 2.75 * 3;
+    const out = [];
+    // FIELDS ONLY — never buttons. An <input> or a <select> is a single line by
+    // construction: no content it can hold makes one three targets tall, so any
+    // that is has been stretched by layout. A BUTTON is content-sized, and this
+    // app has real ones that wrap to two and three lines — the place picker's
+    // routes carry a label over a hint and measure 143px legitimately. Including
+    // buttons made this gate fire on correct work on its first run, which is the
+    // one thing a gate in this repo may not do: it teaches everybody to route
+    // around the red.
+    for (const el of document.querySelectorAll('input:not([type=checkbox]):not([type=radio]), select')) {
+      const r = el.getBoundingClientRect();
+      if (r.height === 0) continue;
+      if (r.height > cap) {
+        out.push(`${el.tagName.toLowerCase()}#${el.id || el.className} ${Math.round(r.width)}x${Math.round(r.height)} (cap ${Math.round(cap)})`);
+      }
+    }
+    return out;
+  });
+  (huge.length === 0 ? pass : fail)(
+    `${theme}/${stateName}: no control is taller than 3× the 44px target floor${huge.length ? ` — ${huge.join(', ')}` : ''}`,
+  );
 }
 
 /** Tab to each control the way a keyboard user does — programmatic focus does
@@ -756,7 +803,19 @@ async function auditFocusRings(page, stateName, theme, selectors) {
     const dlg = document.querySelector('dialog[open]');
     if (dlg) { dlg.setAttribute('tabindex', '-1'); dlg.focus(); }
   });
-  for (let i = 0; i < 60 && remaining.size > 0; i++) {
+  // RAISED FROM 60 TO 90 IN 1.24.1, and this is the third time this number has
+  // had to move — so what it is gets said plainly. It is not a limit on the
+  // app. It is how far this walk is willing to Tab before it gives up, and the
+  // right size is "past the densest surface, with room".
+  //
+  // 1.24.0 put three more controls on the work surface — the first-step field,
+  // its submit and "This one is heavy" — ahead of the tree. That tipped
+  // `#tree-open` over 60, and the walk reported it as "not keyboard-focusable"
+  // about a button that plainly is. The tell was that LIGHT failed and DARK
+  // passed in the same run: one tab order, two verdicts, which is a budget at
+  // its edge and never a broken control.
+  const TAB_BUDGET = 90;
+  for (let i = 0; i < TAB_BUDGET && remaining.size > 0; i++) {
     await page.keyboard.press('Tab');
     const hit = await page.evaluate((sels) => {
       const el = document.activeElement;
@@ -798,7 +857,10 @@ async function auditFocusRings(page, stateName, theme, selectors) {
     );
   }
   for (const sel of remaining) {
-    fail(`${theme}/${stateName}: never reached "${sel}" by Tab — not keyboard-focusable?`);
+    // The message names the BUDGET, not a verdict on the control. Twice now
+    // this line has sent somebody to inspect a button that was perfectly
+    // focusable and simply sat past the walk's patience.
+    fail(`${theme}/${stateName}: "${sel}" not reached within ${TAB_BUDGET} tab stops — either it is not keyboard-focusable, or the surface has grown past the budget`);
   }
 }
 
