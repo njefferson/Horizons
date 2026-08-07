@@ -535,12 +535,33 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Six releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Seven releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0 and now **1.30.0**.
+1.28.0, 1.29.0, 1.30.0 and now **1.30.1**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.1**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.30.1 is the first item of stage 3: the amnesty moved zero of four.**
+
+Every item went through `replanEvents` with its arguments DEFAULTED —
+`passedKinds` fell back to `['due']` and `demandClocks` to `[]`. An item raised
+by a passed `suspense` kept that clock live and came straight back; an item
+carrying any other demand clock reached the Menu still owing an answer, which
+the Menu belt refuses. **The amnesty is one batch, so that refusal took every
+clean item with it.** Three good and one awkward moved none of the four, on the
+one surface whose entire purpose is removing twenty decisions at once.
+
+It now builds from `replanAll` — the same projection the replan surface reads —
+rather than from a second walk over held nodes asking a different question. The
+two agreed only by coincidence, and the coincidence broke on the arguments.
+
+**One thing deliberately NOT tested.** `fromKind` is read only by the `hand-off`
+branch, and the amnesty always resolves `to-menu`, so passing the node's real
+kind is inert today. It is passed anyway so the call stays correct if the
+amnesty ever resolves some other way, and the fact is written down here instead
+of asserted — a test over an argument nothing reads passes whatever the code
+does, and one of those is worse than none.
 
 **1.30.0 completes stage 2 of the V2 plan: event anchors.** ADR-0081.
 

@@ -14,6 +14,16 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.30.1 — ITERATION
+
+*2026-08-07*
+
+- **Coming back after a while away: “put all of this down” now actually puts all of it down.** It was one act covering everything at once — and if a single item among them was the wrong shape, the whole thing was refused and *nothing* moved. Three ordinary items and one that had a date you owed somebody moved none of the four.
+- You would have seen a button that did nothing, with no explanation, at the exact moment there is least patience left for that.
+- **Two things were wrong with it.** An item whose date was a promise to someone else kept that date, so it came straight back the next moment. And an item still carrying any other date reached the list of wishes still owing it — which the app rightly refuses, because nothing on that list is allowed to be making a demand.
+- Both are fixed, and it now reads from the same place the one-at-a-time surface does, so the two can no longer disagree about what is being asked of you.
+- *Unchanged, and still the point:* it marks nothing done and deletes nothing. Everything lands on your list of wishes, where it makes no demand, and you can bring any of it back.
+
 ## 1.30.0 — CAPABILITY
 
 *2026-08-07*

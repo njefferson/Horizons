@@ -201,6 +201,61 @@ test('the amnesty log is the same every time for the same state', () => {
   assert.deepEqual(ids(), ids());
 });
 
+/** A passed `suspense` — a promise to somebody else — rather than a passed
+ *  `due`. The card's own sentence names whichever went by longest ago, so this
+ *  is an ordinary shape and not a contrived one. */
+const lapsedSuspense = (id: string, d: number): AppEvent[] => [
+  ev('node.created', id, { nodeKind: 'action', title: `owed ${id}` }, AGO(d)),
+  ev('suspense.set', id, { at: AGO(d - 1) }, AGO(d)),
+  ev('clarify.routed', id, { route: 'next-action' }, AGO(d)),
+];
+
+test('one awkward item does not take the whole amnesty down with it', () => {
+  // THE DEFECT, reproduced against the real gate. Every item went through
+  // `replanEvents` with its arguments DEFAULTED: `passedKinds` fell back to
+  // ['due'] and `demandClocks` to []. So an item raised by a passed `suspense`
+  // kept that clock live, and an item carrying any other demand clock reached
+  // the Menu still owing somebody an answer — which the Menu belt refuses.
+  //
+  // Because the amnesty is ONE batch, that refusal took every clean item with
+  // it. Three good and one awkward moved zero of four, on the surface whose only
+  // purpose is removing twenty decisions at once, at the moment a person has the
+  // least patience left for a button that does nothing.
+  const s0 = st(
+    ...lapsedDate('a1', 20), ...lapsedDate('a2', 20), ...lapsedDate('a3', 20),
+    ...lapsedSuspense('a4', 20),
+  );
+  assert.equal(reentryView(s0, NOW, TZ).passedDates, 4, 'fixture: four items are asking');
+
+  const out = acceptAmnestyEvents(ctx, s0, NOW, TZ);
+  assert.doesNotThrow(() => admit(out, s0),
+    'the batch must be one the gate accepts — a refusal here is four items lost, not one');
+  const s1 = apply(s0, out);
+  assert.equal(reentryView(s1, NOW, TZ).passedDates, 0,
+    'all four moved, including the one that raised a suspense rather than a due');
+  for (const id of ['a1', 'a2', 'a3', 'a4']) {
+    assert.notEqual(s1.nodes.get(id)!.onMenu, null, `${id} landed on the Menu`);
+    assert.equal(raisesReplanCard(s1.nodes.get(id)!, NOW, TZ), false, `${id} no longer asks`);
+  }
+});
+
+test('the amnesty sheds every demand clock, not only the one that went by', () => {
+  // A node with a passed `due` AND a live future `suspense` still owes somebody
+  // an answer. `to-menu` has to shed both or the landing is illegal — and on the
+  // Menu, by law 6, it can carry no clock at all.
+  const s0 = st(
+    ...lapsedDate('m1', 20),
+    ev('suspense.set', 'm1', { at: '2026-09-20T12:00:00.000Z' }, AGO(20)),
+  );
+  assert.equal(reentryView(s0, NOW, TZ).passedDates, 1);
+  const out = acceptAmnestyEvents(ctx, s0, NOW, TZ);
+  assert.doesNotThrow(() => admit(out, s0));
+  const n = apply(s0, out).nodes.get('m1')!;
+  assert.notEqual(n.onMenu, null);
+  assert.deepEqual(Object.keys(n.clocks), [],
+    'a thing on the Menu carries no clock — a live suspense would be a demand it cannot hold');
+});
+
 test('nothing to forgive means nothing is offered', () => {
   const s = st(...stale('A', 20));
   const v = reentryView(s, NOW, TZ);
