@@ -519,11 +519,21 @@ feature can be late; the data cannot be backfilled.
 - **`schema.migrated`**
   - Payload: `from, to`
   - Silent risk: no
-  - **Unemitted, and no migration machinery exists** as of 1.14.1 — no schema
-    version, no migration path, no pre-migration export, though the Dexie schema
-    has already moved v1 to v2. `log-words.ts` renders this kind as "a copy was
-    exported first", which describes a behaviour that is not built; the sentence
-    is unreachable, but it is a claim and it is recorded here as one.
+  - **Unemitted, and no migration machinery exists** — no schema version, no
+    migration path, no pre-migration export, though the Dexie schema has already
+    moved v1 to v2. That move was additive (a table and an index), which Dexie
+    performs without touching a stored value, so nothing has ever been
+    transformed and law 9 has never had an occasion to bind.
+  - **The claim in the words is gone.** This kind used to render as "a copy was
+    exported first" — law 9's promise attached to an event that records
+    something else, unreachable behind an unemitted noun and still a claim
+    (Doctrine §5). It now says only that the format moved; the copy has its own
+    nouns, `snapshot.written` and `export.written`, which record something that
+    happened rather than assuring it alongside something else.
+  - **Enforced forward** by `test/migration-guard.test.ts`: a Dexie `.upgrade()`
+    is the only place data is transformed, so declaring one without the export
+    wired fails. The guard passes trivially today, deliberately — it is aimed at
+    the edit that will first need it, and it names what to build when it fires.
 - **`export.written`**
   - Payload: `at, scope, encrypted: bool`
   - Silent risk: no

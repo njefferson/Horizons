@@ -211,7 +211,18 @@ export function eventWords(
     case 'consent.granted': return 'Consent was given.';
     case 'consent.revoked': return 'Consent was withdrawn.';
     case 'snapshot.written': return 'The app wrote a snapshot of everything, for fast starts.';
-    case 'schema.migrated': return 'The store format moved forward — a copy was exported first.';
+    // SAYS ONLY WHAT THIS EVENT RECORDS. It used to add "— a copy was exported
+    // first", which is law 9's promise and was not built: no migration
+    // machinery exists, so the sentence was a claim about a behaviour nobody had
+    // written, sitting unreachable behind an unemitted kind. The vocabulary
+    // recorded it as a claim; it is removed rather than left to become true by
+    // accident on the day the kind is first written.
+    //
+    // The export has its own noun and its own line. When a pre-migration copy is
+    // taken it will say so as `snapshot.written`/`export.written`, which is a
+    // record of something that happened rather than an assurance attached to
+    // something else.
+    case 'schema.migrated': return 'The store format moved forward.';
     case 'export.written': return 'A copy of your data was written out.';
     case 'import.seeded': return 'A fresh store was seeded from a file.';
     case 'shard.folded': return 'History from another device was folded in.';
