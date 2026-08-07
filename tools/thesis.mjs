@@ -67,8 +67,32 @@ function convert(md) {
         if (items.length) items[items.length - 1] += nested;
         continue;
       }
-      items.push(inline(m[2]));
+      // LAZY CONTINUATION LINES BELONG TO THE ITEM ABOVE THEM.
+      //
+      // This loop used to end the item at the newline and fall through to the
+      // paragraph branch, which produced 33 single-item <ul>s each followed by
+      // an orphaned <p> holding the rest of its own sentence — every wrapped
+      // bullet in the document, live on the public page. Section 11's five
+      // differentiator claims rendered as five separate lists all numbered "1".
+      //
+      // And the second symptom had the same cause: `inline()` was applied per
+      // LINE, so emphasis opened on one line and closed on the next never
+      // paired. `*(community-construct —` printed its asterisk as text. The raw
+      // text is therefore joined FIRST and marked up once, which is the only
+      // order in which a span can cross the wrap.
+      //
+      // A continuation is indented past the marker and does not itself start a
+      // list item — that second clause is what keeps two-space NESTING working,
+      // since the doc nests at the same indent it wraps at.
+      let raw = m[2];
       i += 1;
+      while (i < lines.length && lines[i].trim() !== ''
+        && indentOf(lines[i]) > baseIndent
+        && !/^\s*(?:[-*]|\d+\.)\s+/.test(lines[i])) {
+        raw += ` ${lines[i].trim()}`;
+        i += 1;
+      }
+      items.push(inline(raw));
     }
     return `<${tag}>${items.map((it) => `<li>${it}</li>`).join('')}</${tag}>`;
   };
@@ -183,6 +207,38 @@ ${bodyHtml.split('\n').map((l) => '  ' + l).join('\n')}
 }
 
 const html = page(convert(readFileSync(SRC, 'utf8')));
+
+/**
+ * WHAT `--check` COULD NEVER SEE.
+ *
+ * `--check` regenerates and diffs against the committed file, so it proves the
+ * page is CURRENT and says nothing about whether it is right. A converter that
+ * produces the same wreckage every run passes it for ever — and did: the public
+ * page carried a stranded continuation paragraph for every wrapped bullet in the
+ * document, and printed emphasis markers as visible text, with the gate green
+ * the whole time. It is the hub's LESSON 63 arriving from the other side: there,
+ * a page that renders can be a page that does nothing; here, a page a check
+ * calls up-to-date can be a page nobody could read.
+ *
+ * These are the two exact signatures of that failure, and neither is a
+ * heuristic. Both were run against the old converter and both go red on it.
+ */
+const defects = [];
+// The document uses `*` only as a marker. One surviving in the output means a
+// span opened and never closed — which is what happened when `inline()` ran per
+// line and an italic wrapped across the break.
+const strays = (html.match(/\*/g) ?? []).length;
+if (strays > 0) defects.push(`${strays} literal asterisk(s) in the output — an emphasis span is unpaired`);
+// A paragraph starting with whitespace is a continuation line that was emitted
+// as its own block instead of joining the item above it.
+const stranded = (html.match(/<p>\s/g) ?? []).length;
+if (stranded > 0) defects.push(`${stranded} paragraph(s) begin with whitespace — a wrapped list item was stranded`);
+if (defects.length > 0) {
+  console.error('the generated page is malformed:');
+  for (const d of defects) console.error(`  ${d}`);
+  console.error('\nFix tools/thesis.mjs or the source markdown. A page that is up to date\nis not the same claim as a page that is readable.');
+  process.exit(1);
+}
 
 if (process.argv.includes('--check')) {
   let current = '';

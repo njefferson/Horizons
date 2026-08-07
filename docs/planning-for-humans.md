@@ -238,7 +238,7 @@ three weeks is lying, and the user will find out.
 - **Spoon theory** (Christine Miserandino): finite daily capacity, spent by
   ordinary tasks, not restored by willpower. *(community-construct — an
   explanatory metaphor from the chronic-illness community. Widely understood,
-  never validated as a mechanism, and *not* the same claim as ego depletion: it
+  never validated as a mechanism, and **not** the same claim as ego depletion: it
   describes lived capacity variation, it does not posit a depleting reservoir.)*
 - **Kahneman: peak-end rule.** Remembered experience is dominated by the peak and
   the ending, not the average or the duration. *(established)*
