@@ -137,8 +137,45 @@ export function routeEvents(
  * the surface at route time, because `waiting-for` is the one route that changes
  * the kind and the log does not otherwise remember what it was.
  */
+/**
+ * A clock as it stood before a route took it away, so Undo can put it back.
+ *
+ * `source` is carried because it is the provenance the log and the diagnostic
+ * read; restoring a date with a source of "undo" would make the record say the
+ * app chose it.
+ */
+export interface RestorableClock { kind: ClockKind; at: string; source?: string }
+
+/** Snapshot the DEMAND clocks a route is about to shed. Values, not kinds — a
+ *  kind list is enough to clear something and not enough to put it back. */
+export const restorableClocksOf = (n: NodeState | undefined): RestorableClock[] =>
+  n ? DEMAND_KINDS.filter(k => n.clocks[k]).map(k => ({
+    kind: k,
+    at: n.clocks[k]!.at,
+    ...(n.clocks[k]!.source ? { source: n.clocks[k]!.source! } : {}),
+  })) : [];
+
+/**
+ * Put a shed clock back through its OWN noun.
+ *
+ * A `suspense` is not restorable with `clock.set` — the vocabulary says suspense
+ * clocks come solely from `suspense.set`, and a `park` carries a reason. Writing
+ * all three through one event would fold correctly today and lie in the log
+ * about which act happened.
+ */
+const restore = (ctx: StampContext, node: string, c: RestorableClock): AppEvent => {
+  if (c.kind === 'suspense') return base(ctx, 'suspense.set', node, { at: c.at });
+  if (c.kind === 'park') return base(ctx, 'park.set', node, { returnAt: c.at, reason: 'undo:route' });
+  return base(ctx, 'clock.set', node, {
+    clockKind: c.kind, at: c.at, ...(c.source ? { source: c.source } : { source: 'undo:route' }),
+  });
+};
+
 export function undoRouteEvents(
   ctx: StampContext, node: string, route: ClarifyRoute, fromKind: NodeKind,
+  /** What the route shed, captured BEFORE it committed (V2 stage 3). Empty for
+   *  every route that sheds nothing, which is most of them. */
+  shed: readonly RestorableClock[] = [],
 ): AppEvent[] {
   const reopen = base(ctx, 'clarify.reopened', node, { from: route });
   // Built LAZILY, in emission position. The first version constructed this
@@ -165,7 +202,22 @@ export function undoRouteEvents(
     case 'reference':
       // someday/reference land on the Menu with category 'read' (see `menu`
       // above); take it back off, which the gate cures with a same-day clock.
-      return [reopen, base(ctx, 'menu.item.removed', node, { from: 'read' as MenuCategory })];
+      //
+      // AND PUT BACK WHAT THE ROUTE SHED. The Menu is demand-free, so routing
+      // there genuinely has to drop every demand clock — that part is law 6 and
+      // is not negotiable. What was not acceptable is that Undo left them gone:
+      // one tap sent an item to the wishes and destroyed the date you had
+      // promised somebody, and the control offering to take it back gave you the
+      // item without the date. An Undo that returns less than it took is not an
+      // undo, and this is an append-only log, so there was no other way back.
+      //
+      // Menu-removal FIRST, then the restores: while it is still on the Menu it
+      // is demand-free, and the law-6 belt refuses a clock on it.
+      return [
+        reopen,
+        base(ctx, 'menu.item.removed', node, { from: 'read' as MenuCategory }),
+        ...shed.map(c => restore(ctx, node, c)),
+      ];
     case 'trash':
       return [reopen, base(ctx, 'node.untrashed', node, {})];
     case 'filed':

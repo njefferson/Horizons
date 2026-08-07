@@ -535,12 +535,39 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Eight releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Nine releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1 and now **1.30.2**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2 and now **1.30.3**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.2**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.3**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.30.3 is the third and fourth items of stage 3.**
+
+**Undo did not restore what a route shed.** The Menu is demand-free by law 6, so
+routing to someday/reference genuinely has to drop every demand clock — that half
+is not negotiable. What was not acceptable is that the control offering to take
+it back handed the item over without its dates. `undoRouteEvents` now takes a
+snapshot captured BEFORE the route committed and restores each clock through its
+OWN noun — `suspense.set` for a suspense, `park.set` for a park — because
+writing all three through `clock.set` would fold correctly and lie in the log
+about which act happened. The route also SAYS what is coming off, rather than
+doing it quietly.
+
+**The place-return question was destroyed by the next card.** Filing into a new
+place offers "when should this come back to you?" on the receipt, and that is the
+only path in the app to a place's return clock. It lived in the undo bar and was
+cleared with it, so triaging one more card wiped it and the receipt said "no
+return date yet" for ever with nothing left to press. The undo goes stale one
+card later; an unanswered question about a place does not, and `clearUndo` now
+keeps a pending one.
+
+**Verified — NOT a defect, so the count stops drifting.** The triage undo is
+already persistent and never timed: `clearUndo` is called by the next triage
+action and by nothing else, and there is no toast timer anywhere in the UI. The
+`setTimeout` in `clarify.ts` is the do-now timer, which is a tool a person
+started. The V2 plan's "undo is persistent, never timed" item was already true;
+only its second half — the place control the next action destroyed — was real.
 
 **1.30.2 is the second item of stage 3: filing destroyed dates.**
 

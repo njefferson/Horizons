@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.30.3',
+    kind: 'ITERATION',
+    date: '2026-08-07',
+    notes: [
+      '**Sending something to your wishes now says that its date is coming off — and Undo puts the date back.** Nothing on your list of wishes is allowed to be making a demand, so a date genuinely cannot go there with it. That was happening silently, and worse, *Undo* handed you the item back without the date. An undo that returns less than it took is not an undo.',
+      'It now tells you before it happens, in the words of the thing that is actually going: “Its date comes off — nothing on your wishes makes a demand. Undo puts it back.” And it does put it back, with the date exactly as you set it.',
+      '**The question “when should this place come back to you?” no longer disappears when you sort the next thing.** Filing something into a new place offers you that date on the receipt — and it is the only place in the app to answer it. Sorting one more card wiped the offer, and the receipt went on saying “no return date yet” for good, with nothing left to press.',
+      'The way to take back the last thing you sorted still goes when you sort the next one, because it is about *that* action. A question about a place is not about that action, and it stays until you answer it.',
+    ],
+  },
+  {
     triplet: '1.30.2',
     kind: 'ITERATION',
     date: '2026-08-07',

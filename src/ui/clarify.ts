@@ -16,6 +16,7 @@ import { unclarified, needsHeat } from '../triage.ts';
 import {
   clocksOf, demandClocksOf, fileReceiptWords, fileUnderEvents, fileUnderNewEvents,
   datePlaceEvents, heatEvents, placeReturnDays, routeEvents, undoRouteEvents,
+  restorableClocksOf, type RestorableClock,
 } from './triage-intents.ts';
 import { CONTAINER_KINDS } from '../tree.ts';
 import { captureContextWords } from '../capture-context.ts';
@@ -138,6 +139,26 @@ export function mountTriage(
    * never mentions it.
    */
   const passed = new Set<string>();
+
+  /**
+   * SORT IT WITHOUT THE HEAT PASS (V2 stage 3).
+   *
+   * ADR-0029 says heat is "optional-first on purpose" and that forcing two
+   * passes on every item would be a cost with no return. It was not optional in
+   * fact: the surface renders the heat card whenever anything is unheated, so
+   * the only ways past it were to answer Hot/Cold — which records a heat
+   * somebody did not mean — or to pass the card over, which moves to the NEXT
+   * item rather than letting you sort THIS one.
+   *
+   * `unclarified` never filtered on heat, so the item was in the clarify queue
+   * the whole time. The gate was purely in what the surface chose to show.
+   *
+   * IN MEMORY, like `passed`, and for the same reason: it is a preference about
+   * this sitting, not a fact about the item. Nothing is written and no heat is
+   * recorded — an item sorted this way simply has none, which is exactly what
+   * "optional" means.
+   */
+  const straightToSort = new Set<string>();
 
   /** Which node the card currently shows, so tapping it can open the right
    *  sheet. The card is a real <button> since 1.3.0. */
@@ -324,9 +345,37 @@ export function mountTriage(
     stopBtn.addEventListener('click', () => { finish(); restoreFocus(); });
   };
 
-  /** Drop the last-action undo. Any new triage action makes it stale — undo
-   *  reverses the MOST RECENT route, never an older one. */
-  const clearUndo = (): void => { undoRegion?.replaceChildren(); };
+  /**
+   * Drop the last-action undo. Any new triage action makes it stale — undo
+   * reverses the MOST RECENT route, never an older one.
+   *
+   * BUT NOT THE PLACE-DATING OFFER (V2 stage 3). That control is about a PLACE,
+   * not about the route just taken, and it is the only path in the app to the
+   * clock that stops a place returning hollow. Clearing it with the undo meant
+   * triaging the very next card destroyed the offer — and the receipt goes on
+   * saying "no return date yet" for ever, with nothing left to press.
+   *
+   * The undo genuinely does go stale. The question "when should Errands come
+   * back to you?" does not go stale one card later; it is still the same
+   * unanswered question about the same place. So the bar is emptied of
+   * everything EXCEPT a pending place offer, which stays until it is answered.
+   */
+  const clearUndo = (): void => {
+    if (!undoRegion) return;
+    const keep = undoRegion.querySelector('.triage-place-pending');
+    if (!keep) { undoRegion.replaceChildren(); return; }
+    // The kept bar loses its UNDO. That undo is about the route just superseded
+    // and is exactly what has gone stale — keeping it would put two "Undo"
+    // buttons on one surface, which is both a coin toss for anyone driving by
+    // voice (§4: no two controls answer to one name) and an offer to take back
+    // something that is no longer the last thing you did. The walk caught it as
+    // two where one was expected.
+    //
+    // What survives is the receipt sentence and the unanswered question about
+    // the place, which is the whole point.
+    keep.querySelector('.triage-undo-btn')?.remove();
+    undoRegion.replaceChildren(keep);
+  };
 
   /**
    * Offer to take the just-made route back. Names where the card went and, in
@@ -340,6 +389,10 @@ export function mountTriage(
     words?: string,
     /** The place this went into, when it has no return date yet (V2 stage 3). */
     undatedPlace?: string | null,
+    /** What the route SHED, snapshotted before it committed, so Undo can put it
+     *  back (V2 stage 3). By the time this control is pressed the dates are gone
+     *  from state, so they have to be carried here or they are unrecoverable. */
+    shed: readonly RestorableClock[] = [],
   ): void => {
     if (!undoRegion) return;
     const bar = el('p', 'triage-undo-bar');
@@ -367,6 +420,10 @@ export function mountTriage(
      * a door rather than a question that must be answered before moving on.
      */
     if (undatedPlace) {
+      // Marked so `clearUndo` can tell this apart from the undo itself: the
+      // route goes stale on the next card, the unanswered question about a place
+      // does not.
+      bar.classList.add('triage-place-pending');
       const when = document.createElement('input');
       when.type = 'date';
       when.id = 'triage-place-when';
@@ -406,6 +463,9 @@ export function mountTriage(
             wLabel.remove();
             when.remove();
             set.remove();
+            // Answered, so it is an ordinary receipt again and the next triage
+            // action may clear it like any other.
+            bar.classList.remove('triage-place-pending');
             onChange();
           })
           .catch((err: Error) => {
@@ -420,7 +480,7 @@ export function mountTriage(
     btn.type = 'button';
     btn.addEventListener('click', () => {
       btn.disabled = true;
-      void session.commit(ctx => undoRouteEvents(ctx, node, route, fromKind))
+      void session.commit(ctx => undoRouteEvents(ctx, node, route, fromKind, shed))
         .then(() => {
           clearUndo();
           LIVE.textContent = 'Back in your inbox.';
@@ -434,7 +494,16 @@ export function mountTriage(
         });
     });
     bar.append(btn);
-    undoRegion.replaceChildren(bar);
+    // KEEP AN UNANSWERED PLACE QUESTION ABOVE THE NEW RECEIPT.
+    //
+    // `clearUndo` preserving it was not enough on its own, and the walk caught
+    // that before it shipped: the next route calls `clearUndo` and then this,
+    // and a bare `replaceChildren(bar)` wiped the very thing `clearUndo` had
+    // just spared. Both halves are needed, which is why the assertion is about
+    // the surface after the next card rather than about either function.
+    const pending = undoRegion.querySelector('.triage-place-pending');
+    if (pending && pending !== bar) undoRegion.replaceChildren(pending, bar);
+    else undoRegion.replaceChildren(bar);
   };
 
   /**
@@ -466,6 +535,30 @@ export function mountTriage(
     return b;
   };
 
+  /**
+   * The way to make the heat pass optional in fact, and it is on the heat card
+   * because that is where the person is standing when they want it.
+   *
+   * `ghost`, like "Not this one", so it reads as a way past rather than as a
+   * third heat. The hint says what it costs, which is nothing: heat is a hint
+   * clarify can lean on, and an item without one is sorted the same way with one
+   * fewer thing on the screen.
+   */
+  const sortNowControl = (nodeId: string): HTMLButtonElement => {
+    const b = el('button', 'route ghost');
+    b.type = 'button';
+    b.append(el('span', 'route-label', 'Just sort it'),
+             el('span', 'route-hint', 'skip this question — nothing is recorded'));
+    b.addEventListener('click', () => {
+      straightToSort.add(nodeId);
+      clearUndo();
+      LIVE.textContent = 'Sorting it now.';
+      refresh();
+      restoreFocus();
+    });
+    return b;
+  };
+
   const renderHeat = (nodeId: string, text: string): void => {
     PROMPT.textContent = 'Hot or cold?';
     showing = nodeId;
@@ -481,7 +574,7 @@ export function mountTriage(
       });
       return b;
     }));
-    ACTIONS.append(skipControl(nodeId));
+    ACTIONS.append(sortNowControl(nodeId), skipControl(nodeId));
   };
 
   /**
@@ -591,13 +684,24 @@ export function mountTriage(
         // Supersede any earlier undo before committing — undo only ever takes
         // back the most recent route.
         clearUndo();
+        // Snapshotted BEFORE the commit: the route is about to shed these, and
+        // afterwards there is nothing left to read them off.
+        const shed = restorableClocksOf(session.state().nodes.get(nodeId));
+        // AND SAID, rather than done quietly. someday/reference land on the
+        // Menu, which by law 6 can hold no demand — so the dates genuinely
+        // cannot come with it. That is not a reason to let a date disappear
+        // without a word; it is the reason the word is owed.
+        const sheds = (route === 'someday' || route === 'reference') ? shed.length : 0;
+        const said = sheds === 0 ? `Routed to ${label}.`
+          : sheds === 1 ? `Routed to ${label}. Its date comes off — nothing on your wishes makes a demand. Undo puts it back.`
+            : `Routed to ${label}. Its ${sheds} dates come off — nothing on your wishes makes a demand. Undo puts them back.`;
         void commit(ctx => routeEvents(ctx, nodeId, route, kind as never,
-          demandClocksOf(session.state().nodes.get(nodeId))), `Routed to ${label}.`)
+          demandClocksOf(session.state().nodes.get(nodeId))), said)
           .then(ok => {
             // Offer to take it back, whichever route it was — the answer to
             // "where did it go and how do I undo it". Captured with the id, route
             // and prior kind so it reverses this card after the queue advances.
-            if (ok) showUndo(nodeId, route, kind as NodeKind, label);
+            if (ok) showUndo(nodeId, route, kind as NodeKind, label, undefined, undefined, shed);
             // Start the timer only if the route actually landed, and only after
             // the card has advanced — the timer's own region is untouched by that.
             // OFFER, do not start. The route is the decision; the timer is a tool.
@@ -650,8 +754,18 @@ export function mountTriage(
     // surface keeping score of what was avoided.
     const fresh = <T extends { id: string }>(q: readonly T[]): T | null =>
       q.find(n => !passed.has(n.id)) ?? q[0] ?? null;
-    const heatItem = fresh(heatQueue);
-    const clarifyItem = fresh(inbox);
+    // An item the reader asked to sort outright is not offered a heat card.
+    // ASKED FOR OUTRIGHT, so it jumps the heat queue entirely (V2 stage 3).
+    //
+    // The first version only FILTERED this item out of the heat queue, which is
+    // not the same thing at all: the surface simply fell through to somebody
+    // else's heat card, the prompt still said "Hot or cold?", and the item the
+    // reader had just asked to sort was nowhere. The walk caught it saying
+    // exactly that. "Just sort it" is a request about THIS item, so it has to
+    // put THIS item in front of you.
+    const askedFor = inbox.find(n => straightToSort.has(n.id) && !passed.has(n.id));
+    const heatItem = askedFor ? null : fresh(heatQueue.filter(n => !straightToSort.has(n.id)));
+    const clarifyItem = askedFor ?? fresh(inbox);
 
     if (heatItem) {
       REGION.hidden = false;

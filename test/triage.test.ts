@@ -17,7 +17,7 @@ import { unclarified, needsHeat, nextToClarify, inboxGauge } from '../src/triage
 import { heldGroups } from '../src/held.ts';
 import {
   routeEvents, heatEvents, fileUnderEvents, fileUnderNewEvents, undoRouteEvents, clocksOf,
-  datePlaceEvents, fileReceiptWords, placeReturnDays,
+  datePlaceEvents, fileReceiptWords, placeReturnDays, demandClocksOf, restorableClocksOf,
 } from '../src/ui/triage-intents.ts';
 import type { AppEvent, ClarifyRoute } from '../src/events.ts';
 import type { StampContext } from '../src/ui/session.ts';
@@ -304,6 +304,55 @@ test('filing under a NEW place keeps them too — the same act cannot have two a
   assert.equal(s.nodes.get('D')!.clocks['due']?.at, '2026-09-01T12:00:00.000Z',
     'the due date survived being filed into a place that did not exist yet');
   assert.equal(s.nodes.get('D')!.clocks['review'], undefined);
+  assert.equal(silentNodes(s).length, 0);
+});
+
+test('undoing a route to the wishes puts the dates back', () => {
+  // The Menu is demand-free by law 6, so routing there genuinely HAS to shed
+  // every demand clock — that half is not negotiable. What was not acceptable is
+  // that Undo left them gone: one tap sent an item to the wishes and destroyed
+  // the date promised to somebody else, and the control offering to take it back
+  // handed you the item without the date. An undo that returns less than it took
+  // is not an undo, and in an append-only log there was no other way back.
+  let s = capture(emptyState(), 'D', 'renew the insurance');
+  s = write(s, [raw('clarify.routed', 'D', { route: 'next-action' })]);
+  s = write(s, [raw('clock.set', 'D', { clockKind: 'due', at: '2026-09-01T12:00:00.000Z', source: 'detail:due' })]);
+  s = write(s, [raw('suspense.set', 'D', { at: '2026-08-25T12:00:00.000Z' })]);
+
+  const shed = restorableClocksOf(s.nodes.get('D'));
+  assert.equal(shed.length, 2, 'fixture: two dates are about to be shed');
+
+  s = write(s, routeEvents(ctx(), 'D', 'someday', 'action', demandClocksOf(s.nodes.get('D'))));
+  assert.notEqual(s.nodes.get('D')!.onMenu, null, 'it landed on the wishes');
+  assert.equal(s.nodes.get('D')!.clocks['due'], undefined, 'and the dates came off, as law 6 requires');
+  assert.equal(s.nodes.get('D')!.clocks['suspense'], undefined);
+
+  s = write(s, undoRouteEvents(ctx(), 'D', 'someday', 'action', shed));
+  const back = s.nodes.get('D')!;
+  assert.equal(back.onMenu, null, 'off the wishes again');
+  assert.equal(back.route, null, 'back in the inbox');
+  assert.equal(back.clocks['due']?.at, '2026-09-01T12:00:00.000Z', 'the due date came back');
+  assert.equal(back.clocks['suspense']?.at, '2026-08-25T12:00:00.000Z',
+    'and so did the promise to somebody else');
+  assert.equal(back.clocks['due']?.source, 'detail:due',
+    'with its own provenance — restoring it as "undo" would make the log say the app chose the date');
+  assert.equal(silentNodes(s).length, 0);
+});
+
+test('a route that sheds nothing restores nothing, and the undo is unchanged', () => {
+  // The restore must be inert on the ordinary path. Most items carry no demand
+  // clock at all when they are routed, and an undo that invents one would be a
+  // date nobody set.
+  let s = capture(emptyState(), 'P', 'a plain thought');
+  const shed = restorableClocksOf(s.nodes.get('P'));
+  assert.deepEqual(shed, []);
+  s = write(s, routeEvents(ctx(), 'P', 'someday', 'action', demandClocksOf(s.nodes.get('P'))));
+  s = write(s, undoRouteEvents(ctx(), 'P', 'someday', 'action', shed));
+  const n = s.nodes.get('P')!;
+  assert.equal(n.onMenu, null);
+  assert.deepEqual(
+    Object.keys(n.clocks).filter(k => k !== 'review'), [],
+    'no date was invented on the way back');
   assert.equal(silentNodes(s).length, 0);
 });
 

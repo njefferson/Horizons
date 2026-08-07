@@ -3811,6 +3811,69 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     `tapping the triage card opens the sheet on THAT item ("${triageShows}") — rename and dates mid-triage`);
   await tpage.click('#detail-close');
 
+  // --- THE HEAT PASS IS OPTIONAL IN FACT (V2 stage 3) ------------------------
+  //
+  // ADR-0029 has said heat is "optional-first on purpose" since it was written.
+  // It was not: the surface renders the heat card whenever anything is unheated,
+  // so the only ways past were to answer Hot/Cold — recording a heat nobody
+  // meant — or to pass the card over, which moves to the NEXT item instead of
+  // letting you sort THIS one. `unclarified` never filtered on heat, so the
+  // gate was purely in what the surface chose to show.
+  await tpage.fill('#capture', 'a thing to sort without heat');
+  await tpage.click('#capture-form button[type=submit]');
+  await tpage.waitForSelector('#triage:not([hidden]) .route');
+  const countHeats = () => tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      let n = 0;
+      const cur = db.transaction('events', 'readonly').objectStore('events').openCursor();
+      cur.onsuccess = (e) => {
+        const c = e.target.result;
+        if (!c) { res(n); return; }
+        if (c.value?.kind === 'heat.set') n++;
+        c.continue();
+      };
+    });
+  });
+  const heatsBefore = await countHeats();
+  // CYCLED TO THE ITEM JUST CAPTURED, with the app's own "Not this one", which
+  // records nothing. The inbox is not empty by this point in the walk, so the
+  // heat card in front is somebody else's — the first version clicked "Just sort
+  // it" on whatever happened to be showing and then asserted about the item it
+  // had captured, which is two different items and a check that could only fail.
+  let onMine = false;
+  for (let i = 0; i < 30 && !onMine; i++) {
+    const card = await tpage.locator('#triage-card').textContent();
+    if (/a thing to sort without heat/.test(card || '')) { onMine = true; break; }
+    const skip = tpage.locator('#triage-actions .route', { hasText: 'Not this one' });
+    if (await skip.count() === 0) break;
+    await skip.first().click();
+    await tpage.waitForTimeout(90);
+  }
+  is(onMine, true, 'the walk reached the item it captured before asserting about it');
+  const heatPrompt = await tpage.locator('#triage-prompt').textContent();
+  if (onMine && /hot or cold/i.test(heatPrompt || '')) {
+    await tpage.locator('#triage-actions .route', { hasText: 'Just sort it' }).first().click();
+    await tpage.waitForTimeout(200);
+    const after = await tpage.locator('#triage-prompt').textContent();
+    is(/hot or cold/i.test(after || ''), false,
+      `"Just sort it" leaves the heat pass and offers the routes ("${after}")`);
+    is(await tpage.locator('#triage-actions .route', { hasText: 'Next action' }).count() > 0, true,
+      'and the real routes are there — the item was in the clarify queue the whole time');
+    const card = await tpage.locator('#triage-card').textContent();
+    is(/a thing to sort without heat/.test(card || ''), true,
+      'it is still THIS item being sorted, not the next one');
+    // NOTHING RECORDED. Counted before and after, because "how many heat events
+    // exist" is a fact about the whole store and only the DELTA is about this
+    // control. A control whose hint says nothing is recorded, that records
+    // something, is the exact lie the skip was built to avoid.
+    const heatsAfter = await countHeats();
+    is(heatsAfter, heatsBefore,
+      `no heat was written on the way past the question (${heatsBefore} -> ${heatsAfter})`);
+  } else {
+    is(false, true, `fixture: expected the heat card, saw "${heatPrompt}"`);
+  }
+
   console.log('\nWhat a thing carries, and what the app did (1.4.0)');
   // Import the exact CSV shape that once lost every note, and read the note
   // back off the item's own sheet.
@@ -5050,6 +5113,25 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     }
     return '(not found)';
   });
+
+  // AND IT SURVIVES THE NEXT CARD (V2 stage 3). The offer used to live in the
+  // undo bar and be cleared with it, so triaging the very next item destroyed
+  // the only path in the app to a place's return clock — and the receipt went on
+  // saying "no return date yet" for ever, with nothing left to press. The undo
+  // genuinely goes stale one card later; an unanswered question about a place
+  // does not.
+  if (await tpage.locator('#triage:not([hidden]) .route').count() > 0) {
+    await tpage.evaluate(() => {
+      const byText = (t) => [...document.querySelectorAll('#triage-actions .route')]
+        .find(b => (b.textContent || '').includes(t));
+      (byText('Next action') ?? byText('Hot'))?.click();
+    });
+    await tpage.waitForTimeout(200);
+    is(await tpage.locator('#triage-place-when').count(), 1,
+      'the place question survived the next triage action — it is about the place, not the route');
+  } else {
+    is(false, true, 'fixture: nothing left to triage, so the survival assertion measured nothing');
+  }
 
   // DATED TO TODAY, so one act proves both halves: the place moves off "Later"
   // — which is the hollow return, closed — and it lands in `ready`, which is the
