@@ -141,6 +141,42 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     return (a.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
   }), true, 'the ask sits after the collapsed group — it is a fold away again');
 
+  // PRESS IT, per hub LESSON 63 — "a page that RENDERS correctly can be a page
+  // that DOES nothing, and no rendering check will tell you". Visible, named,
+  // measured and above the fold are four statements about a control that may be
+  // wired to nothing, which is exactly what `#about-intro` was.
+  //
+  // Whether the browser GRANTS persistence is its decision and not this app's,
+  // so the walk asserts AGREEMENT rather than an answer: after the press, the
+  // "Keeping your data" row must say what `navigator.storage.persisted()`
+  // actually reports. That fails if the handler never ran, and it fails if the
+  // app claims a promise the browser did not make — which is the honesty half
+  // of the same control.
+  // The observer goes in BEFORE the click, because the only thing that proves
+  // the handler ran on a browser that DENIES the grant is the disabled flip —
+  // and a denial leaves the row reading "not yet", which is exactly what an
+  // unwired button also leaves. Asserting the row alone would pass on both.
+  // Polling after the click can lose the transition; watching for it cannot.
+  await page.evaluate(() => {
+    const b = document.querySelector('#intro-ask');
+    globalThis.__sawDisabled = false;
+    new MutationObserver(() => { if (b.disabled) globalThis.__sawDisabled = true; })
+      .observe(b, { attributes: true, attributeFilter: ['disabled'] });
+  });
+  await page.click('#intro-ask');
+  await page.waitForFunction(() => document.querySelector('#intro-ask')?.disabled === false);
+  is(await page.evaluate(() => globalThis.__sawDisabled), true,
+    'pressing the ask did nothing at all — the control is wired to no handler');
+  const agrees = await page.evaluate(async () => {
+    const live = await navigator.storage.persisted();
+    const rows = [...document.querySelectorAll('#storage-body dt')].map((d) => d.textContent);
+    const at = rows.indexOf('Keeping your data');
+    const said = [...document.querySelectorAll('#storage-body dd')][at]?.textContent?.trim();
+    return { live, said, agree: live ? said === 'yes' : said !== 'yes' };
+  });
+  is(agrees.agree, true,
+    `after asking, the panel says "${agrees.said}" while the browser reports persisted=${agrees.live}`);
+
   await page.click('#about-close');
   is(await page.evaluate(() => document.activeElement?.id), 'capture',
     'closing the panel hands focus to capture');
