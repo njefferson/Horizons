@@ -340,7 +340,9 @@ export async function mountAbout(
   introAsk?.addEventListener('click', () => { void askForPersistence(); });
 
   // --- the calendar (T1) -----------------------------------------------------
-  // The tier that actually reminds you. Same deliver-then-record ordering as the
+  // The tier that is MEANT to reach you when the app is shut — "actually
+  // reminds you" until V-14's step 3 is observed, which it has not been. Same
+  // deliver-then-record ordering as the
   // export below, for the same reason: a failed hand-off must never leave the log
   // asserting that a copy left.
   // --- the other edition (ADR-0036) -----------------------------------------
@@ -447,7 +449,22 @@ export async function mountAbout(
         kind: 'export.written', node: null,
         payload: { at, scope: 'calendar', encrypted: false },
       } as AppEvent]);
-      calNote.textContent = 'Sent. Open the file to add it to your calendar — it will remind you at 9am on the day.';
+      // SAYS WHAT THE FILE CARRIES, NOT WHAT WILL HAPPEN. This read "it will
+      // remind you at 9am on the day" — two assertions about behaviour nobody
+      // has observed. V-14 is the only verification that counts for T1 and its
+      // status is NOT VERIFIED: what is proven is that the file is well-formed
+      // RFC 5545, that one VALARM is emitted per VEVENT, and that
+      // `TRIGGER;RELATED=START:PT9H` is written. What is NOT proven is that iOS
+      // resolves that trigger to 09:00 local rather than 09:00 UTC, or midnight,
+      // or never — and V-14 says in terms that until an alarm is seen firing
+      // with the app closed, nothing should describe Quietkeep as reminding
+      // anyone.
+      //
+      // The rest of the panel's reminder copy is already careful — it says the
+      // calendar CAN reach you and that Quietkeep never sends notifications,
+      // both true. This one sentence was the exception, and it was the one shown
+      // at the moment of the act.
+      calNote.textContent = 'Sent. Open the file to add it to your calendar — each item carries a 9am alarm for its day, and your calendar is what decides to ring.';
     } catch (err) {
       calNote.textContent = `That did not send — nothing left your device. (${(err as Error).message})`;
     } finally {

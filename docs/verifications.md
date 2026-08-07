@@ -965,6 +965,27 @@ Quietkeep as reminding anyone. The changelog wording for 0.8.0 says the calendar
 reminds you, which is a claim about the calendar's behaviour rather than the app's
 — if step 3 fails, that copy is wrong and goes first.
 
+**The shipped copy was audited against this and one sentence failed it.** The
+panel's confirmation after sending to the calendar read *"it will remind you at
+9am on the day"* — an assertion both that a reminder arrives and that it arrives
+at nine, which is the exact resolution step 4 exists to check. It was the one
+string shown at the moment of the act, and it is now *"each item carries a 9am
+alarm for its day, and your calendar is what decides to ring"*: what the file
+provably contains, with the ringing attributed to the thing that does it.
+
+The rest of the reminder copy was checked and left alone, because it was already
+right — "Quietkeep does not send notifications" and "your calendar runs even when
+this app is closed, so it is the thing that **can** actually reach you" are a
+true statement about the app and a modal one about calendars, neither of which
+this verification touches.
+
+**This raises the value of step 3 rather than lowering it.** The research sweep
+found that the modal outcome for a tool in this category is abandonment inside a
+month, and that during an avoidance episode the OS-calendar export is the only
+component still working — so it carries the whole value proposition precisely
+when nothing else in the product is running. That makes an unobserved alarm the
+single most consequential unknown in the app, not a tidy-up.
+
 **Why it is recorded rather than assumed:** [V-10](#v-10) is the standing lesson
 that running a thing is not the same as watching it, and this is the same shape at
 one remove — generating a correct file is not the same as a reminder arriving.
