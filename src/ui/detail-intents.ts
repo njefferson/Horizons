@@ -107,6 +107,22 @@ export const noteEvents = (ctx: StampContext, node: string, text: string): AppEv
   [base(ctx, 'node.field.set', node, { field: 'note', value: cleanNote(text) })];
 
 /**
+ * "When or where do you mean to do this?" — the situation, in their words.
+ *
+ * Rides the same noun as the note and for the same reason: `node.field.set`
+ * carries exactly one named field, so this costs the closed vocabulary nothing.
+ * An empty value is the honest removal, exactly as with the note.
+ *
+ * CLEANED BY `cleanNote`, NOT BY A FORMAT RULE. The evidence for
+ * implementation intentions rests on SELF-generated plans, so the app takes
+ * whatever the person writes: it does not require "when", does not rewrite it
+ * into an if-then, and does not refuse a sentence for being the wrong shape.
+ * Validating the form would be the app generating the plan by correction.
+ */
+export const situationEvents = (ctx: StampContext, node: string, text: string): AppEvent[] =>
+  [base(ctx, 'node.field.set', node, { field: 'situation', value: cleanNote(text) })];
+
+/**
  * "This one is for today." / "Not today after all." (1.6.0, ADR-0051.)
  * The day is stamped from the CONTEXT's clock and zone — the user's day, not
  * UTC's — and the choice expires by projection at midnight: `composedFor` is

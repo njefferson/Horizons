@@ -323,6 +323,49 @@ export const noteOf = (n: NodeState): string | null => {
   return f && typeof f.value === 'string' && f.value !== '' ? f.value : null;
 };
 
+/**
+ * The SITUATION a person attached to this — when or where they mean to do it,
+ * in their own words. Null when they have not said.
+ *
+ * ## Why this field exists, and why it is the cheapest thing in the V2 plan
+ *
+ * Implementation intentions — "if situation X arises, then I will do Y"
+ * (Gollwitzer) — bind a cue to an action in advance, so the action fires on
+ * noticing the cue rather than on self-initiation, which is the step that
+ * fails. Gawrilow & Gollwitzer found if-then plans brought inhibition in
+ * children with ADHD to the level of children without it; Toli, Webb & Hardy's
+ * meta-analysis found a medium effect on goal attainment. It is among the very
+ * few things in this literature with experimental ADHD evidence rather than
+ * self-report.
+ *
+ * The prediction for planners is blunt: a task stored as a NOUN recruits
+ * nothing. Even a well-formed next action — verb plus object — is only the
+ * THEN. The "if" is the active ingredient, and no schema here had a place to
+ * put it. Neither did any planner surveyed.
+ *
+ * ONE FIELD, FOUR JOBS, which is why it is a string and not a structure:
+ *  - the implementation-intention "if";
+ *  - an event-based retrieval cue, which is the intact channel — a datetime is
+ *    the least retrievable anchor there is and was the only one this app had;
+ *  - where a routine's chaining lives, in the person's own words;
+ *  - somewhere to put an alternate for when the plan breaks, since the deficit
+ *    at that moment is generating options rather than choosing between them.
+ *
+ * WHAT IT MUST NEVER BECOME. Self-generated only — the evidence rests on plans
+ * the person wrote, and there is no reason to think an assistant-written one
+ * works. Never required, never validated for form ("your plan should start
+ * with When…"), never counted, and never asked whether it worked. A coverage
+ * figure for it would be a completion percentage wearing a hat.
+ *
+ * Same shape as `noteOf` deliberately: one field, one reader, empty string is
+ * the honest removal. No new event kind — `node.field.set` already carries
+ * exactly one named field, so this costs the closed vocabulary nothing.
+ */
+export const situationOf = (n: NodeState): string | null => {
+  const f = n.fields['situation'];
+  return f && typeof f.value === 'string' && f.value !== '' ? f.value : null;
+};
+
 export const emptyState = (): State => ({
   nodes: new Map(),
   vaults: new Map(),

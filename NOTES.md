@@ -535,12 +535,36 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Four releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
-were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1 and
-now **1.28.0**.
+**Five releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
+1.28.0 and now **1.29.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.28.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.29.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.29.0 is the first half of stage 2 of the V2 plan: the situation field.**
+
+**You can say when or where you mean to do a thing, and it comes back with it.**
+One optional line, in the person's own words, on every item — and it is shown
+above that item on the offer, verbatim. It is the implementation-intention "if",
+and the app had nowhere to put one: a task stored as a noun is only the "then",
+and the cue is the active ingredient. It is also the cheapest event-based
+retrieval anchor available, against a datetime, which is the least retrievable
+anchor there is and was the only one this app offered.
+
+**What it deliberately is not.** Never required, never generated, never checked
+for shape, never counted, and never asked whether it worked — the evidence rests
+on plans the person wrote themselves, so whatever they write is the plan. Writing
+one mints no clock and changes no rank, which is asserted rather than intended,
+and is why it is safe to write one onto the thing being offered right now.
+
+**One field, four jobs**, which is why it is a string and not a structure: the
+"if"; an event-based retrieval cue; where a routine's chaining lives; and
+somewhere to put an alternate for when the plan breaks, since the deficit at that
+moment is generating options rather than choosing between them.
+
+**Still owed in stage 2:** an item anchored to another item's completion rather
+than to a clock, which needs a fifth coverage clause in the write gate.
 
 **1.28.0 is stage 1 of the V2 plan: making "nothing has gone quiet" mean
 "and you will be shown it".**

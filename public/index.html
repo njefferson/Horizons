@@ -353,6 +353,11 @@
          ADR-0010 refuses. Same ink and same paper as the two lines above it, so
          the contrast registry's existing row covers it. -->
     <p id="nextup-approach" class="nextup-why nextup-place" hidden></p>
+    <!-- WHAT YOU SAID ABOUT DOING IT, in your words, unedited. An
+         implementation intention only works if the cue is present at the moment
+         of performance — a plan written once and never shown again is a noun in
+         a database. Reuses the registered .nextup-place pair; layout only. -->
+    <p id="nextup-situation" class="nextup-why nextup-place" hidden></p>
     <!-- THE FIRST STEP, once you have named one (1.24.0). It is an ordinary
          action under the offered item, riding its parent's clock — never a date
          you did not choose. Its Done is named apart from the card's, because
@@ -705,6 +710,29 @@
   <!-- The note (1.4.0) — what a thing carries beyond its one line. Shown and
        edited HERE only; cards stay one line. Title-class content: plaintext in
        exports exactly as titles are (ADR-0047), and nothing else reads it. -->
+  <!-- THE SITUATION. An implementation intention binds a cue to an action in
+       advance, so the action fires on noticing the cue instead of on
+       self-initiation — the step that fails. It is among the very few things in
+       this literature with experimental ADHD evidence, and the "if" is the
+       whole active ingredient: a task stored as a noun recruits nothing.
+       Nothing in this app had anywhere to put it.
+
+       Offered, never required, never checked for shape. The evidence is about
+       plans the person wrote themselves, so whatever they write is the plan. -->
+  <div class="detail-group" id="detail-situation-group">
+    <label class="detail-label" for="detail-situation">When or where do you mean to do this?</label>
+    <textarea id="detail-situation" rows="2" autocomplete="off" spellcheck="true"
+              aria-describedby="detail-situation-hint"></textarea>
+    <div class="detail-row">
+      <button id="detail-situation-set" type="button">Keep that</button>
+    </div>
+    <p id="detail-situation-hint" class="detail-hint">
+      In your own words &mdash; &ldquo;after I put the kettle on&rdquo;, &ldquo;next time
+      I&rsquo;m at the desk&rdquo;. It comes back with the thing, exactly as you wrote it.
+      Nothing checks it and nothing counts it. Clearing the box and keeping it removes it.
+    </p>
+  </div>
+
   <div class="detail-group" id="detail-note-group">
     <label class="detail-label" for="detail-note">Anything to keep with it?</label>
     <textarea id="detail-note" rows="3" autocomplete="off" spellcheck="true"

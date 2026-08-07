@@ -85,6 +85,7 @@ export function mountWork(
   // never the work surface.
   const PLACE = q('#nextup-place');
   const APPROACH = q('#nextup-approach');
+  const SITUATION = q('#nextup-situation');
   // NOT in the hard guard above, deliberately: a missing load note costs one
   // sentence, and taking Next up down with it would cost the app's whole
   // purpose. Same containment every optional element on this surface gets.
@@ -330,6 +331,18 @@ export function mountWork(
       if (APPROACH) {
         APPROACH.textContent = up.head.approach ?? '';
         APPROACH.hidden = !up.head.approach;
+      }
+      // THE SITUATION, VERBATIM AND UNQUALIFIED. Not "you said you would…",
+      // which reads the plan back as a commitment and turns a cue into a
+      // reminder that you have not done it — this audience's whole problem with
+      // being reminded. Just the sentence, in the words it was written in.
+      //
+      // Silent when there is none, the same rule PLACE and APPROACH follow. A
+      // situation is offered and never required, so absence is the ordinary
+      // case and must cost nothing.
+      if (SITUATION) {
+        SITUATION.textContent = up.head.situation ?? '';
+        SITUATION.hidden = !up.head.situation;
       }
       paintBite(up.head.node);
       // NO NUMBER (1.11.0). "8 things are asking" is a count of pending work on

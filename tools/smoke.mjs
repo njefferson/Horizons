@@ -3846,6 +3846,24 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.click('#detail-note-set');
   await tpage.waitForTimeout(200);
 
+  // THE SITUATION (1.29.0) — the implementation-intention "if".
+  //
+  // Written in a shape the app must not correct: no "when", lower case, a
+  // fragment. The evidence is about self-generated plans, so whatever is typed
+  // is the plan.
+  //
+  // NOTHING IS ASSERTED HERE, deliberately. Reading the value back out of the
+  // box that was just filled proves only that a textarea holds text — and the
+  // sheet's own repaint guard skips a focused field, so it would pass with the
+  // control unwired. The two assertions that mean something are further down:
+  // the value coming back after a full RELOAD (it reached the log), and the
+  // words appearing on the OFFER (the cue is present at the moment of
+  // performance, which is the entire mechanism). Hub LESSON 63.
+  const situation = 'after I put the kettle on';
+  await tpage.fill('#detail-situation', situation);
+  await tpage.click('#detail-situation-set');
+  await tpage.waitForTimeout(200);
+
   // Per-node history: the record of this one thing, cure indented under cause.
   await tpage.click('#detail-history summary');
   await tpage.waitForFunction(() =>
@@ -3871,8 +3889,48 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   await tpage.waitForSelector('#detail[open]');
   is(await tpage.locator('#detail-note').inputValue(), 'ask about the crown\nand the bill',
     'the edited note survives a full reload, newlines intact');
+  // The situation reached the LOG, not just the box: this sheet was built from
+  // a fold of a store read after a full reload.
+  is(await tpage.locator('#detail-situation').inputValue(), situation,
+    'the situation survives a full reload — it is in the log, not in a textarea');
   await tpage.click('#detail-close');
   await tpage.click('#sort-close');
+
+  // AND ON THE OFFER, which is the only place it does any work. A plan shown
+  // once at the moment of writing and never again is a noun in a database; the
+  // mechanism needs the cue present when the thing is put in front of you.
+  //
+  // Written onto WHATEVER IS ALREADY BEING OFFERED, rather than onto a fresh
+  // capture cycled up to with "Not this". A new item lands at the back of the
+  // ready tier — that tier's order falls through to creation order — so cycling
+  // for it walked 40 cards and never arrived, which is what the loop reported.
+  // Reading the head first is also the stronger assertion: nothing is seeded and
+  // the surface is asserted in the state the app put it in.
+  //
+  // The head does not move underneath this. A situation mints no clock and
+  // changes no rank (asserted in test/situation.test.ts), which is itself the
+  // reason it is safe to write one on the thing you are looking at.
+  const offeredTitle = (await tpage.locator('#nextup-title').textContent() || '').trim();
+  is(offeredTitle.length > 0, true, 'something is being offered to write a situation onto');
+  await fillSearch(offeredTitle);
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: offeredTitle }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-situation', situation);
+  await tpage.click('#detail-situation-set');
+  await tpage.waitForTimeout(200);
+  await tpage.click('#detail-close');
+  await fillSearch('');
+  await tpage.waitForFunction(
+    (t) => (document.querySelector('#nextup-title')?.textContent || '').trim() === t,
+    offeredTitle, { timeout: 5000 });
+
+  const offerSituation = await tpage.evaluate(() => {
+    const el = document.querySelector('#nextup-situation');
+    return el && !el.hidden ? el.textContent : null;
+  });
+  is(offerSituation, situation,
+    `the offer shows the situation in the words it was written in ("${offerSituation}")`);
 
   // The record itself: day-grouped, plain words, true totals, honest reveal.
   await tpage.click('#open-about');

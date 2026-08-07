@@ -22,7 +22,7 @@
 //
 // PURE, and `now` is an argument.
 
-import { isAppClock, type NodeState, type State } from './fold.ts';
+import { isAppClock, situationOf, type NodeState, type State } from './fold.ts';
 import { ancestors, CONTAINER_KINDS } from './tree.ts';
 import { pressureOf } from './pressure.ts';
 import { replanIds } from './replan.ts';
@@ -68,6 +68,17 @@ export interface NextUpItem {
    * (ADR-0010). Computed, never stored.
    */
   approach: string | null;
+  /**
+   * THE SITUATION, VERBATIM — what the person said about when or where they
+   * meant to do this, carried so the offer can show it back.
+   *
+   * This is the whole point of the field. An implementation intention works by
+   * the cue being present at the moment of performance; a plan stored and never
+   * shown again is a noun in a database. So it rides with the item to every
+   * surface that offers it, in the words it was written in — never summarised,
+   * never rephrased, never checked.
+   */
+  situation: string | null;
 }
 
 /**
@@ -252,7 +263,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     // comes first for every kind. A resume card carrying an arrived due date was
     // previously misfiled as tier 2 purely because its branch ran first.
     if (arrived && hasHardDate(n)) {
-      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
+      items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone), situation: situationOf(n) });
       continue;
     }
     if (n.kind === 'resume-card') {
@@ -279,18 +290,19 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
         words: n.resumeCue ? `you were about to: ${n.resumeCue}` : 'where you left off',
         place: lineageOf(state, n),
         approach: approachOf(state, n, nowIso, zone),
+        situation: situationOf(n),
       });
       continue;
     }
     if (p !== null && p >= 0) {
-      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
+      items.push({ node: n, reason: 'pressure', pressure: p, words: 'ready again', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone), situation: situationOf(n) });
       continue;
     }
     if (arrived) {
       // "Back with you today" was a falsehood for any clock older than today —
       // and gate cure clocks never move, so that was the NORMAL case, not an
       // edge one (Doctrine §5: no copy the data does not support).
-      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone) });
+      items.push({ node: n, reason: 'ready', pressure: p, words: 'this one is waiting', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone), situation: situationOf(n) });
       continue;
     }
     // Not yet asking for anything. Correct outcome: it stays quiet.
@@ -331,6 +343,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
         words: `${host.title || 'something'} came round`,
         place: lineageOf(state, n),
         approach: approachOf(state, n, nowIso, zone),
+        situation: situationOf(n),
       });
     }
   }
@@ -397,7 +410,7 @@ export function upkeepChips(state: State, nowIso: string, zone: string, minPress
     .filter((x): x is { node: NodeState; pressure: number } =>
       x.pressure !== null && Number.isFinite(x.pressure) && x.pressure >= minPressure)
     .sort((a, b) => b.pressure - a.pressure || (a.node.id < b.node.id ? -1 : 1))
-    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again', place: lineageOf(state, x.node), approach: approachOf(state, x.node, nowIso, zone) }));
+    .map(x => ({ node: x.node, reason: 'pressure' as const, pressure: x.pressure, words: 'ready again', place: lineageOf(state, x.node), approach: approachOf(state, x.node, nowIso, zone), situation: situationOf(x.node) }));
 }
 
 /**

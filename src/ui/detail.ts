@@ -15,7 +15,7 @@
 // whom a surprising control is expensive.
 
 import type { Session } from './session.ts';
-import { noteOf, type NodeState } from '../fold.ts';
+import { noteOf, situationOf, type NodeState } from '../fold.ts';
 import { DEMAND_FREE_KINDS } from '../events.ts';
 import { everyDaysWords, localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
@@ -27,6 +27,7 @@ import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
+  situationEvents,
   cleanNote, noteEvents, chooseTodayEvents, releaseTodayEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
@@ -80,6 +81,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const startInput = q<HTMLInputElement>('#detail-start');
   const estimateInput = q<HTMLInputElement>('#detail-estimate');
   const noteInput = q<HTMLTextAreaElement>('#detail-note');
+  const situationInput = q<HTMLTextAreaElement>('#detail-situation');
   const mergeFilter = q<HTMLInputElement>('#detail-merge-filter');
   const mergeSel = q<HTMLSelectElement>('#detail-merge');
   const mergedList = q<HTMLElement>('#detail-merged-list');
@@ -374,6 +376,9 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // The note rides the same no-clobber rule as the rename box: `render` runs
     // after every commit here, and prose is the costliest thing to eat.
     if (noteInput && document.activeElement !== noteInput) noteInput.value = noteOf(n) ?? '';
+    // Same in-progress-edit guard as the note: repainting under a cursor throws
+    // away what somebody is halfway through typing.
+    if (situationInput && document.activeElement !== situationInput) situationInput.value = situationOf(n) ?? '';
     // The decision box obeys the same rule for the same reason — `render`
     // runs after every commit here, and prose is the costliest thing to eat.
     // It is cleared explicitly on a successful log, never by a repaint.
@@ -613,6 +618,11 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // items and people — anything you hold can carry words. Only a thing let
     // go loses the editor; "Keep it after all" is the door back.
     grp('#detail-note-group', !n.trashed);
+    // Shown wherever a note is. A situation is about DOING the thing, so it is
+    // meaningless on a person or an anchor for the same reason the estimate is —
+    // but `!n.trashed` is the note's own rule and a want on the Menu can still
+    // carry "next time I'm in town", which is exactly the cue this is for.
+    grp('#detail-situation-group', !n.trashed);
     // The meeting furniture (1.9.0, ADR-0057): a container's people and its
     // decisions. Shown for containers off the Menu — and for anything that
     // ALREADY carries one, so a stakeholder or a decision can never become
@@ -884,6 +894,16 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (clean === had) { say(clean ? 'Already kept.' : 'Nothing to keep yet.'); return; }
     void run(ctx => noteEvents(ctx, current!.id, noteInput.value),
       clean ? 'Kept with it.' : 'Note removed.');
+  });
+  btn('#detail-situation-set')?.addEventListener('click', () => {
+    if (!situationInput || !current) return;
+    const clean = cleanNote(situationInput.value);
+    // No event for no change, same rule as the note above.
+    const had = situationOf(session.state().nodes.get(current.id) ?? current) ?? '';
+    if (clean === had) { say(clean ? 'Already kept.' : 'Nothing to keep yet.'); return; }
+    void run(ctx => situationEvents(ctx, current!.id, situationInput.value),
+      // Says what happened and nothing about whether it was a good plan.
+      clean ? 'Kept — it comes back with it.' : 'Removed.');
   });
   btn('#detail-repeat-set')?.addEventListener('click', () => {
     const i = positiveInt(EVERY), c = positiveInt(SLACK);

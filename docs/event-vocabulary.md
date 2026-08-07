@@ -77,6 +77,25 @@ flexible; the types are fixed.
   content: plaintext in exports exactly as titles are; renders on the detail
   sheet only; an empty value is the honest "removed". Written by the sheet and
   by the importer; read by `noteOf` in fold.ts — the one reader.
+- `situation` — when or where the person means to do the thing, in their own
+  words (1.29.0). Title-class user content, exactly like `note`: plaintext in
+  exports, empty value is the honest removal, written by the detail sheet, read
+  by `situationOf` in fold.ts — the one reader.
+  **Why it is a field and not a feature.** Implementation intentions bind a cue
+  to an action in advance, so the action fires on noticing the cue rather than
+  on self-initiation, which is the step that fails; it is among the very few
+  things in this literature with experimental ADHD evidence. The "if" is the
+  active ingredient, and a task stored as a noun has only the "then". One field
+  does four jobs: the if, an event-based retrieval cue (a datetime is the least
+  retrievable anchor there is and was the only one this app had), where a
+  routine's chaining lives, and somewhere to put an alternate for when the plan
+  breaks.
+  **What it must never become.** Self-generated only — the evidence is about
+  plans the person wrote. Never required, never validated for form, never
+  counted, and never asked whether it worked; a coverage figure for it would be
+  a completion percentage wearing a hat. It rides with the item to every surface
+  that offers it, verbatim, because a plan shown once and never again is a noun
+  in a database.
 - `arrangement` — marks an upkeep as something that runs WITHOUT you: a supply
   that reorders itself, a service on a schedule, a renewal (1.21.0, ADR-0074).
   A field and not a kind, for ADR-0042's reason — it decays, completes and

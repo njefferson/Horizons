@@ -223,6 +223,11 @@ const REGISTRY = {
   // The picker's create-in-place offer, which only exists once unknown words
   // have been typed — a control someone meets mid-filing is still a control.
   'detail sheet, creating a place': ['#detail-parent-filter', '#detail-parent-create'],
+  // The situation field (1.29.0). Scoped to its own group: `.detail-label`
+  // unscoped answers for every group on the sheet, so a registry entry written
+  // that way measures the note's label and reports the situation's as covered.
+  'situation field': ['#detail-situation', '#detail-situation-group .detail-label',
+    '#detail-situation-set', '#detail-situation-hint'],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // Search results — only exist once you have typed, so a state of their own.
   // The summary is the quiet count; the "where" is the held status word, the
@@ -1648,6 +1653,20 @@ try {
     await auditTargets(page, 'detail sheet, creating a place', theme);
     await auditFocusRings(page, 'detail sheet, creating a place', theme, ['#detail-parent-create']);
     await page.fill('#detail-parent-filter', '');
+
+    // The situation field (1.29.0). Filled first, deliberately: the box is empty
+    // in the ordinary case and an empty textarea has colours but no words, so a
+    // state audited empty measures a rectangle. What has to be legible is what
+    // somebody wrote — which is also the thing the surface exists to show back.
+    await page.fill('#detail-situation', 'after I put the kettle on');
+    await auditContrast(page, 'situation field', theme);
+    await auditAxe(page, 'situation field', theme);
+    await auditNames(page, 'situation field', theme);
+    await auditTargets(page, 'situation field', theme);
+    await auditFocusRings(page, 'situation field', theme, ['#detail-situation-set']);
+    // And the box emptied again, because clearing it is the removal verb and the
+    // control has to stay reachable in the state a person removes from.
+    await page.fill('#detail-situation', '');
     await page.click('#detail-close');
 
     // Sort mode (1.3.0): the picker over a named range, then the conveyor. The

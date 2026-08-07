@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.29.0 — CAPABILITY
+
+*2026-08-07*
+
+- **You can now say when or where you mean to do something — and Quietkeep hands it back to you at the moment it offers you the thing.** There is a new box on every item: *“When or where do you mean to do this?”* Write “after I put the kettle on”, or “next time I’m at the desk”, or “only if Sam has replied”. Whatever you write comes back word for word above the item when it comes up.
+- A date is the hardest possible thing to notice — you have to be looking at a clock, and thinking about this, at the same moment. Something you already do every day is far easier to catch. That is the whole reason the box is there.
+- It is optional and always was. Nothing asks you for one, nothing counts how many you have written, nothing marks an item as incomplete without one, and nothing ever asks whether it worked.
+- **It is not corrected.** The app does not require the word “when”, does not rewrite what you typed into a tidier sentence, and does not refuse a fragment. What you wrote is what you meant, and it is what you get back.
+- Writing one sets no date and makes no demand. It will not put an item in front of you, and it will not make one go quiet. It only rides along.
+- To remove one, clear the box and press *Keep that*.
+- *Still to come in this run of work:* an item that waits for another item to be finished, rather than for a date.
+
 ## 1.28.0 — CAPABILITY
 
 *2026-08-07*
