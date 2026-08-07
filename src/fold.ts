@@ -170,6 +170,27 @@ export interface NodeState {
    * direction the question is asked in: "if I do not do this, what breaks?"
    */
   feeds: NodeId[];
+  /**
+   * WHAT THIS WAITS FOR — the node whose completion is this node's cue, or null
+   * (1.30.0). The other kind of anchor, and the only one in the app that is not
+   * a clock.
+   *
+   * The edge lives on the DEPENDENT pointing BACK, which is the opposite of
+   * `feeds` and for the matching reason: `feeds` answers "if I do not do this,
+   * what breaks?", so it points forward from the upstream node; this answers
+   * "what is this waiting for?", which is asked while looking at the thing that
+   * is stuck.
+   *
+   * SINGLE-VALUED. Two answers to "what is this waiting for" is a join rather
+   * than a chain, and a join is where a chain quietly stops moving.
+   *
+   * It confers law 1 coverage — clause (e) — but only while the antecedent is
+   * alive, unfinished and itself not silent. An anchor to something nothing will
+   * ever surface is silence with paperwork, which is the defect the whole of
+   * stage 1 existed to remove, so clause (e) is written to refuse to reintroduce
+   * it. Its own LWW key `'after'`.
+   */
+  after: NodeId | null;
   /** How long this takes, in whole days, when it was declared as a dependency.
    *  It is what turns a downstream date into an upstream one: latest-start is
    *  the commitment minus this. Null when nobody has said. */
@@ -445,6 +466,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       ownership: null, botherRouted: false,
       lastReplan: null,
       feeds: [],
+      after: null,
       leadDays: null,
       todayFor: null,
       notNow: null,
@@ -1119,6 +1141,29 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
           n.leadDays = lead;
           n.stamps['lead'] = o;
         }
+        break;
+      }
+
+      // WHAT THIS WAITS FOR. Its own LWW key, so anchoring on one device and
+      // cutting the anchor on another converge on whichever happened later
+      // rather than on arrival order — the `notNow` and `pebble` precedent.
+      //
+      // The fold does NOT check that the antecedent exists, is alive, or is
+      // unfinished. That is the gate's job, and it does it hard; the fold's job
+      // is to be a total function over whatever the log contains, including a
+      // log imported from an older build or from another device whose events
+      // arrive out of order. A dangling `after` is read as no coverage by
+      // clause (e) and cured, which is the honest outcome — refusing to fold it
+      // would lose the record that somebody once said so.
+      case 'after.set': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['after'], o)) { n.after = e.payload.after; n.stamps['after'] = o; }
+        break;
+      }
+
+      case 'after.cleared': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['after'], o)) { n.after = null; n.stamps['after'] = o; }
         break;
       }
 

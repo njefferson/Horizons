@@ -123,6 +123,21 @@ export const situationEvents = (ctx: StampContext, node: string, text: string): 
   [base(ctx, 'node.field.set', node, { field: 'situation', value: cleanNote(text) })];
 
 /**
+ * "Wait for this to be finished first." / "Stop waiting." (1.30.0.)
+ *
+ * The one anchor in the app that is not a date. Everything that makes it safe —
+ * the antecedent must exist, be alive, be unfinished, be a kind that can be
+ * finished, and close no loop — is enforced at the write gate rather than here,
+ * because the gate is the only write path and a check in an emitter is a check
+ * the importer and the merge path do not get.
+ */
+export const afterEvents = (ctx: StampContext, node: string, after: string): AppEvent[] =>
+  [base(ctx, 'after.set', node, { after })];
+
+export const clearAfterEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'after.cleared', node, {})];
+
+/**
  * "This one is for today." / "Not today after all." (1.6.0, ADR-0051.)
  * The day is stamped from the CONTEXT's clock and zone — the user's day, not
  * UTC's — and the choice expires by projection at midnight: `composedFor` is

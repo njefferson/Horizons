@@ -338,6 +338,40 @@ is a valid, unremarkable value, never nagged about.
 - **`dependency.released`**
   - Payload: `feeds`
   - Silent risk: **yes — gated**
+- **`after.set`** (1.30.0)
+  - Payload: `after: NodeId`
+  - Silent risk: **yes — gated**
+  - **The other kind of anchor, and the only one in the app that is not a
+    clock.** It says *this does not begin until that is finished*. Setting one
+    mints no date and creates no demand.
+  - **Not `dependency.declared` wearing a different hat.** A dependency says
+    *this feeds that*, lives on the upstream node pointing forward, and exists to
+    do date arithmetic — it answers "if I do not do this, what breaks, and when
+    must I start?". Feeding something does not mean the other thing cannot be
+    worked on in parallel. An `after` lives on the DEPENDENT pointing back, which
+    is the direction the readiness question is asked in, and does no arithmetic
+    at all.
+  - **Single-valued.** "What is this waiting for" with two answers is a join
+    rather than a chain, and a join is where a chain quietly stops moving. Its
+    own LWW key `after`, so setting on one device and clearing on another
+    converge on whichever happened later rather than on arrival order.
+  - **Gated hard, because it confers law 1 coverage.** The antecedent must exist,
+    be alive, be unfinished, be a kind that can be finished — no demand-free
+    kind, which is never completed — must not be the node itself, and must close
+    no loop. Every one of those is a way the promise clause (e) makes could be
+    false at the moment it was written, and coverage that is false on arrival is
+    the defect stage 1 removed.
+  - **Carried by a merge in both directions.** The survivor takes the source's
+    antecedent into a silence, and everything that waited on the source is
+    re-pointed at the survivor. Without the reverse carry, folding one step of a
+    routine would make every later step silent and cure it into a dateless card
+    — an act meant to preserve work destroying the structure that says what order
+    it goes in.
+- **`after.cleared`** (1.30.0)
+  - Payload: none
+  - Silent risk: **yes — gated**. Cutting the anchor withdraws clause (e), and
+    the cure is the same-day clock a lost parent gets: the thing is waiting for
+    nothing now, so it goes back to being asked about.
 - **`suspense.set`**
   - Payload: `at, label?`
   - Silent risk: no

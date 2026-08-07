@@ -359,6 +359,28 @@ export async function bigSampleEvents(
   stamp('dependency.released', released, { feeds: chain[2]! });
   stamp('suspense.set', chain[2]!, { at: day(25), label: 'the fitter’s first free week' });
 
+  // --- a routine held together by completions rather than by dates (1.30.0) --
+  //
+  // Three steps where each one IS the cue for the next, which is the case a
+  // datetime cannot express: the second step has no date, no rhythm and no
+  // parent under a clock, and is covered by law 1 clause (e) alone. That is the
+  // point of putting it in the set — the sample is what the write boundary is
+  // exercised against, so the clause has to be represented by a real node whose
+  // coverage would vanish if the clause were removed.
+  const routine = [
+    node('action', 'Strip the old sealant', projects[3]),
+    node('action', 'Let the frame dry out'),
+    node('action', 'Re-seal the frame'),
+  ];
+  clock(routine[0]!, 'due', int(3, 9));
+  stamp('after.set', routine[1]!, { after: routine[0]! });
+  stamp('after.set', routine[2]!, { after: routine[1]! });
+  // And one that was set and then thought better of — the anchor cut, the gate
+  // giving it a clock of its own, which is the whole of `after.cleared`.
+  const unanchored = node('action', 'Chase the quote for the glazing', projects[5]);
+  stamp('after.set', unanchored, { after: chain[0]! });
+  stamp('after.cleared', unanchored, {});
+
   // --- capture, triage, and every route -------------------------------------
   //
   // An inbox with nothing in it teaches nothing, and the routes are where a

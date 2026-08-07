@@ -209,6 +209,33 @@ export type WaitingClosed    = Ev<'waiting.closed',     { outcome: string }>;
  *  population instead of disowning it. */
 export type DependencyDeclared=Ev<'dependency.declared',{ feeds: NodeId; suspense?: ISODateTime; leadEstimateDays?: number }>;
 export type DependencyReleased=Ev<'dependency.released',{ feeds: NodeId }>;
+/**
+ * THIS COMES AFTER THAT — an item anchored to another item's COMPLETION rather
+ * than to a date (1.30.0).
+ *
+ * Not `dependency.declared` wearing a different hat, and the difference is worth
+ * stating because the two look alike. A dependency says *this feeds that*, lives
+ * on the UPSTREAM node pointing forward, and exists to do date arithmetic: it
+ * answers "if I do not do this, what breaks, and when must I start?". Feeding
+ * something does not mean you cannot work on the other thing in parallel.
+ *
+ * An `after` says *this does not begin until that is finished*, lives on the
+ * DEPENDENT pointing back — the direction the readiness question is asked in,
+ * "what is this waiting for?" — and does no arithmetic at all. It is a
+ * READINESS relation, and the moment the antecedent is done the dependent is
+ * offered.
+ *
+ * SINGLE-VALUED, deliberately. "What does this wait for" with two answers is not
+ * a chain, it is a join, and a join is where a chain quietly stops moving. One
+ * antecedent, for the same reason `opr` is one person.
+ *
+ * Why it earns two events in a closed vocabulary: it is the only anchor in the
+ * app that is not a clock, and within a routine, completing each step IS the cue
+ * for the next. A model that recomputes each step's readiness from dates
+ * destroys the chain — the cue has to be the completion itself.
+ */
+export type AfterSet         = Ev<'after.set',          { after: NodeId }>;
+export type AfterCleared     = Ev<'after.cleared',      Record<string, never>>;
 export type SuspenseSet      = Ev<'suspense.set',       { at: ISODateTime; label?: string }>;
 export type ProjectRoleSet   = Ev<'project.role.set',   { role: ProjectRole }>;
 export type OprAssigned      = Ev<'opr.assigned',       { person: NodeId }>;
@@ -379,6 +406,7 @@ export type AppEvent =
   | FocusStarted | FocusEnded | InterruptCaptured
   | ResumeCardCreated | ResumeCardSpent | ResumeCardExpired
   | WaitingOpened | WaitingClosed | DependencyDeclared | DependencyReleased
+  | AfterSet | AfterCleared
   | SuspenseSet | ProjectRoleSet | OprAssigned | StakeholderAdded | StakeholderRemoved
   | DecisionLogged | DeltaRecorded | StatusReportExported
   | RequestDeclined | RequestSlotSet | TimerLengthSet | CommsSweepScheduled | CommsSweepRan
@@ -405,6 +433,7 @@ export const EVENT_KINDS = [
   'focus.started','focus.ended','interrupt.captured',
   'resume.card.created','resume.card.spent','resume.card.expired',
   'waiting.opened','waiting.closed','dependency.declared','dependency.released',
+  'after.set','after.cleared',
   'suspense.set','project.role.set','opr.assigned','stakeholder.added','stakeholder.removed',
   'decision.logged','delta.recorded','status.report.exported',
   'request.declined','request.slot.set','timer.length.set','comms.sweep.scheduled','comms.sweep.ran',
@@ -446,6 +475,14 @@ export const SILENT_RISK_KINDS = [
   // Splitting a merged node back out strips the chain coverage its target
   // conferred (1.7.0) — cured like untrashed, with a clock of its own.
   'node.unmerged',
+  // Cutting an `after` removes law 1 clause (e) — the dependent was covered by
+  // the promise that finishing the antecedent would surface it, and that promise
+  // has just been withdrawn. `after.set` is here too, as defence in depth: the
+  // gate validates the new antecedent hard enough that coverage cannot in fact
+  // be lost, but "every silent-risk event carries a cure" is the invariant that
+  // makes this list checkable, and an event that touches coverage at all belongs
+  // in it. Same reasoning as the clarify.routed branch in cureFor.
+  'after.set', 'after.cleared',
 ] as const satisfies readonly EventKind[];
 
 const SILENT_RISK_SET: ReadonlySet<string> = new Set(SILENT_RISK_KINDS);

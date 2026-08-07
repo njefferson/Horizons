@@ -32,7 +32,7 @@ import { dependencyView, dependencyWords } from './dependencies.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
  *  channel of B-01, and the honest answer to "why am I being shown this?". */
-export type NextUpReason = 'hard-date' | 'resume' | 'pressure' | 'ready' | 'beneath';
+export type NextUpReason = 'hard-date' | 'unblocked' | 'resume' | 'pressure' | 'ready' | 'beneath';
 
 export interface NextUpItem {
   node: NodeState;
@@ -171,6 +171,14 @@ function isCandidate(n: NodeState, nowIso: string, zone: string): boolean {
  * entirely** while the coverage gauge still read 0 silent. Work disappearing is
  * the worst thing this app can do, so the question is now asked of all of them.
  */
+/** Held away on purpose, with the day not yet here. A park is the one clock that
+ *  means "do not show me this yet", so it is the one clock that can outvote a
+ *  cue (1.30.0). */
+const parkedAway = (n: NodeState, nowIso: string, zone: string): boolean => {
+  const park = n.clocks.park;
+  return !!park && isValidIso(park.at) && calendarDaysBetween(nowIso, park.at, zone) > 0;
+};
+
 const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
   Object.values(n.clocks).some(c =>
     c != null && c.kind !== 'park' && isValidIso(c.at) &&
@@ -266,6 +274,36 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
       items.push({ node: n, reason: 'hard-date', pressure: p, words: 'a real date, and it is here', place: lineageOf(state, n), approach: approachOf(state, n, nowIso, zone), situation: situationOf(n) });
       continue;
     }
+    // THE THING YOU JUST MADE POSSIBLE (1.30.0). An item anchored to another
+    // item's completion, whose antecedent is now finished.
+    //
+    // It is tested BEFORE the arrival branches on purpose. The gate cured this
+    // node with a same-day clock the moment its antecedent was completed, so it
+    // would otherwise arrive here as an ordinary `ready` — indistinguishable
+    // from four hundred other cured items and sorted by creation order, which is
+    // the back of the list. The one moment the chain is cheap would be spent.
+    //
+    // It says the ANTECEDENT'S NAME rather than "you can start this now",
+    // because the person is being handed the next step of something they were
+    // just doing and the useful fact is which thing this follows.
+    //
+    // A FUTURE PARK STILL WINS. "Not until the 12th" is a decision the person
+    // made about this very item, and an antecedent finishing early does not
+    // overturn it — pulling a parked thing forward is the app not believing you,
+    // which is the same rule the returned-park tier follows.
+    if (n.after && !parkedAway(n, nowIso, zone)) {
+      const a = state.nodes.get(n.after);
+      if (a && a.lastDone && !a.trashed && !a.mergedInto) {
+        items.push({
+          node: n, reason: 'unblocked', pressure: p,
+          words: `${a.title || 'the thing before it'} is done`,
+          place: lineageOf(state, n),
+          approach: approachOf(state, n, nowIso, zone),
+          situation: situationOf(n),
+        });
+        continue;
+      }
+    }
     if (n.kind === 'resume-card') {
       // A resume card still has to be DUE. Without this a card parked until
       // Christmas led the list in July, above everything — and one with no clock
@@ -348,7 +386,14 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     }
   }
 
-  const RANK: Record<NextUpReason, number> = { 'hard-date': 0, resume: 1, pressure: 2, ready: 3, beneath: 4 };
+  // `unblocked` sits second, above `resume`, and the placement is the argument
+  // rather than a preference. Within a routine, completing each step IS the cue
+  // for the next; the person has just finished the antecedent and is standing in
+  // front of the very next thing, which is the cheapest moment this app will
+  // ever get. A real date that is HERE still outranks it — that is a promise to
+  // somebody, and the chain will still be there in an hour.
+  const RANK: Record<NextUpReason, number> =
+    { 'hard-date': 0, unblocked: 1, resume: 2, pressure: 3, ready: 4, beneath: 5 };
   return items.sort((a, b) => {
     const r = RANK[a.reason] - RANK[b.reason];
     if (r !== 0) return r;

@@ -228,6 +228,12 @@ const REGISTRY = {
   // that way measures the note's label and reports the situation's as covered.
   'situation field': ['#detail-situation', '#detail-situation-group .detail-label',
     '#detail-situation-set', '#detail-situation-hint'],
+  // What this waits for (1.30.0). The state is driven with an anchor actually
+  // SET, because `#detail-after-clear` and `#detail-after-now` only exist once
+  // there is something to stop waiting for — measuring the group empty would
+  // report two controls as covered that the reader never sees measured.
+  'waits for': ['#detail-after', '#detail-after-filter', '#detail-after-group .detail-label',
+    '#detail-after-set', '#detail-after-clear', '#detail-after-now', '#detail-after-hint'],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // Search results — only exist once you have typed, so a state of their own.
   // The summary is the quiet count; the "where" is the held status word, the
@@ -1667,7 +1673,52 @@ try {
     // And the box emptied again, because clearing it is the removal verb and the
     // control has to stay reachable in the state a person removes from.
     await page.fill('#detail-situation', '');
+
     await page.click('#detail-close');
+
+    // WHAT THIS WAITS FOR (1.30.0), with an anchor actually SET. Two of the
+    // group's controls do not exist until there is one, so measuring the group
+    // empty would report them as covered without a reader ever having seen them
+    // measured.
+    //
+    // The card is HUNTED rather than assumed. The sheet above happened to be
+    // open on a Menu wish, which is demand-free — never finished, so the group
+    // is correctly hidden on it — and the first version of this block sat there
+    // waiting thirty seconds for a control the app was right not to show. The
+    // loop opens cards until it finds one that can actually hold an anchor, and
+    // FAILS if none can: a check that quietly passes when it found nothing is
+    // not a check.
+    const cards = await page.locator('#cards .card-open').count();
+    let anchored = false;
+    for (let i = 0; i < Math.min(cards, 8) && !anchored; i++) {
+      await page.locator('#cards .card-open').nth(i).click();
+      await page.waitForSelector('#detail[open]');
+      const usable = await page.evaluate(() => {
+        const g = document.querySelector('#detail-after-group');
+        const opts = document.querySelectorAll('#detail-after option').length;
+        return !!g && !g.hidden && opts > 1;
+      });
+      if (!usable) { await page.click('#detail-close'); continue; }
+      await page.selectOption('#detail-after', { index: 1 });
+      await page.click('#detail-after-set');
+      await page.waitForSelector('#detail-after-now:not([hidden])');
+      await auditContrast(page, 'waits for', theme);
+      await auditAxe(page, 'waits for', theme);
+      await auditNames(page, 'waits for', theme);
+      await auditTargets(page, 'waits for', theme);
+      await auditFocusRings(page, 'waits for', theme, ['#detail-after-set', '#detail-after-clear']);
+      // Put it back, so nothing downstream in the walk inherits an anchor it
+      // did not ask for.
+      await page.click('#detail-after-clear');
+      // `waitForSelector` waits for VISIBLE by default, and a hidden element
+      // never becomes visible — waiting on `[hidden]` waits for something that
+      // cannot happen. Ask the flag directly.
+      await page.waitForFunction(() =>
+        document.querySelector('#detail-after-now')?.hidden === true);
+      await page.click('#detail-close');
+      anchored = true;
+    }
+    if (!anchored) fail(`${theme}: nothing could be waited for — the anchor state went unaudited`);
 
     // Sort mode (1.3.0): the picker over a named range, then the conveyor. The
     // container parented above guarantees an "Everything under…" choice exists,

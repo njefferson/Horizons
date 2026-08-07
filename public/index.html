@@ -733,6 +733,34 @@
     </p>
   </div>
 
+  <!-- WHAT THIS WAITS FOR (1.30.0) — the other kind of anchor, and the only one
+       in the app that is not a date. Within a routine, completing each step IS
+       the cue for the next; a model that recomputes readiness from dates
+       destroys the chain, so the cue has to be the completion itself.
+
+       Not the same control as "What is this part of?" above, and not the same as
+       what it feeds: a parent is WHERE something lives, a dependency is what
+       breaks if it does not happen, and this is what has to finish first. The
+       app used to offer only the first two, so an order of doing things had
+       nowhere to live except a date somebody guessed. -->
+  <div class="detail-group" id="detail-after-group">
+    <label class="detail-label" for="detail-after">Does something have to happen first?</label>
+    <div class="detail-row">
+      <input id="detail-after-filter" type="text" autocomplete="off" spellcheck="false"
+             enterkeyhint="search" placeholder="narrow the list"
+             aria-label="Narrow the list of things to wait for">
+      <select id="detail-after"></select>
+      <button id="detail-after-set" type="button">Wait for that</button>
+      <button id="detail-after-clear" type="button" class="ghost" hidden>Stop waiting</button>
+    </div>
+    <p id="detail-after-now" class="detail-hint" hidden></p>
+    <p id="detail-after-hint" class="detail-hint">
+      This stays out of your way until that one is done, and comes straight back the
+      moment it is. It is not a date and it sets no date. If the thing it waits for
+      is let go, this comes back to you rather than disappearing with it.
+    </p>
+  </div>
+
   <div class="detail-group" id="detail-note-group">
     <label class="detail-label" for="detail-note">Anything to keep with it?</label>
     <textarea id="detail-note" rows="3" autocomplete="off" spellcheck="true"

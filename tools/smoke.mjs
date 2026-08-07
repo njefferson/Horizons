@@ -3932,6 +3932,127 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(offerSituation, situation,
     `the offer shows the situation in the words it was written in ("${offerSituation}")`);
 
+  // --- WHAT HAS TO HAPPEN FIRST (1.30.0) ------------------------------------
+  //
+  // The other kind of anchor, and the only one that is not a date. The claim is
+  // a promise about coverage — "this stays out of your way until that is done,
+  // and comes straight back the moment it is" — so the walk drives BOTH halves
+  // through the app's own controls: it must be absent from the offer while the
+  // antecedent is unfinished, and present the moment it is finished.
+  //
+  // Two fresh items, so neither half can pass by accident on something the walk
+  // did earlier.
+  // Routed with an IN-PAGE polling click rather than `routeOne`. By this point
+  // the inbox holds whatever earlier blocks left in it, so the card in front of
+  // the walk is not necessarily the one just captured, and each queued commit
+  // repaints the action row underneath a locator click. This drains until the
+  // named item is out of triage, which is the condition that actually matters,
+  // and says what it was looking at if it cannot get there.
+  const routeUntilOut = async (title) => {
+    for (let i = 0; i < 40; i++) {
+      if (await tpage.locator('#triage:not([hidden]) .route').count() === 0) return;
+      const card = await tpage.locator('#triage-card').textContent().catch(() => '');
+      const done = await tpage.evaluate(() => {
+        const byText = (t) => [...document.querySelectorAll('#triage-actions .route')]
+          .find(b => (b.textContent || '').includes(t));
+        const next = byText('Next action');
+        if (next) { next.click(); return true; }
+        byText('Hot')?.click();
+        return false;
+      });
+      await tpage.waitForTimeout(140);
+      if (done && (card || '').includes(title)) return;
+    }
+    const prompt = await tpage.locator('#triage-prompt').textContent().catch(() => '');
+    is(false, true, `“${title}” never left triage — the prompt was showing “${prompt}”`);
+  };
+  // Silent early exit was the first version's defect: triage can EMPTY with the
+  // item still unrouted (it is not the only surface that decides what is in
+  // front of you), and the block downstream then passed its "out of the way"
+  // assertion because the item was never offerable in the first place — a check
+  // that passes for the wrong reason.
+  // Asked of the ITEM, through search, not of `#cards`. The card list renders a
+  // bounded slice, so "is it in #cards" answers a question about that slice and
+  // changed answer between two runs that differed in nothing that matters.
+  const assertRouted = async (title) => {
+    await fillSearch(title);
+    await tpage.waitForSelector('#search-results .search-open');
+    await tpage.locator('#search-results .search-open', { hasText: title }).first().click();
+    await tpage.waitForSelector('#detail[open]');
+    const state = await tpage.locator('#detail-state').textContent();
+    is(!/not sorted yet/.test(state || ''), true,
+      `“${title}” is out of the inbox — its sheet reads ${JSON.stringify(state)}`);
+    await tpage.click('#detail-close');
+    await fillSearch('');
+  };
+  // DRAINED FIRST. Capturing into a non-empty inbox means the card in front of
+  // the walk is somebody else's, and the first version of this block routed
+  // whatever was there, ran the inbox dry and left its own two items unsorted —
+  // then passed its "out of the way" assertion because an unsorted item is not
+  // offered to begin with. Draining makes the next card the one just captured.
+  for (let i = 0; i < 60 && await tpage.locator('#triage:not([hidden]) .route').count() > 0; i++) {
+    await tpage.evaluate(() => {
+      const byText = (t) => [...document.querySelectorAll('#triage-actions .route')]
+        .find(b => (b.textContent || '').includes(t));
+      (byText('Next action') ?? byText('Hot'))?.click();
+    });
+    await tpage.waitForTimeout(120);
+  }
+  await tpage.fill('#capture', 'strip the old sealant');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeUntilOut('strip the old sealant');
+  await assertRouted('strip the old sealant');
+  await tpage.fill('#capture', 're-seal the frame');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeUntilOut('re-seal the frame');
+  await assertRouted('re-seal the frame');
+
+  await tpage.locator('#cards .card:has-text("re-seal the frame") .card-open').click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.fill('#detail-after-filter', 'strip the old sealant');
+  await tpage.waitForFunction(() =>
+    [...document.querySelectorAll('#detail-after option')].some(o => /strip the old sealant/.test(o.textContent || '')));
+  await tpage.selectOption('#detail-after', { label: 'strip the old sealant' });
+  await tpage.click('#detail-after-set');
+  await tpage.waitForSelector('#detail-after-now:not([hidden])');
+  is(/Waiting for “strip the old sealant”/.test(await tpage.locator('#detail-after-now').textContent() || ''), true,
+    'the sheet says what it is waiting for, by name');
+  await tpage.click('#detail-close');
+
+  // Half one: it is OUT OF THE WAY. Asserted over the whole offer queue rather
+  // than the head, because "it is not first" and "it is not offered" are
+  // different claims and only the second is the promise.
+  const seenWhileWaiting = await tpage.evaluate(() => {
+    const t = document.querySelector('#nextup-title')?.textContent || '';
+    const behind = [...document.querySelectorAll('#nextup-behind li')].map(li => li.textContent || '');
+    return [t, ...behind].some(x => /re-seal the frame/.test(x));
+  });
+  is(seenWhileWaiting, false, 'while the first step is unfinished, the second is deliberately out of the way');
+
+  // Half two: finishing the antecedent brings it straight back, and the reason
+  // NAMES the thing it follows.
+  // Asserted as OFFERED, not as first. A real date that has already arrived
+  // outranks a freshly unblocked step by design — that is a promise to somebody
+  // else, and the chain will still be there in an hour — and this store carries
+  // several. Cycled with the app's own "Not this", which records nothing.
+  await tpage.locator('#cards .card:has-text("strip the old sealant") .card-done').click();
+  await tpage.waitForTimeout(300);
+  let unblockedWhy = null;
+  for (let i = 0; i < 25 && unblockedWhy === null; i++) {
+    const title = await tpage.locator('#nextup-title').textContent();
+    if (/re-seal the frame/.test(title || '')) {
+      unblockedWhy = await tpage.locator('#nextup-why').textContent();
+      break;
+    }
+    if (await tpage.locator('#nextup-skip').isHidden()) break;
+    await tpage.click('#nextup-skip');
+    await tpage.waitForTimeout(100);
+  }
+  is(unblockedWhy !== null, true,
+    'finishing the first step offers the second — the completion IS the cue');
+  is(/strip the old sealant is done/.test(unblockedWhy || ''), true,
+    `and it says which thing it follows ("${unblockedWhy}")`);
+
   // The record itself: day-grouped, plain words, true totals, honest reveal.
   await tpage.click('#open-about');
   await expandGroups(tpage);

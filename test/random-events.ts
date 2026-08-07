@@ -164,6 +164,12 @@ export function randomEvent(rnd: () => number, s: State, fresh: () => string): A
   if (risk < 0.64) return ev('interrupt.captured', fresh(), { text: 'an interruption', duringFocus: rnd() < 0.5 ? pick() : null });
   if (risk < 0.76) return ev('waiting.closed', pick(), { outcome: 'arrived' });
   if (risk < 0.80) return ev('dependency.released', pick(), { feeds: pick() });
+  // The 1.30.0 anchor, both halves. Drawn against `pick()` on both sides on
+  // purpose: most draws are refusals — already done, demand-free, a loop, the
+  // node itself — and the two admits must agree on WHICH refusal, not merely
+  // that something was refused.
+  if (risk < 0.83) return ev('after.set', pick(), { after: rnd() < 0.9 ? pick() : 'MISSING' });
+  if (risk < 0.86) return ev('after.cleared', pick(), {});
   if (risk < 0.90) return ev('project.role.set', pick(), { role: rnd() < 0.5 ? 'execute' : 'track' });
   // A SHAPE rejection rather than a missing-reference one: every rejection the
   // property saw before came from a `MISSING` id, so the two admits' shape
@@ -189,5 +195,6 @@ export const GENERATED_KINDS: readonly string[] = [
   'replan.resolved', 'clarify.reopened', 'bother.received', 'bother.owned',
   'interrupt.captured', 'waiting.closed', 'dependency.released', 'project.role.set',
   'node.field.set',
+  'after.set', 'after.cleared',
 ];
 

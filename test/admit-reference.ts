@@ -70,6 +70,37 @@ export function admitReference(
       }
     }
 
+    // Mirrors the gate's `after.set` refusals (1.30.0). Written out rather than
+    // shared on purpose — this file exists to be an INDEPENDENT reading of the
+    // rules, so a refusal that only agrees because both sides call the same
+    // helper proves nothing about the refusal.
+    if (e.kind === 'after.set') {
+      const target = (e.payload as { after?: unknown }).after;
+      if (typeof target !== 'string' || !target) {
+        throw new GateRejection('an anchor must name what it waits for', e);
+      }
+      if (!e.node) throw new GateRejection('an anchor must belong to a node', e);
+      if (target === e.node) throw new GateRejection('a thing cannot wait for itself', e);
+      const a = before.nodes.get(target);
+      if (!a || a.trashed || a.mergedInto) {
+        throw new GateRejection(`nothing here to wait for: ${target}`, e);
+      }
+      if (isDemandFree(a.kind)) {
+        throw new GateRejection(
+          `a ${a.kind} is never finished, so nothing would ever come of waiting for it`, e);
+      }
+      if (a.lastDone) {
+        throw new GateRejection('that is already done — this needs a date of its own, not an anchor', e);
+      }
+      const walked = new Set<string>();
+      for (let cur: string | null = target; cur && !walked.has(cur); cur = before.nodes.get(cur)?.after ?? null) {
+        if (cur === e.node) {
+          throw new GateRejection('that would make two things each wait for the other', e);
+        }
+        walked.add(cur);
+      }
+    }
+
     if (e.kind === 'node.parented') {
       const parent = (e.payload as { parent?: unknown }).parent;
       if (typeof parent !== 'string' || !parent) {

@@ -114,6 +114,11 @@ export function deserialiseState(raw: unknown): State {
       // misbehaved — Number.isFinite(undefined) is false and !undefined is
       // true — but the type promised null and delivered undefined.
       leadDays: n.leadDays ?? null,
+      // A pre-1.30.0 snapshot has no anchors, because there was nothing to
+      // record one with. Null, not undefined: clause (e) asks `node.after` on
+      // every coverage check, and the type has to be true for a store written
+      // by an older build or the promise is only true for new data.
+      after: n.after ?? null,
       mergedInto: n.mergedInto ?? null,
       todayFor: n.todayFor ?? null,
       // A pre-1.8.0 snapshot stored no declines — none were standing. COPIED,

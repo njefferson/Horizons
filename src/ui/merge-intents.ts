@@ -89,6 +89,10 @@ export const MERGE_DISPOSITION: Record<keyof NodeState, Disposition> = {
     carry: 'state', via: 'dependency.declared',
     when: 'each downstream the survivor does not already feed, skipped and STATED when it would make two things each wait for the other',
   },
+  after: {
+    carry: 'state', via: 'after.set',
+    when: 'BOTH directions (1.30.0). Forward: the survivor takes the source\'s antecedent when it has none of its own, the antecedent is alive and unfinished, and it is not the survivor — skipped and STATED when it would make two things each wait for the other. Reverse: anything that was waiting for the SOURCE is re-pointed at the survivor, because an anchor at a merged node confers no coverage, so leaving it would make every step of a routine go silent and take a cure clock the moment its predecessor was folded — the chain destroyed by an act that is meant to preserve it. Unlike `feeds`, the reverse edge is OVERWRITTEN rather than added, because an `after` is single-valued; a later split-out therefore leaves the dependent pointing at the survivor, which is a real but smaller loss than a chain that breaks on every fold',
+  },
   leadDays: {
     carry: 'state', via: 'dependency.declared{leadEstimateDays}',
     when: 'with the first carried edge, when the survivor has none. Not carried alone: it means "how long this takes AS A DEPENDENCY", and with nothing downstream there is no dependency for it to qualify',
@@ -224,7 +228,7 @@ export function legalMergeTargets(state: State, n: NodeState): NodeState[] {
 export interface MergePlan {
   events: AppEvent[];
   /** What could not come across, so the confirmation can SAY so. */
-  skipped: { feeds: NodeId[] };
+  skipped: { feeds: NodeId[]; after: NodeId[] };
 }
 
 export function mergePlan(
@@ -386,8 +390,56 @@ export function mergePlan(
     declare(up.id, target.id, null);
   }
 
+  // ── WHAT IT WAITS FOR, and what waits for IT (1.30.0). The same two
+  // directions, and the same reason: an anchor pointing at a merged node
+  // confers no coverage, so a chain folded halfway through would go silent step
+  // by step and be cured into a pile of dateless cards — an act meant to
+  // preserve work destroying the one structure that says what order it goes in.
+  const skippedAfter: NodeId[] = [];
+  // Forward: the survivor takes the source's antecedent only into a silence.
+  if (source.after && !target.after) {
+    const a = state.nodes.get(source.after);
+    const alive = a && !a.trashed && !a.mergedInto && !a.lastDone && source.after !== target.id;
+    if (alive) {
+      // Would it close a loop? Walk forward from the proposed antecedent; the
+      // walk guards itself so a loop already in the store terminates.
+      const walked = new Set<NodeId>();
+      let cur: NodeId | null = source.after;
+      let loops = false;
+      while (cur && !walked.has(cur)) {
+        if (cur === target.id) { loops = true; break; }
+        walked.add(cur);
+        cur = sim.nodes.get(cur)?.after ?? null;
+      }
+      if (loops) skippedAfter.push(source.after);
+      else {
+        const e = base(ctx, 'after.set', target.id, { after: source.after });
+        out.push(e);
+        sim = fold([e], sim);
+      }
+    }
+  }
+  // Reverse: everything that was waiting for the source now waits for the
+  // survivor. Overwritten, not added — an `after` is single-valued.
+  for (const dep of state.nodes.values()) {
+    if (dep.trashed || dep.mergedInto || dep.id === target.id) continue;
+    if (dep.after !== source.id) continue;
+    const walked = new Set<NodeId>();
+    let cur: NodeId | null = target.id;
+    let loops = false;
+    while (cur && !walked.has(cur)) {
+      if (cur === dep.id) { loops = true; break; }
+      walked.add(cur);
+      cur = sim.nodes.get(cur)?.after ?? null;
+    }
+    if (loops) { skippedAfter.push(dep.id); continue; }
+    const e = base(ctx, 'after.set', dep.id, { after: target.id });
+    out.push(e);
+    sim = fold([e], sim);
+  }
+
   out.push(base(ctx, 'node.merged', source.id, { into: target.id }));
-  return { events: out, skipped: { feeds: skippedFeeds } };
+  return { events: out, skipped: { feeds: skippedFeeds, after: skippedAfter } };
 }
 
 /**

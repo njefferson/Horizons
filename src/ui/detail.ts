@@ -27,7 +27,7 @@ import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
-  situationEvents,
+  situationEvents, afterEvents, clearAfterEvents,
   cleanNote, noteEvents, chooseTodayEvents, releaseTodayEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
@@ -77,6 +77,10 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   const feedsList = q('#detail-feeds-list');
   const parentSel = q<HTMLSelectElement>('#detail-parent');
   const parentFilter = q<HTMLInputElement>('#detail-parent-filter');
+  const AFTER = q<HTMLSelectElement>('#detail-after');
+  const afterFilter = q<HTMLInputElement>('#detail-after-filter');
+  const afterClear = q<HTMLButtonElement>('#detail-after-clear');
+  const afterNow = q<HTMLElement>('#detail-after-now');
   const parentCreate = q<HTMLButtonElement>('#detail-parent-create');
   const startInput = q<HTMLInputElement>('#detail-start');
   const estimateInput = q<HTMLInputElement>('#detail-estimate');
@@ -168,6 +172,74 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
       parentCreate.hidden = !offer;
       if (offer) parentCreate.textContent = `New project named “${clean}” — put it under that`;
     }
+  }
+
+  /**
+   * WHAT THIS WAITS FOR (1.30.0). The parent picker's manners, and the write
+   * gate's rules mirrored into what is OFFERED — a control that offers a choice
+   * the gate then refuses is a control that lies about what it does.
+   *
+   * So the list excludes: this node itself; anything already finished, trashed
+   * or merged away; every demand-free kind, which is never "finished" and so
+   * could never fire the cue; and anything that already waits, directly or at
+   * any remove, on this node — that is the loop, and it is walked rather than
+   * checked one step deep, because A after B after C after A is the shape that
+   * gets written by somebody building a routine out of order.
+   */
+  function paintAfter(n: NodeState): void {
+    if (!AFTER) return;
+    const st = session.state();
+    // Does `cand` already wait on `n`, at any remove? The walk guards itself, so
+    // a loop already in the store terminates rather than hanging the render.
+    const waitsOnThis = (cand: NodeState): boolean => {
+      const walked = new Set<string>();
+      let cur: string | null = cand.id;
+      while (cur && !walked.has(cur)) {
+        if (cur === n.id) return true;
+        walked.add(cur);
+        cur = st.nodes.get(cur)?.after ?? null;
+      }
+      return false;
+    };
+    const legal = [...st.nodes.values()]
+      .filter(t => t.id !== n.id && !t.trashed && !t.mergedInto && !t.lastDone)
+      .filter(t => !(DEMAND_FREE_KINDS as readonly string[]).includes(t.kind))
+      // A resume card is a way back into a thread, not a step anything queues
+      // behind, and it spends itself the moment it is picked up.
+      .filter(t => t.kind !== 'resume-card')
+      .filter(t => !waitsOnThis(t))
+      .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
+    const query = normalize(afterFilter?.value ?? '');
+    const shown = query ? legal.filter(t => normalize(t.title || '').includes(query)) : legal;
+    const keep = AFTER.value;
+    AFTER.replaceChildren(...[
+      Object.assign(document.createElement('option'), {
+        value: '',
+        textContent: legal.length === 0 ? 'nothing here it could wait for'
+          : shown.length === 0 ? 'nothing matches that'
+            : 'pick something',
+      }),
+      ...shown.map(t => Object.assign(document.createElement('option'), {
+        value: t.id, textContent: t.title || '(untitled)',
+      })),
+    ]);
+    if (shown.some(t => t.id === keep)) AFTER.value = keep;
+    AFTER.disabled = legal.length === 0;
+
+    // WHAT IT IS WAITING FOR NOW, said plainly — including when the thing it
+    // waits for has since been finished or let go. A standing state the reader
+    // cannot see is the same defect as a clock nobody reads.
+    const a = n.after ? st.nodes.get(n.after) : undefined;
+    if (afterNow) {
+      const words = !n.after ? ''
+        : !a ? 'It was waiting for something that is no longer here, so it has come back to you.'
+          : a.trashed || a.mergedInto ? `“${a.title || '(untitled)'}” was let go, so this has come back to you.`
+            : a.lastDone ? `“${a.title || '(untitled)'}” is done — this is back with you now.`
+              : `Waiting for “${a.title || '(untitled)'}”.`;
+      afterNow.textContent = words;
+      afterNow.hidden = words === '';
+    }
+    if (afterClear) afterClear.hidden = !n.after;
   }
 
   /** The fold-into picker (1.7.0): the parent picker's manners — narrowed as
@@ -493,6 +565,7 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     if (PARENT && PLACE && KIDS) {
       const st = session.state();
       paintParents(n);
+      paintAfter(n);
 
       const place = placeWords(st, n);
       PLACE.textContent = place ?? '';
@@ -623,6 +696,15 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // but `!n.trashed` is the note's own rule and a want on the Menu can still
     // carry "next time I'm in town", which is exactly the cue this is for.
     grp('#detail-situation-group', !n.trashed);
+    // WHAT HAS TO HAPPEN FIRST. Narrower than the note's rule on purpose: a
+    // demand-free kind is covered by being on a surface and is never finished,
+    // so an anchor either way would be inert — the gate refuses one pointing AT
+    // such a kind, and one hung ON such a kind buys nothing. A resume card is a
+    // way back into a thread and spends itself when picked up; queueing behind
+    // it, or queueing it behind something, is a promise neither can keep.
+    grp('#detail-after-group', !n.trashed
+      && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind)
+      && n.kind !== 'resume-card');
     // The meeting furniture (1.9.0, ADR-0057): a container's people and its
     // decisions. Shown for containers off the Menu — and for anything that
     // ALREADY carries one, so a stakeholder or a decision can never become
@@ -836,14 +918,25 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // Built once so the words can name what could not come across. A skip
     // nobody is told about is the silent swallow this release exists to end.
     let skippedFeeds = 0;
+    let skippedAfter = 0;
     void run(ctx => {
       const plan = mergePlan(ctx, session.state(), source, target);
       skippedFeeds = plan.skipped.feeds.length;
+      skippedAfter = plan.skipped.after.length;
       return plan.events;
-    }, () => skippedFeeds === 0
+    }, () => skippedFeeds + skippedAfter === 0
       ? `Folded into “${title}”. Splitting it back out is right below.`
-      : `Folded into “${title}”. One thing it fed could not come across — `
-        + 'that would have made two things each wait for the other.');
+      // Named separately, because they are different losses: one is something it
+      // fed, the other is an order of doing things. A single sentence covering
+      // both would tell you a thing was dropped without telling you which.
+      : skippedFeeds > 0 && skippedAfter === 0
+        ? `Folded into “${title}”. One thing it fed could not come across — `
+          + 'that would have made two things each wait for the other.'
+        : skippedAfter > 0 && skippedFeeds === 0
+          ? `Folded into “${title}”. One thing waiting on it could not be moved across — `
+            + 'that would have made two things each wait for the other.'
+          : `Folded into “${title}”. Something it fed, and something waiting on it, `
+            + 'could not come across — either would have made two things each wait for the other.');
   });
   btn('#detail-unmerge')?.addEventListener('click', () => {
     void run(ctx => unmergeEvents(ctx, current!.id),
@@ -975,6 +1068,22 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   // and files this under it, one gated commit — the gate cures the fresh
   // container with a same-day clock exactly as it cures any creation.
   parentFilter?.addEventListener('input', () => { if (current) paintParents(current); });
+  afterFilter?.addEventListener('input', () => { if (current) paintAfter(current); });
+  btn('#detail-after-set')?.addEventListener('click', () => {
+    if (!AFTER || !current) return;
+    const target = AFTER.value;
+    if (!target) { say('Pick the thing that has to happen first.'); return; }
+    const t = session.state().nodes.get(target);
+    void run(ctx => afterEvents(ctx, current!.id, target),
+      // Says what will happen, not that it was a good idea. The second half is
+      // the part worth saying: it is the promise clause (e) is making.
+      `Waiting for “${t?.title || '(untitled)'}” — it comes back the moment that is done.`);
+  });
+  btn('#detail-after-clear')?.addEventListener('click', () => {
+    if (!current) return;
+    void run(ctx => clearAfterEvents(ctx, current!.id),
+      'No longer waiting — it is back with you now.');
+  });
   parentCreate?.addEventListener('click', () => {
     if (!current || !parentFilter) return;
     const title = cleanTitle(parentFilter.value);

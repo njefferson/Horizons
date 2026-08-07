@@ -160,6 +160,11 @@ export function eventWords(
     case 'waiting.closed': return 'It arrived.';
     case 'dependency.declared': return `Linked — this feeds ${name(p['feeds'])}.`;
     case 'dependency.released': return 'The link was released.';
+    // The record says what was decided, not whether it was wise, and it names
+    // the thing — a log line reading "an anchor was set" tells you nothing you
+    // could act on a month later.
+    case 'after.set': return `Set to wait until ${name(p['after'])} is done.`;
+    case 'after.cleared': return 'No longer waiting for anything.';
     case 'suspense.set': {
       const d = day(p['at']);
       return `An answer owed${d ? ` by ${d}` : ''}.`;

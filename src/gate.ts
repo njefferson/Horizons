@@ -44,8 +44,21 @@ export class GateRejection extends Error {
 const isDemandFree = (k: NodeKind): boolean =>
   (DEMAND_FREE_KINDS as readonly NodeKind[]).includes(k);
 
-/** Law 1's four-way test. A node satisfying none of these is SILENT. */
-export function isSilent(node: NodeState, state: State): boolean {
+/**
+ * Law 1's coverage test. A node satisfying none of these is SILENT.
+ *
+ * Five clauses since 1.30.0: (a) on a surface, (b) under a clock, (c) on the
+ * Menu, (d) parented to something under a clock, and (e) **waiting for
+ * something that will itself be shown to you**.
+ *
+ * `visited` is the recursion guard for clause (e) and is not part of the contract —
+ * callers pass nothing. Clause (e) is the first clause that can ask about
+ * ANOTHER node's coverage rather than about a clock it can see, so a corrupt or
+ * imported log containing a cycle (A after B after A) would otherwise recur
+ * forever. The gate refuses to write one; the fold is a total function over logs
+ * the gate never saw, so this has to hold anyway.
+ */
+export function isSilent(node: NodeState, state: State, visited: Set<NodeId> = new Set()): boolean {
   if (node.trashed) return false;        // an explicit end is a decision, not a silence
   if (node.mergedInto) {
     // Merged means "lives on inside the target" — which is only true if the
@@ -53,7 +66,7 @@ export function isSilent(node: NodeState, state: State): boolean {
     // exist and the old unconditional exemption called it covered; law 1 was
     // being defined away, not enforced.
     const target = survivorOf(state, node);
-    return target ? isSilent(target, state) : true;
+    return target ? isSilent(target, state, visited) : true;
   }
   if (Object.keys(node.clocks).length > 0) return false;   // (b) under a clock
   if (node.onMenu !== null) return false;                  // (c) on the Menu
@@ -71,6 +84,27 @@ export function isSilent(node: NodeState, state: State): boolean {
       if (!cur.parent) break;
       cur = state.nodes.get(cur.parent);
     }
+  }
+  // (e) WAITING FOR SOMETHING THAT WILL ITSELF BE SHOWN TO YOU (1.30.0).
+  //
+  // Every condition below is load-bearing, and each one is a way the promise
+  // "finishing that will surface this" can be false:
+  //
+  //  - the antecedent must EXIST — a dangling id promises nothing;
+  //  - it must not be TRASHED or MERGED AWAY — a thing you ended cannot be
+  //    finished, so nothing will ever fire the cue;
+  //  - it must not ALREADY BE DONE — the cue has fired, and the dependent needs
+  //    a clock of its own now rather than a permanent claim on a past event;
+  //  - and it must not ITSELF BE SILENT, because a chain is only as good as its
+  //    first link. An anchor to something nothing will ever put in front of you
+  //    is silence with paperwork — a clock nobody reads, in a different shape —
+  //    and that is the exact defect stage 1 existed to remove. Conferring
+  //    coverage without this condition would have reintroduced it on the same
+  //    day it was closed.
+  if (node.after && !visited.has(node.id)) {
+    visited.add(node.id);
+    const a = state.nodes.get(node.after);
+    if (a && !a.trashed && !a.mergedInto && !a.lastDone && !isSilent(a, state, visited)) return false;
   }
   return true;
 }
@@ -335,6 +369,13 @@ export function admit(
   // exactly (descendants ∪ merge-dependents), transitively.
   const childIndex = new Map<NodeId, Set<NodeId>>();
   const mergeIndex = new Map<NodeId, Set<NodeId>>();
+  // Who is waiting on whom (1.30.0). Without it, completing an antecedent would
+  // strip its dependents' clause (e) coverage and the gate would never look:
+  // the dirty set is built from the event's own node and what its payload points
+  // at, and a `done.marked` on A does not mention B. The whole-batch belt would
+  // then REJECT the completion rather than cure the dependent — the user's write
+  // lost to enforce a law that has a cure.
+  const afterIndex = new Map<NodeId, Set<NodeId>>();
   for (const n of s.nodes.values()) {
     if (n.parent) {
       let set = childIndex.get(n.parent);
@@ -346,6 +387,11 @@ export function admit(
       if (!set) mergeIndex.set(n.mergedInto, set = new Set());
       set.add(n.id);
     }
+    if (n.after) {
+      let set = afterIndex.get(n.after);
+      if (!set) afterIndex.set(n.after, set = new Set());
+      set.add(n.id);
+    }
   }
 
   /** Apply one admitted event to the accumulator, keeping the indexes true. */
@@ -353,6 +399,7 @@ export function admit(
     const beforeNode = e.node ? s.nodes.get(e.node) : undefined;
     const priorParent = beforeNode?.parent ?? null;
     const priorMerged = beforeNode?.mergedInto ?? null;
+    const priorAfter = beforeNode?.after ?? null;
     // Ids this event could mint: its own node and every payload reference —
     // person.linked creates through payload.node, not e.node.
     const couldMint = [e.node, ...referencedNodes(e)].filter((x): x is NodeId => !!x);
@@ -385,6 +432,15 @@ export function admit(
         set.add(e.node);
       }
     }
+    const newAfter = afterNode?.after ?? null;
+    if (priorAfter !== newAfter) {
+      if (priorAfter) afterIndex.get(priorAfter)?.delete(e.node);
+      if (newAfter) {
+        let set = afterIndex.get(newAfter);
+        if (!set) afterIndex.set(newAfter, set = new Set());
+        set.add(e.node);
+      }
+    }
   };
 
   /** id plus everything whose coverage could ride it, transitively, with a
@@ -400,6 +456,11 @@ export function admit(
       into.add(cur);
       for (const c of childIndex.get(cur) ?? []) stack.push(c);
       for (const m of mergeIndex.get(cur) ?? []) stack.push(m);
+      // …and everything waiting for this to be finished (1.30.0). Transitive by
+      // the same stack: a three-step routine loses its whole tail when the first
+      // step is trashed, and every step of it has to be cured, not just the one
+      // pointing directly at the casualty.
+      for (const a of afterIndex.get(cur) ?? []) stack.push(a);
     }
   };
 
@@ -446,6 +507,54 @@ export function admit(
       if (wouldCycle(s, e.node, feeds)) {
         throw new GateRejection(
           'that would make two things each wait for the other', e);
+      }
+    }
+
+    // AN `after` MUST NAME SOMETHING THAT CAN ACTUALLY BE FINISHED (1.30.0).
+    //
+    // Every refusal here is one way the promise clause (e) makes — "when that is
+    // done, this will be put in front of you" — would be false at the moment it
+    // was written. Coverage that is false on arrival is the defect stage 1
+    // removed; the gate is where it stays removed.
+    if (e.kind === 'after.set') {
+      const target = (e.payload as { after?: unknown }).after;
+      if (typeof target !== 'string' || !target) {
+        throw new GateRejection('an anchor must name what it waits for', e);
+      }
+      if (!e.node) throw new GateRejection('an anchor must belong to a node', e);
+      if (target === e.node) {
+        throw new GateRejection('a thing cannot wait for itself', e);
+      }
+      const a = s.nodes.get(target);
+      if (!a || a.trashed || a.mergedInto) {
+        throw new GateRejection(`nothing here to wait for: ${target}`, e);
+      }
+      // A demand-free kind is covered by being on a surface and is never
+      // "finished" — a person, a named period, a wish on the Menu. Waiting for
+      // one is waiting for an event that cannot occur.
+      if (isDemandFree(a.kind)) {
+        throw new GateRejection(
+          `a ${a.kind} is never finished, so nothing would ever come of waiting for it`, e);
+      }
+      if (a.lastDone) {
+        throw new GateRejection('that is already done — this needs a date of its own, not an anchor', e);
+      }
+      // Cycles, by the same argument the dependency and parent edges make, and
+      // with a harder consequence here: clause (e) asks whether the antecedent
+      // is itself covered, so a loop would be an unbounded coverage question.
+      // `isSilent` guards against one anyway, because the fold has to be total
+      // over logs this gate never saw — but the loop must never be WRITABLE, or
+      // the defence becomes the behaviour.
+      // Walk the chain forward from the proposed antecedent. Reaching this node
+      // closes the loop. The walk has its own guard so a loop ALREADY in the
+      // store (imported, or written by an older build) terminates rather than
+      // hanging the write path — a defensive walk, exactly like `src/tree.ts`.
+      const walked = new Set<NodeId>();
+      for (let cur: NodeId | null = target; cur && !walked.has(cur); cur = s.nodes.get(cur)?.after ?? null) {
+        if (cur === e.node) {
+          throw new GateRejection('that would make two things each wait for the other', e);
+        }
+        walked.add(cur);
       }
     }
 
@@ -600,7 +709,7 @@ export function admit(
 export function referencedNodes(e: AppEvent): NodeId[] {
   const p = e.payload as Record<string, unknown>;
   const out: NodeId[] = [];
-  for (const key of ['parent', 'priorParent', 'into', 'feeds', 'person', 'forNode', 'node', 'anchor']) {
+  for (const key of ['parent', 'priorParent', 'into', 'feeds', 'person', 'forNode', 'node', 'anchor', 'after']) {
     const v = p[key];
     if (typeof v === 'string') out.push(v);
   }
@@ -664,6 +773,18 @@ export function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): Ap
     // the right cure, because both land the node back in the inbox to be sorted.
     case 'clarify.reopened':
     case 'menu.item.removed':
+    // Cutting an anchor withdraws clause (e) coverage, and the same-day clock is
+    // the right cure for the same reason it is right after a lost parent: the
+    // thing is now waiting for nothing, so it goes back to being asked about.
+    //
+    // `after.set` shares this branch as defence in depth. The refusals above
+    // make coverage-loss unreachable on the real write path — the new antecedent
+    // is checked to exist, live, be unfinished and close no loop — so this is
+    // the same shape as the clarify.routed branch below: kept so the invariant
+    // "every silent-risk event carries a cure" stays total rather than
+    // conditionally true.
+    case 'after.set':
+    case 'after.cleared':
       return {
         ...stamp, kind: 'clock.set', node: node.id,
         payload: { clockKind: 'review', at: opts.sameDayClockAt(cause), source: `gate:${cause.kind}` },

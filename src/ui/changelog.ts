@@ -29,6 +29,21 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.30.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-07',
+    notes: [
+      '**Something can now wait for another thing to be finished, instead of for a date.** On any item there is a new question — *“Does something have to happen first?”* — and a list to pick that thing from. Until it is done, this one stays completely out of your way. The moment it is done, this one comes straight back, and it tells you which thing it was waiting for.',
+      '**This is what a date could never do.** Strip the sealant, let the frame dry, re-seal the frame: there are no real dates in that. Inventing three guesses so the app has somewhere to put them makes three small promises that were never true, and then tells you off when they pass. There was nowhere else for an order of doing things to live, so it lived in your head — which is the job Quietkeep is meant to take off you.',
+      '**It is not a date and it sets no date.** Writing one will never put something in front of you and will never make something go quiet.',
+      '**If you let go of the thing it was waiting for, this comes back to you — it does not disappear with it.** A whole sequence comes back, not just the step that pointed at the one you binned. Nothing gets stranded behind something that is never going to happen.',
+      '**If you had parked it until a particular day, that still stands.** Finishing the earlier thing early does not drag a parked item forward. You said not yet, and that holds.',
+      'It refuses anything that could not work: waiting for itself, waiting for something already done, waiting for a person or a wish — neither is ever “finished” — and any loop, however long, where two things would each be waiting for the other.',
+      'You can stop waiting at any time, and then it is an ordinary item again, back with you.',
+      '*Still true and worth knowing:* nothing here counts your chains, scores them, or works out when they will finish.',
+    ],
+  },
+  {
     triplet: '1.29.0',
     kind: 'CAPABILITY',
     date: '2026-08-07',
