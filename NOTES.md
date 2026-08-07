@@ -535,11 +535,50 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**One release is waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0 were
-promoted together on his word 2026-08-06. `staging` carries **1.26.0**.
+**Three releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0 and now
+**1.27.1**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.27.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.27.1**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.27.1 is the first stage of the V2 plan, and none of it is a new capability
+— it is things the app was doing wrongly.**
+
+**Asking the browser to keep your writing had become unreachable.** Skipping the
+welcome, or pressing Escape, marked the storage question answered without ever
+showing it; the panel's own offer was gated on exactly the state that had just
+been made impossible, and the only remaining control sat inside a group that
+ships collapsed. One skip and the app ran evictable for the life of the install,
+silently. The explanation and its button now appear at the top of the ⓘ panel
+whenever the browser has not agreed to keep the store, and go for good once it
+has.
+
+**"Why it works this way" was unreadable on the public site.** Every wrapped
+point was broken in half with its second half stranded below as a paragraph —
+35 of them — and formatting marks printed as text. Its gate could not see it,
+because it only compared the generated page against itself.
+
+**A private worry could be handed to somebody else.** A worry raised inside a
+reporting period was itemised by name, verbatim, in the status report. The kind
+list it should have been on was an enumeration of four nouns found by an earlier
+audit; it is now a total record over the vocabulary, so a new kind cannot compile
+until somebody decides whether it may leave the device.
+
+**Five by-name attributions were live on production** in `public/app.css`, a
+file neither privacy gate read — and widening the file filter alone found
+nothing, because every attribution pattern required a quote mark and none of the
+five had one.
+
+**What to try:** open ⓘ. If this browser has not been asked to keep your
+writing, the explanation and the button are at the top rather than folded away.
+Then *Send to my calendar* — the confirmation no longer promises a reminder
+nobody has watched arrive.
+
+**Still owed by hand, and it now outranks the rest:** V-14. Nobody has ever seen
+an exported alarm fire with Quietkeep closed. The research sweep found that
+during an avoidance episode the calendar export is the only part of the app
+still running, so it carries the whole promise at the moment nothing else does.
 
 **1.27.0 finishes the sentence 1.19.0 started.** A place that comes round now
 says what it is holding — the first few by name, then how many more. "7 under

@@ -29,6 +29,18 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.27.1',
+    kind: 'ITERATION',
+    date: '2026-08-07',
+    notes: [
+      '**Asking this browser to keep your writing is reachable again — and if you ever skipped the welcome, it was not.** Skipping it (or pressing Escape) quietly marked the storage question as already answered, without ever showing it to you. The only place left to ask was a button folded inside “Your data”, so the app could go on running with your writing marked disposable and nothing anywhere offering to fix it.',
+      'The explanation and the button now appear together at the top of the ⓘ panel whenever this browser has not agreed to keep your writing, and they go away for good once it has. Nothing pops up on its own.',
+      '**Why it works this way** — the page explaining the research behind Quietkeep — was unreadable. Every wrapped point had been broken in half, with the second half stranded underneath as its own paragraph, and some formatting marks were showing as text. It reads properly now.',
+      '**Sending something to your calendar no longer promises more than it can.** It used to say the calendar “will remind you at 9am on the day”. Nobody has yet watched an alarm actually arrive with Quietkeep closed, so it now tells you what is in the file — a 9am alarm for that day — and leaves the ringing to your calendar, which is the thing that does it.',
+      '*Still true, and still worth knowing:* Quietkeep never sends notifications, and your calendar is the only thing that can reach you when the app is shut.',
+    ],
+  },
+  {
     triplet: '1.27.0',
     kind: 'CAPABILITY',
     date: '2026-08-06',
