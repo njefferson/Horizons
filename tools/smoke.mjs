@@ -33,11 +33,34 @@ const bad = (m) => { failures.push(m); console.error(`  FAIL  ${m}`); };
 const is = (actual, expected, what) =>
   actual === expected ? ok(`${what}: ${actual}`) : bad(`${what}: got ${JSON.stringify(actual)}, expected ${JSON.stringify(expected)}`);
 
-// The held gauge reads "N held · M silent". Parse M — `.includes('0 silent')` is
-// substring-weak: it is also true for "10 silent" and "100 silent" (audit).
-const silentCount = (gaugeText) => {
-  const m = /·\s*(\d+)\s+silent/.exec(gaugeText || '');
+// The gauge no longer carries a volume count, and "silent" is no longer a word
+// it says. The guarantee is stated in words when it holds and the failure is
+// counted in words when it does not:
+//
+//   holding  → "nothing here has gone quiet · N ready now · see each"
+//   broken   → "N things have gone quiet · see each"
+//
+// Parsed rather than substring-matched, for the reason the previous version of
+// this helper already recorded: `.includes('0 silent')` was also true of "10
+// silent" and "100 silent" (audit). Returning NaN on an unrecognised gauge is
+// deliberate — every `is(silentCount(...), 0, ...)` then FAILS rather than
+// quietly passing, so a future rewording cannot make this check vacuous.
+// The gauge's total moved into the claim it opens. Parsed, and NaN on anything
+// unrecognised so a rewording fails the check rather than making it vacuous.
+const claimedTotal = (countText) => {
+  const t = countText || '';
+  if (/^One thing\b/.test(t)) return 1;
+  const m = /^(\d+) things\b/.exec(t);
   return m ? Number(m[1]) : NaN;
+};
+
+const silentCount = (gaugeText) => {
+  const t = gaugeText || '';
+  if (/\bnothing here has gone quiet\b/.test(t)) return 0;
+  const m = /\b(\d+)\s+things?\s+(?:has|have)\s+gone quiet\b/.exec(t);
+  if (m) return Number(m[1]);
+  if (/\bnothing held yet\b/.test(t)) return 0;
+  return NaN;
 };
 
 const { server, url } = await serve(ROOT);
@@ -976,7 +999,11 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // the gauge counting trashed nodes the list omits.
   const rows = await tpage.locator('.coverage-item').count();
   const gaugeText = await tpage.locator('#gauge').textContent();
-  const claimed = Number((gaugeText || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  // The count moved OFF the gauge and INTO the thing the gauge opens: an
+  // aggregate on the landing surface is a number that only rises, and this one
+  // is answering a question the reader just asked. Same invariant, read from
+  // where it is now stated.
+  const claimed = claimedTotal(await tpage.locator('#coverage-count').textContent());
   is(rows, claimed, `the list itemises exactly what the gauge claims ("${gaugeText}" -> ${rows} rows)`);
   is((await tpage.locator('.coverage-when').first().textContent())?.length > 0, true,
     'and each row states its return in words');
@@ -1071,7 +1098,10 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // Nothing went silent — `silent` runs over EVERY node, and excluding a kind
   // from a proof is how law 1 gets defined away (the merged-node finding of the
   // 1.3.1 audit, restated for the journal in ADR-0061).
-  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+  // Through the helper, not a substring: these three hand-rolled `/0 silent/`
+  // and were exactly the weakness the helper's own comment records — that test
+  // is also true of "10 silent" and "100 silent".
+  is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'and nothing went silent');
   // And the gauge's TOTAL does not move either. This assertion is the reverse of
   // what it said in 1.15.0, where it read `!== gaugeBefore` — the gauge counted
@@ -1090,7 +1120,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   if (!gaugeWasOpen) { await tpage.click('#gauge'); await tpage.waitForSelector('#coverage:not([hidden])'); }
   const loadRows = await tpage.locator('.coverage-item').count();
   const loadGauge = await tpage.locator('#gauge').textContent();
-  is(loadRows, Number((loadGauge || '').match(/^(\d+) held/)?.[1] ?? NaN),
+  is(loadRows, claimedTotal(await tpage.locator('#coverage-count').textContent()),
     `the list still itemises exactly what the gauge claims, with a weight on ("${loadGauge}")`);
   is((await tpage.locator('#coverage').textContent() || '').includes('the thing with the roof'), false,
     'and the weight is not one of the rows');
@@ -1111,7 +1141,10 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // facts, and the trash view is the way back.
   is(await tpage.locator('#gauge').textContent(), gaugeBefore,
     'settled, and the gauge is exactly where this section found it');
-  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+  // Through the helper, not a substring: these three hand-rolled `/0 silent/`
+  // and were exactly the weakness the helper's own comment records — that test
+  // is also true of "10 silent" and "100 silent".
+  is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'with nothing silent');
   await tpage.click('#load-summary');
 
@@ -1210,7 +1243,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
 
   // The list must never drop something it is holding: rows === the gauge's number.
   const rowCount = await tpage.locator('#cards .card').count();
-  const gaugeClaim = Number((await tpage.locator('#gauge').textContent() || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  const gaugeClaim = claimedTotal(await tpage.locator('#coverage-count').textContent());
   is(rowCount, gaugeClaim, `every held item is shown (${rowCount} rows vs "${gaugeClaim} held")`);
 
   console.log('\nThe todo list — tick something off without opening it');
@@ -1409,7 +1442,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // The list must still hold EVERYTHING — the sum of its groups is what the
   // gauge counts, so a new group must not become a way to drop things.
   const rowsNow = await tpage.locator('#cards .card').count();
-  const claimNow = Number((await tpage.locator('#gauge').textContent() || '').match(/^(\d+) held/)?.[1] ?? NaN);
+  const claimNow = claimedTotal(await tpage.locator('#coverage-count').textContent());
   is(rowsNow, claimNow, `nothing vanished into the new group (${rowsNow} rows vs "${claimNow} held")`);
 
   // A passed hard date must still reach the calendar. This is the regression
@@ -2983,7 +3016,7 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     'nor as a row in the claim the gauge invites you to open');
   const jRows = await tpage.locator('.coverage-item').count();
   const jGauge = await tpage.locator('#gauge').textContent();
-  is(jRows, Number((jGauge || '').match(/^(\d+) held/)?.[1] ?? NaN),
+  is(jRows, claimedTotal(await tpage.locator('#coverage-count').textContent()),
     `and the number still equals its own list with an entry written ("${jGauge}")`);
   if (!jWasOpen) await tpage.click('#gauge');
 
@@ -4448,7 +4481,10 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // silent-node problem the whole deferral was about.
   is(await tpage.locator('#gauge').textContent(), gaugeBeforeAnchor,
     'naming a period changed nothing about what you are holding');
-  is(/0 silent/.test(await tpage.locator('#gauge').textContent() || ''), true,
+  // Through the helper, not a substring: these three hand-rolled `/0 silent/`
+  // and were exactly the weakness the helper's own comment records — that test
+  // is also true of "10 silent" and "100 silent".
+  is(silentCount(await tpage.locator('#gauge').textContent()), 0,
     'and nothing went silent — which is why this could not ship before');
 
   // It comes round, and the report can then cut there.

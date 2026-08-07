@@ -71,6 +71,9 @@ export function mountWork(
   const chips = q('#upkeep-chips');
   const gauge = q<HTMLButtonElement>('#gauge');
   const coverage = q('#coverage');
+  // Optional, like every other handle here: a missing element costs the panel
+  // nothing rather than taking the surface down.
+  const coverageCount = q('#coverage-count');
   if (!region || !heading || !title || !why || !doneBtn || !skipBtn || !count ||
       !behind || !live || !upkeepRegion || !chips || !gauge || !coverage) {
     return { refresh() {} };
@@ -259,6 +262,7 @@ export function mountWork(
   GAUGE.addEventListener('click', () => {
     const open = COVERAGE.hidden;
     COVERAGE.hidden = !open;
+    if (coverageCount) coverageCount.hidden = !open;
     GAUGE.setAttribute('aria-expanded', String(open));
     // Built at the moment of opening, not before — see buildCoverage.
     if (open) buildCoverage();
@@ -439,9 +443,27 @@ export function mountWork(
     // away per keystroke-adjacent repaint, for a list nobody was looking at
     // (audit, measured). The gauge's click handler builds it at the moment of
     // opening, and refresh keeps it live only while open.
+    // THE CLAIM IS ALWAYS CURRENT, even while it is hidden. The rows are built
+    // only on open — at 1,429 held things, rebuilding them hidden on every
+    // repaint is ~4,300 DOM elements thrown away for a list nobody is looking
+    // at (audit, measured) — but one string is free, and a count that only
+    // refreshes on open is a count that can be STALE the moment it is read,
+    // which is worse than absent. Same `heldWork` set the rows come from.
+    paintCoverageCount();
     if (!COVERAGE.hidden) buildCoverage();
     // The tree obeys the same rule, for the same measured reason.
     if (treeList && !treeList.hidden) buildTree();
+  }
+
+  /** How many the claim holds, stated where the reader asked for it. The gauge
+   *  itself no longer carries a total: an aggregate on the landing surface is a
+   *  number that only rises, and this one answers a question just asked. */
+  function paintCoverageCount(): void {
+    if (!coverageCount) return;
+    const n = heldWork(session.state()).length;
+    coverageCount.textContent = n === 1
+      ? 'One thing, and when it comes back:'
+      : `${n} things, and when each comes back:`;
   }
 
   /** The gauge's claim, itemised and checkable. Reads `heldWork` — the same

@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.28.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-07',
+    notes: [
+      '**When an area or a goal comes round, Quietkeep now offers you something to actually do inside it.** Before today it put the area itself in your list, said what it was holding, and then answered “what now” with nothing — a thing was ready and the one surface that tells you what to pick stayed silent. It now offers the work underneath, and says which one asked: “Home came round.”',
+      'It only does this when nothing else is asking. An area with two hundred things under it will never dump two hundred things in front of you; the moment anything is genuinely due, the area waits its turn.',
+      'You are never handed the area itself. Areas and goals are places to look from, not things to tick off.',
+      '**Something you said “not now” to comes back on its day again.** A declined request or a parked worry with a return date had been reaching that date and then just sitting in *Later*, reading “back now”, where nothing would draw your eye to it. It now moves up into what is back — quietly. It is still never put at the top of your work, because you already said no to it once.',
+      '**The line above your list has stopped counting at you.** It used to open with how many things you were holding — a number that only ever goes up, and the first thing you saw. It now says the thing that is actually the promise: **nothing here has gone quiet.** How many, and when each one comes back, is one tap away in the list it opens — where you asked for it.',
+      'If anything ever *does* go quiet, that line says so first and says how many. A promise with an exception you cannot see is not a promise.',
+    ],
+  },
+  {
     triplet: '1.27.1',
     kind: 'ITERATION',
     date: '2026-08-07',

@@ -515,10 +515,40 @@ function render(session: Session, openDetail?: (n: NodeState) => void, onDone?: 
   // headings deliberately carry no counts (a heading is not a score), so the
   // gauge is the honest place: it is already where numbers live, and it already
   // opens into the list that backs them.
+  // THE VOLUME COUNT IS GONE, AND IT WAS THE LOUDEST THING ON THE SCREEN.
+  //
+  // This read `${total} held · ${readyNow} ready now · ${silent} silent · see
+  // each`, leading with a number that only rises. Three separate findings land
+  // on that one string: an aggregate is what converts a fact about a thing into
+  // a fact about YOU (the guilt/shame distinction — "that date was four days
+  // ago" is about a date, "72 dates have gone by" is about a person); a number
+  // that never falls is a nag rather than information, which the badge comment
+  // eight lines below already says in those words about the icon; and a held set
+  // rendered as a countable batch is what makes a good day a clearing spree, so
+  // a backlog you cannot count is a backlog you cannot decide to clear.
+  //
+  // WHAT REPLACES IT IS THE GUARANTEE, WHICH IS THE PRODUCT. The anxiety this
+  // app exists to answer is not forgetting — it is that you cannot audit your
+  // own coverage from the inside, so you never know what you are NOT thinking
+  // of. Only a promise about the CONTAINER answers that, and it has to be
+  // checkable cheaply, at any moment. That promise is law 1, enforced at the
+  // write boundary, and it was third in a line behind two counts, in a word the
+  // app never defined anywhere: "silent" appeared in no user-facing copy at all.
+  //
+  // `ready now` STAYS, and not for symmetry. It is the number on the app icon,
+  // and the badge is unexplained without a surface that says it — a red 1 on a
+  // home screen with no 1 to be found inside is the one thing this app must
+  // never be. It is also the only count here that moves in both directions.
+  //
+  // The failure state is loud, because a guarantee with an exception does not
+  // degrade gracefully — it collapses. So a non-zero `silent` says so first, in
+  // words, and the total is genuinely the information in that one case.
   $('#gauge').textContent =
     total === 0
       ? 'nothing held yet'
-      : `${total} held · ${readyNow} ready now · ${silent} silent · see each`;
+      : silent > 0
+        ? `${silent} ${silent === 1 ? 'thing has' : 'things have'} gone quiet · see each`
+        : `nothing here has gone quiet · ${readyNow} ready now · see each`;
 
   // T0's badge (ADR-0007): how many things are actually asking, on the app icon,
   // so a glance at the home screen is informative without opening anything.

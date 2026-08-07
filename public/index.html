@@ -433,6 +433,13 @@
        every item and the date it comes back. -->
   <button id="gauge" class="gauge" type="button" aria-expanded="false"
           aria-controls="coverage"></button>
+  <!-- HOW MANY, ONLY ONCE YOU HAVE ASKED. The gauge itself used to lead with
+       "N held" — an aggregate, on the landing surface, that only ever rises.
+       The number is still true and still checkable; it just belongs to the act
+       of opening the claim rather than to the act of opening the app. Outside
+       the <ul> because a list may only contain list items — the same axe rule
+       that caught a stray note inside a <dl>. -->
+  <p id="coverage-count" class="coverage-count" hidden></p>
   <ul id="coverage" class="coverage" hidden></ul>
 
   <!-- The alignment tree, ON REQUEST (1.6.0 — build-plan item 39, ADR-0013).

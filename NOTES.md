@@ -535,12 +535,43 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Three releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
-were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0 and now
-**1.27.1**.
+**Four releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1 and
+now **1.28.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.27.1**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.28.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.28.0 is stage 1 of the V2 plan: making "nothing has gone quiet" mean
+"and you will be shown it".**
+
+**Law 4 pushes down now.** An area whose review had come round appeared in the
+list holding a project holding an action — and Next up was EMPTY. The app
+answered "what now" with silence while its own list said something was ready.
+It now offers the work beneath the horizon and names which horizon asked. Bounded
+by being a fallback: it fires only when nothing else is asking, so a container
+with two hundred descendants can never become the pile.
+
+**A park that has come round stops being held away.** A declined request reached
+its return date and went on sitting in *Later* reading "back now" — the group for
+things with nothing asking. It moves into what is back, and deliberately not into
+the offer: putting a thing you declined at the top of the work surface is the app
+not believing you.
+
+**The gauge stopped leading with a number that only rises.** It said "N held"
+first; it now says *nothing here has gone quiet*, which is the guarantee and the
+only thing that answers the actual anxiety. The total moved into the list the
+gauge opens, where it answers a question you just asked. A non-zero silent count
+still says so first, and loudly.
+
+**What was NOT changed, and why it is worth recording.** The audit said this
+stage should widen `isAppClock` to every `gate:` source. Verified against the
+fold instead: that was tried once before and broke Menu promotion and resume
+cards, and widening it would have made hundreds of real items silent in practice
+— the exact defect this stage removes. The offer-never-changes symptom is real
+and reproducible, but its cause is the `ready` tier's tie-break, and for a static
+store that is determinism working. The part you actually feel is Q-12, and it is
+yours.
 
 **1.27.1 is the first stage of the V2 plan, and none of it is a new capability
 — it is things the app was doing wrongly.**

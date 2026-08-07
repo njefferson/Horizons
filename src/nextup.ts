@@ -32,7 +32,7 @@ import { dependencyView, dependencyWords } from './dependencies.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
  *  channel of B-01, and the honest answer to "why am I being shown this?". */
-export type NextUpReason = 'hard-date' | 'resume' | 'pressure' | 'ready';
+export type NextUpReason = 'hard-date' | 'resume' | 'pressure' | 'ready' | 'beneath';
 
 export interface NextUpItem {
   node: NodeState;
@@ -173,6 +173,30 @@ const arrivedClock = (n: NodeState, nowIso: string, zone: string): boolean =>
     calendarDaysBetween(nowIso, c.at, zone) <= 0);
 
 /**
+ * The nearest ancestor whose own demanding clock has come round, or null.
+ *
+ * Cycle-guarded like every ancestor walk here — the gate keeps the parent graph
+ * acyclic and a shard can still deliver two halves of a loop neither device
+ * wrote whole (ADR-0035/0038).
+ *
+ * NEAREST, not any: a leaf under a project under an area names the thing that
+ * actually asked for it. `arrivedClock` is reused rather than reimplemented, so
+ * a gate cure still cannot make a horizon "arrive" and `park` is still excluded.
+ */
+function arrivedAncestor(
+  state: State, n: NodeState, nowIso: string, zone: string,
+): NodeState | null {
+  const seen = new Set<string>([n.id]);
+  let cur = n.parent ? state.nodes.get(n.parent) : undefined;
+  while (cur && !seen.has(cur.id)) {
+    seen.add(cur.id);
+    if (!cur.trashed && !cur.mergedInto && arrivedClock(cur, nowIso, zone)) return cur;
+    cur = cur.parent ? state.nodes.get(cur.parent) : undefined;
+  }
+  return null;
+}
+
+/**
  * Is any ancestor a project someone else is executing?
  *
  * Bounded by a seen set, like every other ancestor walk in this codebase: the
@@ -272,7 +296,46 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     // Not yet asking for anything. Correct outcome: it stays quiet.
   }
 
-  const RANK: Record<NextUpReason, number> = { 'hard-date': 0, resume: 1, pressure: 2, ready: 3 };
+  // A HORIZON THAT HAS COME ROUND PUSHES DOWN — law 4's other half.
+  //
+  // Product law 4 is "levels push down; the user never climbs — the runway is
+  // the only workspace", and half of it was built: an area or a goal is in
+  // NOT_ACTIONABLE, so it is never offered and never carries a Done button.
+  // The push-down half was not. Verified by running the fold: an area whose
+  // review has passed, holding a project, holding an action, produces the area
+  // in the held list's "Ready now" saying "Holding Kitchen", the action in
+  // "Later" reading "held" — and this queue EMPTY. The app answered "what now"
+  // with silence while its own list said something was ready.
+  //
+  // The item is not silent — its ancestor really does surface and really does
+  // name what it holds — so this is not law 1 failing. It is a return that
+  // stops one level short of anything a person can act on.
+  //
+  // BOUNDED BY BEING A FALLBACK, and that is the whole of the restraint. An
+  // area with two hundred descendants coming round must not put two hundred
+  // things in this queue; that is the pile, arriving on a schedule, which is
+  // what law 8 exists to prevent. So this tier is computed ONLY when nothing
+  // else is asking — the honest reading of an empty offer beside a ready
+  // horizon. When anything else is asking, the horizon waits its turn.
+  if (items.length === 0) {
+    for (const n of state.nodes.values()) {
+      if (!isCandidate(n, nowIso, zone)) continue;
+      if (n.kind !== 'waiting-for' && n.kind !== 'upkeep' && underTrackedProject(state, n)) continue;
+      const host = arrivedAncestor(state, n, nowIso, zone);
+      if (!host) continue;
+      items.push({
+        node: n, reason: 'beneath', pressure: pressureOf(n, nowIso, zone),
+        // Names the horizon that asked, because an offer with no stated warrant
+        // is the anxiety this app exists to answer: you cannot check what you
+        // are not being shown, so the one thing shown has to say why it is here.
+        words: `${host.title || 'something'} came round`,
+        place: lineageOf(state, n),
+        approach: approachOf(state, n, nowIso, zone),
+      });
+    }
+  }
+
+  const RANK: Record<NextUpReason, number> = { 'hard-date': 0, resume: 1, pressure: 2, ready: 3, beneath: 4 };
   return items.sort((a, b) => {
     const r = RANK[a.reason] - RANK[b.reason];
     if (r !== 0) return r;

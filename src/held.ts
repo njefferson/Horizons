@@ -49,7 +49,29 @@ function soonestDemand(n: NodeState, zone: string, nowIso: string): { days: numb
   // App clocks excluded too, and for the same reason `park` is: a gate cure is not
   // a demand. It exists so nothing goes silent, and reading it as "ready" made
   // every undated thing claim a place in today.
-  return soonestClock(n, zone, nowIso, false, false);
+  const demand = soonestClock(n, zone, nowIso, false, false);
+  if (demand) return demand;
+
+  // A PARK THAT HAS COME ROUND IS NO LONGER HOLDING ANYTHING AWAY.
+  //
+  // The exclusion above is right while the park is in the future — that is the
+  // whole meaning of parking something, and ADR-0056 says a declined request
+  // "comes back on its own day, quietly". The day arriving is when it stops
+  // being held away, and nothing noticed: verified by running the fold, a park
+  // whose returnAt had passed by a month read "back now" while sitting in
+  // "Later" — the group for things with nothing asking — offered nowhere and
+  // raising no card. The ledger's own promise, unkept, for every declined
+  // request and every routed worry the gate parks.
+  //
+  // QUIETLY IS THE WORD THAT MATTERS. This moves the row into the group that
+  // means something is back; it does NOT make it an offer. `nextup.ts` still
+  // excludes park from `arrivedClock`, because putting a thing you declined at
+  // the top of the work surface is the app not believing you — which is the one
+  // failure the Not Now ledger exists to prevent.
+  const park = n.clocks.park;
+  if (!park || !isValidIso(park.at)) return null;
+  const days = calendarDaysBetween(nowIso, park.at, zone);
+  return days <= 0 ? { days, at: park.at } : null;
 }
 
 /**
@@ -218,6 +240,17 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
   // differently — and it asks the WHOLE question rather than relying on the
   // branches above to have filtered first.
   if (raisesReplanCard(n, nowIso, zone)) return 'needs a new plan';
+  // A RETURNED PARK KEEPS ITS OWN WORD. `soonestDemand` now counts a park whose
+  // day has arrived, so the row moves into "Ready now" where a person will see
+  // it — but "ready now" is the wrong sentence about a thing you declined. It
+  // came BACK; whether it is ready is the question you are being handed, not an
+  // answer the app should give you. Asked before the demand branch so the more
+  // precise word wins, in the same order-matters way as every guard above.
+  {
+    const park = parkedUntil(n);
+    if (park && calendarDaysBetween(nowIso, park, zone) <= 0
+      && soonestClock(n, zone, nowIso, false, false) === null) return 'back now';
+  }
   const soon = soonestDemand(n, zone, nowIso);
   if (soon === null) {
     // Nothing is demanding it — but a park is still a return date, and saying

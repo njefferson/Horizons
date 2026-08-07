@@ -287,7 +287,11 @@ const REGISTRY = {
   // replaced by the step once one exists — two open invitations to name a first
   // step is a second decision on a surface built to hold one.
   'first step named': ['#nextup-bite', '#nextup-bite-done', '#nextup-done', '.nextup-title'],
-  'coverage open': ['#gauge', '.coverage-title', '.coverage-when', '.coverage-open'],
+  // `#coverage-count` is where the held total lives now. It came OFF the gauge —
+  // an aggregate on the landing surface is a number that only rises — and into
+  // the thing the gauge opens, where it answers a question the reader just
+  // asked. New surface, registered in the same commit that created it.
+  'coverage open': ['#gauge', '#coverage-count', '.coverage-title', '.coverage-when', '.coverage-open'],
   // The tree, open (1.6.0, ADR-0013/item 39): rows are doors, depth is
   // indentation, and the branch remainder is a real button.
   'tree open': ['#tree-open', '.tree-open-row', '.tree-title'],
