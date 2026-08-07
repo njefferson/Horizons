@@ -14,6 +14,15 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.30.2 — ITERATION
+
+*2026-08-07*
+
+- **Filing something into a place no longer throws away its dates.** Putting “renew the insurance” into a place deleted its due date and, worse, deleted the date you had promised somebody else — both silently, in the same moment you filed it. Nothing told you, and nothing anywhere would have shown you it had gone.
+- **Filing says where a thing lives. It was never meant to say when.** The place answers *when* for everything that has no date of its own, which is nearly everything. Something that already has a real date says when by itself, and it keeps saying it.
+- The one thing filing still clears is Quietkeep’s own bookkeeping — the same-day reminder it adds so nothing can go quiet while you are deciding. Keeping that as well as the place’s would leave a thing filed and still pestering you tomorrow.
+- This applies whether you file into a place that already exists or one you name on the spot. They were the same act with two different answers, decided by whether the folder happened to exist yet.
+
 ## 1.30.1 — ITERATION
 
 *2026-08-07*

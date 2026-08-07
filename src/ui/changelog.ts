@@ -29,6 +29,17 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.30.2',
+    kind: 'ITERATION',
+    date: '2026-08-07',
+    notes: [
+      '**Filing something into a place no longer throws away its dates.** Putting “renew the insurance” into a place deleted its due date and, worse, deleted the date you had promised somebody else — both silently, in the same moment you filed it. Nothing told you, and nothing anywhere would have shown you it had gone.',
+      '**Filing says where a thing lives. It was never meant to say when.** The place answers *when* for everything that has no date of its own, which is nearly everything. Something that already has a real date says when by itself, and it keeps saying it.',
+      'The one thing filing still clears is Quietkeep’s own bookkeeping — the same-day reminder it adds so nothing can go quiet while you are deciding. Keeping that as well as the place’s would leave a thing filed and still pestering you tomorrow.',
+      'This applies whether you file into a place that already exists or one you name on the spot. They were the same act with two different answers, decided by whether the folder happened to exist yet.',
+    ],
+  },
+  {
     triplet: '1.30.1',
     kind: 'ITERATION',
     date: '2026-08-07',

@@ -535,12 +535,39 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Seven releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Eight releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0 and now **1.30.1**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1 and now **1.30.2**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.1**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.2**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.30.2 is the second item of stage 3: filing destroyed dates.**
+
+Reproduced against the real gate before anything was changed. Filing "renew the
+insurance" under a place emitted `clock.cleared` for `review`, `due` AND
+`suspense` — the callers pass `clocksOf`, which is every clock, and the intent
+cleared all of them. A `suspense` is a promise to another person; filing does not
+cancel it, and nothing recorded that it had gone.
+
+The old comment had the right worry and the wrong scope. What must not survive
+filing is the CAPTURE CURE — the same-day `review` the gate mints so a node
+cannot be silent — because the place's clock covers it now and keeping both is
+filed-and-still-pestering-you-tomorrow. `SHED_ON_FILE` is a set of exactly that
+one kind, written as a shed-list rather than a keep-list on purpose: a new clock
+kind is far likelier to be a date somebody set than a second piece of app
+bookkeeping, so anything unlisted SURVIVES.
+
+Both filing paths carry it. `fileUnderNewEvents` does not call
+`fileUnderEvents`, so a filter in one of them would have meant the same act
+having two answers, decided by whether the folder happened to exist yet.
+
+**Still owed in stage 3:** someday/reference shedding a date is unavoidable (the
+Menu is demand-free by law 6) but must be SAID rather than done silently; undo
+does not restore what a route cleared; the standing passed-dates range; the
+record-nothing "Not this one" on the replan card; persistent, never-timed undo;
+a release verb that is neither done nor deleted; and putting a whole place down
+at once.
 
 **1.30.1 is the first item of stage 3: the amnesty moved zero of four.**
 

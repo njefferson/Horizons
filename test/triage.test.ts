@@ -260,6 +260,53 @@ test('UNDOING a file takes it out of the place, not just out of the route', () =
   assert.equal(silentNodes(s).length, 0, 'and the gate re-covered it on the way');
 });
 
+test('filing keeps every date a person set, and sheds only the app\'s own', () => {
+  // THE DEFECT, reproduced against the real gate: filing cleared EVERY clock
+  // the caller passed, and the callers pass `clocksOf` — all of them. So filing
+  // "renew the insurance" under a place deleted its due date AND its suspense,
+  // silently, in the same commit that filed it.
+  //
+  // A suspense is a promise to ANOTHER PERSON. Putting the item in a folder does
+  // not cancel it, and nothing anywhere would have told you it had gone.
+  let s = capture(emptyState(), 'N', 'a thing');
+  s = write(s, fileUnderNewEvents(ctx(), 'N', 'the roof job', clocksOf(s.nodes.get('N'))));
+  const placeId = s.nodes.get('N')!.parent!;
+
+  s = capture(s, 'D', 'renew the insurance');
+  s = write(s, [raw('clarify.routed', 'D', { route: 'next-action' })]);
+  s = write(s, [raw('clock.set', 'D', { clockKind: 'due', at: '2026-09-01T12:00:00.000Z', source: 'detail:due' })]);
+  s = write(s, [raw('suspense.set', 'D', { at: '2026-08-25T12:00:00.000Z' })]);
+  s = write(s, [raw('clock.set', 'D', { clockKind: 'start', at: '2026-08-20T12:00:00.000Z', source: 'detail:start' })]);
+  const before = s.nodes.get('D')!.clocks;
+  assert.ok(before['review'], 'fixture: the capture cure is on it');
+
+  s = write(s, fileUnderEvents(ctx(), 'D', placeId, clocksOf(s.nodes.get('D'))));
+  const after = s.nodes.get('D')!.clocks;
+  assert.equal(after['due']?.at, '2026-09-01T12:00:00.000Z', 'the due date survived being filed');
+  assert.equal(after['suspense']?.at, '2026-08-25T12:00:00.000Z',
+    'and so did the promise to somebody else');
+  assert.equal(after['start']?.at, '2026-08-20T12:00:00.000Z', 'and the not-before');
+  assert.equal(after['review'], undefined,
+    'the capture cure DID go — the place answers when now, and keeping both is filed-and-still-pestering-you');
+  assert.equal(s.nodes.get('D')!.route, 'filed');
+  assert.equal(silentNodes(s).length, 0);
+});
+
+test('filing under a NEW place keeps them too — the same act cannot have two answers', () => {
+  // `fileUnderNewEvents` does not call `fileUnderEvents`, so a filter written in
+  // only one of them would mean filing under a new place still destroyed dates
+  // while filing under an existing one no longer did, decided by whether the
+  // folder happened to exist yet.
+  let s = capture(emptyState(), 'D', 'renew the insurance');
+  s = write(s, [raw('clarify.routed', 'D', { route: 'next-action' })]);
+  s = write(s, [raw('clock.set', 'D', { clockKind: 'due', at: '2026-09-01T12:00:00.000Z', source: 'detail:due' })]);
+  s = write(s, fileUnderNewEvents(ctx(), 'D', 'the roof job', clocksOf(s.nodes.get('D'))));
+  assert.equal(s.nodes.get('D')!.clocks['due']?.at, '2026-09-01T12:00:00.000Z',
+    'the due date survived being filed into a place that did not exist yet');
+  assert.equal(s.nodes.get('D')!.clocks['review'], undefined);
+  assert.equal(silentNodes(s).length, 0);
+});
+
 test('filing refuses the two shapes that would corrupt the tree', () => {
   const c = ctx();
   assert.deepEqual(fileUnderEvents(c, 'N', 'N'), [], 'nothing may be its own place');

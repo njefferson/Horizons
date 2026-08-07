@@ -210,6 +210,16 @@ export function undoRouteEvents(
  * No clock is set on the ITEM. Filing is not scheduling, and inventing a date
  * here would be the app deciding something the reader did not say.
  */
+/**
+ * The only clock filing may take away: the gate's own coverage cure.
+ *
+ * A SET rather than a "keep these" list, deliberately. A new clock kind is far
+ * likelier to be a date somebody set than a second piece of app bookkeeping, so
+ * the safe default for anything unlisted is SURVIVES — the opposite of the
+ * default that destroyed two dates per filing.
+ */
+const SHED_ON_FILE: ReadonlySet<ClockKind> = new Set<ClockKind>(['review']);
+
 export function fileUnderEvents(
   ctx: StampContext, node: string, parent: string,
   clocksToClear: readonly ClockKind[] = [], priorParent?: string | null,
@@ -222,13 +232,26 @@ export function fileUnderEvents(
     // other order would make the gate write a junk same-day clock between the
     // two, which is the trap the someday/reference branch documents above.
     base(ctx, 'node.parented', node, { parent, ...(priorParent ? { priorParent } : {}) }),
-    // A FILED thing must stop asking on its own — EVERY clock, not just the
-    // demand ones. The capture cure sets a `review` clock, which `demandClocksOf`
-    // deliberately excludes, so clearing only demand kinds left the item riding
-    // BOTH its own same-day review and the place's: filed, and still pestering
-    // you tomorrow. Filing says where; the place's clock says when. One answer
-    // each, and `clocksOf` is what the callers pass.
-    ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
+    // A filed thing sheds the app's OWN bookkeeping clock and NOTHING ELSE.
+    //
+    // This used to clear every clock the caller passed, and the callers pass
+    // `clocksOf` — all of them. Filing "renew the insurance" under Kitchen
+    // therefore deleted its due date of the 1st AND a suspense of the 25th,
+    // silently, in the same commit that filed it. A suspense is a promise to
+    // ANOTHER PERSON; putting the item in a folder does not cancel it, and the
+    // log kept no way to notice it had gone.
+    //
+    // The old comment had the right worry and the wrong scope. What must not
+    // survive filing is the CAPTURE CURE — a same-day `review` the gate minted
+    // so the node would not be silent — because the place's own clock covers it
+    // now and keeping both means filed-and-still-pestering-you-tomorrow. A date
+    // a PERSON set is not bookkeeping and is not the app's to drop.
+    //
+    // Filed still means "the place says when" for everything with no date of its
+    // own, which is nearly all of it. An item that has a real date says when by
+    // itself, and always did.
+    ...clocksToClear.filter(k => SHED_ON_FILE.has(k))
+      .map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
   ];
 }
 
@@ -255,7 +278,13 @@ export function fileUnderNewEvents(
   return [
     ...made,
     base(ctx, 'clarify.routed', node, { route: 'filed' as ClarifyRoute }),
-    ...clocksToClear.map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
+    // Same rule as `fileUnderEvents`, and it has to be stated here too rather
+    // than assumed: this branch does not call that one, so a filter written in
+    // only one of them would mean filing under a NEW place still destroyed
+    // dates while filing under an existing one no longer did — the same act,
+    // two answers, decided by whether the folder happened to exist yet.
+    ...clocksToClear.filter(k => SHED_ON_FILE.has(k))
+      .map(k => base(ctx, 'clock.cleared', node, { clockKind: k })),
   ];
 }
 
