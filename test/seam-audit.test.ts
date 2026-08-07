@@ -216,7 +216,7 @@ test('seam-f7: a standing decline and a worry never reach the exported calendar'
 
 // --- F1: the report never discloses the not-work kinds -----------------------
 
-test('seam-f1: journal entries, pebbles, people and anchors never enter the status report', () => {
+test('seam-f1: nothing that is not work enters the status report', () => {
   const before = fold([]);
   let s = write(emptyState(), [ev('node.created', 'J', { nodeKind: 'journal', title: '' })]);
   s = write(s, [ev('journal.entry.written', 'J', { v: 1, iv: 'aa', ct: 'Q1lQSEVSVEVYVA' })]);
@@ -224,14 +224,39 @@ test('seam-f1: journal entries, pebbles, people and anchors never enter the stat
   s = write(s, [ev('pebble.raised', 'P', { magnitude: 'rock', affects: [] })]);
   s = write(s, [ev('person.created', 'ADA', { name: 'Ada' })]);
   s = write(s, [ev('anchor.defined', 'A', { name: 'the staff call', recurrence: '' })]);
+  // THE ONE THIS TEST WAS BLIND TO, and the reason the deny-list became a total
+  // record. `bother` was in NOT_ACTIONABLE and NO_REPLAN_CARD and was NOT in
+  // NOT_REPORTABLE, so a worry — the flow whose whole pitch is that you may put
+  // a private thing down AS a worry rather than as a task — was itemised under
+  // "New", by name, verbatim, in the one artefact built to be handed to somebody
+  // else. The four kinds the 1.17.3 audit found were enumerated; the question
+  // was never asked over the vocabulary.
+  s = write(s, [ev('bother.received', 'B', { text: 'the letter I have not opened' })]);
   s = write(s, [ev('node.created', 'W', { nodeKind: 'action', title: 'real work' })]);
 
   const r = deltaBetween(before, s, null, NOW, TZ);
-  // The report is the one document that leaves the device for another person's
-  // eyes. It itemised private journal entries as "New — (untitled)", and
-  // pebbles, people and anchors as new work.
   assert.deepEqual(r.changes.map(c => c.node.id).sort(), ['W'],
-    'a private entry, a weight, a person or a period was reported to another person');
+    'a private entry, a weight, a person, a period or a worry was reported to another person');
+  // Named, because the failure mode is a title appearing verbatim in a document
+  // somebody else reads — a count would not have caught the shape.
+  assert.ok(!JSON.stringify(r).includes('the letter I have not opened'),
+    'a worry reached the report in its own words');
+});
+
+test('seam-f1b: the report asks the question over the WHOLE vocabulary', () => {
+  // The deny-list could only be wrong in one direction — silently, by omission,
+  // for any kind added after it was written. A total record cannot be
+  // under-populated: this asserts the shape holds rather than re-listing the
+  // kinds, so adding a noun to NODE_KINDS fails to compile until somebody
+  // decides in writing whether it may leave the device.
+  const before = fold([]);
+  let s = emptyState();
+  for (const k of ['aspiration', 'resume-card'] as const) {
+    s = write(s, [ev('node.created', k.toUpperCase(), { nodeKind: k, title: `a ${k}` })]);
+  }
+  const r = deltaBetween(before, s, null, NOW, TZ);
+  assert.deepEqual(r.changes, [],
+    'a want on the Menu or the app’s own resume card was reported as work somebody did');
 });
 
 // --- F3: the paper and the screen are one projection -------------------------

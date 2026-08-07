@@ -12,6 +12,7 @@
 //
 // PURE, and it takes both states as arguments.
 
+import type { NodeKind } from './events.ts';
 import type { NodeState, State } from './fold.ts';
 import { decisionsFor } from './merged.ts';
 import { heldNodes } from './gate.ts';
@@ -43,6 +44,56 @@ import { calendarDaysBetween, daysWords, isValidIso, localDayKey } from './time.
  * unreachable kind cannot recur.
  */
 export type ChangeKind = 'finished' | 'arrived' | 'now-waiting' | 'let-go' | 'new';
+
+/**
+ * May a kind appear in the report at all?
+ *
+ * **A TOTAL RECORD, NOT A DENY-LIST, AND THAT IS THE WHOLE FIX.** This was
+ * `NOT_REPORTABLE = new Set(['journal','pebble','person','anchor'])`, added by
+ * the 1.17.3 seam audit after journal entries were itemised as "New —
+ * (untitled)" in the one document built to leave the device. That audit
+ * enumerated the four kinds it had just found instead of asking the question
+ * over the vocabulary — and its own comment then claimed these were "the same
+ * four kinds every work surface excludes", which was false when it was written.
+ *
+ * `bother` was already in NOT_ACTIONABLE and NO_REPLAN_CARD and was NOT here.
+ * So a worry — the flow whose entire pitch is that you may write a private thing
+ * down AS a worry rather than as a task — was itemised under "New", by name,
+ * verbatim, in the artefact handed to somebody else. Reproduced by running the
+ * real intents.
+ *
+ * A `Record<NodeKind, boolean>` cannot be under-populated: adding a kind to the
+ * vocabulary fails to compile until somebody decides, in writing, whether it may
+ * leave the device. Same shape as `MERGE_DISPOSITION`, and for the same reason —
+ * the safe default is not a default anybody can forget.
+ *
+ * The reasons, per kind, since a boolean carries none of them:
+ *  - `journal` — private by construction and encrypted at rest.
+ *  - `pebble` — weight the reader has no business seeing (ADR-0014).
+ *  - `person` — a roster change; ADR-0057 ruled rosters out of reports.
+ *  - `anchor` — a named period, not news.
+ *  - `bother` — a worry, and the thing this record exists for.
+ *  - `aspiration` — a want on the Menu. It owes nothing, so it reports nothing.
+ *  - `resume-card` — the app's own artifact about where you left off, not work
+ *    anybody committed to and not a fact about the portfolio.
+ */
+const REPORTABLE: Record<NodeKind, boolean> = {
+  action: true,
+  outcome: true,
+  project: true,
+  area: true,
+  goal: true,
+  'waiting-for': true,
+  upkeep: true,
+
+  aspiration: false,
+  bother: false,
+  pebble: false,
+  journal: false,
+  person: false,
+  'resume-card': false,
+  anchor: false,
+};
 
 export interface Change {
   node: NodeState;
@@ -83,16 +134,8 @@ export function deltaBetween(
 ): DeltaReport {
   const changes: Change[] = [];
 
-  // Kinds that are NOT WORK never enter the report (1.17.3, the seam audit).
-  // The report is the one document that leaves the device for another person's
-  // eyes: a journal entry itemised as "New — (untitled)" is a private thing
-  // disclosed by count; a pebble is weight the reader has no business seeing
-  // (ADR-0014); a person is a roster change, and ADR-0057 already ruled rosters
-  // out of reports as a disclosure nobody asked for; an anchor is a period, not
-  // news. The same four kinds every work surface excludes, for the same reasons.
-  const NOT_REPORTABLE = new Set(['journal', 'pebble', 'person', 'anchor']);
   for (const n of after.nodes.values()) {
-    if (NOT_REPORTABLE.has(n.kind)) continue;
+    if (!REPORTABLE[n.kind]) continue;
     const was = before.nodes.get(n.id);
 
     if (n.trashed && (!was || !was.trashed)) {
