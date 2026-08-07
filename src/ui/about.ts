@@ -112,6 +112,12 @@ export async function mountAbout(
   const intro = document.querySelector<HTMLElement>('#about-intro');
   const body = document.querySelector<HTMLElement>('#storage-body');
   const ask = document.querySelector<HTMLButtonElement>('#storage-ask');
+  // The SECOND caller of the storage request, and the one that is reachable.
+  // `#storage-ask` lives inside the "Your data" group, which ships collapsed —
+  // so before this the only route to persistence was press ⓘ, unfold a group,
+  // find a button. Optional in the query so a missing element costs the panel
+  // nothing, like every other control here.
+  const introAsk = document.querySelector<HTMLButtonElement>('#intro-ask');
   const exp = document.querySelector<HTMLButtonElement>('#export');
   const noteOut = document.querySelector<HTMLElement>('#storage-note');
   const copyOut = document.querySelector<HTMLElement>('#copy-note');
@@ -269,6 +275,13 @@ export async function mountAbout(
     body.replaceChildren(...rows.flatMap(([k, v]) => [el('dt', undefined, k), el('dd', undefined, v)]));
 
     ask.hidden = r.persisted || !r.supported;
+    // The intro is the ask's home ABOVE the folds, so it follows the same state
+    // the button does — visible exactly while the browser has not promised to
+    // keep the store, gone for good once it has. `show(true)` still forces it on
+    // a genuine first run, when the state is not yet known.
+    if (!r.persisted && r.supported) intro.hidden = false;
+    else if (r.persisted) intro.hidden = true;
+    if (introAsk) introAsk.hidden = ask.hidden;
 
     // Say what is true, including when it is not the comfortable answer (§5).
     // The note lives OUTSIDE the <dl>: a definition list may only contain
@@ -302,8 +315,11 @@ export async function mountAbout(
     }
   };
 
-  ask.addEventListener('click', async () => {
+  // ONE HANDLER, TWO BUTTONS. Both are disabled for the duration, because they
+  // are the same act and a second press during the prompt would ask twice.
+  const askForPersistence = async (): Promise<void> => {
     ask.disabled = true;
+    if (introAsk) introAsk.disabled = true;
     try {
       // The notification prompt is part of this on iPadOS — asked for here, in
       // response to a deliberate tap, never on arrival. V-00 confirmed this path
@@ -316,8 +332,12 @@ export async function mountAbout(
       await paintStorage();
     } finally {
       ask.disabled = false;
+      if (introAsk) introAsk.disabled = false;
     }
-  });
+  };
+
+  ask.addEventListener('click', () => { void askForPersistence(); });
+  introAsk?.addEventListener('click', () => { void askForPersistence(); });
 
   // --- the calendar (T1) -----------------------------------------------------
   // The tier that actually reminds you. Same deliver-then-record ordering as the
@@ -1338,6 +1358,21 @@ export async function mountAbout(
   // Open immediately, fill after — a button that stalls while it awaits storage
   // is exactly the kind of gap this app exists to be free of.
   const show = (firstRun: boolean): void => {
+    // FIRST RUN IS NO LONGER THE ONLY REASON TO SHOW THIS.
+    //
+    // `#about-intro` is the one block written for somebody who has not set up
+    // storage — it says, in the panel's own words, that there is one thing worth
+    // doing now and what the iPadOS notification prompt is for. It had exactly
+    // one `show(true)` caller, inside the branch the walkthrough's Skip made
+    // unreachable, so it was dead markup: no walk asserted it, and nobody had
+    // seen it.
+    //
+    // It is now shown whenever the browser has NOT agreed to keep the store,
+    // which is the state it describes. That is not a standing nag — it is a
+    // state that resolves and then never appears again, and `paintStorage`
+    // hides it the moment persistence is granted. It also puts the ask ABOVE
+    // every fold: the only other caller of `requestPersistence()` is a button
+    // inside a group that ships collapsed.
     intro.hidden = !firstRun;
     dialog.showModal();
     void paintStorage();

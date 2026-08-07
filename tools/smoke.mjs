@@ -112,6 +112,35 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // unheld, so the sentence stays away; silence is the covered state.
   is(await page.locator('#copy-note').isHidden(), true,
     'an empty store is not warned that it has no copy — there is nothing to copy');
+
+  // THE STORAGE QUESTION IS REACHABLE WITHOUT UNFOLDING ANYTHING.
+  //
+  // `#about-intro` explains why the browser should be asked to keep the store,
+  // and it had ONE caller — inside the branch the walkthrough's Skip made
+  // unreachable — so it was dead markup nobody had seen and no walk asserted.
+  // Meanwhile `requestPersistence()`'s only control lived in the "Your data"
+  // group, which ships collapsed: press ⓘ, unfold a group, find a button.
+  //
+  // The intro now appears whenever the browser has not agreed to keep the
+  // store, which is the state it describes, and carries its own ask above every
+  // fold. Asserted on the RENDERED page rather than on the flag, because the
+  // defect was precisely that the markup existed and never showed.
+  is(await page.locator('#about-intro').isVisible(), true,
+    'the panel does not explain the storage question while the store is unkept');
+  is(await page.locator('#intro-ask').isVisible(), true,
+    'the only ask above the fold is missing — persistence is a collapsed group away again');
+  // Structural, not positional: this walk arrives via the completed-tour
+  // handoff, which unfolds "Your data" on purpose, so asserting that the group
+  // is shut would be a claim about where the walk is standing rather than about
+  // the app. What must hold everywhere is that the intro's ask comes BEFORE the
+  // group in the document, so it is reached without unfolding anything.
+  is(await page.evaluate(() => {
+    const a = document.querySelector('#intro-ask');
+    const g = document.querySelector('#group-data');
+    if (!a || !g) return false;
+    return (a.compareDocumentPosition(g) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0;
+  }), true, 'the ask sits after the collapsed group — it is a fold away again');
+
   await page.click('#about-close');
   is(await page.evaluate(() => document.activeElement?.id), 'capture',
     'closing the panel hands focus to capture');

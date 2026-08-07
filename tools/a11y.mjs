@@ -145,10 +145,15 @@ const REGISTRY = {
   // button.ghost with #tour-skip, which IS checked); it is exercised by the
   // driver stepping forward.
   'walkthrough': ['#tour-progress', '#tour-heading', '.tour-p', '#tour-skip', '#tour-next'],
-  // The ⓘ panel's own first-run auto-open is now gated behind the walkthrough, so
-  // its intro no longer shows — the panel a new person reaches (by finishing the
-  // walkthrough) is the same one a returning person sees.
-  'first-run dialog': DIALOG_COMMON,
+  // THE INTRO IS BACK, AND IT WAS NEVER MEANT TO BE GONE. This comment used to
+  // say the intro "no longer shows" because the walkthrough owned first run —
+  // recorded as a design consequence when it was a defect: `show(true)` had one
+  // caller, inside the branch the walkthrough's Skip made unreachable, so the
+  // one block written to explain the storage question was dead markup that no
+  // walk asserted and nobody had seen. It now shows whenever the browser has not
+  // agreed to keep the store, which is the state it describes, and it carries
+  // the only persistence control that is not inside a collapsed group.
+  'first-run dialog': [...DIALOG_COMMON, '.intro p', '.intro-aside', '#intro-ask'],
   // 1.14.0: the copy note is hidden when there is nothing to say, and at the
   // first-run state there genuinely is not — an empty store with no copy is not
   // told it is behind. By the return visit the walk has a real history and no

@@ -122,11 +122,31 @@ export function showTour(session: Session, onFinish?: () => void): void {
 
   const finish = (viaSkip: boolean): void => {
     void session.store.setKv(TOUR_SEEN, true);
-    // Mark the ⓘ intro seen too, so it never also auto-opens later — the
-    // walkthrough has covered that ground. Done here, once, for both exits.
+
+    // BOTH FLAGS, ON EITHER EXIT — and this is deliberate rather than left
+    // alone. Skipping the walkthrough used to lose the storage question for
+    // good: only the completed path calls `onFinish`, which opens the panel and
+    // unfolds *Your data*, so Skip (and Escape, treated as Skip) marked the ⓘ
+    // intro seen without it ever being shown, and `requestPersistence()` had
+    // exactly one caller — a button inside a group that ships collapsed. Skip
+    // once and the app ran evictable for the life of the install, silently.
+    //
+    // The obvious fix is to leave `about.seen` unset here so the panel's own
+    // auto-open takes over. It was tried and it is wrong: `mountAbout` resolves
+    // AFTER the walkthrough, so `!about.seen && tour.seen` is immediately true
+    // and the panel opens the instant Skip is pressed. The smoke walk found it
+    // as a modal intercepting every later click, which is the honest version of
+    // what a person would have felt — an app arguing with a dismissal.
+    //
+    // So the flag stays, and the reachability is fixed where it belongs: the
+    // intro is no longer gated on first run at all. It appears whenever the
+    // browser has not agreed to keep the store, on any open of the panel, above
+    // every fold, carrying its own ask (`#intro-ask`). Nothing appears without
+    // an action, and the question is one tap away for ever rather than gone.
     void session.store.setKv(ABOUT_SEEN, true).then(() => {
       document.body.dataset.introDismissed = 'true';
     });
+
     if (dialog.open) dialog.close();
     if (!viaSkip) onFinish?.();
   };

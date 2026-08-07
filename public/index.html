@@ -1085,6 +1085,16 @@
        does not &mdash; is what reaches you.</p>
     <p class="intro-aside">You can skip this and do it later. It is always under
        the <strong>i</strong> at the top.</p>
+    <!-- THE ASK, BESIDE THE SENTENCE THAT EXPLAINS IT. The other one lives in
+         "Your data", which ships collapsed, so this is the only route to
+         persistence that does not require unfolding a group to find. Adjacency
+         is the point: a control and its explanation in one place costs less to
+         read than a control that refers you elsewhere. Hidden by the same rule
+         as its twin — present exactly while the browser has not promised to
+         keep the store. -->
+    <div class="about-actions">
+      <button id="intro-ask" type="button" hidden>Keep my data on this device</button>
+    </div>
   </div>
 
   <!-- LEAD WITH UNDERSTANDING, not diagnostics. This panel used to open on the
@@ -1278,7 +1288,13 @@
        congratulation, and an empty <p> is a gap in the panel. -->
   <p id="copy-note" class="storage-note" hidden></p>
   <div class="about-actions">
-    <button id="storage-ask" type="button" hidden>Keep my data on this device</button>
+    <!-- NAMED DIFFERENTLY FROM #intro-ask ON PURPOSE, and it is the same rule
+         the two close buttons above follow: two controls doing one job must not
+         answer to one phrase, or "activate Keep my data on this device" is a
+         coin toss for anyone driving by voice (§4). The a11y pass reports shared
+         names, and reported this pair the moment the second one existed.
+         "it" has a referent one line up: the row reading "Keeping your data". -->
+    <button id="storage-ask" type="button" hidden>Ask the browser to keep it</button>
     <!-- The way out (data-constitution): always present, never behind a
          condition. The file is plain JSON holding the log as JSON Lines. -->
     <button id="export" type="button" class="ghost">Export a copy</button>
