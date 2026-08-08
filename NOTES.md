@@ -535,12 +535,78 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Thirteen releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Fourteen releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0, 1.32.0, 1.33.0 and now **1.34.0**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0, 1.32.0, 1.33.0, 1.34.0 and now **1.35.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.34.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.35.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.35.0 is stage 4's second item: the moment after, and the symmetric exit.**
+
+`markDone` committed and immediately repainted, so the most pressured remaining
+item slid into the space just vacated. Whatever occupies the second after
+completing is what gets attached to completing — and what occupied it was the
+next demand, arriving with no gap.
+
+**The surface now SETTLES.** It names what was finished, says nothing else is
+being asked, and waits. The next offer arrives on `#nextup-resume` and not
+before, because a surface that fills its own silence has decided the moment
+belongs to it.
+
+**Withheld, not greyed.** The title, reason, place, situation, first-step line
+and every acting control go while settled; `current` is cleared with them so a
+stray keypress cannot act on an item nobody can see. A demand that is present but
+disabled is still a demand on the screen.
+
+**Not timed.** A pause that expires is the app deciding when somebody has had
+enough of a rest. Asserted by waiting and re-checking.
+
+**No praise and no number.** Asserted as a regex over the settled words: an
+approving opinion is still an opinion about the person, and a count here would
+attach a tally to finishing.
+
+**The rest of the surface is untouched** — gauge, upkeep chips, held list. None
+of it was asking anything, and hiding it would make "nothing is being asked" read
+as "nothing is here".
+
+**"That is enough for now"** reaches the same settled state having finished
+nothing. Declining had to end the session as completely as finishing does, or
+escape strictly dominates and the interface has chosen for you: "Not this" only
+ever swapped one demand for another. It records NOTHING, asserted as a log-count
+delta.
+
+**Three things wrong on the way, two of them mine.**
+
+The settle first landed in `markBiteDone` rather than `markDone` — a `.replace`
+that matched the first identical block. Wrong on its own terms as well as by
+accident: a first step is the way INTO the thing in front of you, and settling
+there takes the item away at the moment somebody had finally started.
+
+`loadWords` still said **"Fewer things, while…"**. That stopped being true in
+1.34.0, when capacity changed from shortening the offer to reordering it — copy
+outliving the behaviour it described, which is the plainest kind of lie a surface
+can tell. It now says "Easier things first… Just as many." The co-occurrence
+form is unchanged and is why "while" survives.
+
+And the WALK inherited the settle: one Done early on left the surface settled for
+every block after it, and eight later blocks failed against correct behaviour.
+The walk now asks for the next thing the way a person does, and asserts the
+settle happened rather than working around it.
+
+**A fourth defect, found by the a11y gate and unrelated to any of it.**
+`paintContext` cleared the triage card's "Written this afternoon" line on EVERY
+render and refilled it from an async read of the log. `refresh` runs after every
+commit, so any repaint blanked a correct line and left it blank until that read
+returned — a line that vanishes and comes back, and a registry entry matching
+nothing visible.
+
+It reproduced exactly on a second run, in the dark walk only, which is what made
+it worth chasing rather than dismissing as a flake. The walk's own comment had
+anticipated this race two releases earlier without anyone confirming it was real.
+The clearing was right about the danger and wrong about the frequency: it is now
+keyed on the node, so a different card still clears first and a repaint of the
+same card leaves it alone.
 
 **1.34.0 is stage 4's first item: capacity changes WHICH, never HOW MANY.**
 

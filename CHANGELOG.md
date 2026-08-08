@@ -14,6 +14,19 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.35.0 — CAPABILITY
+
+*2026-08-07*
+
+- **Finishing something no longer hands you the next thing immediately.** Quietkeep now settles: it says what you finished, tells you nothing else is being asked, and waits. The next thing arrives when you press *What is next* — not before.
+- **Why that matters more than it sounds.** Whatever is in front of you in the second after you finish something is what your head attaches to finishing things. What used to be there was the most pressing thing left, arriving instantly — so completing one thing quietly signed you up for the next, with no gap at all.
+- **Nothing congratulates you and nothing counts.** No “well done”, no “one less thing”, no number. It says what happened and stops.
+- **It is not on a timer.** It stays settled until you ask for the next thing. A pause that runs out is the app deciding when you have had enough of a rest.
+- **And there is now a way to stop that is not finishing something.** *That is enough for now* reaches the same settled state without doing anything at all. Until now “Not this” only swapped one thing for another, so the only clean way out of that screen was to complete something — which means the screen had chosen for you.
+- Nothing is recorded about stopping. Not that you did, not when, not how often.
+- **Also fixed:** the line under the offer still said “Fewer things” on a heavy day. That stopped being true yesterday, when a low day started changing *which* things are offered instead of how many. It now says what actually happens — easier things first, just as many.
+- **And the “Written this afternoon” line on a sorting card stopped flickering.** It was being blanked every time anything else on the screen updated, and only came back a moment later once it had been looked up again.
+
 ## 1.34.0 — CAPABILITY
 
 *2026-08-07*

@@ -961,6 +961,15 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   const gaugeHeldBefore = Number((await tpage.locator('#gauge').textContent() || '').match(/(\d+) ready now/)?.[1] ?? '0');
   await tpage.click('#nextup-done');
   await tpage.waitForTimeout(150);
+  // THE SURFACE SETTLES NOW (1.35.0), so the walk asks for the next thing the
+  // way a person does. Every block after this one meets the ordinary offer —
+  // without this, one Done early in the walk left the surface settled for the
+  // rest of it, and eight later blocks failed against correct behaviour.
+  const settleAfterDone = await tpage.locator('#nextup-settled').isVisible();
+  is(settleAfterDone, true, 'finishing it settles the surface rather than offering the next thing');
+  await tpage.click('#nextup-resume');
+  await tpage.waitForFunction(() =>
+    document.querySelector('#nextup-settled')?.hidden === true);
   const logAfterDone = await tpage.evaluate(async () => {
     const db = await new Promise((res) => {
       const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result);
@@ -4156,6 +4165,81 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     'finishing the first step offers the second — the completion IS the cue');
   is(/strip the old sealant is done/.test(unblockedWhy || ''), true,
     `and it says which thing it follows ("${unblockedWhy}")`);
+
+  // --- THE MOMENT AFTER (1.35.0) --------------------------------------------
+  //
+  // Whatever occupies the second after finishing something is what gets attached
+  // to finishing it — and what occupied it was the next-most-pressured thing
+  // sliding into the space just vacated. Completing one thing enrolled you in
+  // the next, immediately, with no gap.
+  //
+  // Every assertion here is about ABSENCE, which is the point: nothing is being
+  // asked, and the next offer arrives when you ask for it.
+  const beforeDone = await tpage.locator('#nextup-title').textContent();
+  is((beforeDone || '').length > 0, true, 'fixture: something is being offered');
+  await tpage.click('#nextup-done');
+  await tpage.waitForSelector('#nextup-settled:not([hidden])');
+  const settledWhat = await tpage.locator('#nextup-settled-what').textContent();
+  is(new RegExp(`Finished: ${(beforeDone || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(settledWhat || ''),
+    true, `it names what was finished ("${settledWhat}")`);
+  // NO NEW DEMAND. The title, the reason and the Done button are all withheld —
+  // not greyed, because a demand that is present but disabled is still a demand
+  // on the screen.
+  is(await tpage.locator('#nextup-title').textContent(), '',
+    'nothing has slid into the space just vacated');
+  is(await tpage.locator('#nextup-done').isHidden(), true, 'and there is nothing to press Done on');
+  is(await tpage.locator('#nextup-skip').isHidden(), true, 'nor anything to decline');
+  // AND NOTHING SAYS WELL DONE. An approving opinion is still an opinion about
+  // the person, and a count here would attach a tally to finishing.
+  const settledAll = (settledWhat || '') + ' '
+    + (await tpage.locator('#nextup-settled-quiet').textContent() || '');
+  is(/well done|great|nice|good job|one less|\d/i.test(settledAll), false,
+    `the settled words carry no praise and no number ("${settledAll}")`);
+  // THE REST OF THE SURFACE IS UNTOUCHED. "Nothing is being asked" must not look
+  // like "nothing is here" — the gauge is not part of the offer and was never
+  // asking.
+  is((await tpage.locator('#gauge').textContent() || '').length > 0, true,
+    'the gauge still speaks — settling hides the demand, not the app');
+
+  // IT IS NOT TIMED. A pause that expires is the app deciding when you have had
+  // enough of a rest.
+  await tpage.waitForTimeout(1500);
+  is(await tpage.locator('#nextup-settled').isHidden(), false,
+    'still settled after a wait — nothing brings the next offer back on its own');
+
+  await tpage.click('#nextup-resume');
+  await tpage.waitForFunction(() =>
+    document.querySelector('#nextup-settled')?.hidden === true);
+  is((await tpage.locator('#nextup-title').textContent() || '').length > 0, true,
+    'and asking for it brings the next offer back');
+
+  // THE SYMMETRIC EXIT. Declining has to end the session as completely as
+  // finishing does, or escape strictly dominates and the interface has chosen
+  // for you: "Not this" only ever swapped one demand for another.
+  const logBeforeEnough = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('events', 'readonly').objectStore('events').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  await tpage.click('#nextup-enough');
+  await tpage.waitForSelector('#nextup-settled:not([hidden])');
+  is(/Stopped for now/.test(await tpage.locator('#nextup-settled-what').textContent() || ''), true,
+    'stopping reaches the same settled state, with nothing named because nothing was finished');
+  is(await tpage.locator('#nextup-title').textContent(), '', 'and no demand is on the screen');
+  const logAfterEnough = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('events', 'readonly').objectStore('events').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  is(logAfterEnough, logBeforeEnough,
+    'stopping records NOTHING — a durable record of when somebody stopped is a record of stopping');
+  await tpage.click('#nextup-resume');
+  await tpage.waitForFunction(() =>
+    document.querySelector('#nextup-settled')?.hidden === true);
 
   // --- PUT IT DOWN (1.32.0) -------------------------------------------------
   //

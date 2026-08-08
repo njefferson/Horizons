@@ -169,9 +169,17 @@ export const weightOrderFor = (load: Load): readonly string[] =>
  */
 export function loadWords(load: Load): string {
   if (!load.heavy) return '';
+  // "FEWER THINGS" WAS TRUE UNTIL 1.34.0 AND IS NOT NOW. Capacity changed from
+  // shortening the offer to reordering it, and this sentence went on claiming a
+  // narrowing that no longer happens — copy outliving the behaviour it
+  // described, which is the plainest kind of lie a surface can tell.
+  //
+  // The co-occurrence rule is unchanged and is why "while" survives: two facts
+  // about one period, never joined. "Easier things, BECAUSE you said…" would be
+  // the app explaining you to yourself (law 7).
   return load.capacity === 'low'
-    ? 'Fewer things, while you have said this is a low stretch.'
-    : 'Fewer things, while you have this much on.';
+    ? 'Easier things first, while you have said this is a low stretch. Just as many.'
+    : 'Easier things first, while you have this much on. Just as many.';
 }
 
 /** How a capacity reads on screen. Your own word, given back to you. */

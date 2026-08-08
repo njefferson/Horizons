@@ -393,6 +393,29 @@
          it is about. -->
     <div class="nextup-actions">
       <button id="nextup-heavy" type="button" class="ghost">This one is heavy</button>
+      <!-- THE SYMMETRIC EXIT. Declining has to end the session as completely as
+           finishing does, or escape strictly dominates and the interface has
+           chosen for you: "Not this" only ever swapped one demand for another,
+           so the only clean way out of the surface was to complete something. -->
+      <button id="nextup-enough" type="button" class="ghost">That is enough for now</button>
+    </div>
+    <!-- THE MOMENT AFTER (1.35.0). Whatever occupies the second after finishing
+         something is what gets attached to finishing it — and what occupied it
+         was the next-most-pressured thing sliding into the space just vacated.
+         Completing one thing enrolled you in the next, immediately, with no gap.
+
+         So the surface SETTLES: it says what you finished and asks nothing. The
+         next offer arrives when you ask for it and not before, because a surface
+         that fills its own silence has decided the moment belongs to it.
+
+         Not timed, deliberately. A pause that expires is the app choosing when
+         you have had enough of a rest. -->
+    <div id="nextup-settled" class="nextup-settled" hidden>
+      <p id="nextup-settled-what" class="nextup-settled-what"></p>
+      <p id="nextup-settled-quiet" class="nextup-settled-quiet"></p>
+      <div class="nextup-actions">
+        <button id="nextup-resume" type="button">What is next</button>
+      </div>
     </div>
     <p id="nextup-count" class="nextup-count"></p>
     <!-- Why the offer is shorter, said as CO-OCCURRENCE and never as cause

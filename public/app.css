@@ -637,6 +637,13 @@ button.triage-card:disabled { cursor: default; color: var(--ink-soft); }
  * of the page. Inside a bordered card that reads as dead space above the title. */
 .replan > .section { margin-top: 0; }
 .replan-count { margin: 0 0 0.75rem; color: var(--ink-soft); font-size: 0.9375rem; }
+/* The settled state (1.35.0). Deliberately plain: the moment after finishing is
+   not a place for a flourish, and a celebration is an opinion about the person.
+   Same ink and paper as the offer it replaces, so nothing flashes. */
+.nextup-settled { display: flex; flex-direction: column; gap: 0.35rem; }
+.nextup-settled-what { margin: 0; color: var(--ink); }
+.nextup-settled-quiet { margin: 0 0 0.25rem; color: var(--ink-soft); }
+
 .replan-cards {
   list-style: none;
   margin: 0;

@@ -96,12 +96,29 @@ export function mountTriage(
    * is worse than saying nothing at all.
    */
   const contextLine = document.querySelector<HTMLElement>('#triage-where');
+  /** Which node the context line currently describes, so a repaint for the SAME
+   *  card does not blank it. */
+  let contextFor: string | null = null;
+
   const paintContext = (nodeId: string | null): void => {
     if (!contextLine) return;
-    // Cleared FIRST, every time. Left alone, the previous card's line survives
-    // the moment between renders and belongs to whatever is on screen now.
-    contextLine.textContent = '';
-    contextLine.hidden = true;
+    // CLEARED ONLY WHEN THE CARD CHANGES (1.35.0).
+    //
+    // It used to clear on every render, which is right about the danger — the
+    // previous card's line must never survive onto a new one — and wrong about
+    // the frequency. `refresh` runs after every commit, and the refill is an
+    // async read from the log, so any repaint blanked a correct line and left it
+    // blank until that read returned. For a reader it is a line that vanishes
+    // and comes back; for the a11y gate it was a registry entry matching nothing
+    // visible, reproducibly, which is how it was found.
+    //
+    // Keyed on the node, so the guarantee that mattered is unchanged: a
+    // different card always clears first.
+    if (nodeId !== contextFor) {
+      contextLine.textContent = '';
+      contextLine.hidden = true;
+      contextFor = nodeId;
+    }
     if (!nodeId) return;
     void session.store.firstEventFor(nodeId)
       .then((first) => {

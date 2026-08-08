@@ -229,6 +229,10 @@ const REGISTRY = {
   // How heavy this one is (1.34.0). Driven with a weight actually CHOSEN, so
   // the pressed state and the clear control are measured in the shape a reader
   // meets rather than in the easiest one to reach.
+  // The settled state (1.35.0) — the surface with nothing being asked. Its own
+  // driven state, because it only exists after an act and nothing else on the
+  // offer surface is on screen at the same time.
+  'settled': ['#nextup-settled-what', '#nextup-settled-quiet', '#nextup-resume'],
   'weight': ['#detail-weight-group .detail-label', '#detail-weight-light',
     '#detail-weight-ordinary', '#detail-weight-heavy', '#detail-weight-clear',
     '#detail-weight-now', '#detail-weight-hint'],
@@ -1179,6 +1183,20 @@ try {
     await auditNames(page, 'next up', theme);
     await auditTargets(page, 'next up', theme);
     await auditFocusRings(page, 'next up', theme, ['#nextup-done', '#nextup-skip', '#gauge', '#cards .card-done']);
+
+    // State 3c1: SETTLED (1.35.0). Reached the way anybody reaches it — finish
+    // the thing being offered — and then left the same way, so every state after
+    // this one meets the ordinary offer.
+    await page.click('#nextup-enough');
+    await page.waitForSelector('#nextup-settled:not([hidden])');
+    await auditContrast(page, 'settled', theme);
+    await auditAxe(page, 'settled', theme);
+    await auditNames(page, 'settled', theme);
+    await auditTargets(page, 'settled', theme);
+    await auditFocusRings(page, 'settled', theme, ['#nextup-resume']);
+    await page.click('#nextup-resume');
+    await page.waitForFunction(() =>
+      document.querySelector('#nextup-settled')?.hidden === true);
 
     // State 3d0: a first step has been named (1.24.0). Reached the way anybody
     // reaches it — type into the invitation on the card — and then UNDONE, so

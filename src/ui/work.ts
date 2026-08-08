@@ -185,6 +185,11 @@ export function mountWork(
     try {
       await session.commit(ctx => doneEvents(ctx, node));
       say(`Done: ${label}.`);
+      // NO SETTLE HERE, deliberately. A first step is the way INTO the thing in
+      // front of you, not a completion of it — settling would take the item away
+      // at the exact moment somebody had finally started. The invitation to name
+      // the next small step comes back instead, which is what this control is
+      // for. Settling belongs to finishing the OFFERED item.
     } catch (err) {
       say(`Couldn’t record that — ${(err as Error).message}`, true);
     } finally {
@@ -192,6 +197,38 @@ export function mountWork(
     }
     try { onChange(); refresh(); } catch { /* the next load renders it */ }
     restoreFocus();
+  };
+
+  /**
+   * THE MOMENT AFTER (1.35.0) — what the surface is doing while nothing is being
+   * asked of you.
+   *
+   * Null means "offering as usual". A string is the name of the thing that was
+   * just finished; the empty string is the same settled state reached by saying
+   * that is enough, where nothing was finished and so nothing is named.
+   *
+   * IN MEMORY. It is a fact about this sitting, not about the work, and a
+   * settled state that survived a reload would be the app deciding you are still
+   * resting tomorrow.
+   */
+  let settled: string | null = null;
+
+  const paintSettled = (): void => {
+    const region = q('#nextup-settled');
+    const what = q('#nextup-settled-what');
+    const quiet = q('#nextup-settled-quiet');
+    if (!region) return;
+    region.hidden = settled === null;
+    if (settled === null) return;
+    // NAMES WHAT HAPPENED AND NOTHING ELSE. No "well done", no count of what is
+    // left, no "one less thing" — an approving opinion is still an opinion about
+    // the person, and a number here would attach a tally to finishing.
+    if (what) what.textContent = settled === '' ? 'Stopped for now.' : `Finished: ${settled}.`;
+    if (quiet) {
+      quiet.textContent = settled === ''
+        ? 'Nothing is asking. It is all still held.'
+        : 'Nothing else is being asked of you. The rest is still held.';
+    }
   };
 
   const markDone = async (): Promise<void> => {
@@ -202,6 +239,11 @@ export function mountWork(
     try {
       await session.commit(ctx => doneEvents(ctx, node));
       say(`Done: ${label}.`);
+      // SETTLE, rather than paint the next offer into the space just vacated.
+      // The most pressured remaining thing used to arrive instantly, so finishing
+      // one thing enrolled you in the next — and whatever occupies the second
+      // after completing is what gets attached to completing.
+      settled = label || '(untitled)';
     } catch (err) {
       say(`Couldn’t record that — ${(err as Error).message}`, true);
     } finally {
@@ -209,6 +251,31 @@ export function mountWork(
     }
     // A render bug must not contradict a landed write (the lesson app.ts records).
     try { onChange(); refresh(); } catch { /* the next load renders it */ }
+    restoreFocus();
+  };
+
+  /**
+   * THAT IS ENOUGH FOR NOW — the symmetric exit.
+   *
+   * Declining has to end the session as completely as finishing does. "Not this"
+   * only ever swapped one demand for another, so the only clean way out of this
+   * surface was to complete something: escape strictly dominated, and the
+   * interface had chosen for you.
+   *
+   * Records NOTHING. No event, no count of how often, no memory across a reload.
+   * A durable record of when somebody stopped is a record of stopping, which is
+   * the shape this app refuses everywhere else.
+   */
+  const enough = (): void => {
+    settled = '';
+    refresh();
+    say('Stopped for now. Nothing is asking.');
+    restoreFocus();
+  };
+
+  const resume = (): void => {
+    settled = null;
+    refresh();
     restoreFocus();
   };
 
@@ -224,6 +291,8 @@ export function mountWork(
   };
 
   doneBtn.addEventListener('click', () => void markDone());
+  q<HTMLButtonElement>('#nextup-enough')?.addEventListener('click', enough);
+  q<HTMLButtonElement>('#nextup-resume')?.addEventListener('click', resume);
   BITE_DONE?.addEventListener('click', () => void markBiteDone());
   skipBtn.addEventListener('click', skip);
 
@@ -299,10 +368,54 @@ export function mountWork(
     const up = { head, behind, total: all.total };
     current = up.head;
 
-    if (up.head) {
+    // SETTLED (1.35.0). The offer, its reason, its behind-list and every control
+    // that acts on it are withheld while the surface is settled — not merely
+    // greyed. The whole point is that nothing is being asked, and a demand that
+    // is present but disabled is still a demand on the screen.
+    //
+    // `current` is cleared with it, so a stray keypress cannot act on an item
+    // the reader cannot see.
+    paintSettled();
+    if (settled !== null) {
+      // Nothing is being asked, so `current` is cleared with the offer: a stray
+      // keypress must not act on an item the reader cannot see.
+      current = null;
+      TITLE.textContent = '';
+      WHY.textContent = '';
+      if (PLACE) PLACE.hidden = true;
+      if (APPROACH) APPROACH.hidden = true;
+      if (SITUATION) SITUATION.hidden = true;
+      // The first-step line and its form are demands too, and were left on
+      // screen by the first version of this — the walk caught it as a bite that
+      // would not go away.
+      const biteLine = q('#nextup-bite');
+      if (biteLine) biteLine.hidden = true;
+      const biteForm = q('#nextup-bite-form');
+      if (biteForm) biteForm.hidden = true;
+      const biteDone = q<HTMLButtonElement>('#nextup-bite-done');
+      if (biteDone) biteDone.hidden = true;
+      BEHIND.replaceChildren();
+      COUNT.textContent = '';
+    }
+    // The offer's controls are WITHHELD while settled, not greyed. A demand that
+    // is present but disabled is still a demand on the screen.
+    for (const sel of ['#nextup-enough', '#nextup-heavy']) {
+      const b = q<HTMLButtonElement>(sel);
+      if (b) b.hidden = settled !== null || !up.head;
+    }
+    if (doneBtn) doneBtn.hidden = settled !== null;
+    if (skipBtn) skipBtn.hidden = settled !== null;
+
+    // The rest of the surface below — the gauge, the upkeep chips, the held list
+    // — is untouched by settling. None of it was asking anything, and hiding it
+    // would make "nothing is being asked" look like "nothing is here".
+    if (settled !== null) {
+      REGION.hidden = false;
+    } else if (up.head) {
       REGION.hidden = false;
       // Restored explicitly: they are hidden in the no-head branch below, and a
       // control that disappears once and never returns is the worst of both.
+      // (Settled is handled above and cannot reach here.)
       if (doneBtn) doneBtn.hidden = false;
       if (skipBtn) skipBtn.hidden = false;
       TITLE.textContent = up.head.node.title || '(untitled)';
