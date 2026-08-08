@@ -23,6 +23,7 @@ import { heldNodes } from './gate.ts';
 import { isContainer } from './tree.ts';
 import { isValidIso } from './time.ts';
 import { normalize, searchHeld } from './search.ts';
+import { raisesReplanCard } from './replan.ts';
 
 /** The kinds a sorting card may legally act on — runway work, nothing else. */
 const SORTABLE_KINDS: ReadonlySet<string> = new Set(['action', 'waiting-for', 'upkeep']);
@@ -104,6 +105,37 @@ export const parkedAndBack = (state: State, nowIso: string): NodeState[] =>
     })
     .sort(oldestFirst);
 
+/**
+ * "Dates that have gone by" (V2 stage 3) — the standing range.
+ *
+ * The replan surface shows at most `REPLAN_CAP` cards, because a wall of them
+ * is the pile in a new costume. That cap is right for the surface and it left a
+ * hole: with 69 passed dates, three at a time and one decision each is not a way
+ * through, and the only bulk path was the AMNESTY — which is lapse-gated, so it
+ * is offered only after a fortnight away. Somebody who never lapsed had no way
+ * to deal with a backlog of dates at all.
+ *
+ * This is the same predicate the replan surface uses (`raisesReplanCard`, the
+ * one definition), narrowed by `sortable` so every verb the range family offers
+ * is legal on every item — a range that offers a verb the gate then refuses is
+ * the amnesty's own defect one layer up.
+ *
+ * `sortable` is belt-and-braces, and saying so is the point. Today the two
+ * predicates agree on every kind — `NO_REPLAN_CARD` already excludes every
+ * container and every demand-free kind, so nothing unsortable raises a card in
+ * the first place. The filter is here so that if `raisesReplanCard` ever widens,
+ * this range cannot start offering a bulk verb the gate must then refuse, which
+ * is the amnesty's own defect one layer up. It is a guard against a future
+ * change, not a filter doing visible work now.
+ *
+ * The lapse-gated amnesty stays exactly as it is, for genuine returns.
+ */
+export const datesGoneBy = (state: State, nowIso: string, zone: string): NodeState[] =>
+  heldNodes(state)
+    .filter(sortable)
+    .filter(n => raisesReplanCard(n, nowIso, zone))
+    .sort(oldestFirst);
+
 /** "Matching [the user's own words]" — the search predicate, narrowed to what
  *  a sorting card may hold. */
 export const matchingQuery = (state: State, query: string): NodeState[] =>
@@ -169,9 +201,24 @@ export interface RangeChoice {
  * is reachable mid-sort, so the very card on screen could be completed or
  * sent to the Menu and then still routed. Every `items()` call now re-reads.
  */
-export function rangeChoices(getState: () => State, nowIso: () => string): RangeChoice[] {
+export function rangeChoices(
+  getState: () => State, nowIso: () => string, zone = 'UTC',
+): RangeChoice[] {
   const state = getState();
   const out: RangeChoice[] = [];
+  // FIRST. Everything else in this picker is a way of finding work; this is the
+  // one that is already asking, and a person opening the picker with a backlog
+  // of dates should not have to read past four other doors to reach it.
+  const gone = datesGoneBy(state, nowIso(), zone);
+  if (gone.length > 0) {
+    out.push({
+      key: 'dates-gone-by',
+      words: 'Dates that have gone by',
+      count: gone.length,
+      items: () => datesGoneBy(getState(), nowIso(), zone),
+      family: 'runway',
+    });
+  }
   const loose = looseFromImport(state);
   if (loose.length > 0) {
     out.push({

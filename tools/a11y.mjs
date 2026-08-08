@@ -505,7 +505,11 @@ const REGISTRY = {
   'review': ['#review-heading', '.review-count', '.review-open',
     '.review-title', '.review-why'],
   'replan': ['#replan-heading', '.replan-count', '.replan-open',
-    '.replan-card-title', '.replan-card-when'],
+    '.replan-card-title', '.replan-card-when',
+    // The way past a card (V2 stage 3). A new control on an already-driven
+    // state, so it joins the registry in the same commit that creates it —
+    // hub LESSONS §28, which cost a release here once already.
+    '.replan-skip'],
   // The sheet. The option hints are the lowest-contrast text in the app after
   // the route hints, and they are load-bearing: they say what each choice does.
   //
@@ -1279,7 +1283,7 @@ try {
     await auditAxe(page, 'replan', theme);
     await auditNames(page, 'replan', theme);
     await auditTargets(page, 'replan', theme);
-    await auditFocusRings(page, 'replan', theme, ['.replan-open']);
+    await auditFocusRings(page, 'replan', theme, ['.replan-open', '.replan-skip']);
 
     await page.click('.replan-open');
     await page.waitForSelector('#replan-sheet[open]');

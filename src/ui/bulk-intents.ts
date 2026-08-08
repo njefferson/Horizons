@@ -31,15 +31,17 @@ import { foldedInto } from '../merged.ts';
 import { demandClocksOf } from './triage-intents.ts';
 import { endOfDayKey } from './detail-intents.ts';
 import { wouldParentCycle } from '../tree.ts';
+import { passedHardClocks, type Passed } from '../replan.ts';
+import { replanEvents } from './replan-intents.ts';
 
-export type BulkVerb = 'put-under' | 'to-menu' | 'park' | 'let-go' | 'bring-back';
+export type BulkVerb = 'put-under' | 'to-menu' | 'park' | 'let-go' | 'bring-back' | 'new-date';
 
 /** The verbs a range family may face — never offer what the gate must refuse
  *  (ADR-0038): the six routes' rules bind here too, so Menu ranges get promote
  *  semantics and nothing that would mint Menu-plus-demand-clock. */
 export const verbsFor = (family: 'runway' | 'menu'): BulkVerb[] =>
   family === 'runway'
-    ? ['put-under', 'to-menu', 'park', 'let-go']
+    ? ['new-date', 'put-under', 'to-menu', 'park', 'let-go']
     : ['bring-back', 'let-go'];
 
 export interface BulkParams {
@@ -47,8 +49,15 @@ export interface BulkParams {
   parent?: NodeId;
   /** to-menu: the category. */
   category?: MenuCategory;
-  /** park: the day key (YYYY-MM-DD), resolved in the user's zone. */
+  /** park, and new-date: the day key (YYYY-MM-DD), resolved in the user's zone. */
   dayKey?: string;
+  /** new-date only: the clock the eligibility question is asked against. Passed
+   *  rather than read from a module clock because every projection here is pure
+   *  and takes `now` as an argument — and because eligibility must be decided
+   *  against the SAME instant the preview counted, or the receipt and the
+   *  preview disagree about how many moved. */
+  nowIso?: string;
+  zone?: string;
 }
 
 /** One item's reversal facts, captured at act time. */
@@ -56,6 +65,16 @@ interface UndoEntry {
   node: NodeId;
   priorParent: NodeId | null;
   priorCategory: MenuCategory | null;
+  /**
+   * The dates this act RETIRED, captured before it ran (V2 stage 3).
+   *
+   * Only `new-date` fills it, and it exists because 1.30.3 established the rule
+   * the hard way on the single-item path: an undo that returns less than it took
+   * is not an undo. Giving forty passed dates a new one retires forty old ones,
+   * and without this the way back would hand them all to you with the old dates
+   * gone — the same defect at forty times the size.
+   */
+  priorClocks: { kind: ClockKind; at: string; source?: string }[];
 }
 
 export interface BulkPlan {
@@ -94,6 +113,18 @@ export function eligible(verb: BulkVerb, n: NodeState | undefined, state: State,
     case 'to-menu':
     case 'park':
       return sortable(n);
+    // GIVE IT A NEW DATE (V2 stage 3) — the replan resolution that had no bulk
+    // form. `to-menu` and `let-go` already covered two of the replan choices;
+    // this is the third and the one somebody with forty passed dates actually
+    // wants, because most of them are still worth doing and only the date was
+    // wrong.
+    //
+    // Eligible only where a date HAS gone by. Setting a new date on something
+    // whose date has not passed is not a resolution, it is an edit, and doing it
+    // to forty items at once because they happened to be in the range would be
+    // the app overwriting decisions nobody asked it to touch.
+    case 'new-date':
+      return sortable(n) && passedHardClocks(n, params.nowIso ?? '', params.zone ?? 'UTC').length > 0;
     case 'let-go':
       // Legal from both families: runway work, or a wish on the Menu — and
       // never a merge SURVIVOR (1.17.3, the seam audit): trashing a node that
@@ -143,6 +174,20 @@ export function bulkItemEvents(
       })];
     case 'let-go':
       return [base(ctx, 'node.trashed', n.id, { reason: 'range:let-go' })];
+    case 'new-date':
+      // Through `replanEvents`, the SAME resolution a person makes by hand on
+      // one card — not a bare `clock.set`. It records `replan.resolved`, retires
+      // every clock that went by rather than the one a card happened to name,
+      // and sheds nothing it should not. The amnesty learned this the hard way
+      // in 1.30.1: a bulk path that reimplements a single act is a second
+      // implementation that drifts, and it drifted in the arguments.
+      return replanEvents(
+        ctx, n.id, 'new-date',
+        passedHardClocks(n, params.nowIso ?? '', params.zone ?? 'UTC').map((p: Passed) => p.kind),
+        params.dayKey!,
+        n.kind,
+        demandClocksOf(n),
+      );
     case 'bring-back':
       return [base(ctx, 'menu.item.promoted', n.id, { toKind: 'action' })];
   }
@@ -167,6 +212,20 @@ function undoItemEvents(
       return [base(ctx, 'node.untrashed', entry.node, {})];
     case 'bring-back':
       return [base(ctx, 'menu.item.added', entry.node, { category: entry.priorCategory ?? 'read' })];
+    case 'new-date':
+      // Take the new date off and put back every one it retired, each through
+      // its own noun — `suspense.set` for a suspense, `clock.set` for a due,
+      // carrying the ORIGINAL source so the log does not start claiming the app
+      // chose the date. The clear comes first: a `due` restored below would
+      // otherwise be cleared by it.
+      return [
+        base(ctx, 'clock.cleared', entry.node, { clockKind: 'due' }),
+        ...entry.priorClocks.map(c => c.kind === 'suspense'
+          ? base(ctx, 'suspense.set', entry.node, { at: c.at })
+          : base(ctx, 'clock.set', entry.node, {
+            clockKind: c.kind, at: c.at, ...(c.source ? { source: c.source } : { source: 'undo:range' }),
+          })),
+      ];
   }
 }
 
@@ -216,6 +275,15 @@ export async function runBulk(
         node: id,
         priorParent: n!.parent ?? null,
         priorCategory: (n!.onMenu as MenuCategory | null) ?? null,
+        // Captured for `new-date` only; every other verb retires nothing, and an
+        // empty array is the honest "there was nothing to put back".
+        priorClocks: plan.verb === 'new-date'
+          ? passedHardClocks(n!, plan.params.nowIso ?? '', plan.params.zone ?? 'UTC')
+            .map((pc: Passed) => {
+              const c = n!.clocks[pc.kind];
+              return { kind: pc.kind, at: pc.at, ...(c?.source ? { source: c.source } : {}) };
+            })
+          : [],
       });
       // 1 receipt-share + the item's own events; demand clears vary per item.
       events += 1 + (plan.verb === 'to-menu' ? 1 + demandClocksOf(n).length : 1);

@@ -20,7 +20,7 @@
 
 import type { Session } from './session.ts';
 import type { ReplanCard } from '../replan.ts';
-import { replanCards, replanWords, contextWords, REPLAN_CAP } from '../replan.ts';
+import { replanAll, replanWords, contextWords, REPLAN_CAP } from '../replan.ts';
 import { localDayKey } from '../time.ts';
 import { demandClocksOf } from './triage-intents.ts';
 import { replanEvents, canResolve, REPLAN_CHOICES } from './replan-intents.ts';
@@ -201,16 +201,37 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
     if (!DLG.open) DLG.showModal();
   }
 
+  /**
+   * Passed over this sitting (V2 stage 3, ADR-0079's rule applied here).
+   *
+   * IN MEMORY, AND NOWHERE ELSE. A skip that survived a reload would be a record
+   * of a decision the app promised not to keep — and on THIS surface it would be
+   * a durable list of the dates somebody could not face, which is worse than the
+   * wall it replaces.
+   */
+  const passedOver = new Set<string>();
+
   function refresh(): void {
-    const view = replanCards(session.state(), nowIso(), session.zone);
-    REGION.hidden = view.total === 0;
-    if (view.total === 0) {
+    const all = replanAll(session.state(), nowIso(), session.zone);
+    const total = all.length;
+    REGION.hidden = total === 0;
+    if (total === 0) {
       LIST.replaceChildren();
       COUNT.textContent = '';
       return;
     }
-    COUNT.textContent = countWords(view.total, view.cards.length);
-    LIST.replaceChildren(...view.cards.map(card => {
+    // Passed-over cards drop to the back, and the next-worst comes forward. If
+    // EVERY card has been passed over, the cap fills from the front anyway —
+    // an empty surface under a count of sixty-nine would be a plain lie, and
+    // there is no state in which this surface may say nothing while the count
+    // says something.
+    const fresh = all.filter(c => !passedOver.has(c.node.id));
+    const cards = (fresh.length > 0 ? fresh : all).slice(0, REPLAN_CAP);
+    // THE COUNT IS THE TRUE TOTAL, always. A number that shrank as things were
+    // passed over would be the surface keeping score of what was avoided —
+    // clarify's own rule, and the reason its skip records nothing either.
+    COUNT.textContent = countWords(total, cards.length);
+    LIST.replaceChildren(...cards.map(card => {
       const li = el('li', 'replan-card');
       const b = el('button', 'replan-open');
       b.type = 'button';
@@ -220,6 +241,25 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
       b.append(el('span', 'replan-card-when', replanWords(card.daysAgo)));
       b.addEventListener('click', () => open(card));
       li.append(b);
+      // THE WAY PAST (ADR-0079, V2 stage 3). Without it this surface is the
+      // triage wall in a second costume: `replanAll` is worst-first and stable,
+      // so with a backlog of dates the same three cards sat at the top every
+      // time the app opened, for ever, and the only way to be rid of one was to
+      // make a decision about it. That is the wall this app exists to prevent.
+      //
+      // IN MEMORY AND NOWHERE ELSE, exactly as clarify's is. A durable list of
+      // what somebody could not face is the wall rebuilt one layer down, with
+      // the app keeping it for them.
+      const skip = el('button', 'replan-skip linklike');
+      skip.type = 'button';
+      skip.textContent = 'Not this one';
+      skip.setAttribute('aria-label', `Not this one — pass over ${card.node.title || '(untitled)'}, nothing is recorded`);
+      skip.addEventListener('click', () => {
+        passedOver.add(card.node.id);
+        LIVE.textContent = 'Passed over. Nothing was recorded, and it is still here.';
+        refresh();
+      });
+      li.append(skip);
       return li;
     }));
   }

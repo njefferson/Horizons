@@ -14,6 +14,7 @@ import { demandClocksOf, routeEvents } from '../src/ui/triage-intents.ts';
 import { openSession } from '../src/ui/session.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
+import { localDayKey } from '../src/time.ts';
 import { admit, gateOptionsFor, silentNodes, trashedNodes } from '../src/gate.ts';
 import type { AppEvent } from '../src/events.ts';
 import type { Session, StampContext } from '../src/ui/session.ts';
@@ -276,9 +277,49 @@ test('UNDO: an item that moved on since the act is left as it is, and counted', 
 // --- the verbs a family may face ---------------------------------------------
 
 test('verb legality is computed per family — Menu ranges get promote semantics, never a clock', () => {
-  assert.deepEqual(verbsFor('runway'), ['put-under', 'to-menu', 'park', 'let-go']);
+  assert.deepEqual(verbsFor('runway'), ['new-date', 'put-under', 'to-menu', 'park', 'let-go']);
   assert.deepEqual(verbsFor('menu'), ['bring-back', 'let-go'],
     'no park, no date, no filing on a wish — Menu-plus-demand-clock is the state the belt refuses');
+  // `new-date` is a RUNWAY verb and must never reach the Menu family. It writes
+  // a due date, and a wish carrying one is the state the belt refuses.
+  assert.equal(verbsFor('menu').includes('new-date'), false,
+    'giving a wish a date would mint Menu-plus-demand-clock');
+});
+
+test('a new date in bulk is the same resolution a person makes by hand', () => {
+  // Through `replanEvents`, never a bare `clock.set`. The amnesty learned this
+  // the hard way in 1.30.1: a bulk path that reimplements a single act is a
+  // second implementation, and it drifted in exactly the arguments that make the
+  // act legal.
+  let s = write(emptyState(), [
+    ev('node.created', 'A', { nodeKind: 'action', title: 'renew the insurance' }),
+    ev('node.created', 'B', { nodeKind: 'action', title: 'ring the plumber' }),
+  ]);
+  s = write(s, [ev('clock.set', 'A', { clockKind: 'due', at: '2026-07-01T12:00:00.000Z', source: 'detail:due' })]);
+  s = write(s, [ev('suspense.set', 'A', { at: '2026-07-05T12:00:00.000Z' })]);
+  s = write(s, [ev('clock.set', 'B', { clockKind: 'due', at: '2026-09-01T12:00:00.000Z', source: 'detail:due' })]);
+
+  const params = { dayKey: '2026-08-20', nowIso: NOW, zone: TZ };
+  // B's date has NOT gone by, so it is not eligible. Setting a new date on
+  // something whose date is still ahead is an edit, not a resolution, and doing
+  // it to a whole range because those items happened to be in it would overwrite
+  // decisions nobody asked the app to touch.
+  assert.equal(eligible('new-date', s.nodes.get('A'), s, params), true);
+  assert.equal(eligible('new-date', s.nodes.get('B'), s, params), false,
+    'a date still ahead is not something to resolve');
+
+  const out = bulkItemEvents(ctx(), 'new-date', s.nodes.get('A')!, params);
+  assert.equal(out.some(e => e.kind === 'replan.resolved'), true,
+    'it is a recorded resolution, not a silent overwrite');
+  const after = write(s, out);
+  const n = after.nodes.get('A')!;
+  // Asked in the READER'S day, not by slicing the UTC string. End of the local
+  // 20th in a UTC-6 zone is the 21st in UTC, and a substring assertion would have
+  // called correct behaviour a defect — the exact class V-13 exists for.
+  assert.equal(localDayKey(n.clocks['due']!.at, TZ), '2026-08-20', 'the new date landed');
+  assert.equal(n.clocks['suspense'], undefined,
+    'and the OTHER date that had gone by was retired too — resolving one of two resolves nothing');
+  assert.equal(silentNodes(after).length, 0);
 });
 
 test('the receipt noun is well-formed and admits', () => {

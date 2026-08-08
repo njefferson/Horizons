@@ -127,7 +127,7 @@ export function mountSort(
     CARDR.hidden = true;
     UNDO.replaceChildren();
     closeBulk();
-    const list = rangeChoices(() => session.state(), nowIso);
+    const list = rangeChoices(() => session.state(), nowIso, session.zone);
     CHOICES.replaceChildren(...list.map(c => {
       const li = el('li');
       const b = el('button', 'sort-choice');
@@ -300,6 +300,10 @@ export function mountSort(
   // BEFORE the destructive commit (the migration precedent), which the smoke
   // walk machine-checks for the first time.
   const BULK_VERBS: Record<BulkVerb, { label: string; hint: string }> = {
+    // FIRST in the list, because on the range this verb exists for — dates that
+    // have gone by — it is the answer for most of them: the thing is still worth
+    // doing and only the date was wrong.
+    'new-date': { label: 'Give them a new date…', hint: 'the dates that went by are retired; undo puts them back' },
     'put-under': { label: 'Put them under…', hint: 'file every one into a place' },
     'to-menu': { label: 'To the Menu…', hint: 'wishes, not demands — any dates come off' },
     'park': { label: 'Park until…', hint: 'held away on purpose, back on the day' },
@@ -406,7 +410,7 @@ export function mountSort(
   function paintBulkParams(): void {
     if (BUNDER) BUNDER.hidden = bulkVerb !== 'put-under';
     if (BMENUCAT) BMENUCAT.hidden = bulkVerb !== 'to-menu';
-    if (BDAY) BDAY.hidden = bulkVerb !== 'park';
+    if (BDAY) BDAY.hidden = bulkVerb !== 'park' && bulkVerb !== 'new-date';
     if (BCONFIRM) BCONFIRM.hidden = bulkVerb !== 'let-go';
     if (bulkVerb === 'put-under') paintBulkParents();
   }
@@ -415,6 +419,11 @@ export function mountSort(
     ...(BPARENT?.value ? { parent: BPARENT.value } : {}),
     ...(BCATEGORY?.value ? { category: BCATEGORY.value as MenuCategory } : {}),
     ...(BDATE?.value ? { dayKey: BDATE.value } : {}),
+    // `new-date` asks "has a date gone by?" per item, and the answer has to be
+    // computed against the SAME instant the preview counted or the receipt and
+    // the preview disagree about how many moved.
+    nowIso: new Date(now()).toISOString(),
+    zone: session.zone,
   });
 
   /** The sentence the user agrees to — stored verbatim in every receipt. */
@@ -448,6 +457,11 @@ export function mountSort(
         words = `Park ${things} until ${params.dayKey} — held away on purpose, back on the day.`;
         break;
       }
+      case 'new-date': {
+        if (!params.dayKey) { words = 'Pick the new day first.'; ready = false; break; }
+        words = `Give ${things} a new date of ${params.dayKey}. Every date that had gone by on them is retired — that is what makes it a decision rather than a second date sitting on top of the first. Undo puts the old ones back.`;
+        break;
+      }
       case 'let-go':
         words = `Let ${things} go. A copy of everything is saved first, and “Things you let go” can give any of them back.`;
         break;
@@ -473,6 +487,7 @@ export function mountSort(
       words = `Stopped part-way — ${r.failed} ${r.done > 0 ? `The first ${did} landed and the record shows exactly which.` : 'Nothing landed.'}`;
     } else {
       words = {
+        'new-date': `Gave ${did} a new date. The dates that had gone by are retired, and Undo puts them back exactly as they were.`,
         'put-under': `Filed ${did}.`,
         'to-menu': `Sent ${did} to the Menu. Dates shed on the way do not come back with an undo — bring a thing back as real work to date it again.`,
         'park': `Parked ${did}.`,

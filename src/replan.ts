@@ -75,7 +75,7 @@ export interface ReplanCard {
  *  own soft return and passing one is ordinary operation, not a lapse. */
 const HARD: ClockKind[] = ['due', 'suspense'];
 
-interface Passed { kind: ClockKind; at: string; daysAgo: number }
+export interface Passed { kind: ClockKind; at: string; daysAgo: number }
 
 /**
  * Every hard clock that went by, LONGEST-passed first.
@@ -86,7 +86,7 @@ interface Passed { kind: ClockKind; at: string; daysAgo: number }
  * options. The caller needs the whole set; which one leads is a display
  * question, answered by taking the head.
  */
-function passedHardClocks(n: NodeState, nowIso: string, zone: string): Passed[] {
+export function passedHardClocks(n: NodeState, nowIso: string, zone: string): Passed[] {
   const out: Passed[] = [];
   for (const kind of HARD) {
     const c = n.clocks[kind];

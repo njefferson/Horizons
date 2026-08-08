@@ -21,7 +21,9 @@ import { fold, emptyState, type State } from '../src/fold.ts';
 import { admit, silentNodes, gateOptionsFor } from '../src/gate.ts';
 import {
   sortable, looseFromImport, underContainer, parkedAndBack, matchingQuery, rangeChoices,
+  datesGoneBy,
 } from '../src/range.ts';
+import { raisesReplanCard } from '../src/replan.ts';
 import { unclarified, needsHeat, inboxGauge } from '../src/triage.ts';
 import { demandClocksOf, routeEvents, undoRouteEvents } from '../src/ui/triage-intents.ts';
 import { setStartEvents, clearStartEvents, setDueEvents } from '../src/ui/detail-intents.ts';
@@ -280,4 +282,53 @@ test('a PASSED start raises no replan card and reads ready', () => {
   const n = s.nodes.get('D')!;
   const words = heldStatus(n, NOW, TZ);
   assert.equal(words, 'ready now', `a passed start OPENS the thing (got "${words}")`);
+});
+
+test('the standing "dates that have gone by" range is the replan predicate, narrowed', () => {
+  // ONE definition of "a date went by" — `raisesReplanCard`, which the replan
+  // surface itself uses. A second predicate here would be two answers to one
+  // question, and that is precisely the amnesty's own defect one layer up: a
+  // bulk path asking something different from the single-item path it batches.
+  let s = write(emptyState(), [
+    ev('node.created', 'PAST', { nodeKind: 'action', title: 'renew the insurance' }),
+    ev('node.created', 'AHEAD', { nodeKind: 'action', title: 'ring the plumber' }),
+    ev('node.created', 'PROJ', { nodeKind: 'project', title: 'the roof job' }),
+  ]);
+  s = write(s, [ev('clock.set', 'PAST', { clockKind: 'due', at: '2026-07-01T12:00:00.000Z', source: 't' })]);
+  s = write(s, [ev('clock.set', 'AHEAD', { clockKind: 'due', at: '2026-09-01T12:00:00.000Z', source: 't' })]);
+  s = write(s, [ev('clock.set', 'PROJ', { clockKind: 'due', at: '2026-07-01T12:00:00.000Z', source: 't' })]);
+
+  const ids = datesGoneBy(s, NOW, TZ).map(n => n.id);
+  assert.deepEqual(ids, ['PAST'], 'only the one whose date actually went by');
+
+  // A CONTAINER with a passed date is out of BOTH, and the two agree because
+  // `NO_REPLAN_CARD` already excludes every container — law 4 says you never
+  // climb, so a project never becomes a card and never becomes a bulk row.
+  //
+  // Pinned as AGREEMENT rather than as a difference. `sortable` in the range is
+  // belt-and-braces: it does no visible work today, and it is there so that if
+  // the replan predicate ever widens, this range cannot start offering a bulk
+  // verb the gate must then refuse. If these two ever disagree, one of them
+  // changed and somebody has to decide which.
+  assert.equal(raisesReplanCard(s.nodes.get('PROJ')!, NOW, TZ), false,
+    'a container raises no replan card — you never climb');
+  assert.equal(ids.includes('PROJ'), false, 'and it is not in the bulk range either');
+});
+
+test('the dates range is offered first, and only when it holds something', () => {
+  // A door to nowhere is noise, and a person opening the picker with a backlog
+  // of dates should not have to read past four other doors to reach the one
+  // already asking.
+  const clean = write(emptyState(), [
+    ev('node.created', 'X', { nodeKind: 'action', title: 'nothing is late' }),
+  ]);
+  assert.equal(rangeChoices(() => clean, () => NOW, TZ).some(c => c.key === 'dates-gone-by'), false,
+    'nothing has gone by, so the range is not offered at all');
+
+  const s = write(clean, [ev('clock.set', 'X', { clockKind: 'due', at: '2026-07-01T12:00:00.000Z', source: 't' })]);
+  const choices = rangeChoices(() => s, () => NOW, TZ);
+  assert.equal(choices[0]?.key, 'dates-gone-by', 'and when it holds something it leads');
+  assert.equal(choices[0]?.count, 1);
+  assert.equal(choices[0]?.family, 'runway',
+    'runway, so every verb it offers is legal on every item in it');
 });

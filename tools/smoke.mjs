@@ -1405,6 +1405,45 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is((await tpage.locator('.replan-card-when').first().textContent())?.length > 0, true,
     'and each row states how long ago, in words');
 
+  // THE WAY PAST A CARD (ADR-0079, V2 stage 3). `replanAll` is worst-first and
+  // stable, so without this the same cards sat at the top every time the app
+  // opened and the only way to be rid of one was to decide about it — the triage
+  // wall in a second costume, on the surface least able to carry it.
+  const firstBefore = await tpage.locator('.replan-card-title').first().textContent();
+  is(await tpage.locator('.replan-skip').count() > 0, true, 'there is a way past a card');
+  await tpage.locator('.replan-skip').first().click();
+  await tpage.waitForTimeout(200);
+  const firstAfter = await tpage.locator('.replan-card-title').first().textContent();
+  is(firstAfter !== firstBefore, true,
+    `passing over brings a different card forward ("${firstBefore}" -> "${firstAfter}")`);
+  // AND THE COUNT DOES NOT MOVE. A number that shrank as things were passed over
+  // would be the surface keeping score of what was avoided — clarify's own rule,
+  // and the reason its skip records nothing either.
+  is(await tpage.locator('#replan-count').textContent(), '2 dates have gone by.',
+    'the count is the true total and does not shrink when something is passed over');
+  // NOTHING WRITTEN. Counted as a delta, because "how many events exist" is a
+  // fact about the store and only the change is about this control.
+  const logAtReplanSkip = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('events', 'readonly').objectStore('events').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  await tpage.reload();
+  await tpage.waitForSelector('body[data-ready=true]');
+  await tpage.waitForSelector('#replan:not([hidden])');
+  const logAfterReplanReload = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    return await new Promise((res) => {
+      const c = db.transaction('events', 'readonly').objectStore('events').count();
+      c.onsuccess = () => res(c.result);
+    });
+  });
+  is(logAfterReplanReload, logAtReplanSkip, 'passing over wrote nothing to the log');
+  is(await tpage.locator('.replan-card-title').first().textContent(), firstBefore,
+    'and it comes back on a reload — a durable list of what somebody could not face is the wall rebuilt one layer down');
+
   // THE LOAD-BEARING ONE. Next up must no longer offer it: "a real date, and it
   // is here" is the answer that date has already ruled out, and showing both is
   // one item asked two different questions.
