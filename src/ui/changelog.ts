@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.34.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-07',
+    notes: [
+      '**A low day no longer means Quietkeep offers you less.** It used to quietly drop from two things to one when you said you were on a low stretch, or when you had a lot on. It now offers the same number of things and changes *which* ones.',
+      '**A shorter list was the wrong answer, and not a small wrong.** Being handed less on a bad day is the app saying you can manage less today — and for some people, on some kinds of bad day, being offered less is exactly the thing that makes the day worse rather than better. Offering the same amount, but easier, is right either way.',
+      '**So you can now say how heavy something is.** Light, ordinary, or heavy — on any item, three words and no number. On a low stretch the lighter things come forward; on a better day a heavier one is allowed to lead.',
+      '**Nothing is worked out behind your back.** Quietkeep will not guess how hard something is from how long it has been sitting there or how often you have passed it over. Only you can say, and if you have not said anything it is treated as ordinary — never as either extreme.',
+      '**Nothing is hidden either.** A heavy thing on a low day moves later in the order, not out of it — it is still there behind “Not this”. And a real date that has arrived still leads whatever kind of day it is, because that is a promise to somebody else.',
+      'Nothing counts these, and there is no score anywhere.',
+    ],
+  },
+  {
     triplet: '1.33.0',
     kind: 'CAPABILITY',
     date: '2026-08-07',

@@ -719,6 +719,33 @@
 
        Offered, never required, never checked for shape. The evidence is about
        plans the person wrote themselves, so whatever they write is the plan. -->
+  <!-- HOW HEAVY IS THIS ONE (1.34.0). Capacity has to be able to change WHICH
+       things are offered rather than how many, and nothing in the app could say
+       which of two items is the harder. Every tempting source is inference from
+       your own logs — how long it has sat, how often it has been passed over —
+       and that is precisely the kind of measure that does not track what
+       matters. So it is asked, once, and never derived.
+
+       Three words and no number, exactly as capacity has four and no number.
+       A number would be a rating of the work, and one step later a rating of
+       you. Never required: nothing here is incomplete without it. -->
+  <div class="detail-group" id="detail-weight-group">
+    <span class="detail-label" id="detail-weight-label">How heavy is this one?</span>
+    <div class="detail-row" role="group" aria-labelledby="detail-weight-label">
+      <button id="detail-weight-light" type="button" class="ghost">Light</button>
+      <button id="detail-weight-ordinary" type="button" class="ghost">Ordinary</button>
+      <button id="detail-weight-heavy" type="button" class="ghost">Heavy</button>
+      <button id="detail-weight-clear" type="button" class="ghost" hidden>Not sure</button>
+    </div>
+    <p id="detail-weight-now" class="detail-hint" hidden></p>
+    <p id="detail-weight-hint" class="detail-hint">
+      Only you can say. On a low stretch Quietkeep reaches for the lighter things first,
+      and on a better day it lets a heavier one lead &mdash; it never offers you fewer
+      things either way. Nothing counts these and nothing works it out from how long
+      something has been sitting there.
+    </p>
+  </div>
+
   <div class="detail-group" id="detail-situation-group">
     <label class="detail-label" for="detail-situation">When or where do you mean to do this?</label>
     <textarea id="detail-situation" rows="2" autocomplete="off" spellcheck="true"

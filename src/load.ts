@@ -109,8 +109,51 @@ export function loadNow(state: State): Load {
  * `offer.ts` — the dependency runs one way, and a pure function that already
  * knows the answer it is adjusting is easier to test at both ends.
  */
-export const offerCapFor = (load: Load, cap: number): number =>
-  load.heavy ? Math.max(1, cap - 1) : cap;
+/**
+ * CAPACITY CHANGES WHICH THINGS ARE OFFERED, NEVER HOW MANY (1.34.0).
+ *
+ * This used to be `load.heavy ? cap - 1 : cap` — a low day got a SHORTER list.
+ * That is wrong twice, and the second reason is the serious one.
+ *
+ * **It is the wrong lever.** A good day should buy a harder thing, not a longer
+ * list; a low day should buy an easier one, not a shorter list. Length is not
+ * what changes with capacity, and changing it makes the surface say "you can
+ * manage less today", which is a statement about the person.
+ *
+ * **And narrowing on a low day is a PACING mechanism**, which two of the served
+ * populations need opposite things from. For post-exertional conditions,
+ * offering less is correct and offering the usual amount is harmful. For
+ * depression, behavioural activation says offer anyway, and withdrawing the
+ * offer is the harm. The same declaration, two correct and opposite responses —
+ * the sharpest of the conflicts in the synthesis.
+ *
+ * **Changing WHICH dissolves it.** The same number of offers arrive; the lighter
+ * ones are chosen. Nothing is withdrawn, so activation is served; nothing
+ * demanding is put in front of you, so pacing is served. No standing preference
+ * is needed, and no question has to be asked, which is the better outcome on its
+ * own terms: the app that does not ask cannot ask wrong.
+ *
+ * So the cap is now CONSTANT. Kept as a function rather than deleted, because
+ * the call site is where somebody would reach to reintroduce the old behaviour,
+ * and this is where the argument against it belongs.
+ */
+export const offerCapFor = (_load: Load, cap: number): number => cap;
+
+/**
+ * The order weight is consulted in, given how heavy the day is.
+ *
+ * A LIST rather than a comparison, so the rule reads as what it is: on a low
+ * stretch, lighter things first; on an ordinary or sharp day, the heavier thing
+ * is allowed to lead. Anything nobody has weighed sorts as `ordinary`, because
+ * that is what "nobody has said" honestly means — a missing declaration is never
+ * read as either extreme.
+ *
+ * It only ever REORDERS. Nothing is filtered out by weight, ever: a heavy thing
+ * with a real date that has arrived still leads on a low day, because a promise
+ * to somebody else is not something the app may quietly withhold.
+ */
+export const weightOrderFor = (load: Load): readonly string[] =>
+  load.heavy ? ['light', 'ordinary', 'heavy'] : ['heavy', 'ordinary', 'light'];
 
 /**
  * What the surface says about the load, or '' when there is nothing to say.

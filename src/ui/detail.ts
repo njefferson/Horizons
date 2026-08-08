@@ -15,7 +15,7 @@
 // whom a surprising control is expensive.
 
 import type { Session } from './session.ts';
-import { noteOf, situationOf, type NodeState } from '../fold.ts';
+import { noteOf, situationOf, weightOf, type NodeState } from '../fold.ts';
 import { DEMAND_FREE_KINDS } from '../events.ts';
 import { everyDaysWords, localDayKey } from '../time.ts';
 import { pressureOf, pressureWords } from '../pressure.ts';
@@ -27,7 +27,7 @@ import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
-  situationEvents, afterEvents, clearAfterEvents, releaseEvents, reclaimEvents,
+  situationEvents, afterEvents, clearAfterEvents, releaseEvents, reclaimEvents, weightEvents,
   cleanNote, noteEvents, chooseTodayEvents, releaseTodayEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
@@ -695,6 +695,25 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // meaningless on a person or an anchor for the same reason the estimate is —
     // but `!n.trashed` is the note's own rule and a want on the Menu can still
     // carry "next time I'm in town", which is exactly the cue this is for.
+    // The weight is about DOING a thing, so it is offered wherever work is —
+    // the same rule the situation follows, and for the same reason.
+    grp('#detail-weight-group', !n.trashed && !n.released
+      && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind));
+    {
+      const w = weightOf(n);
+      const now = q<HTMLElement>('#detail-weight-now');
+      if (now) {
+        now.textContent = w ? `You called this ${w}.` : '';
+        now.hidden = !w;
+      }
+      const clear = btn('#detail-weight-clear');
+      if (clear) clear.hidden = !w;
+      // The one you already chose reads as chosen, so the row is a state and not
+      // three identical offers.
+      for (const k of ['light', 'ordinary', 'heavy']) {
+        btn(`#detail-weight-${k}`)?.setAttribute('aria-pressed', String(w === k));
+      }
+    }
     grp('#detail-situation-group', !n.trashed);
     // WHAT HAS TO HAPPEN FIRST. Narrower than the note's rule on purpose: a
     // demand-free kind is covered by being on a surface and is never finished,
@@ -1057,6 +1076,22 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // the person, and this app does not have one.
     void run(ctx => releaseEvents(ctx, current!.id),
       'Put down. It will not come back on its own; search finds it by name.');
+  });
+  for (const k of ['light', 'ordinary', 'heavy'] as const) {
+    btn(`#detail-weight-${k}`)?.addEventListener('click', () => {
+      if (!current) return;
+      // Says what was recorded and what it changes. NOT "that's a big one" —
+      // sympathy about the work is still an opinion, and the app does not have
+      // one about you or about what you are carrying.
+      void run(ctx => weightEvents(ctx, current!.id, k),
+        k === 'heavy' ? 'Noted — it waits for a better day rather than a longer list.'
+          : k === 'light' ? 'Noted — it comes forward on a low stretch.'
+            : 'Noted.');
+    });
+  }
+  btn('#detail-weight-clear')?.addEventListener('click', () => {
+    if (!current) return;
+    void run(ctx => weightEvents(ctx, current!.id, ''), 'Cleared — nobody has said.');
   });
   btn('#detail-reclaim')?.addEventListener('click', () => {
     void run(ctx => reclaimEvents(ctx, current!.id),

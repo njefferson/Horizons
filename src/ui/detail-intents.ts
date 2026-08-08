@@ -155,6 +155,16 @@ export const reclaimEvents = (ctx: StampContext, node: string): AppEvent[] =>
   [base(ctx, 'node.reclaimed', node, {})];
 
 /**
+ * "How heavy is this one?" — light, ordinary, heavy, or cleared (1.34.0).
+ *
+ * An empty value is the honest removal, exactly as with the note and the
+ * situation. Nothing validates the word beyond the closed set, because there is
+ * nothing to validate: it is a declaration, not a measurement.
+ */
+export const weightEvents = (ctx: StampContext, node: string, weight: string): AppEvent[] =>
+  [base(ctx, 'node.field.set', node, { field: 'weight', value: weight })];
+
+/**
  * "This one is for today." / "Not today after all." (1.6.0, ADR-0051.)
  * The day is stamped from the CONTEXT's clock and zone — the user's day, not
  * UTC's — and the choice expires by projection at midnight: `composedFor` is

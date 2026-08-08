@@ -11,7 +11,7 @@ import assert from 'node:assert/strict';
 import { admit, coverageGauge, heldNodes, silentNodes } from '../src/gate.ts';
 import { heldGroups } from '../src/held.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
-import { HEAVY_AT, loadNow, loadWords, offerCapFor, pebbleWords } from '../src/load.ts';
+import { HEAVY_AT, loadNow, loadWords, offerCapFor, pebbleWords, weightOrderFor } from '../src/load.ts';
 import { OFFER_CAP, offerNow } from '../src/offer.ts';
 import { raisePebbleEvents } from '../src/ui/load-intents.ts';
 import { serialiseState, deserialiseState } from '../src/snapshot.ts';
@@ -77,7 +77,19 @@ test('weight narrows the OFFER, and nothing else', () => {
 
   s = pebble(s, 'P', 'the thing with the roof', 'boulder');
   const after = offerNow(s, NOW, TZ);
-  assert.equal(after.work.length, OFFER_CAP - 1, 'one thing while a boulder is on');
+  // RE-AIMED IN 1.34.0, and the old assertion is worth stating because it was
+  // the DEFECT, not merely a different choice: this read `OFFER_CAP - 1` and
+  // pinned weight narrowing the offer to a shorter list.
+  //
+  // Narrowing on a low day is a PACING mechanism — correct for post-exertional
+  // conditions, iatrogenic for depression, where behavioural activation says
+  // offer anyway. Capacity now changes WHICH things are offered and never HOW
+  // MANY, which serves both and needs no preference from anybody. This test
+  // still guards everything it always did about what must NOT move; only the
+  // count changed, and it changed on purpose.
+  assert.equal(after.work.length, OFFER_CAP,
+    'the SAME number of things while a boulder is on — a shorter list would be the app '
+    + 'saying you can manage less today, which is a statement about the person');
 
   // WHAT MUST NOT HAPPEN. Hiding work is the opposite of this app, so the held
   // list keeps every piece of it — and a pebble never joins that list, because
@@ -100,14 +112,23 @@ test('weight narrows the OFFER, and nothing else', () => {
     'the pebble is still a node you are holding');
 });
 
-test('NEVER BELOW ONE — a heavy day is when that matters most', () => {
+test('NO AMOUNT OF WEIGHT SHORTENS THE OFFER — the floor became a constant', () => {
+  // RE-AIMED IN 1.34.0. This guarded a FLOOR: however heavy the day, at least one
+  // thing is offered. The floor was the right instinct about the wrong lever —
+  // the answer is not "never fewer than one" but "never fewer at all", because
+  // the number of offers is not what capacity may change.
+  //
+  // Three boulders is the strongest form of the old input, so it is the right
+  // input for the new claim too.
   let s = withWork();
   s = pebble(s, 'P1', 'one', 'boulder');
   s = pebble(s, 'P2', 'two', 'boulder');
   s = pebble(s, 'P3', 'three', 'boulder');
+  assert.equal(loadNow(s).heavy, true, 'fixture: this is as heavy as the app can read');
   const o = offerNow(s, NOW, TZ);
-  assert.equal(o.work.length, 1, 'still exactly one thing');
-  assert.equal(offerCapFor(loadNow(s), 1), 1, 'and the cap cannot be argued below it');
+  assert.equal(o.work.length, OFFER_CAP, 'the full offer, under the heaviest load there is');
+  assert.equal(offerCapFor(loadNow(s), OFFER_CAP), OFFER_CAP,
+    'and the cap cannot be argued down at all, which is stronger than a floor of one');
 });
 
 test('one small thing changes nothing — a pebble must be sayable without consequence', () => {
@@ -125,7 +146,13 @@ test('saying "low" is believed on its own, with no pebbles at all', () => {
   const load = loadNow(s);
   assert.equal(load.heavy, true, 'your word is enough');
   assert.equal(load.pebbles.length, 0, 'and it needed no justification');
-  assert.equal(offerNow(s, NOW, TZ).work.length, OFFER_CAP - 1);
+  // What "believed" now MEANS: it changes which things are offered, not how many
+  // (1.34.0). The declaration is still load-bearing — `weightOrderFor` reads it —
+  // and the count is deliberately untouched.
+  assert.equal(offerNow(s, NOW, TZ).work.length, OFFER_CAP,
+    'believing you does not mean giving you less');
+  assert.deepEqual(weightOrderFor(load), ['light', 'ordinary', 'heavy'],
+    'it means reaching for the lighter thing first');
 });
 
 test('an unrecognised capacity is REFUSED, never guessed', () => {
@@ -233,7 +260,10 @@ test('the wish still rides along on a heavy day', () => {
   s = write(s, [ev('menu.item.added', 'M', { category: 'Read' })]);
   s = pebble(s, 'P', 'the roof', 'boulder');
   const o = offerNow(s, NOW, TZ);
-  assert.equal(o.work.length, 1, 'less work');
+  // RE-AIMED IN 1.34.0: it used to assert "less work" beside the wish. There is
+  // no less work now — the wish rides along beside the SAME offer, which is the
+  // stronger version of what this test was always about.
+  assert.equal(o.work.length, OFFER_CAP, 'the same work');
   assert.ok(o.wish, 'and the thing you wanted is still there');
 });
 

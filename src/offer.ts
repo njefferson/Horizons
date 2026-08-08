@@ -48,11 +48,11 @@
 //
 // PURE, and `now` is an argument.
 
-import type { NodeState, State } from './fold.ts';
+import { weightOf, type NodeState, type State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { nextUpQueue, upkeepChips, type NextUpItem } from './nextup.ts';
 import { replanIds } from './replan.ts';
-import { loadNow, offerCapFor, type Load } from './load.ts';
+import { loadNow, offerCapFor, weightOrderFor, type Load } from './load.ts';
 
 /**
  * How many pieces of WORK may be offered at once.
@@ -111,10 +111,35 @@ export function offerNow(state: State, nowIso: string, zone: string, cycle = 0):
   const load = loadNow(state);
   const cap = offerCapFor(load, OFFER_CAP);
 
+  // WHICH, NOT HOW MANY (1.34.0). Capacity consults the person's own weight
+  // declaration to decide which of several equally-eligible things is put in
+  // front of you — never how many arrive.
+  //
+  // ORDERED BEFORE THE ROTATION, not after. Sorting the ROTATED list was the
+  // first version and it silently broke "Not this": the sort put the lightest
+  // thing first whatever the cycle index was, so cycling could never reach the
+  // heavy one and an item became unreachable rather than merely later. Weight
+  // decides the order; the cycle walks that order.
+  //
+  // A STABLE sort within each weight, so it can only break ties the existing
+  // precedence left open — a real date that has arrived still leads on a low
+  // day, because a promise to somebody else is not the app's to quietly
+  // withhold. Nothing is filtered out at any point.
+  const order = weightOrderFor(load);
+  const rank = (i: NextUpItem): number => {
+    const w = weightOf(i.node) ?? 'ordinary';
+    const at = order.indexOf(w);
+    return at < 0 ? order.indexOf('ordinary') : at;
+  };
+  const weighted = queue
+    .map((item, i) => ({ item, i }))
+    .sort((a, b) => rank(a.item) - rank(b.item) || a.i - b.i)
+    .map(x => x.item);
+
   const work: NextUpItem[] = [];
-  if (queue.length > 0) {
-    const start = ((cycle % queue.length) + queue.length) % queue.length;
-    const rotated = [...queue.slice(start), ...queue.slice(0, start)];
+  if (weighted.length > 0) {
+    const start = ((cycle % weighted.length) + weighted.length) % weighted.length;
+    const rotated = [...weighted.slice(start), ...weighted.slice(0, start)];
     const taken = new Set<string>();
     for (const item of rotated) {
       if (work.length >= cap) break;

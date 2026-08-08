@@ -226,6 +226,12 @@ const REGISTRY = {
   // The situation field (1.29.0). Scoped to its own group: `.detail-label`
   // unscoped answers for every group on the sheet, so a registry entry written
   // that way measures the note's label and reports the situation's as covered.
+  // How heavy this one is (1.34.0). Driven with a weight actually CHOSEN, so
+  // the pressed state and the clear control are measured in the shape a reader
+  // meets rather than in the easiest one to reach.
+  'weight': ['#detail-weight-group .detail-label', '#detail-weight-light',
+    '#detail-weight-ordinary', '#detail-weight-heavy', '#detail-weight-clear',
+    '#detail-weight-now', '#detail-weight-hint'],
   'situation field': ['#detail-situation', '#detail-situation-group .detail-label',
     '#detail-situation-set', '#detail-situation-hint'],
   // What this waits for (1.30.0). The state is driven with an anchor actually
@@ -1673,6 +1679,18 @@ try {
     // in the ordinary case and an empty textarea has colours but no words, so a
     // state audited empty measures a rectangle. What has to be legible is what
     // somebody wrote — which is also the thing the surface exists to show back.
+    // The weight, with one chosen — two of its controls only exist then.
+    await page.click('#detail-weight-heavy');
+    await page.waitForSelector('#detail-weight-clear:not([hidden])');
+    await auditContrast(page, 'weight', theme);
+    await auditAxe(page, 'weight', theme);
+    await auditNames(page, 'weight', theme);
+    await auditTargets(page, 'weight', theme);
+    await auditFocusRings(page, 'weight', theme, ['#detail-weight-heavy', '#detail-weight-clear']);
+    await page.click('#detail-weight-clear');
+    await page.waitForFunction(() =>
+      document.querySelector('#detail-weight-clear')?.hidden === true);
+
     await page.fill('#detail-situation', 'after I put the kettle on');
     await auditContrast(page, 'situation field', theme);
     await auditAxe(page, 'situation field', theme);

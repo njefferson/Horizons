@@ -427,6 +427,44 @@ export const isHeld = (n: NodeState | undefined | null): n is NodeState =>
  *  need, and `!isHeld(x)` gives them that. */
 export const isGone = (n: NodeState | undefined | null): boolean => !isHeld(n);
 
+/**
+ * HOW HEAVY THIS ONE IS, in the person's own word — or null, which is the
+ * ordinary case (1.34.0).
+ *
+ * ## Why a declaration and not a measurement
+ *
+ * Capacity must be able to change WHICH things are offered, and nothing in this
+ * app could say which of two items is the harder. The tempting sources are all
+ * inference: how long it has sat, how often it has been passed over, how big its
+ * subtree is. Every one of them is the app forming an opinion about you from
+ * your logs, and Toplak/West/Stanovich is the reason not to — only 24% of 286
+ * correlations between performance-based and everyday executive-function
+ * measures reached significance, median r = .19. What a tool infers is precisely
+ * the measure that does not track what matters. The person's own two-tap
+ * declaration is the higher-validity instrument.
+ *
+ * ## What it is not
+ *
+ * Not a priority, not an estimate, not a score. Three words and no number,
+ * exactly as `capacity` has four and no number — a level you can say out loud is
+ * a description; a number would be a rating of the work, and one step later a
+ * rating of you.
+ *
+ * NEVER REQUIRED. Null is the normal state and costs nothing: an item with no
+ * weight sorts as though it were ordinary, because that is what "nobody has
+ * said" honestly means.
+ *
+ * Rides `node.field.set`, so the closed vocabulary is untouched — the `note` and
+ * `situation` precedent.
+ */
+export type Weight = 'light' | 'ordinary' | 'heavy';
+const WEIGHTS: readonly string[] = ['light', 'ordinary', 'heavy'];
+export const weightOf = (n: NodeState): Weight | null => {
+  const f = n.fields['weight'];
+  return f && typeof f.value === 'string' && WEIGHTS.includes(f.value)
+    ? f.value as Weight : null;
+};
+
 export const emptyState = (): State => ({
   nodes: new Map(),
   vaults: new Map(),

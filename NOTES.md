@@ -535,12 +535,52 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Twelve releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Thirteen releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0, 1.32.0 and now **1.33.0**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0, 1.32.0, 1.33.0 and now **1.34.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.33.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.34.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.34.0 is stage 4's first item: capacity changes WHICH, never HOW MANY.**
+
+`offerCapFor` read `load.heavy ? cap - 1 : cap` — a low day got a shorter list.
+Wrong on two counts, and the second is the serious one. Length is not what
+capacity should change; and **narrowing on a low day is a PACING mechanism**,
+correct for post-exertional conditions and iatrogenic for depression, where
+behavioural activation says offer anyway. The same declaration, two correct and
+opposite responses — the sharpest conflict in the synthesis.
+
+**Changing WHICH dissolves it.** The same number of offers arrive and the
+lighter ones are chosen: nothing is withdrawn, so activation is served; nothing
+demanding is put in front of you, so pacing is served. No standing preference is
+needed and no question has to be asked, which is better on its own terms — the
+app that does not ask cannot ask wrong.
+
+**It needed a per-item weight and there was none.** "This one is heavy" raises a
+PEBBLE, which is a weight about the person, and its `affects` list is
+deliberately inert (ADR-0014, law 7). Every other candidate was inference from
+the reader's own logs — dwell time, skip counts, subtree size — which is exactly
+the measure Toplak/West/Stanovich says does not track what matters. So
+`weightOf` reads a DECLARATION: light, ordinary, heavy, on `node.field.set`, the
+`note` and `situation` precedent. Three words and no number, as capacity has
+four and no number.
+
+**Absent is not an extreme.** Null reads as `ordinary`. Reading it as light would
+hide real work on a low day; reading it as heavy would bury it on a good one.
+
+**Ordered BEFORE the rotation, not after.** The first version sorted the rotated
+list, which silently broke "Not this": the lightest thing led whatever the cycle
+index was, so a heavy item became UNREACHABLE rather than merely later. Weight
+decides the order; the cycle walks it. Caught by the reorder-not-withhold test.
+
+**A test too weak to catch its own plant.** "Nothing nobody weighed is treated as
+either extreme" compared the unweighed item only against `heavy`, so a plant
+reading it as `light` passed. It now asserts the full order in both directions,
+with the unweighed item captured first so a tie would expose it.
+
+**Four existing tests re-aimed, not deleted** (hub LESSON 66). Each states what
+it used to assert and why that was the defect rather than a different choice.
 
 **1.33.0 is stage 3's last item: put a whole place down in one act.**
 
