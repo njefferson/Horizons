@@ -220,13 +220,19 @@ export function mountReplan(session: Session, now: () => number, onChange: () =>
       COUNT.textContent = '';
       return;
     }
-    // Passed-over cards drop to the back, and the next-worst comes forward. If
-    // EVERY card has been passed over, the cap fills from the front anyway —
-    // an empty surface under a count of sixty-nine would be a plain lie, and
-    // there is no state in which this surface may say nothing while the count
-    // says something.
+    // Passing over DEMOTES a card; it never hides one. The cap is filled from
+    // the un-passed cards first and then topped up from the passed ones, so the
+    // surface always shows as many as it is allowed to show.
+    //
+    // Hiding was the first version and the walk caught what it cost: with two
+    // dates and one passed over, the surface dropped to one card and the count
+    // line changed from "2 dates have gone by." to "These 1 first." — a visible
+    // record of what had just been avoided, on the surface least able to carry
+    // one. Demotion has the same effect where it matters (with a backlog, the
+    // next-worst comes forward) and no effect where it would be a tell.
     const fresh = all.filter(c => !passedOver.has(c.node.id));
-    const cards = (fresh.length > 0 ? fresh : all).slice(0, REPLAN_CAP);
+    const cards = [...fresh, ...all.filter(c => passedOver.has(c.node.id))]
+      .slice(0, REPLAN_CAP);
     // THE COUNT IS THE TRUE TOTAL, always. A number that shrank as things were
     // passed over would be the surface keeping score of what was avoided —
     // clarify's own rule, and the reason its skip records nothing either.

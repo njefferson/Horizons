@@ -1420,7 +1420,9 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   // would be the surface keeping score of what was avoided — clarify's own rule,
   // and the reason its skip records nothing either.
   is(await tpage.locator('#replan-count').textContent(), '2 dates have gone by.',
-    'the count is the true total and does not shrink when something is passed over');
+    'the count is the true total, and the surface still shows as many as it may');
+  is(await tpage.locator('.replan-card').count(), 2,
+    'passing over DEMOTES a card rather than hiding it — a surface that shrank would be a record of what was avoided');
   // NOTHING WRITTEN. Counted as a delta, because "how many events exist" is a
   // fact about the store and only the change is about this control.
   const logAtReplanSkip = await tpage.evaluate(async () => {

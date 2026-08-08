@@ -29,6 +29,19 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.31.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-07',
+    notes: [
+      '**There is now a way through a pile of dates that have gone by, instead of three at a time.** “Needs a new plan” shows three, on purpose — a wall of them is the pile in a different costume. But with sixty-nine of them, three at a time and one decision each is not a way through, and the only bulk route was the one offered after a fortnight away. If you never went away, there was no route at all.',
+      'Sorting now offers **“Dates that have gone by”** as a batch, and it leads the list when it holds anything. It reads the same thing “Needs a new plan” reads, so the two can never disagree about what is asking.',
+      '**And a new verb: give them all a new date.** Sending a batch to your wishes and letting a batch go were already there; this is the one most of a backlog actually needs — the thing is still worth doing and only the date was wrong. Every date that had gone by on each item is retired, which is what makes it a decision rather than a second date sitting on top of the first.',
+      '**Undo puts the old dates back, exactly as they were**, including a date you had promised somebody else. It is only offered where a date has actually gone by; something still ahead of you is left alone.',
+      '**You can pass over a card in “Needs a new plan” now.** It was the only surface left with no way past: the worst one sat at the top every time you opened the app, and the sole way to be rid of it was to make a decision about it.',
+      '“Not this one” brings the next one forward and moves that one to the back. **Nothing is recorded** — no list of what you passed over, no count, and it is all back the next time you open the app. The number above stays the true total; a number that shrank as you passed things over would be the app keeping score of what you avoided.',
+    ],
+  },
+  {
     triplet: '1.30.3',
     kind: 'ITERATION',
     date: '2026-08-07',

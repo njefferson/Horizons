@@ -535,12 +535,41 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Nine releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Ten releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2 and now **1.30.3**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3 and now **1.31.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.30.3**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.31.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.31.0 is the rest of stage 3's paths-back work.**
+
+**A standing "dates that have gone by" range.** `REPLAN_CAP` is 3 and that is
+right for the replan surface — a wall of cards is the pile in a new costume —
+but it left a hole: with 69 passed dates, three at a time and one decision each
+is not a way through, and the only bulk path was the lapse-gated amnesty.
+Somebody who never lapsed had no route at all. The range uses `raisesReplanCard`,
+the replan surface's own predicate, so the two cannot disagree about what is
+asking. Its `sortable` filter is belt-and-braces and says so in the comment:
+`NO_REPLAN_CARD` already excludes every container, so the filter does no visible
+work today and exists so a future widening of the replan predicate cannot make
+this range offer a verb the gate must refuse.
+
+**`new-date` as a bulk verb**, through `replanEvents` and never a bare
+`clock.set` — 1.30.1 is the record of what a reimplemented bulk path costs.
+Eligible only where a date HAS gone by: setting one on a date still ahead is an
+edit, not a resolution, and doing it to a whole range would overwrite decisions
+nobody asked the app to touch. Its undo restores every retired clock through its
+own noun, carrying the original source.
+
+**A record-nothing "Not this one" on the replan card** (ADR-0079's rule, applied
+to the surface that lacked it). In memory only. **Passing over DEMOTES rather
+than hides** — the first version hid, and the walk caught what that cost: with
+two dates and one passed over, the surface dropped to one card and the count line
+read "These 1 first.", which is a visible record of what had just been avoided.
+
+**Corrected before it shipped.** A comment here claimed a container with a passed
+date raises a replan card and is filtered out by `sortable`. It does not.
 
 **1.30.3 is the third and fourth items of stage 3.**
 
