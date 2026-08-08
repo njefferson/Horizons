@@ -170,6 +170,12 @@ export function randomEvent(rnd: () => number, s: State, fresh: () => string): A
   // that something was refused.
   if (risk < 0.83) return ev('after.set', pick(), { after: rnd() < 0.9 ? pick() : 'MISSING' });
   if (risk < 0.86) return ev('after.cleared', pick(), {});
+  // Putting a thing down (1.32.0). Drawn against `pick()` on both sides: the
+  // interesting case is a PARENT being put down, which strips its children's
+  // coverage at a distance — the same shape as trashing one, and the reason
+  // this is a silent-risk kind at all.
+  if (risk < 0.89) return ev('node.released', pick(), { at: AT });
+  if (risk < 0.92) return ev('node.reclaimed', pick(), {});
   if (risk < 0.90) return ev('project.role.set', pick(), { role: rnd() < 0.5 ? 'execute' : 'track' });
   // A SHAPE rejection rather than a missing-reference one: every rejection the
   // property saw before came from a `MISSING` id, so the two admits' shape
@@ -196,5 +202,6 @@ export const GENERATED_KINDS: readonly string[] = [
   'interrupt.captured', 'waiting.closed', 'dependency.released', 'project.role.set',
   'node.field.set',
   'after.set', 'after.cleared',
+  'node.released', 'node.reclaimed',
 ];
 

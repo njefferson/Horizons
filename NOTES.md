@@ -535,12 +535,51 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Ten releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Eleven releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3 and now **1.31.0**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0 and now **1.32.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.31.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.32.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.32.0 closes stage 3's structural gap: the exit that is neither done nor
+deleted.** ADR-0082.
+
+**Law 1's guarantee had an unpriced cost.** Nothing goes quiet, so everything held
+comes back for ever until it is finished or binned. For work that mattered once
+and no longer does, every exit was wrong: Done is a lie in an append-only log,
+Let it go reads as destroying something you cared about (and lands in a list you
+can go and visit), To the Menu is a different and often false claim, and Park is
+a promise to come back. So it gets carried — and the reset people actually reach
+for is deleting the app, which defeats every other guarantee at once.
+
+**`node.released` / `node.reclaimed`, one field, exempt from law 1** exactly as a
+trashed node is, and for the same stated reason: law 1 promises nothing goes
+quiet BY ACCIDENT.
+
+**`heldNodes` excluding it is the whole mechanism** — every surface, range,
+gauge, list and offer reads through that one predicate.
+
+**No collection, no count, no reason.** The payload carries `at` and nothing
+else, and a test pins that. `releasedNodes` exists so the complement is visible
+in code and so search can reach one; **no surface renders it whole and none may.**
+
+**Reachable by name, and only by name.** `searchReleased` answers a query you
+typed about a thing you remembered and never volunteers. That reversibility is
+the mechanism rather than a courtesy: an exit people are afraid to use is not an
+exit.
+
+**One predicate, not a diff.** Held-ness was hand-written at forty-odd sites as
+`!n.trashed && !n.mergedInto`. `isHeld`/`isGone` now live in `fold.ts` and every
+site that means "still in your hands" calls one. The three that deliberately do
+not are named in the docblock. This repo's own record says why: `heldGroups`
+drifted from the gauge twice and the merge carry lost `feeds` entirely, both
+because a hand-written list was not revisited.
+
+**A plant that stayed green found a real gap.** Removing the `released` exemption
+from `isSilent` did not fail the suite, because the fixture's put-down node still
+had a due date and clause (b) covered it. The exemption is now asserted directly
+on a constructed state with nothing else on it.
 
 **1.31.0 is the rest of stage 3's paths-back work.**
 

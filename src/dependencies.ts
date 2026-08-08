@@ -20,6 +20,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { isHeld, isGone } from './fold.ts';
 
 /** A downstream commitment, resolved to something a surface can say. */
 export interface Downstream {
@@ -73,7 +74,7 @@ export function dependencyView(state: State, n: NodeState, nowIso: string, zone:
   const feeds: Downstream[] = [];
   for (const id of n.feeds) {
     const target = state.nodes.get(id);
-    if (!target || target.trashed || target.mergedInto || target.lastDone) continue;
+    if (!isHeld(target) || target.lastDone) continue;
     const at = commitmentAt(target);
     if (!at) continue;
     feeds.push({ node: target, at, daysLeft: calendarDaysBetween(nowIso, at, zone) });
@@ -102,7 +103,7 @@ export function dependencyView(state: State, n: NodeState, nowIso: string, zone:
  *  there is one place a dependency can be wrong instead of two. */
 export const fedBy = (state: State, id: string): NodeState[] =>
   [...state.nodes.values()]
-    .filter(n => !n.trashed && !n.mergedInto && n.feeds.includes(id))
+    .filter(n => isHeld(n) && n.feeds.includes(id))
     .sort((a, b) => (a.id < b.id ? -1 : 1));
 
 /**

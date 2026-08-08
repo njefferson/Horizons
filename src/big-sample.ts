@@ -381,6 +381,17 @@ export async function bigSampleEvents(
   stamp('after.set', unanchored, { after: chain[0]! });
   stamp('after.cleared', unanchored, {});
 
+  // --- put down, and picked back up (1.32.0) --------------------------------
+  //
+  // The exit that is neither done nor deleted. One that stayed down and one that
+  // came back, because the way back is the half that makes the verb usable and a
+  // set with only the one-way case would exercise half the machinery.
+  const putDown = node('action', 'Learn the tenor recorder', projects[2]);
+  stamp('node.released', putDown, { at: day(-40) });
+  const backUp = node('action', 'Repaint the hallway', projects[2]);
+  stamp('node.released', backUp, { at: day(-60) });
+  stamp('node.reclaimed', backUp, {});
+
   // --- capture, triage, and every route -------------------------------------
   //
   // An inbox with nothing in it teaches nothing, and the routes are where a

@@ -18,6 +18,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import type { NodeKind } from './events.ts';
+import { isHeld } from './fold.ts';
 
 /** Kinds that CONTAIN work rather than being work. The one definition; Review
  *  reads it too, so "what can stall" and "what can hold something" can never
@@ -35,7 +36,7 @@ export const isContainer = (n: NodeState): boolean =>
   CONTAINER_KINDS.has(n.kind as NodeKind);
 
 const alive = (n: NodeState | undefined): n is NodeState =>
-  Boolean(n) && !n!.trashed && !n!.mergedInto;
+  isHeld(n);
 
 /**
  * Walk from a node to the root, yielding each ancestor.

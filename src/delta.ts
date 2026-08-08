@@ -18,6 +18,7 @@ import { decisionsFor } from './merged.ts';
 import { heldNodes } from './gate.ts';
 import { isOpenWaiting, withWhom, openDays } from './people.ts';
 import { calendarDaysBetween, daysWords, isValidIso, localDayKey } from './time.ts';
+import { isHeld } from './fold.ts';
 
 /**
  * What a report may say changed.
@@ -117,7 +118,7 @@ export interface DeltaReport {
   decided: { node: NodeState; text: string; at: string }[];
 }
 
-const alive = (n: NodeState): boolean => !n.trashed && !n.mergedInto;
+const alive = (n: NodeState): boolean => isHeld(n);
 
 /**
  * What changed between two states.

@@ -30,6 +30,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import type { Ownership } from './events.ts';
+import { isHeld } from './fold.ts';
 
 export const OWNERSHIPS: readonly Ownership[] = [
   'mine-to-solve', 'mine-to-track', 'not-mine-to-carry',
@@ -59,7 +60,7 @@ export interface Bother {
   ownership: Ownership | null;
 }
 
-const alive = (n: NodeState): boolean => !n.trashed && !n.mergedInto;
+const alive = (n: NodeState): boolean => isHeld(n);
 
 /**
  * Bothers that have not yet been through the flow.

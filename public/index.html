@@ -1039,7 +1039,21 @@
       <button id="detail-promote" type="button" class="ghost">Bring back from the Menu</button>
       <button id="detail-trash" type="button" class="ghost">Let it go</button>
       <button id="detail-untrash" type="button" class="ghost">Keep it after all</button>
+      <!-- THE EXIT THAT IS NEITHER DONE NOR DELETED (1.32.0). Everything else on
+           this row either finishes a thing, hides it in a list of wishes, or bins
+           it. For work that mattered and no longer does, all three are wrong —
+           Done is a lie in an append-only log, and Let it go reads as destroying
+           something you cared about, which is exactly what people will not do.
+           So they carry it, and the only reset left is deleting the app. -->
+      <button id="detail-release" type="button" class="ghost">Put it down</button>
+      <button id="detail-reclaim" type="button" class="ghost">Pick it back up</button>
     </div>
+    <p id="detail-release-hint" class="detail-hint">
+      Putting something down stops it coming back to you. It is not finished and it is
+      not binned &mdash; there is nothing to tick and nothing to regret. No reason is
+      asked for, nothing counts them, and there is no list of them to look at.
+      Search finds it again by name whenever you want it back.
+    </p>
   </div>
 
   <p id="detail-live" role="status" aria-live="polite" class="visually-hidden"></p>

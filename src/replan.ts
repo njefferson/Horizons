@@ -31,6 +31,7 @@ import { NO_REPLAN_CARD } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 import { dependencyView, dependencyWords, type DependencyView } from './dependencies.ts';
 import type { ClockKind, NodeKind } from './events.ts';
+import { isGone } from './fold.ts';
 
 /** Law 8 bounds what re-entry may show. Returning after a fortnight could raise
  *  many at once, and a wall of them is the pile in a new costume. The rest are
@@ -116,7 +117,7 @@ export const raisesReplanCard = (n: NodeState, nowIso: string, zone: string): bo
  *  a trashed one, one on the Menu (demand-free, law 6) and one still in triage
  *  are all somebody else's business. */
 function eligible(n: NodeState): boolean {
-  if (n.trashed || n.mergedInto) return false;
+  if (isGone(n)) return false;
   // A goal or an area cannot have lapsed — law 4 says levels push down and the
   // runway is the only workspace. Without this an Area with a due date was
   // refused by Next-up under that law and offered five action-shaped buttons

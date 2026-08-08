@@ -46,6 +46,7 @@ import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { pressureOf } from './pressure.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { isHeld } from './fold.ts';
 
 /** Marks an upkeep node as an arrangement that runs without you. A field and
  *  not a kind, for ADR-0042's reasons — it decays, completes and renders like
@@ -66,7 +67,7 @@ const flagged = (n: NodeState, field: string): boolean =>
   Object.hasOwn(n.fields, field) && n.fields[field]!.value === true;
 
 export const isArrangement = (n: NodeState): boolean =>
-  !n.trashed && !n.mergedInto && flagged(n, ARRANGEMENT_FIELD);
+  isHeld(n) && flagged(n, ARRANGEMENT_FIELD);
 
 export const dependsOnOthers = (n: NodeState): boolean => flagged(n, DEPENDS_FIELD);
 

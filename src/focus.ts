@@ -26,6 +26,7 @@
 
 import type { NodeState, State } from './fold.ts';
 import { isValidIso } from './time.ts';
+import { isGone, isHeld } from './fold.ts';
 
 export interface FocusView {
   /** What is being worked on, or null when nothing is. */
@@ -51,7 +52,7 @@ export function focusView(state: State, nowIso: string): FocusView {
   const f = state.focus;
   if (!f) return { node: null, minutes: null, interrupted: [] };
   const node = state.nodes.get(f.node) ?? null;
-  if (!node || node.trashed || node.mergedInto) {
+  if (isGone(node)) {
     // The thing being focused was let go from somewhere else. Report no focus
     // rather than a focus on nothing — a surface built around a null title is
     // how a projection kills the app it renders.
@@ -73,7 +74,7 @@ export function elapsedMinutes(fromIso: string, nowIso: string): number | null {
 function interruptedDuring(state: State, f: NonNullable<State['focus']>): NodeState[] {
   const out: NodeState[] = [];
   for (const n of state.nodes.values()) {
-    if (n.trashed || n.mergedInto) continue;
+    if (isGone(n)) continue;
     if (n.interruptedFocus !== f.node) continue;
     if (!n.interruptedAt || n.interruptedAt < f.startedAt) continue;   // an earlier session's
     out.push(n);
@@ -95,11 +96,11 @@ export function resumeCards(state: State, pendingFor: string | null = null): Res
   const out: ResumeCard[] = [];
   for (const n of state.nodes.values()) {
     if (n.kind !== 'resume-card') continue;
-    if (n.trashed || n.mergedInto || n.resumeSpent) continue;
+    if (isGone(n) || n.resumeSpent) continue;
     if (!n.resumeFor) continue;
     if (n.resumeFor === pendingFor) continue;
     const target = state.nodes.get(n.resumeFor);
-    if (!target || target.trashed || target.mergedInto || target.lastDone) continue;
+    if (!isHeld(target) || target.lastDone) continue;
     out.push({ card: n, target, cue: n.resumeCue });
   }
   return out.sort((a, b) => (a.card.id < b.card.id ? -1 : 1));

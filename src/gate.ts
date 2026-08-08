@@ -60,6 +60,10 @@ const isDemandFree = (k: NodeKind): boolean =>
  */
 export function isSilent(node: NodeState, state: State, visited: Set<NodeId> = new Set()): boolean {
   if (node.trashed) return false;        // an explicit end is a decision, not a silence
+  // PUT DOWN (1.32.0) — the other explicit end, and exempt for exactly the same
+  // reason. Law 1 promises nothing goes quiet BY ACCIDENT; a thing you decided
+  // to stop carrying did not go quiet, it was put down.
+  if (node.released) return false;
   if (node.mergedInto) {
     // Merged means "lives on inside the target" — which is only true if the
     // target actually lives. The audit merged a node into an id that did not
@@ -79,7 +83,11 @@ export function isSilent(node: NodeState, state: State, visited: Set<NodeId> = n
     let cur = state.nodes.get(node.parent);
     while (cur && !seen.has(cur.id)) {
       seen.add(cur.id);
-      if (cur.trashed || cur.mergedInto) break;
+      // A put-down ancestor confers NOTHING, exactly as a trashed one confers
+      // nothing: it is not coming back on its own, so a clock on it is a clock
+      // nobody will ever be shown. This is why `node.released` is a silent-risk
+      // kind — it cannot silence itself, but it can silence its children.
+      if (cur.trashed || cur.mergedInto || cur.released) break;
       if (Object.keys(cur.clocks).length > 0) return false;  // an ancestor is clocked: not silent
       if (!cur.parent) break;
       cur = state.nodes.get(cur.parent);
@@ -136,7 +144,22 @@ export const silentNodes = (state: State): NodeState[] =>
  *  **It is no longer what the gauge counts** — see `heldWork` below, and 1.15.1
  *  for why. */
 export const heldNodes = (state: State): NodeState[] =>
-  [...state.nodes.values()].filter(n => !n.trashed && !n.mergedInto);
+  [...state.nodes.values()].filter(n => !n.trashed && !n.mergedInto && !n.released);
+
+/**
+ * Things PUT DOWN — the exit that is neither done nor deleted (1.32.0).
+ *
+ * **Nothing renders this as a list, and nothing must.** It exists so `heldNodes`
+ * has a visible complement and so search can reach a named one; a surface that
+ * showed all of them would be the browsable collection this verb was designed
+ * without, and the regret such a collection accumulates is precisely what made
+ * discarding feel expensive in the first place.
+ *
+ * There is deliberately no count of it anywhere. `heldNodes` excluding these is
+ * the whole mechanism: no surface, no range, no gauge, no total.
+ */
+export const releasedNodes = (state: State): NodeState[] =>
+  [...state.nodes.values()].filter(n => n.released && !n.trashed && !n.mergedInto);
 
 /**
  * What you are holding AS WORK — the gauge's number, the coverage list's rows,
@@ -773,6 +796,15 @@ export function cureFor(node: NodeState, cause: AppEvent, opts: GateOptions): Ap
     // the right cure, because both land the node back in the inbox to be sorted.
     case 'clarify.reopened':
     case 'menu.item.removed':
+    // Picking a thing back up removes its exemption, so it needs a clock of its
+    // own — the same same-day clock an untrashed node gets, and for the same
+    // reason: it is back in your hands and has to be asked about.
+    //
+    // `node.released` shares this branch because it cures the BYSTANDERS: a
+    // child whose only coverage was a parent that has just been put down. It
+    // never cures the released node itself, which is exempt.
+    case 'node.released':
+    case 'node.reclaimed':
     // Cutting an anchor withdraws clause (e) coverage, and the same-day clock is
     // the right cure for the same reason it is right after a lost parent: the
     // thing is now waiting for nothing, so it goes back to being asked about.

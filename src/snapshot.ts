@@ -119,6 +119,10 @@ export function deserialiseState(raw: unknown): State {
       // every coverage check, and the type has to be true for a store written
       // by an older build or the promise is only true for new data.
       after: n.after ?? null,
+      // A pre-1.32.0 snapshot has nothing put down, because there was no way to
+      // put anything down. Null, not undefined: `heldNodes` asks this of every
+      // node on every read, and a store written by an older build has to answer.
+      released: n.released ?? null,
       mergedInto: n.mergedInto ?? null,
       todayFor: n.todayFor ?? null,
       // A pre-1.8.0 snapshot stored no declines — none were standing. COPIED,

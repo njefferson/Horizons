@@ -51,6 +51,7 @@
 
 import { MAGNITUDES, type Capacity, type Magnitude } from './events.ts';
 import type { NodeState, State } from './fold.ts';
+import { isHeld } from './fold.ts';
 
 /** Lightest first. The ORDER is the scale, so adding a heavier word later means
  *  appending to `MAGNITUDES` and nothing else. */
@@ -86,7 +87,7 @@ export interface Load {
  */
 export function loadNow(state: State): Load {
   const pebbles = [...state.nodes.values()]
-    .filter(n => n.kind === 'pebble' && n.pebble !== null && !n.trashed && !n.mergedInto)
+    .filter(n => n.kind === 'pebble' && n.pebble !== null && isHeld(n))
     .sort((a, b) => {
       const d = weightOf(b.pebble!.magnitude) - weightOf(a.pebble!.magnitude);
       if (d !== 0) return d;

@@ -41,6 +41,7 @@ import { NOT_ACTIONABLE } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 import { CONTAINER_KINDS } from './tree.ts';
 import type { NodeKind } from './events.ts';
+import { isHeld, isGone } from './fold.ts';
 
 /** Kinds that CONTAIN work rather than being work. These are the ones that can
  *  stall, because stalling means "nothing underneath is moving".
@@ -77,7 +78,7 @@ export const REVIEW_CAP = 3;
 
 /** Is this node a live piece of work — something that could actually move? */
 function isLiveWork(n: NodeState): boolean {
-  if (n.trashed || n.mergedInto) return false;
+  if (isGone(n)) return false;
   if (n.lastDone) return false;
   if (n.onMenu) return false;                 // demand-free by law 6
   // A SPENT resume card is residue, not work. The thread was picked back up or
@@ -211,7 +212,7 @@ export function orphaned(state: State): ReviewException[] {
   for (const n of heldNodes(state)) {
     if (!n.parent) continue;
     const parent = state.nodes.get(n.parent);
-    if (parent && !parent.trashed && !parent.mergedInto) continue;
+    if (parent && isHeld(parent)) continue;
     out.push({
       node: n,
       words: parent ? 'what it belonged to was let go' : 'what it belonged to is not here',

@@ -10,7 +10,7 @@
 // PURE. No clock, no I/O, testable at any moment.
 
 import type { NodeState, State } from './fold.ts';
-import { heldNodes } from './gate.ts';
+import { heldNodes, releasedNodes } from './gate.ts';
 
 /**
  * The comparable form of a title: decomposed, diacritics stripped, lowercased,
@@ -64,6 +64,34 @@ export function searchHeld(state: State, query: string, cap = SEARCH_CAP): Searc
     .filter(n => n.kind !== 'pebble')
     .filter(n => normalize(n.title).includes(q))
     // Newest first — ULIDs sort by time, the only order the held surfaces claim.
+    .sort((a, b) => (a.id < b.id ? 1 : -1));
+  return { items: matches.slice(0, cap), total: matches.length, query: q };
+}
+
+/**
+ * The same query, over things you have PUT DOWN (1.32.0).
+ *
+ * **This is the only way to reach one, and that is the design.** A put-down
+ * thing has no surface, no count and no collection to browse — a place to look
+ * at everything you have stopped carrying is another pile, and the regret such a
+ * list accumulates is exactly what made discarding feel expensive.
+ *
+ * But it must not be gone either, or putting a thing down is deletion with a
+ * softer word, and this audience will not use it. So: it answers a query you
+ * TYPED, about a thing you REMEMBERED, and never volunteers. That reversibility
+ * is what makes putting something down cheap enough to actually do, which is the
+ * whole mechanism.
+ *
+ * Separate from `searchHeld` rather than a flag on it, because every caller of
+ * that function means "what am I holding" and none of them should silently start
+ * meaning something else.
+ */
+export function searchReleased(state: State, query: string, cap = SEARCH_CAP): SearchResult {
+  const q = normalize(query);
+  if (!q) return { items: [], total: 0, query: '' };
+  const matches = releasedNodes(state)
+    .filter(n => n.kind !== 'pebble')
+    .filter(n => normalize(n.title).includes(q))
     .sort((a, b) => (a.id < b.id ? 1 : -1));
   return { items: matches.slice(0, cap), total: matches.length, query: q };
 }

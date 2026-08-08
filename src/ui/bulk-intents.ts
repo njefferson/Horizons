@@ -33,6 +33,7 @@ import { endOfDayKey } from './detail-intents.ts';
 import { wouldParentCycle } from '../tree.ts';
 import { passedHardClocks, type Passed } from '../replan.ts';
 import { replanEvents } from './replan-intents.ts';
+import { isHeld, isGone } from '../fold.ts';
 
 export type BulkVerb = 'put-under' | 'to-menu' | 'park' | 'let-go' | 'bring-back' | 'new-date';
 
@@ -106,7 +107,7 @@ export function eligible(verb: BulkVerb, n: NodeState | undefined, state: State,
     case 'put-under': {
       if (!sortable(n)) return false;
       const p = params.parent ? state.nodes.get(params.parent) : undefined;
-      if (!p || p.trashed || p.mergedInto || p.id === n.id) return false;
+      if (!isHeld(p) || p.id === n.id) return false;
       if (n.parent === p.id) return false;             // already there: no event, no claim
       return !wouldParentCycle(state, n.id, p.id);
     }
@@ -132,7 +133,7 @@ export function eligible(verb: BulkVerb, n: NodeState | undefined, state: State,
       // refuses the whole batch after the preview promised it. Skip-and-count,
       // like every other per-item ineligibility; splitting the folds back out
       // first is the door.
-      return !n.trashed && !n.mergedInto && (sortable(n) || n.onMenu !== null)
+      return isHeld(n) && (sortable(n) || n.onMenu !== null)
         && foldedInto(state, n.id).length === 0;
     case 'bring-back':
       return !n.trashed && !n.mergedInto && n.onMenu !== null;

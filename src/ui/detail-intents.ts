@@ -138,6 +138,23 @@ export const clearAfterEvents = (ctx: StampContext, node: string): AppEvent[] =>
   [base(ctx, 'after.cleared', node, {})];
 
 /**
+ * "Put it down." / "Pick it back up." (1.32.0.)
+ *
+ * The exit that is neither done nor deleted. NO REASON IS ASKED FOR and there is
+ * nowhere to put one — being made to justify stopping is the friction that sends
+ * people back to carrying a thing indefinitely, and a reason field would collect
+ * exactly the regret this verb exists to avoid.
+ *
+ * One event each way. The log keeps both, so the record reads "put down, then
+ * picked back up", which is what happened.
+ */
+export const releaseEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'node.released', node, { at: ctx.at })];
+
+export const reclaimEvents = (ctx: StampContext, node: string): AppEvent[] =>
+  [base(ctx, 'node.reclaimed', node, {})];
+
+/**
  * "This one is for today." / "Not today after all." (1.6.0, ADR-0051.)
  * The day is stamped from the CONTEXT's clock and zone — the user's day, not
  * UTC's — and the choice expires by projection at midnight: `composedFor` is

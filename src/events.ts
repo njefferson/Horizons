@@ -234,6 +234,36 @@ export type DependencyReleased=Ev<'dependency.released',{ feeds: NodeId }>;
  * for the next. A model that recomputes each step's readiness from dates
  * destroys the chain — the cue has to be the completion itself.
  */
+/**
+ * PUT DOWN, and PICKED BACK UP — the exit that is neither done nor deleted
+ * (1.32.0).
+ *
+ * The gap this fills is structural rather than cosmetic. Law 1 guarantees that
+ * nothing goes quiet, which means everything you are holding comes back — for
+ * ever, until you finish it or bin it. For work that mattered and no longer
+ * does, both of those are wrong: `done.marked` is a lie written into an
+ * append-only log, and `node.trashed` reads as destroying something you cared
+ * about, which is precisely what people will not do. So they carry it, and the
+ * one reset that remains is the one people actually use — delete the app and
+ * reinstall, destroying everything to avoid looking at some of it.
+ *
+ * A put-down thing is NOT SILENT, for the same reason a trashed one is not: an
+ * explicit end is a decision, not a silence. It is simply no longer carried.
+ *
+ * WHAT IT MUST NOT BECOME, and each of these is a way it would fail:
+ *  - **no browsable collection.** A place to look at everything you put down is
+ *    another pile, and the regret it collects is the reason discarding felt
+ *    expensive in the first place;
+ *  - **no count.** "14 things put down" is a number about the person, and it
+ *    only rises;
+ *  - **no required reason.** Being asked to justify it is the friction that
+ *    sends people back to carrying it;
+ *  - **reversible, and findable by name.** Search reaches it, so nothing is
+ *    lost — that reversibility is what makes putting a thing down cheap enough
+ *    to do, which is the whole mechanism.
+ */
+export type NodeReleased     = Ev<'node.released',      { at: ISODateTime }>;
+export type NodeReclaimed    = Ev<'node.reclaimed',     Record<string, never>>;
 export type AfterSet         = Ev<'after.set',          { after: NodeId }>;
 export type AfterCleared     = Ev<'after.cleared',      Record<string, never>>;
 export type SuspenseSet      = Ev<'suspense.set',       { at: ISODateTime; label?: string }>;
@@ -406,7 +436,7 @@ export type AppEvent =
   | FocusStarted | FocusEnded | InterruptCaptured
   | ResumeCardCreated | ResumeCardSpent | ResumeCardExpired
   | WaitingOpened | WaitingClosed | DependencyDeclared | DependencyReleased
-  | AfterSet | AfterCleared
+  | AfterSet | AfterCleared | NodeReleased | NodeReclaimed
   | SuspenseSet | ProjectRoleSet | OprAssigned | StakeholderAdded | StakeholderRemoved
   | DecisionLogged | DeltaRecorded | StatusReportExported
   | RequestDeclined | RequestSlotSet | TimerLengthSet | CommsSweepScheduled | CommsSweepRan
@@ -433,7 +463,7 @@ export const EVENT_KINDS = [
   'focus.started','focus.ended','interrupt.captured',
   'resume.card.created','resume.card.spent','resume.card.expired',
   'waiting.opened','waiting.closed','dependency.declared','dependency.released',
-  'after.set','after.cleared',
+  'after.set','after.cleared','node.released','node.reclaimed',
   'suspense.set','project.role.set','opr.assigned','stakeholder.added','stakeholder.removed',
   'decision.logged','delta.recorded','status.report.exported',
   'request.declined','request.slot.set','timer.length.set','comms.sweep.scheduled','comms.sweep.ran',
@@ -483,6 +513,11 @@ export const SILENT_RISK_KINDS = [
   // makes this list checkable, and an event that touches coverage at all belongs
   // in it. Same reasoning as the clarify.routed branch in cureFor.
   'after.set', 'after.cleared',
+  // Putting a thing down EXEMPTS it from law 1, so it cannot make itself
+  // silent — but it can make its CHILDREN silent, because a put-down ancestor
+  // confers no coverage, exactly as a trashed one confers none. Picking one
+  // back up removes the exemption and needs a clock of its own.
+  'node.released', 'node.reclaimed',
 ] as const satisfies readonly EventKind[];
 
 const SILENT_RISK_SET: ReadonlySet<string> = new Set(SILENT_RISK_KINDS);

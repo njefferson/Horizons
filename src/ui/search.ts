@@ -8,7 +8,7 @@
 
 import type { Session } from './session.ts';
 import type { NodeState } from '../fold.ts';
-import { searchHeld } from '../search.ts';
+import { searchHeld, searchReleased } from '../search.ts';
 import { heldStatus } from '../held.ts';
 
 const el = <K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, text?: string): HTMLElementTagNameMap[K] => {
@@ -46,6 +46,10 @@ export function mountSearch(session: Session, now: () => number, openDetail: (n:
     }
 
     SUMMARY.hidden = false;
+    // "…you are HOLDING" is exact and stays exact: something you put down is not
+    // held, and it is reported separately below rather than folded into this
+    // number. A summary that counted both would make "nothing matches" false in
+    // the one case where the reader most needs it to be true.
     SUMMARY.textContent = total === 0
       ? 'Nothing you are holding matches that.'
       : total === items.length
@@ -65,6 +69,36 @@ export function mountSearch(session: Session, now: () => number, openDetail: (n:
       li.append(b);
       return li;
     }));
+
+    // AND THINGS YOU HAVE PUT DOWN (1.32.0) — the only way to reach one.
+    //
+    // Appended after what you are holding, never mixed in, and it says which
+    // these are. There is no other route: a put-down thing has no surface, no
+    // count and no collection to browse, because a place to look at everything
+    // you stopped carrying is another pile and the regret it collects is exactly
+    // what made discarding feel expensive.
+    //
+    // It answers a query you TYPED about a thing you REMEMBERED, and never
+    // volunteers. The sentence says how many matched THIS query and never how
+    // many exist — a total would be the count this verb was designed without.
+    const down = searchReleased(session.state(), INPUT.value);
+    if (down.total > 0) {
+      const head = el('li', 'search-down-head');
+      head.textContent = down.total === 1
+        ? 'One thing you put down also matches.'
+        : `${down.total} things you put down also match.`;
+      RESULTS.append(head);
+      for (const n of down.items) {
+        const li = el('li', 'search-item');
+        const b = el('button', 'search-open');
+        b.type = 'button';
+        b.append(el('span', 'search-title', n.title || '(untitled)'));
+        b.append(el('span', 'search-where', 'put down — open it to pick it back up'));
+        b.addEventListener('click', () => openDetail(n));
+        li.append(b);
+        RESULTS.append(li);
+      }
+    }
   };
 
   // Live as you type. No debounce: the corpus is what one person holds, the

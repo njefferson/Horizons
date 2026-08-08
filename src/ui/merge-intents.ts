@@ -118,6 +118,7 @@ export const MERGE_DISPOSITION: Record<keyof NodeState, Disposition> = {
   // ── Deliberately left behind.
   pebble: { carry: 'no', because: 'only a `pebble` node carries one, and `legalMergeTargets` allows a pebble to fold only into another pebble — so the survivor always has a weight of its own, and 1.9.2\'s governing rule applies unchanged: the survivor\'s own answer stands and a fold only fills silences. There is no silence here to fill' },
   onMenu: { carry: 'no', because: 'placement is its own verb; a fold must not promote or demote anything' },
+  released: { carry: 'no', because: 'putting a thing down is a decision about THAT thing, and a fold is not that decision. legalMergeTargets offers held nodes only, so the survivor was never put down; writing the source\'s put-down onto it would take a live thing out of your hands because something else folded into it' },
   lastDone: { carry: 'no', because: 'a completion is an event about one particular thing, and a fold is not a completion' },
   heat: { carry: 'no', because: 'the source\'s passage through the inbox, not a fact about the work' },
   route: { carry: 'no', because: 'writing the source\'s route onto a clarified survivor would put it back in a queue it has already left' },

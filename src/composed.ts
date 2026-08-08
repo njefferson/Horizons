@@ -21,6 +21,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { localDayKey } from './time.ts';
+import { isHeld } from './fold.ts';
 
 /** The module name in `State.modules`. */
 export const TODAY_MODULE = 'today';
@@ -38,7 +39,7 @@ export const COMPOSED_CAP = 5;
  *  bounds sort mode's runway has, minus the kind narrowing: choosing a
  *  container for today is a legitimate way to say "this area, today". */
 export const choosable = (n: NodeState): boolean =>
-  !n.trashed && !n.mergedInto && !n.lastDone && n.onMenu === null
+  isHeld(n) && !n.lastDone && n.onMenu === null
   // `journal` and `anchor` joined in 1.17.2. Both are demand-free kinds whose
   // whole point is that nothing is ever done to them — a private entry and a
   // named period have no business in a hand of five things chosen for today,

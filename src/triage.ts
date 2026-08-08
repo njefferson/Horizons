@@ -9,6 +9,7 @@
 
 import type { State, NodeState } from './fold.ts';
 import type { Heat } from './events.ts';
+import { isHeld } from './fold.ts';
 
 /** Capture order is the only order the inbox claims, and ULIDs sort by time. */
 const byCaptureOrder = (a: NodeState, b: NodeState): number => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
@@ -20,7 +21,7 @@ const byCaptureOrder = (a: NodeState, b: NodeState): number => (a.id < b.id ? -1
  *  offering it clarify routes that would then hard-fail on a demand-free node
  *  (audit). The inbox is captures-not-yet-routed, nothing else. */
 const isInboxItem = (n: NodeState): boolean =>
-  n.captured && !n.trashed && !n.mergedInto && n.route === null;
+  n.captured && isHeld(n) && n.route === null;
 
 /**
  * The clarify queue: captured-not-yet-routed, boss-tagged first, then oldest

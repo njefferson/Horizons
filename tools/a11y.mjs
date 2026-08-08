@@ -234,6 +234,11 @@ const REGISTRY = {
   // report two controls as covered that the reader never sees measured.
   'waits for': ['#detail-after', '#detail-after-filter', '#detail-after-group .detail-label',
     '#detail-after-set', '#detail-after-clear', '#detail-after-now', '#detail-after-hint'],
+  // Put down (1.32.0). The verb and its hint are on the ordinary sheet; the way
+  // BACK only exists once something has been put down, so it is driven as its
+  // own state rather than measured in a shape no reader ever meets.
+  'put it down': ['#detail-release', '#detail-release-hint'],
+  'picked back up': ['#detail-reclaim'],
   'with cards': ['.card-title', '.card-when', '#status', '.group-head'],
   // Search results — only exist once you have typed, so a state of their own.
   // The summary is the quiet count; the "where" is the held status word, the
@@ -1678,6 +1683,22 @@ try {
     // control has to stay reachable in the state a person removes from.
     await page.fill('#detail-situation', '');
 
+    await auditContrast(page, 'put it down', theme);
+    await auditNames(page, 'put it down', theme);
+    await auditTargets(page, 'put it down', theme);
+    await auditFocusRings(page, 'put it down', theme, ['#detail-release']);
+    // And the way back, which only exists once something IS down. Put it down,
+    // measure, then pick it straight back up so nothing downstream in the walk
+    // inherits an item the reader never chose to stop carrying.
+    await page.click('#detail-release');
+    await page.waitForSelector('#detail-reclaim:not([hidden])');
+    await auditContrast(page, 'picked back up', theme);
+    await auditNames(page, 'picked back up', theme);
+    await auditTargets(page, 'picked back up', theme);
+    await auditFocusRings(page, 'picked back up', theme, ['#detail-reclaim']);
+    await page.click('#detail-reclaim');
+    await page.waitForFunction(() =>
+      document.querySelector('#detail-reclaim')?.hidden === true);
     await page.click('#detail-close');
 
     // WHAT THIS WAITS FOR (1.30.0), with an anchor actually SET. Two of the

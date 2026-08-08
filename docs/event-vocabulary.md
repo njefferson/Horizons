@@ -338,6 +338,33 @@ is a valid, unremarkable value, never nagged about.
 - **`dependency.released`**
   - Payload: `feeds`
   - Silent risk: **yes — gated**
+- **`node.released` / `node.reclaimed`** (1.32.0)
+  - Payload: `at: ISODateTime` / none
+  - Silent risk: **yes — gated**, both, and for different reasons. Putting a
+    thing down EXEMPTS it, so it cannot silence itself — but it can silence its
+    CHILDREN, because a put-down ancestor confers no coverage, exactly as a
+    trashed one confers none. Picking one back up removes the exemption and needs
+    a clock of its own.
+  - **The exit that is neither done nor deleted.** Law 1 guarantees nothing goes
+    quiet, which means everything held comes back for ever until it is finished
+    or binned. For work that mattered and no longer does, both are wrong:
+    `done.marked` is a lie written into an append-only log, and `node.trashed`
+    reads as destroying something you cared about, which is what people will not
+    do. So they carry it — and the one reset left is deleting the app and
+    reinstalling, destroying everything to avoid looking at some of it.
+  - **No browsable collection, no count, no required reason.** `heldNodes`
+    excludes these, which removes them from every surface, range and gauge at
+    once. `releasedNodes` exists so the complement is visible in code and so
+    search can reach a named one; **nothing renders it as a list**. A place to
+    look at everything you put down is another pile, and the regret it collects
+    is what made discarding expensive in the first place.
+  - **Reversible, and findable by name.** `searchReleased` answers a query you
+    typed about a thing you remembered, and never volunteers. That reversibility
+    is what makes putting a thing down cheap enough to do, which is the whole
+    mechanism — an exit people will not use is not an exit.
+  - Not carried by a merge: putting a thing down is a decision about THAT thing,
+    and writing it onto a survivor would take a live thing out of your hands
+    because something else folded into it.
 - **`after.set`** (1.30.0)
   - Payload: `after: NodeId`
   - Silent risk: **yes — gated**

@@ -15,6 +15,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { isHeld } from './fold.ts';
 
 /** The vocabulary's closed relation set. */
 export const RELATIONS = ['opr', 'stakeholder', 'waiting-on', 'requested-by', 'mentioned'] as const;
@@ -38,7 +39,7 @@ export interface PersonView {
   total: number;
 }
 
-const alive = (n: NodeState): boolean => !n.trashed && !n.mergedInto;
+const alive = (n: NodeState): boolean => isHeld(n);
 
 /** Every person node in the vault, by name. */
 export function people(state: State): NodeState[] {

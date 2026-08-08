@@ -26,6 +26,7 @@
 import type { NodeId } from './events.ts';
 import type { NodeState, State } from './fold.ts';
 import { roots } from './tree-view.ts';
+import { isGone } from './fold.ts';
 
 /** The kv key. A view preference, not sync state — it does not travel. */
 export const LENS_KEY = 'lens.root';
@@ -41,7 +42,7 @@ export function underLensIds(state: State, rootId: NodeId): Set<NodeId> {
   const ids = new Set<NodeId>([rootId]);
   const byParent = new Map<NodeId, NodeId[]>();
   for (const n of state.nodes.values()) {
-    if (!n.parent || n.trashed || n.mergedInto) continue;
+    if (!n.parent || isGone(n)) continue;
     let arr = byParent.get(n.parent);
     if (!arr) byParent.set(n.parent, arr = []);
     arr.push(n.id);

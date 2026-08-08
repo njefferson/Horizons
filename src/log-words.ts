@@ -163,6 +163,11 @@ export function eventWords(
     // The record says what was decided, not whether it was wise, and it names
     // the thing — a log line reading "an anchor was set" tells you nothing you
     // could act on a month later.
+    // Plain, and never approving. "Well done for letting that go" would be an
+    // opinion about the person, including a nice one, which this app does not
+    // have. It says what happened.
+    case 'node.released': return 'You put this down.';
+    case 'node.reclaimed': return 'You picked this back up.';
     case 'after.set': return `Set to wait until ${name(p['after'])} is done.`;
     case 'after.cleared': return 'No longer waiting for anything.';
     case 'suspense.set': {

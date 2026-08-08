@@ -29,6 +29,20 @@ export interface Release {
 /** Newest first. The head of this array is the running version. */
 export const RELEASES: readonly Release[] = [
   {
+    triplet: '1.32.0',
+    kind: 'CAPABILITY',
+    date: '2026-08-07',
+    notes: [
+      '**You can put something down now.** It is not done and it is not binned — it simply stops coming back to you. There is a new control on any item: *Put it down*.',
+      '**This is the thing Quietkeep did not have.** Everything you hold comes back until you finish it or let it go, and for something that mattered once and does not now, both of those are wrong. Ticking it off is a lie. Binning it feels like destroying something you cared about, and it goes into a list you can then go and look at. So it gets carried instead — and the only way out left is deleting the whole app, which is a lot of people’s actual answer.',
+      '**Nothing is asked of you.** No reason, no category, no note. There is nowhere to put one.',
+      '**There is no list of them, and nothing counts them.** A place to look at everything you have put down is just another pile, and the regret it collects is exactly what made getting rid of things feel expensive.',
+      '**It is not lost, and that is the point.** Search finds it again by name whenever you want it, and *Pick it back up* returns it with a date of its own. Knowing you can get it back is what makes putting it down cheap enough to actually do.',
+      '**Putting a place down does not put its contents down.** Everything inside comes back to you on its own rather than vanishing with it. Deciding to stop carrying thirty things is thirty decisions, and the app is not going to make them for you.',
+      '*Nothing about this is congratulated.* No “that’s one less thing”. The record says you put it down, and that is all it says.',
+    ],
+  },
+  {
     triplet: '1.31.0',
     kind: 'CAPABILITY',
     date: '2026-08-07',

@@ -29,6 +29,7 @@ import { replanIds } from './replan.ts';
 import { NOT_ACTIONABLE } from './kinds.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
 import { dependencyView, dependencyWords } from './dependencies.ts';
+import { isHeld, isGone } from './fold.ts';
 
 /** Why an item is being offered. Carried so the surface can SAY it — the text
  *  channel of B-01, and the honest answer to "why am I being shown this?". */
@@ -95,7 +96,7 @@ export interface NextUpItem {
 export function lineageOf(state: State, n: NodeState): string | null {
   const parts: string[] = [];
   for (const a of ancestors(state, n.id)) {
-    if (a.trashed || a.mergedInto) break;
+    if (isGone(a)) break;
     if (parts.length === 0) {
       parts.push(`in ${a.title || '(untitled)'}`);
     } else if (CONTAINER_KINDS.has(a.kind)) {
@@ -135,7 +136,7 @@ export const approachOf = (state: State, n: NodeState, nowIso: string, zone: str
  *  belongs to triage — offering it here would be asking the same question twice,
  *  in a surface whose whole promise is that it has already decided for you. */
 function isCandidate(n: NodeState, nowIso: string, zone: string): boolean {
-  if (n.trashed || n.mergedInto) return false;
+  if (isGone(n)) return false;
   if (NOT_ACTIONABLE.has(n.kind)) return false;
   // On the Menu is a surface, not a demand (law 1 clause c). Never volunteered.
   if (n.onMenu) return false;
@@ -209,7 +210,7 @@ function arrivedAncestor(
   let cur = n.parent ? state.nodes.get(n.parent) : undefined;
   while (cur && !seen.has(cur.id)) {
     seen.add(cur.id);
-    if (!cur.trashed && !cur.mergedInto && arrivedClock(cur, nowIso, zone)) return cur;
+    if (isHeld(cur) && arrivedClock(cur, nowIso, zone)) return cur;
     cur = cur.parent ? state.nodes.get(cur.parent) : undefined;
   }
   return null;
@@ -228,7 +229,7 @@ function underTrackedProject(state: State, n: NodeState): boolean {
   while (cur && !seen.has(cur)) {
     seen.add(cur);
     const p = state.nodes.get(cur);
-    if (!p || p.trashed || p.mergedInto) return false;
+    if (!isHeld(p)) return false;
     if (p.role === 'track') return true;
     cur = p.parent;
   }
@@ -293,7 +294,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
     // which is the same rule the returned-park tier follows.
     if (n.after && !parkedAway(n, nowIso, zone)) {
       const a = state.nodes.get(n.after);
-      if (a && a.lastDone && !a.trashed && !a.mergedInto) {
+      if (a && a.lastDone && isHeld(a)) {
         items.push({
           node: n, reason: 'unblocked', pressure: p,
           words: `${a.title || 'the thing before it'} is done`,
@@ -320,7 +321,7 @@ export function nextUpQueue(state: State, nowIso: string, zone: string): NextUpI
       if (!arrived) continue;
       if (!n.resumeFor || n.resumeFor === state.focus?.node) continue;
       const target = state.nodes.get(n.resumeFor);
-      if (!target || target.trashed || target.mergedInto || target.lastDone) continue;
+      if (!isHeld(target) || target.lastDone) continue;
       items.push({
         node: n, reason: 'resume', pressure: p,
         // YOUR five words when there are five words. Nothing this app composes

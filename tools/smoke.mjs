@@ -4157,6 +4157,54 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
   is(/strip the old sealant is done/.test(unblockedWhy || ''), true,
     `and it says which thing it follows ("${unblockedWhy}")`);
 
+  // --- PUT IT DOWN (1.32.0) -------------------------------------------------
+  //
+  // The exit that is neither done nor deleted. The claims are all about ABSENCE
+  // — it stops being offered, it is in no list, it is not counted — and one
+  // about presence: search still finds it by name, which is the reversibility
+  // that makes putting a thing down cheap enough to actually do.
+  await tpage.fill('#capture', 'learn the tenor recorder');
+  await tpage.click('#capture-form button[type=submit]');
+  await routeUntilOut('learn the tenor recorder');
+  await fillSearch('tenor recorder');
+  await tpage.waitForSelector('#search-results .search-open');
+  await tpage.locator('#search-results .search-open', { hasText: 'learn the tenor recorder' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.click('#detail-release');
+  await tpage.waitForTimeout(250);
+  await tpage.click('#detail-close');
+
+  // GONE FROM WHAT YOU ARE HOLDING — asked of the ordinary search, which reads
+  // `heldNodes`, the one chokepoint every surface and range goes through.
+  await fillSearch('tenor recorder');
+  await tpage.waitForTimeout(250);
+  const heldSummary = await tpage.locator('#search-summary').textContent();
+  is(/Nothing you are holding matches/.test(heldSummary || ''), true,
+    `it is no longer among what you are holding ("${heldSummary}")`);
+
+  // AND STILL REACHABLE BY NAME. The only way to one, and deliberately so: there
+  // is no collection to browse and no count anywhere.
+  is(await tpage.locator('.search-down-head').count(), 1,
+    'search says one thing you put down also matches');
+  const downHead = await tpage.locator('.search-down-head').textContent();
+  is(/One thing you put down also matches/.test(downHead || ''), true,
+    `and says it plainly ("${downHead}")`);
+
+  // AND THE WAY BACK WORKS, through the app's own control.
+  await tpage.locator('#search-results .search-open', { hasText: 'learn the tenor recorder' }).first().click();
+  await tpage.waitForSelector('#detail[open]');
+  await tpage.click('#detail-reclaim');
+  await tpage.waitForTimeout(250);
+  await tpage.click('#detail-close');
+  await fillSearch('tenor recorder');
+  await tpage.waitForTimeout(250);
+  const backSummary = await tpage.locator('#search-summary').textContent();
+  is(/Nothing you are holding matches/.test(backSummary || ''), false,
+    `picking it back up puts it among what you are holding again ("${backSummary}")`);
+  is(await tpage.locator('.search-down-head').count(), 0,
+    'and it is no longer reported as put down');
+  await fillSearch('');
+
   // The record itself: day-grouped, plain words, true totals, honest reveal.
   await tpage.click('#open-about');
   await expandGroups(tpage);

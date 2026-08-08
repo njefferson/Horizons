@@ -24,6 +24,7 @@ import { isContainer } from './tree.ts';
 import { isValidIso } from './time.ts';
 import { normalize, searchHeld } from './search.ts';
 import { raisesReplanCard } from './replan.ts';
+import { isHeld } from './fold.ts';
 
 /** The kinds a sorting card may legally act on — runway work, nothing else. */
 const SORTABLE_KINDS: ReadonlySet<string> = new Set(['action', 'waiting-for', 'upkeep']);
@@ -33,7 +34,7 @@ const SORTABLE_KINDS: ReadonlySet<string> = new Set(['action', 'waiting-for', 'u
  * so "what sort mode can reach" has exactly one answer.
  */
 export const sortable = (n: NodeState): boolean =>
-  !n.trashed && !n.mergedInto
+  isHeld(n)
   && SORTABLE_KINDS.has(n.kind)
   && n.onMenu === null
   && !n.lastDone;

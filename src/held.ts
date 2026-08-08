@@ -18,6 +18,7 @@ import { heldWork } from './gate.ts';
 import { isReadyAgain, pressureOf } from './pressure.ts';
 import { raisesReplanCard } from './replan.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { isGone, isHeld } from './fold.ts';
 
 export type HeldGroupKey = 'unsorted' | 'replan' | 'ready' | 'soon' | 'later' | 'menu' | 'done';
 
@@ -301,7 +302,7 @@ export function heldStatus(n: NodeState, nowIso: string, zone: string): string {
 export function liveChildCounts(state: State): Map<string, number> {
   const counts = new Map<string, number>();
   for (const n of state.nodes.values()) {
-    if (n.trashed || n.mergedInto || !n.parent) continue;
+    if (isGone(n) || !n.parent) continue;
     counts.set(n.parent, (counts.get(n.parent) ?? 0) + 1);
   }
   return counts;
@@ -317,7 +318,7 @@ export function liveChildCounts(state: State): Map<string, number> {
 export function parentTitleOf(n: NodeState, state: State): string | null {
   if (!n.parent) return null;
   const p = state.nodes.get(n.parent);
-  if (!p || p.trashed || p.mergedInto) return null;
+  if (!isHeld(p)) return null;
   return p.title || '(untitled)';
 }
 
@@ -356,7 +357,7 @@ export function contentsWords(
   let total = 0;
   for (const n of state.nodes.values()) {
     if (n.parent !== place.id) continue;
-    if (n.trashed || n.mergedInto || n.lastDone) continue;
+    if (isGone(n) || n.lastDone) continue;
     total += 1;
     if (inside.length < cap) inside.push(n.title || '(untitled)');
   }

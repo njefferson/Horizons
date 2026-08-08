@@ -27,6 +27,7 @@ import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { pressureOf } from './pressure.ts';
 import { calendarDaysBetween, isValidIso } from './time.ts';
+import { isHeld } from './fold.ts';
 
 /** The field that marks a node as the comms sweep. A field and not a kind: it
  *  IS an upkeep in every respect that matters — it decays, it can be completed,
@@ -41,7 +42,7 @@ export const COMMS_INTERVAL_DAYS = 1;
 export const COMMS_COMFORT_DAYS = 1;
 
 export const isCommsSweep = (n: NodeState): boolean =>
-  !n.trashed && !n.mergedInto && Object.hasOwn(n.fields, COMMS_FIELD);
+  isHeld(n) && Object.hasOwn(n.fields, COMMS_FIELD);
 
 /** The sweep node, if one has been made. Null is the ordinary state for someone
  *  who has never used it, and it must stay usable — nothing here is set up. */

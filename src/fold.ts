@@ -191,6 +191,20 @@ export interface NodeState {
    * it. Its own LWW key `'after'`.
    */
   after: NodeId | null;
+  /**
+   * PUT DOWN — when the person stopped carrying this, or null (1.32.0).
+   *
+   * The exit that is neither done nor deleted. Like `trashed` it is an explicit
+   * end and therefore not a silence; unlike `trashed` there is no collection to
+   * browse and no count anywhere, because a place to look at everything you put
+   * down is another pile and the regret it collects is exactly what made
+   * discarding expensive.
+   *
+   * A TIMESTAMP rather than a boolean, so the log's own words can say when
+   * without a second lookup — and so an export carries the fact rather than
+   * merely the flag. Its own LWW key `'released'`.
+   */
+  released: ISODateTime | null;
   /** How long this takes, in whole days, when it was declared as a dependency.
    *  It is what turns a downstream date into an upstream one: latest-start is
    *  the commitment minus this. Null when nobody has said. */
@@ -387,6 +401,32 @@ export const situationOf = (n: NodeState): string | null => {
   return f && typeof f.value === 'string' && f.value !== '' ? f.value : null;
 };
 
+/**
+ * IS THIS THING STILL IN YOUR HANDS? The one definition, since 1.32.0.
+ *
+ * Held-ness was written out by hand at forty-odd sites as
+ * `!n.trashed && !n.mergedInto`, and every one of them was a place a new end
+ * state would have to be remembered. `released` is that new end state, and this
+ * repo's own record of what hand-written lists cost — `heldGroups` drifting from
+ * the gauge twice, the merge carry losing `feeds` because three releases never
+ * visited that file — says to make it one predicate rather than a diff.
+ *
+ * The sites that deliberately do NOT use this are worth naming, because each is
+ * a different question:
+ *  - `trashedNodes` asks specifically about the TRASH, and a put-down thing was
+ *    not binned;
+ *  - the merge-chain walk in `merged.ts` follows `mergedInto` and nothing else;
+ *  - `isSilent`'s own first lines, which must answer about each end state
+ *    separately — both are exempt, for the same stated reason.
+ */
+export const isHeld = (n: NodeState | undefined | null): n is NodeState =>
+  !!n && !n.trashed && !n.mergedInto && !n.released;
+
+/** The complement, for the many sites written as an early `continue`. NOT a type
+ *  guard: narrowing on the FALSE branch of a negation is what callers actually
+ *  need, and `!isHeld(x)` gives them that. */
+export const isGone = (n: NodeState | undefined | null): boolean => !isHeld(n);
+
 export const emptyState = (): State => ({
   nodes: new Map(),
   vaults: new Map(),
@@ -467,6 +507,7 @@ function ensureNode(s: State, id: NodeId, vault: VaultId, touched: Set<NodeId>):
       lastReplan: null,
       feeds: [],
       after: null,
+      released: null,
       leadDays: null,
       todayFor: null,
       notNow: null,
@@ -1155,6 +1196,24 @@ export function applyEvent(s: State, e: AppEvent, touched: Set<NodeId>): void {
       // arrive out of order. A dangling `after` is read as no coverage by
       // clause (e) and cured, which is the honest outcome — refusing to fold it
       // would lose the record that somebody once said so.
+      // PUT DOWN / PICKED BACK UP. Its own LWW key so two devices converge on
+      // whichever act happened later rather than on arrival order — the
+      // `notNow`, `pebble` and `after` precedent.
+      case 'node.released': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['released'], o)) {
+          n.released = typeof e.payload.at === 'string' ? e.payload.at : e.at;
+          n.stamps['released'] = o;
+        }
+        break;
+      }
+
+      case 'node.reclaimed': {
+        const n = ensureNode(s, e.node!, e.vault, touched);
+        if (wins(n.stamps['released'], o)) { n.released = null; n.stamps['released'] = o; }
+        break;
+      }
+
       case 'after.set': {
         const n = ensureNode(s, e.node!, e.vault, touched);
         if (wins(n.stamps['after'], o)) { n.after = e.payload.after; n.stamps['after'] = o; }

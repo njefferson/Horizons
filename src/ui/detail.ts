@@ -27,7 +27,7 @@ import {
   setDueEvents, clearDueEvents, makeRepeatEvents, stopRepeatEvents,
   undoneEvents, untrashEvents, promoteFromMenuEvents, toMenuEvents, renameEvents,
   setStartEvents, clearStartEvents, estimateEvents, createParentEvents, cleanTitle,
-  situationEvents, afterEvents, clearAfterEvents,
+  situationEvents, afterEvents, clearAfterEvents, releaseEvents, reclaimEvents,
   cleanNote, noteEvents, chooseTodayEvents, releaseTodayEvents,
 } from './detail-intents.ts';
 import { normalize } from '../search.ts';
@@ -805,8 +805,19 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
     // internals ("batch would leave 1 silent node(s)"). The way to let a
     // survivor go is on this same sheet: split the folds back out first, and
     // the merged-group below already offers exactly that.
-    show('#detail-trash', !n.trashed && foldedIntoDeep(session.state(), n.id).length === 0);
+    show('#detail-trash', !n.trashed && !n.released && foldedIntoDeep(session.state(), n.id).length === 0);
     show('#detail-untrash', n.trashed);
+    // Offered only where it means something. Not on a trashed node — that has
+    // already ended, and two ends is a question with no answer — and not on a
+    // demand-free kind, which is never carried in the first place.
+    show('#detail-release', !n.trashed && !n.released
+      && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind));
+    show('#detail-reclaim', !!n.released);
+    // The hint explains the verb, so it belongs with the verb and goes when the
+    // verb goes. A standing paragraph about a control that is not on screen is
+    // noise on a sheet that is already long.
+    show('#detail-release-hint', !n.trashed && !n.released
+      && !(DEMAND_FREE_KINDS as readonly string[]).includes(n.kind));
     // "On its own" only when there is something to come out of, and the promote
     // to a container only when it is not one already — the same rule as every
     // other control here: never offer what this item cannot do.
@@ -1039,6 +1050,17 @@ export function mountDetail(session: Session, now: () => number, onChange: () =>
   });
   btn('#detail-untrash')?.addEventListener('click', () => {
     void run(ctx => untrashEvents(ctx, current!.id), 'Kept.');
+  });
+  btn('#detail-release')?.addEventListener('click', () => {
+    // Says what happened and where the way back is. NOT "well done" and not
+    // "that's one less thing" — an approving opinion is still an opinion about
+    // the person, and this app does not have one.
+    void run(ctx => releaseEvents(ctx, current!.id),
+      'Put down. It will not come back on its own; search finds it by name.');
+  });
+  btn('#detail-reclaim')?.addEventListener('click', () => {
+    void run(ctx => reclaimEvents(ctx, current!.id),
+      'Back with you — it has a date of its own again.');
   });
   btn('#detail-feeds-set')?.addEventListener('click', () => {
     if (!FEEDS || !LEAD || !current) return;

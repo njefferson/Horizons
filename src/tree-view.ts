@@ -19,6 +19,7 @@
 import type { NodeState, State } from './fold.ts';
 import { heldNodes } from './gate.ts';
 import { isContainer } from './tree.ts';
+import { isGone, isHeld } from './fold.ts';
 
 /** Law 8's number for one branch — the same order of magnitude as every other
  *  capped surface. The true total is always stated beside it. */
@@ -37,7 +38,7 @@ export function roots(state: State): NodeState[] {
     .filter(n => {
       if (!n.parent) return true;
       const p = state.nodes.get(n.parent);
-      return !p || p.trashed || Boolean(p.mergedInto) || !isContainer(p);
+      return !isHeld(p) || !isContainer(p);
     })
     .sort((a, b) => (a.title || '').localeCompare(b.title || ''));
 }
