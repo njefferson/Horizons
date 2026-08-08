@@ -4304,6 +4304,73 @@ const ready = () => page.waitForSelector('body[data-ready=true]');
     document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
   is(await tpage.locator('#sort-bulk-undo').isHidden(), true, 'the undo is one-shot');
 
+  // PUT A WHOLE PLACE DOWN (V2 stage 3, the last item). Six things stop coming
+  // back in one act rather than six. ADR-0082 says the app must never decide
+  // what you have stopped caring about; a person may decide it once, out loud,
+  // about a range they named — the amnesty's own recorded resolution.
+  //
+  // ASSERTED WITHOUT LEAVING SORT MODE. The first version closed the dialog to
+  // ask search whether they had gone, then reopened it to undo — and reopening
+  // resets the receipt, so the undo it needed was no longer on screen. The
+  // "gone from what you are holding" claim is proved through the same
+  // `heldNodes` chokepoint by the single-item block earlier in this walk; what
+  // is specific to the BULK path is that six real events were written and that
+  // one act takes all six back.
+  await tpage.locator('#sort-bulk-verbs .route', { hasText: 'Put them down' }).click();
+  await tpage.waitForFunction(() => /Put 6 things down/.test(
+    document.querySelector('#sort-bulk-preview')?.textContent ?? ''));
+  const downPreview = await tpage.locator('#sort-bulk-preview').textContent();
+  is(/not finished, not binned/.test(downPreview || ''), true,
+    `the sentence says what it is and what it is not ("${downPreview}")`);
+  await tpage.click('#sort-bulk-go');
+  await tpage.waitForFunction(() => /Put 6 things down\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+
+  const downLog = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const rows = await new Promise((res) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result);
+    });
+    const ids = rows.filter(e => e.kind === 'node.created' && /^Bulk me/.test(e.payload?.title ?? ''))
+      .map(e => e.node);
+    const acted = rows.filter(e => e.kind === 'range.acted');
+    return {
+      released: rows.filter(e => e.kind === 'node.released' && ids.includes(e.node)).length,
+      lastActed: acted[acted.length - 1]?.payload ?? null,
+      // NO REASON, in bulk either — a batch path that collected one would be
+      // asking six times what the single act never asks once.
+      reasons: rows.filter(e => e.kind === 'node.released' && ids.includes(e.node))
+        .filter(e => Object.keys(e.payload ?? {}).some(k => k !== 'at')).length,
+    };
+  });
+  is(downLog.released, 6, 'six real put-downs in the log — the receipt precedes exactly what it explains');
+  is(downLog.lastActed?.verb, 'put-down', 'and the receipt names the verb');
+  is(downLog.lastActed?.count, 6, 'and the true count');
+  is(downLog.reasons, 0, 'and no reason was collected on any of them');
+
+  // BACK IN ONE ACT. Nothing was shed on the way down, so this undo restores
+  // everything it took — which is not true of sending a batch to the Menu, and
+  // that receipt has always said so.
+  await tpage.click('#sort-bulk-undo');
+  await tpage.waitForFunction(() => /Taken back — 6 things restored\./.test(
+    document.querySelector('#sort-bulk-outcome')?.textContent ?? ''));
+  // SCOPED TO THIS BATCH, not counted over the whole store. A single item was
+  // put down and picked back up earlier in this walk, so the store-wide count is
+  // seven and the assertion read as a failure when the app was correct — the
+  // same shape as the heat-event check, which is why that one counts a delta.
+  const reclaimed = await tpage.evaluate(async () => {
+    const db = await new Promise((res) => { const r = indexedDB.open('quietkeep'); r.onsuccess = () => res(r.result); });
+    const rows = await new Promise((res) => {
+      const q = db.transaction('events', 'readonly').objectStore('events').getAll();
+      q.onsuccess = () => res(q.result);
+    });
+    const ids = rows.filter(e => e.kind === 'node.created' && /^Bulk me/.test(e.payload?.title ?? ''))
+      .map(e => e.node);
+    return rows.filter(e => e.kind === 'node.reclaimed' && ids.includes(e.node)).length;
+  });
+  is(reclaimed, 6, 'and all six of THESE were picked back up by that one act');
+
   // TO THE MENU: the due date is shed on the way (the 1.3.1 belt, wholesale).
   await tpage.locator('#sort-bulk-verbs .route', { hasText: 'To the Menu' }).click();
   await tpage.selectOption('#sort-bulk-category', 'research');

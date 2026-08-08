@@ -535,12 +535,51 @@ decided by a session.**
 
 ### Staged and waiting on the owner
 
-**Eleven releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
+**Twelve releases are waiting on an on-device pass.** 1.24.0, 1.24.1 and 1.25.0
 were promoted together 2026-08-06. `staging` carries 1.26.0, 1.27.0, 1.27.1,
-1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0 and now **1.32.0**.
+1.28.0, 1.29.0, 1.30.0, 1.30.1, 1.30.2, 1.30.3, 1.31.0, 1.32.0 and now **1.33.0**.
 
-- **https://staging.quietkeep.pages.dev** — the candidate, **1.32.0**
+- **https://staging.quietkeep.pages.dev** — the candidate, **1.33.0**
 - **https://quietkeep.pages.dev** — production, **1.25.0**
+
+**1.33.0 is stage 3's last item: put a whole place down in one act.**
+
+A `put-down` bulk verb on the runway family. ADR-0082 says putting a place down
+does NOT sweep its contents, and this completes that rather than contradicting
+it: the app must never decide what you have stopped caring about, and a person
+may decide it once, out loud, about a range they named. That is the amnesty's own
+recorded resolution — the cap governs what a surface may SHOW, and a named range
+is legitimate to act on.
+
+**The container is not eligible**, because `sortable` excludes containers. That
+exclusion was untested until a plant stayed green over it; the assertion is now
+explicit, so "everything under the loft" can never quietly take the loft too.
+
+**Not offered on the Menu family, and the omission is an argument.** A wish
+already makes no demand and already does not come back, so putting one down would
+change nothing a reader could notice — and a control that appears to act and does
+not is the shape this app spends most of its care avoiding. `let-go` is the verb
+for a wish you no longer want, and it is there.
+
+**The undo restores everything it took**, unlike `to-menu`, which sheds demand
+clocks on the way and says so in its own receipt.
+
+**A SHIPPED DEFECT, found by the walk pressing the button.** `undoBulk` decides
+per item whether the act is still reversible, and that check was a hand-written
+disjunction of four verbs — so any verb added later fell through to `false` and
+EVERY item was skipped. `new-date` went out in 1.31.0 in that state: the Undo
+button worked, reported "0 things restored", and put nothing back, leaving every
+retired date retired.
+
+The unit tests did not see it because they exercised `undoItemEvents`, which is
+the half that was correct. It is now a `Record<BulkVerb, …>`, so a new verb
+cannot compile until its reversal condition is written down, and two tests run
+the real `runBulk` → `undoBulk` pair asserting `skipped === 0`.
+
+**Third time this session a hand-written list has cost something**: held-ness at
+forty-odd sites, the amnesty's defaulted arguments, and this. The pattern is the
+same each time and so is the fix — make it total, and let the type system ask the
+question.
 
 **1.32.0 closes stage 3's structural gap: the exit that is neither done nor
 deleted.** ADR-0082.

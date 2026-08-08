@@ -35,14 +35,20 @@ import { passedHardClocks, type Passed } from '../replan.ts';
 import { replanEvents } from './replan-intents.ts';
 import { isHeld, isGone } from '../fold.ts';
 
-export type BulkVerb = 'put-under' | 'to-menu' | 'park' | 'let-go' | 'bring-back' | 'new-date';
+export type BulkVerb = 'put-under' | 'to-menu' | 'park' | 'let-go' | 'bring-back' | 'new-date' | 'put-down';
 
 /** The verbs a range family may face — never offer what the gate must refuse
  *  (ADR-0038): the six routes' rules bind here too, so Menu ranges get promote
  *  semantics and nothing that would mint Menu-plus-demand-clock. */
 export const verbsFor = (family: 'runway' | 'menu'): BulkVerb[] =>
   family === 'runway'
-    ? ['new-date', 'put-under', 'to-menu', 'park', 'let-go']
+    ? ['new-date', 'put-under', 'to-menu', 'park', 'put-down', 'let-go']
+    // RUNWAY ONLY, and the omission is an argument rather than an oversight. A
+    // wish on the Menu already makes no demand and already does not come back at
+    // you, so putting one down would change nothing a reader could notice — and
+    // a control that appears to do something and does nothing is the shape this
+    // app spends most of its care avoiding. The verb for a wish you no longer
+    // want is `let-go`, which is there.
     : ['bring-back', 'let-go'];
 
 export interface BulkParams {
@@ -126,6 +132,16 @@ export function eligible(verb: BulkVerb, n: NodeState | undefined, state: State,
     // the app overwriting decisions nobody asked it to touch.
     case 'new-date':
       return sortable(n) && passedHardClocks(n, params.nowIso ?? '', params.zone ?? 'UTC').length > 0;
+    // PUT A WHOLE PLACE DOWN (V2 stage 3). One act instead of thirty.
+    //
+    // ADR-0082 says putting a place down does NOT sweep its contents, and this
+    // does not contradict that — it completes it. The app must never decide what
+    // you have stopped caring about; a person may decide it once, out loud, about
+    // a range they named. That is the amnesty's own recorded resolution: the cap
+    // governs what a surface may SHOW, and a range the user named is legitimate
+    // to act on.
+    case 'put-down':
+      return sortable(n);
     case 'let-go':
       // Legal from both families: runway work, or a wish on the Menu — and
       // never a merge SURVIVOR (1.17.3, the seam audit): trashing a node that
@@ -175,6 +191,11 @@ export function bulkItemEvents(
       })];
     case 'let-go':
       return [base(ctx, 'node.trashed', n.id, { reason: 'range:let-go' })];
+    case 'put-down':
+      // The same single event the sheet writes. No reason, here either — a bulk
+      // path that collected one would be asking thirty times what the single act
+      // never asks once.
+      return [base(ctx, 'node.released', n.id, { at: ctx.at })];
     case 'new-date':
       // Through `replanEvents`, the SAME resolution a person makes by hand on
       // one card — not a bare `clock.set`. It records `replan.resolved`, retires
@@ -213,6 +234,11 @@ function undoItemEvents(
       return [base(ctx, 'node.untrashed', entry.node, {})];
     case 'bring-back':
       return [base(ctx, 'menu.item.added', entry.node, { category: entry.priorCategory ?? 'read' })];
+    case 'put-down':
+      // Picked straight back up, and the gate re-covers each one with a clock —
+      // the same way back the single act has. Unlike `to-menu`, nothing was shed
+      // on the way down, so this undo restores everything it took.
+      return [base(ctx, 'node.reclaimed', entry.node, {})];
     case 'new-date':
       // Take the new date off and put back every one it retired, each through
       // its own noun — `suspense.set` for a suspense, `clock.set` for a due,
@@ -337,13 +363,34 @@ export async function undoBulk(
       const n = st.nodes.get(entry.node);
       if (!n || n.mergedInto) { out.skipped++; continue; }
       // Reversal-specific sanity: undoing a let-go needs it still trashed, &c.
-      const still =
-        (receipt.verb === 'let-go' && n.trashed) ||
-        (receipt.verb === 'to-menu' && n.onMenu !== null) ||
-        (receipt.verb === 'bring-back' && n.onMenu === null) ||
-        (receipt.verb === 'park' && Boolean(n.clocks.park)) ||
-        (receipt.verb === 'put-under');
-      if (!still) { out.skipped++; continue; }
+      //
+      // A TOTAL RECORD, since 1.33.0, and the change is not cosmetic. This was a
+      // hand-written disjunction of four verbs, so a verb added later fell
+      // through to `false` and EVERY item was skipped — a working Undo button
+      // that reported "0 things restored" and put nothing back. `new-date`
+      // shipped in that state and nothing caught it: the tests exercised
+      // `undoItemEvents` directly, which is the half that was correct.
+      //
+      // As a record over `BulkVerb`, a new verb cannot compile until somebody
+      // writes down what "still reversible" means for it. Same shape as the
+      // merge disposition and `REPORTABLE`, and for the same recorded reason.
+      const STILL_REVERSIBLE: Record<BulkVerb, (x: NodeState) => boolean> = {
+        'let-go': x => x.trashed,
+        'to-menu': x => x.onMenu !== null,
+        'bring-back': x => x.onMenu === null,
+        'park': x => Boolean(x.clocks.park),
+        // Filing is reversible whatever happened since: the entry carries the
+        // prior parent, and re-homing is legal from anywhere.
+        'put-under': () => true,
+        // The date it set must still be the one on there. If the person has
+        // changed it since, the act being undone is no longer the last word and
+        // putting the old dates back would clobber a newer decision.
+        'new-date': x => Boolean(x.clocks.due),
+        // It must still be down. Picked back up by hand already? Then there is
+        // nothing to reverse, and the count says so.
+        'put-down': x => Boolean(x.released),
+      };
+      if (!STILL_REVERSIBLE[receipt.verb](n)) { out.skipped++; continue; }
       chunk.push(entry);
     }
     if (chunk.length === 0) continue;

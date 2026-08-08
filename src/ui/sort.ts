@@ -307,6 +307,7 @@ export function mountSort(
     'put-under': { label: 'Put them under…', hint: 'file every one into a place' },
     'to-menu': { label: 'To the Menu…', hint: 'wishes, not demands — any dates come off' },
     'park': { label: 'Park until…', hint: 'held away on purpose, back on the day' },
+    'put-down': { label: 'Put them down', hint: 'they stop coming back; not done, not binned, and search still finds them' },
     'let-go': { label: 'Let them go', hint: 'a copy is saved first; the trash can give them back' },
     'bring-back': { label: 'Bring them back as real work', hint: 'each gets a clock so it returns' },
   };
@@ -462,6 +463,9 @@ export function mountSort(
         words = `Give ${things} a new date of ${params.dayKey}. Every date that had gone by on them is retired — that is what makes it a decision rather than a second date sitting on top of the first. Undo puts the old ones back.`;
         break;
       }
+      case 'put-down':
+        words = `Put ${things} down. They stop coming back to you — not finished, not binned, and nothing is asked for. There is no list of them to look at afterwards; search finds any of them by name, and Undo brings the whole batch back.`;
+        break;
       case 'let-go':
         words = `Let ${things} go. A copy of everything is saved first, and “Things you let go” can give any of them back.`;
         break;
@@ -491,6 +495,7 @@ export function mountSort(
         'put-under': `Filed ${did}.`,
         'to-menu': `Sent ${did} to the Menu. Dates shed on the way do not come back with an undo — bring a thing back as real work to date it again.`,
         'park': `Parked ${did}.`,
+        'put-down': `Put ${did} down. Search finds any of them by name if you want one back.`,
         'let-go': `Let ${did} go. “Things you let go”, behind the ⓘ, can give any of them back.`,
         'bring-back': `Brought ${did} back as real work.`,
       }[r.verb];

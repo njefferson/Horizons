@@ -15,7 +15,7 @@ import { openSession } from '../src/ui/session.ts';
 import { MemoryLogStore } from '../src/log-store.ts';
 import { fold, emptyState, type State } from '../src/fold.ts';
 import { localDayKey } from '../src/time.ts';
-import { admit, gateOptionsFor, silentNodes, trashedNodes } from '../src/gate.ts';
+import { admit, gateOptionsFor, silentNodes, trashedNodes, heldNodes } from '../src/gate.ts';
 import type { AppEvent } from '../src/events.ts';
 import type { Session, StampContext } from '../src/ui/session.ts';
 
@@ -277,7 +277,7 @@ test('UNDO: an item that moved on since the act is left as it is, and counted', 
 // --- the verbs a family may face ---------------------------------------------
 
 test('verb legality is computed per family — Menu ranges get promote semantics, never a clock', () => {
-  assert.deepEqual(verbsFor('runway'), ['new-date', 'put-under', 'to-menu', 'park', 'let-go']);
+  assert.deepEqual(verbsFor('runway'), ['new-date', 'put-under', 'to-menu', 'park', 'put-down', 'let-go']);
   assert.deepEqual(verbsFor('menu'), ['bring-back', 'let-go'],
     'no park, no date, no filing on a wish — Menu-plus-demand-clock is the state the belt refuses');
   // `new-date` is a RUNWAY verb and must never reach the Menu family. It writes
@@ -320,6 +320,135 @@ test('a new date in bulk is the same resolution a person makes by hand', () => {
   assert.equal(n.clocks['suspense'], undefined,
     'and the OTHER date that had gone by was retired too — resolving one of two resolves nothing');
   assert.equal(silentNodes(after).length, 0);
+});
+
+test('a whole place goes down in one act, and comes back in one', () => {
+  // V2 stage 3's last item. ADR-0082 says putting a PLACE down does not sweep
+  // its contents, and this completes that rather than contradicting it: the app
+  // must never decide what you have stopped caring about, and a person may
+  // decide it once, out loud, about a range they named. That is the amnesty's
+  // own recorded resolution — the cap governs what a surface may SHOW, and a
+  // named range is legitimate to act on.
+  let s = write(emptyState(), [
+    ev('node.created', 'P', { nodeKind: 'project', title: 'the loft' }),
+  ]);
+  s = write(s, [ev('clock.set', 'P', { clockKind: 'review', at: NOW, source: 't' })]);
+  const kids = ['K1', 'K2', 'K3'];
+  for (const k of kids) {
+    s = write(s, [ev('node.created', k, { nodeKind: 'action', title: `job ${k}`, parent: 'P' })]);
+  }
+  const items = kids.map(k => s.nodes.get(k)!);
+  for (const n of items) {
+    assert.equal(eligible('put-down', n, s, {}), true, `${n.id} can be put down`);
+  }
+  // AND THE PLACE ITSELF IS NOT ELIGIBLE. `sortable` excludes containers, which
+  // is what stops "everything under the loft" quietly taking the loft with it.
+  // Without this assertion the exclusion was untested and a plant that removed
+  // it stayed green — the range would then have swept the container as a side
+  // effect of a verb aimed at its contents, which is the app deciding rather
+  // than the person.
+  assert.equal(eligible('put-down', s.nodes.get('P'), s, {}), false,
+    'the place is not swept by a verb aimed at what is inside it');
+
+  const out = items.flatMap(n => bulkItemEvents(ctx(), 'put-down', n, {}));
+  assert.equal(out.every(e => e.kind === 'node.released'), true,
+    'the same single event the sheet writes — one path, not a second dialect');
+  assert.equal(out.every(e => !('reason' in (e.payload as object))), true,
+    'and no reason is collected in bulk that the single act never asks for once');
+
+  const down = write(s, out);
+  for (const k of kids) assert.ok(down.nodes.get(k)!.released, `${k} is down`);
+  assert.equal(down.nodes.get('P')!.released, null,
+    'the PLACE itself is untouched — putting its contents down is not a decision about it');
+  assert.equal(silentNodes(down).length, 0);
+
+  // And back in one act. Unlike `to-menu`, nothing was shed on the way down, so
+  // this undo restores everything it took.
+  const back = write(down, kids.map(k => ({
+    id: `u${k}`, vault: 'personal', at: NOW, device: 'd0', seq: seq++,
+    kind: 'node.reclaimed', node: k, payload: {},
+  } as AppEvent)));
+  for (const k of kids) {
+    assert.equal(back.nodes.get(k)!.released, null, `${k} is back`);
+  }
+  // COVERED, not necessarily CLOCKED. These ride their parent's clock through
+  // law 1 clause (d), so the gate correctly mints nothing for them — asserting
+  // "it has a clock of its own" would have called correct behaviour a defect,
+  // which is what the first version of this line did.
+  assert.equal(silentNodes(back).length, 0, 'nothing came back silent');
+  assert.deepEqual(
+    kids.filter(k => !heldNodes(back).some(n => n.id === k)), [],
+    'and all three are among what you are holding again');
+});
+
+test('a wish is not offered a verb that would do nothing to it', () => {
+  // The omission is an argument, not an oversight: a Menu item already makes no
+  // demand and already does not come back at you, so putting one down would
+  // change nothing a reader could notice — and a control that appears to act and
+  // does not is the shape this app spends most of its care avoiding.
+  assert.equal(verbsFor('menu').includes('put-down'), false);
+  assert.equal(verbsFor('menu').includes('let-go'), true,
+    'the verb for a wish you no longer want is let-go, and it is there');
+});
+
+test('undoing a bulk put-down really puts them back — END TO END', () => {
+  // THE DEFECT THIS PINS, AND IT SHIPPED. `undoBulk`'s reversal check was a
+  // hand-written disjunction of four verbs, so a verb added later fell through
+  // to `false` and EVERY item was skipped: a working Undo button reporting
+  // "0 things restored" and putting nothing back. `new-date` went out in that
+  // state in 1.31.0 and nothing caught it, because the tests exercised
+  // `undoItemEvents` — the half that was correct.
+  //
+  // So this runs the REAL pair, `runBulk` then `undoBulk`, which is the seam
+  // the unit-level tests could not see. `STILL_REVERSIBLE` is now a Record over
+  // BulkVerb, so a new verb cannot compile until its reversal condition is
+  // written down; this is the runtime half of the same claim.
+  return (async () => {
+    const { session, ids } = await seededSession(4);
+    const items = ids.map(i => session.state().nodes.get(i)!);
+    const plan = planBulk(session.state(), items, 'put-down', {}, 'four rows');
+    assert.equal(plan.eligibleNow, 4);
+
+    const receipt = await runBulk(session, plan);
+    assert.equal(receipt.done, 4, 'four went down');
+    for (const i of ids) assert.ok(session.state().nodes.get(i)!.released, `${i} is down`);
+    assert.equal(heldNodes(session.state()).filter(n => ids.includes(n.id)).length, 0,
+      'and none of them is among what you are holding');
+
+    const undone = await undoBulk(session, receipt);
+    assert.equal(undone.skipped, 0,
+      'NOTHING was skipped — a skipped item is the defect this test exists for');
+    assert.equal(undone.done, 4, 'and all four came back');
+    for (const i of ids) assert.equal(session.state().nodes.get(i)!.released, null, `${i} is back`);
+    assert.equal(silentNodes(session.state()).length, 0);
+  })();
+});
+
+test('the same holds for a bulk new date — the verb that shipped broken', () => {
+  return (async () => {
+    const { session, ids } = await seededSession(3);
+    await session.commit(c => ids.map(id => ({
+      id: c.id(), vault: c.vault, at: c.at, device: c.device, seq: c.seq(),
+      kind: 'clock.set', node: id,
+      payload: { clockKind: 'due', at: '2026-07-01T12:00:00.000Z', source: 'detail:due' },
+    } as AppEvent)));
+    const items = ids.map(i => session.state().nodes.get(i)!);
+    const params = { dayKey: '2026-08-20', nowIso: NOW, zone: TZ };
+    const plan = planBulk(session.state(), items, 'new-date', params, 'three passed dates');
+    assert.equal(plan.eligibleNow, 3);
+
+    const receipt = await runBulk(session, plan);
+    assert.equal(receipt.done, 3);
+    const undone = await undoBulk(session, receipt);
+    assert.equal(undone.skipped, 0,
+      'this is the one that shipped skipping everything — Undo said 0 restored and meant it');
+    assert.equal(undone.done, 3);
+    for (const i of ids) {
+      assert.equal(localDayKey(session.state().nodes.get(i)!.clocks['due']!.at, TZ), '2026-07-01',
+        'and the date it retired is back, exactly as it was');
+    }
+    assert.equal(silentNodes(session.state()).length, 0);
+  })();
 });
 
 test('the receipt noun is well-formed and admits', () => {

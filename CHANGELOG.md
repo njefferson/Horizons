@@ -14,6 +14,18 @@ triplet and what it did for you.
 > Generated from `src/ui/changelog.ts`, which is what the app itself shows in
 > its (i) panel. Edit that, then run `npm run changelog`. Don't edit this file.
 
+## 1.33.0 — CAPABILITY
+
+*2026-08-07*
+
+- **You can put a whole place down in one act.** Pick a range — everything under a project, everything matching a word — and *Put them down*. Thirty things stop coming back to you in one decision instead of thirty.
+- **The place itself is not taken with them.** Putting down what is inside something is not a decision about the thing that holds it, and Quietkeep will not make that one for you.
+- **Nothing is swept without you saying so.** Putting one thing down still never touches what is inside it. This is the opposite case: you named the batch, you said it out loud, and it does exactly that and nothing more.
+- **It says what it will do before it does it**, and the sentence names both halves: they stop coming back, and they are not finished and not binned.
+- **One Undo brings the whole batch back.** Nothing is shed on the way down, so the way back returns everything it took — which is not true of sending a batch to your wishes, and that receipt has always said so.
+- Search still finds any of them by name afterwards, exactly as it does for one.
+- **Also fixed: Undo after “Give them a new date” did nothing.** It shipped yesterday and it was broken — the button worked, said “0 things restored”, and put nothing back. Every date it had retired stayed retired. It now restores all of them, exactly as they were.
+
 ## 1.32.0 — CAPABILITY
 
 *2026-08-07*
